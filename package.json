@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.9",
+    "@react-email/render": "^2.0.8",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.3",

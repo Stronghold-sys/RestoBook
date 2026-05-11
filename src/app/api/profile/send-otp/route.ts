@@ -43,6 +43,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Export the store getter for the verify route
-export const getOTP = (email: string) => otpStore.get(email);
-export const deleteOTP = (email: string) => otpStore.delete(email);
+// Local store helper functions (unused exported values forbidden in Next.js route definitions)
+const getOTP = (email: string) => otpStore.get(email);
+const deleteOTP = (email: string) => otpStore.delete(email);

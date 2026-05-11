@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
-
 export async function POST(req: Request) {
   try {
+    const resendKey = process.env.RESEND_API_KEY;
+    const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
+
     const { email, phone, name, type } = await req.json();
 
     let subject = '';
@@ -73,8 +73,9 @@ export async function POST(req: Request) {
     }
 
     // 2. Kirim via Email (Jika ada email)
-    if (email) {
+    if (email && resendKey) {
       try {
+        const resend = new Resend(resendKey);
         await resend.emails.send({
           from: 'RestoBook <onboarding@resend.dev>',
           to: email,

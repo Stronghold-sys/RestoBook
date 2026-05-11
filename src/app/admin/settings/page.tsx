@@ -167,8 +167,13 @@ export default function AdminSettingsPage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal mengunggah logo");
       
+      // Auto-save to database so it doesn't disappear on refresh
+      if (settings.id) {
+        await supabase.from("restaurant_settings").update({ logo_url: result.url }).eq("id", settings.id);
+      }
+      
       setSettings(prev => ({ ...prev, logo_url: result.url }));
-      toast.success("Logo berhasil diperbarui!");
+      toast.success("Logo berhasil diperbarui dan disimpan!");
     } catch(err:any){ 
       toast.error(err.message); 
     } finally { 

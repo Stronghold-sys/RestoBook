@@ -487,15 +487,28 @@ export default function AdvancedPayrollPage() {
              }
            }
            
-           // AUTO WHATSAPP SEND TRIGGER
+           // AUTO WHATSAPP SEND TRIGGER WITH PDF ATTACHMENT
            if (selectedProfile.phone) {
              try {
                const monthName = format(new Date(selectedYear, selectedMonth - 1, 1), "MMMM yyyy", {locale: id});
                const cleanPhone = String(selectedProfile.phone).startsWith("0") ? "62" + String(selectedProfile.phone).slice(1) : String(selectedProfile.phone);
-               const msg = `Halo *${selectedProfile.full_name}*,\n\nGaji Anda periode *${monthName}* telah berhasil ditransfer!\n\n*Ringkasan:*\nGaji Bersih: *Rp ${finalNet.toLocaleString('id-ID')}*\nTanggal: ${format(new Date(), "dd/MM/yyyy HH:mm")}\n\nMohon periksa email Anda (${selectedProfile.email || 'yang terdaftar'}) untuk melihat rincian slip gaji lengkap.\n\nTerima kasih atas kerja keras Anda!`;
+               const msg = `Halo *${selectedProfile.full_name}*,\n\nGaji Anda periode *${monthName}* telah berhasil ditransfer!\n\n*Ringkasan:*\nGaji Bersih: *Rp ${finalNet.toLocaleString('id-ID')}*\nTanggal: ${format(new Date(), "dd/MM/yyyy HH:mm")}\n\nBerikut kami lampirkan dokumen Slip Gaji PDF Anda bulan ini. Mohon periksa juga email Anda (${selectedProfile.email || 'yang terdaftar'}) sebagai salinan (copy) resmi.\n\nTerima kasih atas kerja keras Anda!`;
                
-               const fData = new URLSearchParams(); fData.append('target', cleanPhone); fData.append('message', msg);
-               fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': 'CpJ7L8M8TfwCVy2k2m6C' }, body: fData }).catch(e => {});
+               // Generate PDF blob
+               const doc = await generatePayslipDoc(selectedProfile);
+               const pdfBlob = doc.output('blob');
+               const pdfFile = new File([pdfBlob], `Slip_Gaji_${selectedProfile.full_name.replace(/\s+/g, '_')}_${monthName}.pdf`, { type: 'application/pdf' });
+
+               const fData = new FormData(); 
+               fData.append('target', cleanPhone); 
+               fData.append('message', msg);
+               fData.append('file', pdfFile);
+               
+               fetch('https://api.fonnte.com/send', { 
+                 method: 'POST', 
+                 headers: { 'Authorization': 'CpJ7L8M8TfwCVy2k2m6C' }, // FormData does NOT need Content-Type, fetch sets it automatically with boundary
+                 body: fData 
+               }).catch(e => {});
              } catch(e){}
            }
 

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Process split items
     for (const splitItem of splitItems) {
-      const origItem = originalItems.find(i => i.id === splitItem.id);
+      const origItem = originalItems.find((i: any) => i.id === splitItem.id);
       if (!origItem) continue;
 
       const splitQty = Math.min(splitItem.quantity, origItem.quantity);

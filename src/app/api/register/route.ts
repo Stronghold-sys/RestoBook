@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       if (signUpError.message.includes('already') || signUpError.message.includes('exists') || signUpError.message.includes('duplicate')) {
         console.log('[Register] User might already exist, trying to find...');
         const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = listData?.users?.find(u => u.email === email);
+        const existingUser = listData?.users?.find((u: any) => u.email === email);
         
         if (existingUser) {
           console.log('[Register] Found existing user:', existingUser.id);

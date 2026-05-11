@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Salah satu atau kedua pesanan tidak ditemukan' }, { status: 404 });
     }
 
-    const sourceOrder = orders.find(o => o.id === sourceOrderId);
-    const targetOrder = orders.find(o => o.id === targetOrderId);
+    const sourceOrder = orders.find((o: any) => o.id === sourceOrderId);
+    const targetOrder = orders.find((o: any) => o.id === targetOrderId);
 
     // 2. Fetch order items for source
     const { data: sourceItems, error: itemsError } = await supabaseAdmin

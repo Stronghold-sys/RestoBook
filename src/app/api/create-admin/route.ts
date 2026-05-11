@@ -21,7 +21,7 @@ export async function GET() {
         
         // Find user by email if possible
         const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-        const user = users.users.find(u => u.email === email);
+        const user = users.users.find((u: any) => u.email === email);
         
         if (user) {
           await supabaseAdmin.from('profiles').upsert({

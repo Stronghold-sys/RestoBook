@@ -105,7 +105,7 @@ export async function GET(request: Request) {
          substituteFor: nextActiveCandidate?.substitute_for?.full_name || null
       },
       today: todayIndoName,
-      assignedEmployees: assignedEmployees.map(c => c.profiles)
+      assignedEmployees: assignedEmployees.map((c: any) => c.profiles)
     });
 
   } catch (err: any) {

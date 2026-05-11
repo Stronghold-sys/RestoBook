@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     
     if (userError) throw userError;
 
-    const user = users.find(u => u.email === email);
+    const user = users.find((u: any) => u.email === email);
 
     if (!user) {
       return NextResponse.json({ error: 'Pengguna tidak ditemukan' }, { status: 404 });

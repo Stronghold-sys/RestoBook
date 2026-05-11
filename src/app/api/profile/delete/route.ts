@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       .eq('customer_id', profileId);
 
     if (orders && orders.length > 0) {
-      const orderIds = orders.map(o => o.id);
+      const orderIds = orders.map((o: any) => o.id);
       await supabaseAdmin.from('order_items').delete().in('order_id', orderIds);
     }
 

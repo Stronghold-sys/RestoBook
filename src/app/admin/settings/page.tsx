@@ -6,6 +6,9 @@ import { Settings, Save, Loader2, Store, MapPin, Phone, Mail, Clock, QrCode, Sma
 import { createClient } from "@/lib/supabase/client";
 import toast, { Toaster } from "react-hot-toast";
 import { formatToIndonesianDate } from "@/utils/operationalHours";
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import { useRef } from "react";
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -86,22 +89,92 @@ export default function AdminSettingsPage() {
   };
 
   const [uploading, setUploading] = useState(false);
-  const handleLogoUpload = async (e: any) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+  
+  // Crop States
+  const [upImg, setUpImg] = useState<any>();
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [crop, setCrop] = useState<Crop>({ unit: '%', width: 50, height: 50, x: 25, y: 25 });
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setUpImg(reader.result));
+      reader.readAsDataURL(e.target.files[0]);
+      setShowCropModal(true);
+      // Reset crop
+      setCrop({ unit: '%', width: 50, height: 50, x: 25, y: 25 });
+    }
+  };
+
+  const onLoad = (img: HTMLImageElement) => {
+    imgRef.current = img;
+  };
+
+  const getCroppedImg = (image: HTMLImageElement, crop: PixelCrop, fileName: string): Promise<Blob> => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return Promise.reject("No 2d context");
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'));
+          return;
+        }
+        resolve(blob);
+      }, 'image/png');
+    });
+  };
+
+  const handleUploadCroppedLogo = async () => {
+    if (!completedCrop || !imgRef.current) return toast.error("Silakan potong gambar terlebih dahulu");
+    
     setUploading(true);
+    setShowCropModal(false);
+    
     try {
-      const file = e.target.files[0];
-      const ext = file.name.split('.').pop();
-      const filePath = `res_logo_${Date.now()}.${ext}`;
-
-      const { error: uploadErr } = await supabase.storage.from("logos").upload(filePath, file);
-      if (uploadErr) throw uploadErr;
-
-      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(filePath);
-      setSettings(prev => ({ ...prev, logo_url: publicUrl }));
-      toast.success("Logo terunggah!");
-    } catch(err:any){ toast.error(err.message); }
-    finally { setUploading(false); }
+      const croppedBlob = await getCroppedImg(imgRef.current, completedCrop, 'logo.png');
+      const file = new File([croppedBlob], `res_logo_${Date.now()}.png`, { type: 'image/png' });
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "logos"); // Bypass RLS by using our server-side route
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah logo");
+      
+      setSettings(prev => ({ ...prev, logo_url: result.url }));
+      toast.success("Logo berhasil diperbarui!");
+    } catch(err:any){ 
+      toast.error(err.message); 
+    } finally { 
+      setUploading(false); 
+      setUpImg(null);
+    }
   };
 
   const handleSave = async () => {
@@ -196,7 +269,7 @@ export default function AdminSettingsPage() {
                 <label className="inline-flex items-center gap-2 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-xl text-xs font-black cursor-pointer hover:bg-border-light dark:hover:bg-border-dark transition-all">
                   <Upload className="w-3.5 h-3.5 text-primary" />
                   <span>{uploading ? "PROSES..." : "UNGGAH LOGO"}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploading} />
+                  <input type="file" accept="image/*" className="hidden" onChange={onSelectFile} disabled={uploading} />
                 </label>
               </div>
             </div>
@@ -595,6 +668,36 @@ export default function AdminSettingsPage() {
         {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> Simpan Semua Konfigurasi</>}
       </motion.button>
       <Toaster position="top-center" />
+
+      {/* CROP MODAL */}
+      <AnimatePresence>
+        {showCropModal && upImg && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl max-w-lg w-full">
+              <h3 className="text-xl font-black mb-4 text-gray-900 dark:text-white uppercase tracking-wider">Potong Logo</h3>
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] p-4">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(c) => setCrop(c)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={1}
+                >
+                  <img src={upImg} onLoad={(e) => onLoad(e.currentTarget)} alt="Upload Preview" style={{ maxHeight: '60vh' }} />
+                </ReactCrop>
+              </div>
+              <p className="text-xs text-muted mt-3 text-center">Gunakan aspek rasio 1:1 (Persegi) untuk hasil logo terbaik.</p>
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={() => setShowCropModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                  Batal
+                </button>
+                <button onClick={handleUploadCroppedLogo} className="px-5 py-2.5 rounded-xl font-black text-sm text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
+                  <Upload className="w-4 h-4" /> Unggah & Simpan
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

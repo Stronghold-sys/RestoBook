@@ -18,16 +18,18 @@ export async function POST(req: NextRequest) {
     const fileName = `${userId || 'anon'}/${Date.now()}.${fileExt}`;
     const filePath = isProfile ? `avatars/${fileName}` : `attachments/${fileName}`;
 
-    // 1. Upload to Supabase Storage (Bucket: profiles)
+    const bucketName = formData.get('bucket') as string || 'profiles';
+    
+    // 1. Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('profiles')
+      .from(bucketName)
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     // 2. Get Public URL
     const { data: { publicUrl } } = supabaseAdmin.storage
-      .from('profiles')
+      .from(bucketName)
       .getPublicUrl(filePath);
 
     // 3. Update database ONLY if it is a profile photo update

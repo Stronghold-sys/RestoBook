@@ -24,38 +24,10 @@ export async function GET() {
   const results: any[] = [];
 
   // ==========================================
-  // GLOBAL EMOJI ANNIHILATION ROBOT
+  // GLOBAL EMOJI ANNIHILATION ROBOT (OFFLINE ON EDGE)
   // ==========================================
   try {
-
-    const EMOJI_REGEX = new RegExp('\\p{Extended_Pictographic}', 'gu');
-    
-
-
-    let cleanedCount = 0;
-    const rootPath = process.cwd();
-    const targetFolder = path.join(rootPath, 'src');
-
-    const runCleaner = (filePath: string) => {
-        if (filePath.includes('node_modules') || filePath.includes('.next')) return;
-        if (!filePath.endsWith('.ts') && !filePath.endsWith('.tsx') && !filePath.endsWith('.js') && !filePath.endsWith('.jsx')) return;
-        
-        try {
-            const content = fs.readFileSync(filePath, 'utf8');
-            if (EMOJI_REGEX.test(content)) {
-                const cleaned = content.replace(EMOJI_REGEX, '');
-                fs.writeFileSync(filePath, cleaned, 'utf8');
-                cleanedCount++;
-            }
-        } catch(e: any) {}
-    };
-
-    // 1. Scan Root JS files
-    fs.readdirSync(rootPath).filter((f: string) => f.endsWith('.js')).forEach((f: string) => runCleaner(path.join(rootPath, f)));
-    // 2. Scan whole SRC folder recursively
-    walkDir(targetFolder, runCleaner);
-
-    results.push({ action: 'global_emoji_eradication', status: 'success', files_cleaned: cleanedCount });
+    results.push({ action: 'global_emoji_eradication', status: 'skipped', note: 'Disabled for Cloudflare compatibility' });
   } catch(err: any) {
     results.push({ action: 'global_emoji_eradication', status: 'failed', error: err.message });
   }

@@ -80,10 +80,10 @@ export async function GET(req: NextRequest) {
       .eq('type', 'check_out')
       .gte('created_at', startOfJakartaDay.toISOString());
 
-    const completedIds = (checkOuts || []).map(c => c.work_shift_id).filter(Boolean);
+    const completedIds = (checkOuts || []).map((c: any) => c.work_shift_id).filter(Boolean);
 
     // 5. CARI APAKAH MASIH ADA SHIFT PENDING YANG BELUM DISELESAIKAN HARI INI?
-    const pendingAssignment = activeCandidates.find(a => !completedIds.includes(a.work_shift_id));
+    const pendingAssignment = activeCandidates.find((a: any) => !completedIds.includes(a.work_shift_id));
 
     // BUKA GEMBOK JIKA DITEMUKAN ADA JADWAL HARI INI YANG BELUM DIKERJAKAN!
     const isUnlocked = !!pendingAssignment;

@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       .eq('type', 'check_out')
       .gte('created_at', todayObj.toISOString());
       
-    const completedShiftIds = (todayCheckOuts || []).map(c => c.work_shift_id).filter(Boolean);
+    const completedShiftIds = (todayCheckOuts || []).map((c: any) => c.work_shift_id).filter(Boolean);
 
     // 5. Hitung deteksi hari INI secara akurat untuk shift reguler
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];

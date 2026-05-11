@@ -15,11 +15,11 @@ export async function GET() {
     }
 
     // Ambil profiles terpisah lalu gabungkan manual
-    const customerIds = (reviews || []).map(r => r.customer_id).filter(Boolean);
+    const customerIds = (reviews || []).map((r: any) => r.customer_id).filter(Boolean);
     let profileMap: Record<string, any> = {};
 
     if (customerIds.length > 0) {
-      const { data: profiles } = await freshClient
+      const { data: profiles } = await supabaseAdmin
         .from('profiles')
         .select('user_id, full_name, avatar_url')
         .in('user_id', customerIds);
@@ -32,7 +32,7 @@ export async function GET() {
     }
 
     // Gabungkan manual
-    const result = (reviews || []).map(r => ({
+    const result = (reviews || []).map((r: any) => ({
       ...r,
       profiles: profileMap[r.customer_id] || { full_name: 'Anonim', avatar_url: null }
     }));

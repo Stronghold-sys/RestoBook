@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       
       const resend = new Resend(resendKey);
       const { error: emailErr } = await resend.emails.send({
-        from: 'RestoBook <onboarding@resend.dev>',
+        from: 'RestoBook <noreply@restobookid.my.id>',
         to: email,
         subject: 'Reset Password RestoBook',
         html: `Kode OTP Reset Password Anda: <b>${code}</b>. Berlaku 5 menit.`

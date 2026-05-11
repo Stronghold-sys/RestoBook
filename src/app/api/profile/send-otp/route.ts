@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     if (resendKey) {
       const resend = new Resend(resendKey);
       await resend.emails.send({
-        from: 'RestoBook Security <security@resend.dev>',
+        from: 'RestoBook Security <security@restobookid.my.id>',
         to: email,
         subject: 'Kode OTP Ganti Password RestoBook',
         html: `

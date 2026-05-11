@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       try {
         const resend = new Resend(resendKey);
         await resend.emails.send({
-          from: 'RestoBook <onboarding@resend.dev>',
+          from: 'RestoBook <noreply@restobookid.my.id>',
           to: email,
           subject: subject,
           html: emailHtml,

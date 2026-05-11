@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     if (process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
-          from: 'RestoBook <onboarding@resend.dev>',
+          from: 'RestoBook <noreply@restobookid.my.id>',
           to: email,
           subject: 'Selamat Bergabung di RestoBook!',
           html: `

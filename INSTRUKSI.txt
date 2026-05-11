@@ -1,66 +1,28 @@
-PANDUAN LENGKAP SETUP DOMAIN restobookid.my.id
-===============================================
+SETUP DUITKU PAYMENT GATEWAY - CALLBACK URL
+=============================================
 
-URUTAN YANG BENAR:
-1. Nameserver    → diubah di DOMAINESIA
-2. DNS Records   → ditambahkan di CLOUDFLARE (semua, termasuk Resend)
+URL CALLBACK UNTUK DUITKU:
+==========================
 
-================================================================
-TAHAP 1: UBAH NAMESERVER DI DOMAINESIA
-================================================================
-1. Login ke https://my.domainesia.com
-2. Klik "Domain" > pilih restobookid.my.id
-3. Klik "Nameservers" atau "Kelola Nameserver"
-4. Ganti dengan 2 nameserver dari Cloudflare:
-   (scroll ke bawah di halaman Cloudflare untuk melihat nameserver-nya)
-   Contoh:
-   - emma.ns.cloudflare.com
-   - john.ns.cloudflare.com
+Jika pakai domain pages.dev:
+  Callback URL : https://restobook.pages.dev/api/duitku/callback
+  Return URL   : https://restobook.pages.dev/customer/orders
+
+Jika pakai domain custom (setelah aktif):
+  Callback URL : https://restobookid.my.id/api/duitku/callback
+  Return URL   : https://restobookid.my.id/customer/orders
+
+PENJELASAN:
+- Callback URL = URL yang dipanggil Duitku secara otomatis saat 
+  status pembayaran berubah (sukses/gagal/expired). Ini server-to-server.
+- Return URL = URL yang ditampilkan ke pelanggan setelah selesai bayar.
+
+CARA SETTING DI DUITKU DASHBOARD:
+1. Login ke https://dashboard.duitku.com
+2. Menu Project > pilih project Anda
+3. Isi Callback URL dengan URL di atas
+4. Isi Return URL dengan URL di atas
 5. Simpan
-6. Kembali ke Cloudflare > klik "Done, check nameservers"
-7. Tunggu 5-30 menit sampai domain aktif di Cloudflare
 
-================================================================
-TAHAP 2: TAMBAH DNS RECORDS DI CLOUDFLARE (setelah aktif)
-================================================================
-Buka Cloudflare > pilih restobookid.my.id > DNS > Records
-
-RECORD 1 - Hubungkan domain ke website:
-- Type: CNAME
-- Name: @
-- Content: restobook.pages.dev
-- Proxy: Proxied (awan oranye)
-
-RECORD 2 - www subdomain:
-- Type: CNAME
-- Name: www
-- Content: restobook.pages.dev
-- Proxy: Proxied (awan oranye)
-
-================================================================
-TAHAP 3: DNS RESEND (di CLOUDFLARE juga, setelah aktif)
-================================================================
-Buka https://resend.com/domains > Add Domain > masukkan restobookid.my.id
-Resend akan berikan record, tambahkan di Cloudflare DNS:
-
-RECORD 3 - Resend SPF:
-- Type: TXT
-- Name: (copy dari Resend)
-- Content: (copy dari Resend)
-
-RECORD 4 - Resend DKIM:
-- Type: TXT
-- Name: (copy dari Resend, biasanya resend._domainkey)
-- Content: (copy dari Resend)
-
-Kembali ke Resend > klik Verify
-
-================================================================
-TAHAP 4: CUSTOM DOMAIN DI CLOUDFLARE PAGES
-================================================================
-1. Cloudflare > Workers & Pages > restobook > Custom domains
-2. Set up a custom domain > masukkan: restobookid.my.id
-3. Activate domain
-4. Ulangi untuk: www.restobookid.my.id
-
-SELESAI! Buka https://restobookid.my.id
+CATATAN: Anda perlu membuat file API route untuk callback dulu.
+Minta saya buatkan jika sudah siap.

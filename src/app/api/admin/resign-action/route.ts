@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 

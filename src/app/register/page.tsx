@@ -16,6 +16,7 @@ export default function RegisterPage() {
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     code: "",
   });
@@ -49,6 +50,7 @@ export default function RegisterPage() {
     if (!formData.fullName) return toast.error("Nama lengkap tidak boleh kosong");
     if (!formData.email) return toast.error("Email tidak boleh kosong");
     if (!formData.password || formData.password.length < 6) return toast.error("Password minimal 6 karakter");
+    if (formData.password !== formData.confirmPassword) return toast.error("Password dan konfirmasi password tidak cocok");
 
     setLoading(true);
     try {
@@ -166,6 +168,20 @@ export default function RegisterPage() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-5 w-5 text-muted" />
                     <input id="regEmail" title="Email" type="email" name="email" value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="budi@email.com" />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="regPassword" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
+                    <input id="regPassword" title="Password" type="password" name="password" value={formData.password} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Minimal 6 karakter" />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="regConfirmPassword" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Konfirmasi Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
+                    <input id="regConfirmPassword" title="Konfirmasi Password" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Ulangi password" />
                   </div>
                 </div>
                 <div>

@@ -4,6 +4,10 @@ import { md5 } from '@/lib/md5';
 
 export const runtime = 'edge'; // Changed to Edge runtime for Cloudflare compatibility
 
+export async function GET() {
+  return NextResponse.json({ message: 'Duitku Callback Endpoint is Active. Waiting for POST requests.' }, { status: 200 });
+}
+
 export async function POST(req: Request) {
   try {
     // Duitku Callback Payload

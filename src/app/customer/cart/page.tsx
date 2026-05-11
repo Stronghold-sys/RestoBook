@@ -326,7 +326,9 @@ export default function CartPage() {
         notes: finalNotes,
         status: "pending", 
         payment_method: dbPaymentMethod, 
-        payment_status: dbPaymentMethod === "non_cash" ? "paid" : "unpaid",
+        // Untuk sinkronisasi Duitku, pembayaran non-tunai akan berstatus 'unpaid' 
+        // hingga ada callback sukses dari Duitku.
+        payment_status: 'unpaid',
       }).select().single();
 
       if (orderError) throw orderError;
@@ -361,7 +363,7 @@ export default function CartPage() {
       clearCart();
       setShowPaymentModal(false);
       toast.success(paymentMethod === "non_cash" 
-        ? "Pembayaran non-tunai berhasil! Pesanan Anda telah dibayar lunas." 
+        ? "Pesanan berhasil dibuat! Menunggu verifikasi pembayaran Duitku." 
         : "Pesanan berhasil dibuat! Silakan bayar tunai di kasir."
       );
       router.push(`/customer/orders/${orderData.id}`);

@@ -351,7 +351,7 @@ export default function ProfileContent() {
           email: profile.email,
           phone: profile.phone,
           method: otpMethod,
-          type: "forgot_password",
+          type: "change_password",
           name: profile.full_name
         })
       });

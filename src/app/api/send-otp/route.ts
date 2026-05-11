@@ -63,13 +63,42 @@ export async function POST(req: Request) {
 
     if (dbError) return NextResponse.json({ error: 'Failed to save OTP' }, { status: 500 });
 
-    // 3. Pengiriman WhatsApp (Fonnte)
+    // 3. Tentukan Judul dan Pesan berdasarkan Tipe
+    let subject = 'Kode OTP RestoBook';
+    let actionText = 'memverifikasi aktivitas Anda';
+
+    if (type === 'registration') {
+      subject = 'Verifikasi Pendaftaran RestoBook';
+      actionText = 'memverifikasi pendaftaran akun baru Anda';
+    } else if (type === 'forgot_password') {
+      subject = 'Reset Password RestoBook';
+      actionText = 'mereset password akun Anda';
+    } else if (type === 'change_password') {
+      subject = 'Ganti Password RestoBook';
+      actionText = 'mengganti password akun Anda';
+    }
+
+    const waMessage = `*KODE OTP RESTOBOOK*\n\nHalo ${name},\n\nGunakan kode OTP berikut untuk ${actionText}:\n\n*${code}*\n\nKode ini bersifat RAHASIA dan hanya berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun.`;
+    
+    const emailHtml = `
+      <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h2 style="color: #ea580c;">Halo ${name},</h2>
+        <p>Anda telah meminta kode OTP untuk <strong>${actionText}</strong>.</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+           <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #111827;">${code}</span>
+        </div>
+        <p style="color: #ef4444; font-size: 14px;"><strong>PENTING:</strong> Kode ini bersifat RAHASIA dan hanya berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun, termasuk staf RestoBook.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #6b7280;">Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan email ini atau hubungi kami.</p>
+      </div>
+    `;
+
+    // 4. Pengiriman WhatsApp (Fonnte)
     if (method === 'whatsapp') {
       const formattedPhone = formatPhone(phone);
       if (!formattedPhone) return NextResponse.json({ error: 'Invalid phone format' }, { status: 400 });
 
       const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
-      const waMessage = `*KODE OTP RESTOBOOK*\n\nKode OTP Anda: *${code}*\nBerlaku 5 menit.`;
       
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
@@ -82,7 +111,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'OTP sent via WhatsApp' });
     }
 
-    // 4. Pengiriman Email (Resend)
+    // 5. Pengiriman Email (Resend)
     if (method === 'email' && email) {
       if (!resendKey) return NextResponse.json({ error: 'Email service key missing' }, { status: 500 });
       
@@ -90,8 +119,8 @@ export async function POST(req: Request) {
       const { error: emailErr } = await resend.emails.send({
         from: 'RestoBook <noreply@restobookid.my.id>',
         to: email,
-        subject: 'Reset Password RestoBook',
-        html: `Kode OTP Reset Password Anda: <b>${code}</b>. Berlaku 5 menit.`
+        subject: subject,
+        html: emailHtml
       });
 
       if (emailErr) return NextResponse.json({ error: 'Email delivery failed: ' + emailErr.message }, { status: 500 });

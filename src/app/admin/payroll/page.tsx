@@ -7,7 +7,7 @@ import {
   Receipt, Download, CheckCircle2, AlertCircle, ChevronDown,
   Search, Banknote, Plus, Minus, Filter, Loader2, Wallet,
   ArrowLeft, History, TrendingUp, FileSpreadsheet, Edit3, X, Save, Clock,
-  Shield, Calculator, XCircle, Calendar
+  Shield, Calculator, XCircle, Calendar, Mail
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, startOfYear } from "date-fns";
@@ -492,11 +492,16 @@ export default function AdvancedPayrollPage() {
              try {
                const monthName = format(new Date(selectedYear, selectedMonth - 1, 1), "MMMM yyyy", {locale: id});
                const cleanPhone = String(selectedProfile.phone).startsWith("0") ? "62" + String(selectedProfile.phone).slice(1) : String(selectedProfile.phone);
-               const msg = `Halo *${selectedProfile.full_name}*,\n\nGaji Anda periode *${monthName}* telah berhasil ditransfer!\n\n*Ringkasan:*\nGaji Bersih: *Rp ${finalNet.toLocaleString('id-ID')}*\nTanggal: ${format(new Date(), "dd/MM/yyyy HH:mm")}\n\nTerima kasih atas kerja keras Anda!`;
+               const msg = `Halo *${selectedProfile.full_name}*,\n\nGaji Anda periode *${monthName}* telah berhasil ditransfer!\n\n*Ringkasan:*\nGaji Bersih: *Rp ${finalNet.toLocaleString('id-ID')}*\nTanggal: ${format(new Date(), "dd/MM/yyyy HH:mm")}\n\nMohon periksa email Anda (${selectedProfile.email || 'yang terdaftar'}) untuk melihat rincian slip gaji lengkap.\n\nTerima kasih atas kerja keras Anda!`;
                
                const fData = new URLSearchParams(); fData.append('target', cleanPhone); fData.append('message', msg);
                fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': 'CpJ7L8M8TfwCVy2k2m6C' }, body: fData }).catch(e => {});
              } catch(e){}
+           }
+
+           // SEND EMAIL INSTANTLY
+           if (selectedProfile.email) {
+              handleSendEmailSlip(selectedProfile, false).catch(e => console.error(e));
            }
 
            toast.success("Gaji Terkunci & Berhasil Ditransfer!");
@@ -625,7 +630,7 @@ export default function AdvancedPayrollPage() {
       return result.charAt(0).toUpperCase() + result.slice(1);
     };
 
-    const handleDownloadSlip = async (emp: any) => {
+    const generatePayslipDoc = async (emp: any) => {
        const r = emp.currentRecord;
        const isFinal = !!r;
        const d = {
@@ -964,8 +969,70 @@ export default function AdvancedPayrollPage() {
        doc.setFontSize(8);
        doc.text("Manajer Operasional / HR", 195, signY + 4, { align: "right" });
 
-       doc.save(`Slip_Gaji_${d.name.replace(/\s+/g, '_')}_Format_Resmi.pdf`);
-       toast.success("Slip Gaji Format Resmi berhasil diunduh!");
+       return doc;
+    };
+
+    const handleDownloadSlip = async (emp: any) => {
+       try {
+          const doc = await generatePayslipDoc(emp);
+          doc.save(`Slip_Gaji_${emp.full_name.replace(/\s+/g, '_')}_Format_Resmi.pdf`);
+          toast.success("Slip Gaji Format Resmi berhasil diunduh!");
+       } catch (err) {
+          toast.error("Gagal membuat Slip Gaji PDF");
+       }
+    };
+
+    const handleSendEmailSlip = async (emp: any, showToast = true) => {
+       if (!emp.email) {
+          if (showToast) toast.error(`Karyawan ${emp.full_name} tidak memiliki email`);
+          return false;
+       }
+       const tId = showToast ? toast.loading(`Mengirim slip gaji ke ${emp.email}...`) : null;
+       try {
+          const doc = await generatePayslipDoc(emp);
+          const pdfBase64 = doc.output('datauristring');
+          const monthStr = format(new Date(selectedYear, selectedMonth - 1, 1), "MMMM yyyy", {locale: id});
+
+          const res = await fetch('/api/admin/send-payslip', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+                email: emp.email,
+                name: emp.full_name,
+                month: monthStr,
+                pdfBase64
+             })
+          });
+
+          if (!res.ok) throw new Error("Gagal kirim email");
+          if (tId) toast.success(`Slip gaji berhasil dikirim ke email ${emp.full_name}`, { id: tId });
+          return true;
+       } catch (err) {
+          if (tId) toast.error(`Gagal kirim ke email ${emp.email}`, { id: tId });
+          return false;
+       }
+    };
+
+    const handleBulkSendEmailSlip = async () => {
+       const paidEmps = employees.filter(e => e.currentRecord?.is_transferred && e.email);
+       if (paidEmps.length === 0) {
+          return toast.error("Tidak ada karyawan yang sudah ditransfer dan memiliki email.");
+       }
+       
+       triggerConfirm(
+          "Kirim Slip Gaji Masal?", 
+          `Sistem akan mengirimkan slip gaji via email ke ${paidEmps.length} karyawan yang gajinya sudah ditransfer.`,
+          "primary",
+          async () => {
+             const tId = toast.loading(`Mengirim ke ${paidEmps.length} karyawan...`);
+             let success = 0;
+             for (const emp of paidEmps) {
+                const res = await handleSendEmailSlip(emp, false);
+                if (res) success++;
+             }
+             toast.success(`Berhasil mengirim slip gaji ke ${success} dari ${paidEmps.length} karyawan.`, { id: tId });
+          }
+       );
     };
 
    const handleExportExcel = () => {
@@ -1311,6 +1378,9 @@ export default function AdvancedPayrollPage() {
             <button onClick={handleExportAllHistory} className="px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black text-xs uppercase flex items-center gap-2 shadow-lg shadow-slate-800/20 transition-all active:scale-95">
                <History className="w-4 h-4" /> Rekap Semua Riwayat
             </button>
+            <button onClick={handleBulkSendEmailSlip} className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase flex items-center gap-2 shadow-md transition-all active:scale-95">
+               <Mail className="w-4 h-4" /> Kirim Slip Masal
+            </button>
          </div>
       </header>
 
@@ -1456,13 +1526,22 @@ export default function AdvancedPayrollPage() {
                                                 </span>
                                              )}
                                           </div>
-                                          <button 
-                                             onClick={() => handleDownloadSlip(emp)}
-                                             title="Unduh Slip Gaji PDF"
-                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-900 text-slate-700 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 border border-slate-200 shadow-sm"
-                                          >
-                                             <Download className="w-3 h-3" /> Slip
-                                          </button>
+                                          <div className="flex items-center gap-1">
+                                             <button 
+                                                onClick={() => handleDownloadSlip(emp)}
+                                                title="Unduh Slip Gaji PDF"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-900 text-slate-700 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 border border-slate-200 shadow-sm"
+                                             >
+                                                <Download className="w-3 h-3" /> Slip
+                                             </button>
+                                             <button 
+                                                onClick={() => handleSendEmailSlip(emp)}
+                                                title="Kirim Ulang ke Email"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 border border-blue-200 shadow-sm"
+                                             >
+                                                <Mail className="w-3 h-3" /> Email
+                                             </button>
+                                          </div>
                                        </div>
                                     ) : (
                                        <div className="relative">

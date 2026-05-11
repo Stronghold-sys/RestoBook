@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -87,6 +87,33 @@ export default function OrderTrackingPage() {
       toast.error("Gagal memuat: " + e.message);
       router.push("/customer/orders");
     } finally { setLoading(false); }
+  };
+
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  const handlePayDuitku = async () => {
+    setLoadingPayment(true);
+    const pToast = toast.loading("Sedang menghubungi Duitku...");
+    try {
+      const res = await fetch('/api/payment/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+      
+      toast.success("Berhasil! Mengalihkan ke halaman pembayaran...", { id: pToast });
+      
+      // Redirect ke halaman Duitku
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Terjadi kesalahan sistem', { id: pToast });
+      setLoadingPayment(false);
+    }
   };
 
   const handleSendReview = async () => {
@@ -400,25 +427,21 @@ export default function OrderTrackingPage() {
               </motion.p>
             )}
             {!isPaid && order.payment_method === "non_cash" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 space-y-2">
-                <p className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center gap-2 font-medium">
-                  <Clock className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
-                  <span>Pembayaran sedang diverifikasi oleh kasir dan pesanan akan segera diproses setelah pembayaran terkonfirmasi.</span>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-3">
+                <button
+                  onClick={handlePayDuitku}
+                  disabled={loadingPayment}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {loadingPayment ? (
+                    <Clock className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>Bayar Online via Duitku <ArrowRight className="w-5 h-5" /></>
+                  )}
+                </button>
+                <p className="text-[11px] text-center text-muted">
+                  Pembayaran Anda dijamin aman. Status akan otomatis Lunas setelah berhasil.
                 </p>
-                {(() => {
-                  const createdAt = new Date(order.created_at).getTime();
-                  const now = new Date().getTime();
-                  const elapsedMinutes = (now - createdAt) / (1000 * 60);
-                  if (elapsedMinutes >= 5) {
-                    return (
-                      <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2 font-bold animate-pulse">
-                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                        <span>Pembayaran belum terkonfirmasi oleh kasir. Silakan hubungi kasir secara langsung untuk konfirmasi pembayaran.</span>
-                      </p>
-                    );
-                  }
-                  return null;
-                })()}
               </motion.div>
             )}
           </div>

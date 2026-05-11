@@ -136,6 +136,33 @@ export default function CashierOrders() {
     } catch (e: any) { toast.error(e.message); } finally { setProcessingPayment(false); }
   };
 
+  const handleGenerateDuitkuLink = async (orderId: string) => {
+    setProcessingPayment(true);
+    const loadingToast = toast.loading("Membuat tagihan Duitku...");
+    try {
+      const res = await fetch('/api/payment/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+      
+      if (data.paymentUrl) {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(data.paymentUrl);
+        toast.success("Link Duitku berhasil dicopy! Silakan berikan ke pelanggan.", { id: loadingToast, duration: 5000 });
+        // Optionally open in a small window so the Kasir can show the QR to the customer
+        window.open(data.paymentUrl, "DuitkuPayment", "width=450,height=700");
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Terjadi kesalahan sistem', { id: loadingToast });
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   const viewOrderDetails = async (order: any) => {
     setSelectedOrder(order);
     setShowReceipt(false);
@@ -355,9 +382,14 @@ export default function CashierOrders() {
                       )}
                       
                       {selectedOrder.payment_method === "non_cash" && selectedOrder.payment_status !== "paid" && (
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider animate-pulse">
-                          {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi & Proses</>}
-                        </motion.button>
+                        <>
+                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-[2] py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider animate-pulse">
+                            {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => handleGenerateDuitkuLink(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-blue-100 text-blue-700 rounded-2xl font-black hover:bg-blue-200 flex flex-col items-center justify-center gap-1 shadow-sm transition-all uppercase text-[10px] tracking-wider text-center">
+                            {processingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>QR Duitku</>}
+                          </motion.button>
+                        </>
                       )}
                       
                       {(selectedOrder.status === "confirmed" || selectedOrder.status === "processing") && (

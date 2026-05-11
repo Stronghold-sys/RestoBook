@@ -517,7 +517,7 @@ export default function ProfileContent() {
       </div>
 
       {/* Tabs Navigation for Employees */}
-      {profile.role !== "customer" && (
+      {profile.role !== "customer" && profile.role !== "admin" && (
         <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2 mb-8 shadow-inner max-w-lg">
           <button 
             onClick={() => setActiveTab("profile")}

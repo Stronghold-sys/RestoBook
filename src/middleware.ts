@@ -1,0 +1,53 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { updateSession } from './lib/supabase/middleware'
+
+export async function middleware(request: NextRequest) {
+  const { supabase, user, supabaseResponse } = await updateSession(request)
+  const path = request.nextUrl.pathname
+
+  const isAuthPath = path === '/login' || path === '/register' || path === '/forgot-password'
+  
+  // Jika sudah login tapi mengakses halaman auth
+  if (isAuthPath && user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single()
+    const role = profile?.role || 'customer'
+    return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url))
+  }
+
+  // Proteksi rute berdasarkan role
+  const isProtectedRoute = path.startsWith('/customer') || path.startsWith('/cashier') || path.startsWith('/admin')
+  
+  if (isProtectedRoute) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    const { data: profile } = await supabase.from('profiles').select('role, status_karyawan').eq('user_id', user.id).single()
+    const role = profile?.role
+    const status = profile?.status_karyawan
+
+    if (status && status !== 'aktif') {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL(`/login?suspended=${status}&pid=${profile?.id || ''}`, request.url))
+    }
+
+    if (path.startsWith('/customer') && role !== 'customer') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+    if (path.startsWith('/cashier') && role !== 'cashier') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+    if (path.startsWith('/admin') && role !== 'admin') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|api|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}

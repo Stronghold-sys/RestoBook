@@ -1,0 +1,14 @@
+[
+  {
+    "action": "create_bucket",
+    "status": "ok"
+  },
+  {
+    "action": "create_bucket_logos",
+    "status": "ok"
+  },
+  {
+    "action": "exec_sql_block",
+    "status": "ok"
+  }
+]

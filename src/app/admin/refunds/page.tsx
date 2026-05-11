@@ -1,0 +1,364 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, AlertCircle, RotateCcw, CheckCircle, XCircle, Search, HelpCircle, ArrowLeft, Calendar, User, CreditCard, Upload } from "lucide-react";
+import toast from "react-hot-toast";
+import Link from "next/link";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+
+export default function AdminRefundsPage() {
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Action Modals State
+  const [selectedRefund, setSelectedRefund] = useState<any>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+  const [adminNotes, setAdminNotes] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [proofUrl, setProofUrl] = useState("");
+  const [uploadingProof, setUploadingProof] = useState(false);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchRefundRequests();
+
+    const channel = supabase.channel("admin-refunds-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchRefundRequests();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => {
+    if (selectedRefund && actionType) {
+      if (actionType === "approve") {
+        const nominal = Number(selectedRefund.total_amount).toLocaleString("id-ID");
+        setAdminNotes(`Halo, dana sebesar Rp ${nominal} telah berhasil kami transfer balik ke rekening ${selectedRefund.refundDetails.bankName} Anda atas nama ${selectedRefund.refundDetails.accountName}. Terima kasih atas kesabaran Anda!`);
+      } else {
+        setAdminNotes("Halo, pengajuan refund Anda belum dapat kami setujui karena nomor rekening atau data bank yang diisikan tidak cocok/valid. Silakan ajukan kembali dengan data rekening yang benar atau hubungi layanan pelanggan kami.");
+      }
+    } else {
+      setAdminNotes("");
+    }
+  }, [selectedRefund, actionType]);
+
+  const fetchRefundRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, profiles!orders_customer_id_fkey(full_name, phone)")
+        .eq("status", "cancelled")
+        .eq("payment_method", "non_cash")
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Filter and parse refund JSON
+      const parsedRefunds = (data || []).map(order => {
+        try {
+          const parsed = JSON.parse(order.cancel_reason);
+          if (parsed && typeof parsed === "object" && "refundStatus" in parsed) {
+            return { ...order, refundDetails: parsed };
+          }
+        } catch (e) {}
+        return null;
+      }).filter(Boolean);
+
+      setOrders(parsedRefunds);
+    } catch (e: any) {
+      toast.error("Gagal mengambil data refund: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingProof(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("isProfile", "false");
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal mengunggah gambar");
+
+      setProofUrl(result.url);
+      toast.success("Bukti transfer refund berhasil diunggah!");
+    } catch (e: any) {
+      toast.error("Gagal mengunggah berkas: " + e.message);
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleProcessRefund = async () => {
+    if (!selectedRefund || !actionType) return;
+    setProcessing(true);
+    try {
+      const updatedDetails = {
+        ...selectedRefund.refundDetails,
+        refundStatus: actionType === "approve" ? "approved" : "rejected",
+        adminNotes: adminNotes,
+        proofUrl: actionType === "approve" ? proofUrl : "",
+        processedAt: new Date().toISOString()
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: selectedRefund.id,
+          action: 'process_refund',
+          refundDetails: updatedDetails
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Gagal memproses refund');
+
+      // Update local state instantly
+      setOrders(prev => prev.map(o => o.id === selectedRefund.id ? { ...o, refundDetails: updatedDetails } : o));
+
+      toast.success(actionType === "approve" ? "Refund berhasil disetujui!" : "Refund berhasil ditolak.");
+      setSelectedRefund(null);
+      setActionType(null);
+      setAdminNotes("");
+      setProofUrl("");
+    } catch (e: any) {
+      toast.error("Gagal memproses refund: " + e.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const filteredOrders = orders.filter(o => {
+    const statusMatch = filter === "all" || o.refundDetails.refundStatus === filter;
+    
+    const custName = o.profiles?.full_name?.toLowerCase() || "guest";
+    const bank = o.refundDetails.bankName?.toLowerCase() || "";
+    const orderId = o.id.split("-")[0].toLowerCase();
+    const searchMatch = custName.includes(searchQuery.toLowerCase()) || 
+                        bank.includes(searchQuery.toLowerCase()) || 
+                        orderId.includes(searchQuery.toLowerCase());
+
+    return statusMatch && searchMatch;
+  });
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      <button onClick={() => window.history.back()} className="flex items-center gap-2 text-sm font-bold text-muted hover:text-primary transition-all">
+        <ArrowLeft className="w-4 h-4" /> Kembali ke Halaman Sebelumnya
+      </button>
+
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-text-light dark:text-text-dark flex items-center gap-2">
+            <RotateCcw className="w-7 h-7 text-primary" /> Kelola Pengajuan Refund
+          </h1>
+          <p className="text-sm text-muted">Daftar pengajuan pengembalian dana transaksi cashless pelanggan</p>
+        </div>
+      </div>
+
+      {/* Stats Counter */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {[
+          { key: "all", label: "Total Pengajuan", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800", count: orders.length },
+          { key: "pending", label: "Menunggu", color: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800 animate-pulse", count: orders.filter(o => o.refundDetails.refundStatus === "pending").length },
+          { key: "approved", label: "Disetujui", color: "bg-green-50 text-green-700 dark:bg-green-900/20 border-green-100 dark:border-green-800", count: orders.filter(o => o.refundDetails.refundStatus === "approved").length },
+          { key: "rejected", label: "Ditolak", color: "bg-red-50 text-red-700 dark:bg-red-900/20 border-red-100 dark:border-red-800", count: orders.filter(o => o.refundDetails.refundStatus === "rejected").length },
+        ].map(stat => (
+          <button key={stat.key} onClick={() => setFilter(stat.key as any)} className={`p-4 rounded-2xl border text-left transition-all ${filter === stat.key ? "ring-2 ring-primary bg-card-light dark:bg-card-dark font-black shadow-md" : "bg-card-light dark:bg-card-dark hover:shadow-md"}`}>
+            <p className="text-xs text-muted font-bold uppercase tracking-wider">{stat.label}</p>
+            <p className="text-3xl font-black mt-2 flex items-center justify-between">
+              <span>{stat.count}</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-black ${stat.color}`}>{stat.label}</span>
+            </p>
+          </button>
+        ))}
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-card-light dark:bg-card-dark p-4 rounded-2xl border border-border-light dark:border-border-dark shadow-sm">
+        <div className="relative flex-1 w-full">
+          <Search className="w-5 h-5 text-muted absolute left-4 top-1/2 -translate-y-1/2" />
+          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Cari nama pelanggan, bank, atau ID pesanan..." className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-semibold text-text-light dark:text-text-dark" />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="bg-card-light dark:bg-card-dark rounded-2xl p-12 text-center border border-dashed border-border-light dark:border-border-dark flex flex-col items-center justify-center">
+          <AlertCircle className="w-12 h-12 text-muted mb-4" />
+          <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Tidak ada pengajuan refund</h3>
+          <p className="text-sm text-muted mt-1">Belum ada pengajuan refund baru dalam status filter ini.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredOrders.map(order => {
+            const details = order.refundDetails;
+            const isPending = details.refundStatus === "pending";
+            return (
+              <motion.div layout key={order.id} className="bg-card-light dark:bg-card-dark rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start border-b pb-3 border-border-light dark:border-border-dark">
+                    <div>
+                      <span className="text-[10px] uppercase font-black tracking-wider text-primary">ID Pesanan #{order.id.split("-")[0]}</span>
+                      <p className="text-sm font-black text-text-light dark:text-text-dark mt-0.5">{order.profiles?.full_name || "Walk-In Customer"}</p>
+                    </div>
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase ${
+                      details.refundStatus === "pending" ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/20" :
+                      details.refundStatus === "approved" ? "bg-green-50 text-green-700 dark:bg-green-950/20" :
+                      "bg-red-50 text-red-700 dark:bg-red-950/20"
+                    }`}>
+                      {details.refundStatus === "pending" ? "Menunggu" : details.refundStatus === "approved" ? "Disetujui" : "Ditolak"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-text-light dark:text-text-dark">
+                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Metode Refund</p>
+                      <p className="font-black text-sm text-primary flex items-center gap-1"><CreditCard className="w-4 h-4 shrink-0" /> {details.bankName}</p>
+                    </div>
+                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Nomor Rekening</p>
+                      <p className="font-black text-sm text-text-light dark:text-text-dark">{details.accountNo}</p>
+                    </div>
+                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark col-span-2">
+                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Atas Nama Pemilik</p>
+                      <p className="font-black text-sm text-text-light dark:text-text-dark uppercase">{details.accountName}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 p-3.5 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
+                    <p className="text-[10px] font-black uppercase text-muted tracking-widest">Alasan Pengaju</p>
+                    <p className="text-xs text-text-light dark:text-text-dark leading-relaxed font-medium">{details.refundReason}</p>
+                  </div>
+
+                  {details.adminNotes && (
+                    <div className="space-y-1.5 p-3.5 bg-primary/5 rounded-xl border border-primary/10">
+                      <p className="text-[10px] font-black uppercase text-primary tracking-widest">Catatan Admin</p>
+                      <p className="text-xs text-text-light dark:text-text-dark leading-relaxed font-medium">{details.adminNotes}</p>
+                    </div>
+                  )}
+
+                  {details.proofUrl && (
+                    <div className="space-y-1.5 p-3.5 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
+                      <p className="text-[10px] font-black uppercase text-muted tracking-widest">Bukti Transfer Refund</p>
+                      <a href={details.proofUrl} target="_blank" rel="noreferrer" className="block mt-1 relative rounded-lg overflow-hidden border border-border-light dark:border-border-dark group">
+                        <img src={details.proofUrl} alt="Bukti Transfer" className="object-cover w-full h-32 rounded-lg group-hover:scale-105 transition-all" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                          <span className="text-white text-[10px] font-black uppercase tracking-wider">Klik Untuk Memperbesar</span>
+                        </div>
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border-light dark:border-border-dark flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-muted tracking-wider block">Total Refund</span>
+                    <span className="text-lg font-black text-primary">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span>
+                  </div>
+
+                  {isPending && (
+                    <div className="flex gap-2">
+                      <button onClick={() => { setSelectedRefund(order); setActionType("reject"); }} className="px-4 py-2 bg-red-50 text-red-500 rounded-xl font-bold hover:bg-red-100 transition-all text-xs flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Tolak</button>
+                      <button onClick={() => { setSelectedRefund(order); setActionType("approve"); }} className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all text-xs flex items-center gap-1.5 shadow-lg shadow-green-500/10"><CheckCircle className="w-4 h-4" /> Setujui (ACC)</button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Process Action Modal */}
+      <AnimatePresence>
+        {selectedRefund && actionType && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setSelectedRefund(null); setActionType(null); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8 border border-border-light dark:border-border-dark">
+              <div className="flex items-center gap-4 mb-6">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${actionType === "approve" ? "bg-green-100 text-green-500" : "bg-red-100 text-red-500"}`}>
+                  {actionType === "approve" ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">{actionType === "approve" ? "Setujui Refund" : "Tolak Refund"}</h3>
+                  <p className="text-sm text-muted">Konfirmasi pemrosesan refund dana</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
+                  <p><span className="text-muted">ID Pesanan:</span> #{selectedRefund.id.split("-")[0]}</p>
+                  <p><span className="text-muted">Pelanggan:</span> {selectedRefund.profiles?.full_name}</p>
+                  <p><span className="text-muted">Total Dana:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
+                </div>
+
+                {actionType === "approve" && (
+                  <div>
+                    <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Unggah Bukti Transfer Refund</label>
+                    <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 text-center hover:border-primary transition-all bg-background-light dark:bg-background-dark">
+                      {uploadingProof ? (
+                        <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          <span className="text-xs text-muted font-bold">Sedang mengunggah bukti...</span>
+                        </div>
+                      ) : proofUrl ? (
+                        <div className="relative rounded-xl overflow-hidden max-h-40 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex justify-center items-center p-2">
+                          <img src={proofUrl} alt="Bukti Transfer" className="object-contain max-h-36 rounded-lg" />
+                          <button title="Hapus Bukti Transfer" type="button" onClick={() => setProofUrl("")} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow">
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center justify-center py-4 space-y-1.5">
+                          <Upload className="w-8 h-8 text-muted" />
+                          <span className="text-xs font-bold text-text-light dark:text-text-dark">Pilih berkas bukti transfer</span>
+                          <span className="text-[10px] text-muted font-semibold">PNG, JPG, JPEG atau PDF</span>
+                          <input type="file" accept="image/*,application/pdf" onChange={handleUploadProof} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Catatan {actionType === "approve" ? "Pencairan" : "Penolakan"}</label>
+                  <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} placeholder={actionType === "approve" ? "Contoh: Dana telah ditransfer balik ke rekening Anda." : "Contoh: Mohon maaf, data nomor rekening Anda tidak valid."} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark font-medium text-sm" />
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                  <button onClick={() => { setSelectedRefund(null); setActionType(null); }} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
+                  <button onClick={handleProcessRefund} disabled={processing} className={`flex-[2] py-3.5 text-white font-black rounded-xl transition-all shadow-lg uppercase text-xs flex items-center justify-center gap-2 ${
+                    actionType === "approve" ? "bg-green-500 hover:bg-green-600 shadow-green-500/10" : "bg-red-500 hover:bg-red-600 shadow-red-500/10"
+                  }`}>
+                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : actionType === "approve" ? "Ya, Setujui" : "Ya, Tolak"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

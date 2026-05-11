@@ -417,16 +417,20 @@ export default function OrderTrackingPage() {
             </div>
             <div className="flex justify-between items-center pt-3">
               <span className="text-sm text-muted">Status Pembayaran</span>
-              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg uppercase ${isPaid ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-500"}`}>
-                {isPaid ? "Lunas" : "Belum Bayar"}
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg uppercase ${
+                isPaid ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500" : 
+                isCancelled ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400" : 
+                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-500"
+              }`}>
+                {isPaid ? "Lunas" : isCancelled ? "Dibatalkan" : "Belum Bayar"}
               </span>
             </div>
-            {!isPaid && order.payment_method === "cash" && (
+            {!isPaid && !isCancelled && order.payment_method === "cash" && (
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800 mt-2">
                 Silakan lakukan pembayaran di kasir. Kwitansi akan muncul setelah pembayaran dikonfirmasi.
               </motion.p>
             )}
-            {!isPaid && order.payment_method === "non_cash" && (
+            {!isPaid && !isCancelled && order.payment_method === "non_cash" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-3">
                 <button
                   onClick={handlePayDuitku}

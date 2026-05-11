@@ -685,12 +685,11 @@ export default function AdminSettingsPage() {
                   crop={crop}
                   onChange={(c) => setCrop(c)}
                   onComplete={(c) => setCompletedCrop(c)}
-                  aspect={1}
                 >
                   <img src={upImg} onLoad={(e) => onLoad(e.currentTarget)} alt="Upload Preview" style={{ maxHeight: '60vh' }} />
                 </ReactCrop>
               </div>
-              <p className="text-xs text-muted mt-3 text-center">Gunakan aspek rasio 1:1 (Persegi) untuk hasil logo terbaik.</p>
+              <p className="text-xs text-muted mt-3 text-center">Tarik ujung kotak untuk memotong gambar sesuka hati Anda.</p>
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowCropModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
                   Batal

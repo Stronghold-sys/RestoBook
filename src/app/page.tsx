@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight } from "lucide-react";
+import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -74,10 +74,24 @@ export default function LandingPage() {
   const [resPhone, setResPhone] = useState<string>("021-12345678");
   const [resEmail, setResEmail] = useState<string>("info@restobook.com");
 
+  const [user, setUser] = useState<any>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const supabase = createClient();
 
   useEffect(() => { 
     initTheme(); 
+    
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single();
+        if (profile) {
+          setUser({ ...session.user, ...profile });
+        }
+      }
+    };
+    checkSession();
     
     // Fetch initial menu
     const fetchMenu = async () => {
@@ -211,10 +225,55 @@ export default function LandingPage() {
               <span className="text-xl font-bold text-text-light dark:text-text-dark">Resto<span className="text-primary">Book</span></span>
             </div>
             <div className="flex gap-4 items-center">
-              <Link href="/login" className="text-text-light dark:text-text-dark hover:text-primary transition-colors font-medium px-4">Masuk</Link>
-              <Link href="/register">
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-5 py-2.5 rounded-full font-medium shadow-lg hover:shadow-primary/30 transition-all">Daftar Sekarang</motion.button>
-              </Link>
+              {user ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="flex items-center gap-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark p-1 pr-4 rounded-full hover:shadow-md transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border border-primary/20">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-4 h-4 text-primary" />
+                      )}
+                    </div>
+                    <span className="font-bold text-sm text-text-light dark:text-text-dark truncate max-w-[100px] capitalize">{user.full_name?.split(' ')[0] || "User"}</span>
+                  </button>
+                  
+                  {/* Dropdown */}
+                  {showDropdown && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute right-0 mt-2 w-52 bg-white dark:bg-card-dark rounded-2xl shadow-xl border border-border-light dark:border-border-dark py-2 z-50 overflow-hidden"
+                    >
+                      <Link href={`/${user.role === 'customer' ? 'customer/menu' : user.role === 'kitchen' ? 'kitchen/queue' : user.role === 'cashier' ? 'cashier/transactions' : 'admin/dashboard'}`}>
+                        <button className="w-full text-left px-4 py-3 text-sm font-bold text-text-light dark:text-text-dark hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-3">
+                          <Utensils className="w-4 h-4" /> Masuk Dashboard
+                        </button>
+                      </Link>
+                      <button 
+                        onClick={async () => {
+                          await supabase.auth.signOut();
+                          setUser(null);
+                          setShowDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
+                      >
+                        <LogOut className="w-4 h-4" /> Keluar
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" className="text-text-light dark:text-text-dark hover:text-primary transition-colors font-medium px-4">Masuk</Link>
+                  <Link href="/register">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-5 py-2.5 rounded-full font-medium shadow-lg hover:shadow-primary/30 transition-all">Daftar Sekarang</motion.button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -251,9 +310,9 @@ export default function LandingPage() {
             </h1>
             <p className="text-lg text-muted mb-8 max-w-xl mx-auto lg:mx-0">Pesan makanan favorit Anda atau reservasi meja secara online dengan mudah dan cepat.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/login">
+              <Link href={user ? `/${user.role === 'customer' ? 'customer/menu' : user.role === 'kitchen' ? 'kitchen/queue' : user.role === 'cashier' ? 'cashier/transactions' : 'admin/dashboard'}` : "/login"}>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2">
-                  Pesan Sekarang <ArrowRight className="w-5 h-5" />
+                  {user ? "Masuk Dashboard" : "Pesan Sekarang"} <ArrowRight className="w-5 h-5" />
                 </motion.button>
               </Link>
               <a href="#menu">
@@ -368,11 +427,19 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mt-12">
-            <Link href="/register">
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-10 py-4 rounded-full font-bold text-lg shadow-xl shadow-primary/30 inline-flex items-center gap-2">
-                Daftar & Pesan Sekarang <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </Link>
+            {user ? (
+              <Link href={`/${user.role === 'customer' ? 'customer/menu' : user.role === 'kitchen' ? 'kitchen/queue' : user.role === 'cashier' ? 'cashier/transactions' : 'admin/dashboard'}`}>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-10 py-4 rounded-full font-bold text-lg shadow-xl shadow-primary/30 inline-flex items-center gap-2">
+                  Lanjut Pesan Sekarang <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            ) : (
+              <Link href="/register">
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-10 py-4 rounded-full font-bold text-lg shadow-xl shadow-primary/30 inline-flex items-center gap-2">
+                  Daftar & Pesan Sekarang <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            )}
           </motion.div>
         </div>
       </section>

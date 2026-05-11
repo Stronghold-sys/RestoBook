@@ -36,7 +36,7 @@ export async function GET() {
   // 1. CREATE BUCKET VIA API (FAST)
   try {
     const { data: buckets } = await supabaseAdmin.storage.listBuckets();
-    const exists = buckets?.find(b => b.id === 'profiles');
+    const exists = buckets?.find((b: any) => b.id === 'profiles');
 
     if (!exists) {
       await supabaseAdmin.storage.createBucket('profiles', {
@@ -49,7 +49,7 @@ export async function GET() {
       results.push({ action: 'check_bucket_profiles', status: 'exists' });
     }
 
-    const existsLogos = buckets?.find(b => b.id === 'logos');
+    const existsLogos = buckets?.find((b: any) => b.id === 'logos');
     if (!existsLogos) {
       await supabaseAdmin.storage.createBucket('logos', {
         public: true,

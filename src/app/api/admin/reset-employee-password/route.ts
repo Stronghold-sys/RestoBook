@@ -10,10 +10,14 @@ export async function POST(req: Request) {
     }
 
     // Initialize admin client to bypass RLS and update Auth
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+      return NextResponse.json({ error: 'Konfigurasi Server tidak lengkap' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(url, key);
 
     // 1. Update Password in Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(

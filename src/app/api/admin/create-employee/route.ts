@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   try {
     const { fullName, email, phone, role, employeeId, password, pdfBase64 } = await req.json();
 
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     // 1. Check if User already exists in Auth
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users.find(u => u.email === email);
+    const existingUser = existingUsers?.users.find((u: any) => u.email === email);
 
     let userId: string;
     let isNewUser = false;

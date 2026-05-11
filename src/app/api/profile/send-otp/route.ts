@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Use a simple in-memory store for demo/development purposes. 
-// In production, use Redis or a database table.
-const otpStore = new Map<string, { otp: string; expires: number }>();
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   try {
@@ -13,11 +8,26 @@ export async function POST(req: Request) {
     if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
-    otpStore.set(email, { otp, expires });
+    // Simpan OTP ke database (bukan in-memory Map yang tidak berfungsi di Edge)
+    const { error: dbError } = await supabaseAdmin.from('otp_codes').insert({
+      email,
+      code: otp,
+      type: 'change_password',
+      expires_at: expiresAt,
+      is_used: false
+    });
 
-    if (process.env.RESEND_API_KEY) {
+    if (dbError) {
+      console.error('DB Error saving OTP:', dbError);
+      return NextResponse.json({ error: 'Gagal menyimpan OTP' }, { status: 500 });
+    }
+
+    // Kirim email (inisialisasi Resend di runtime, bukan di top-level)
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey) {
+      const resend = new Resend(resendKey);
       await resend.emails.send({
         from: 'RestoBook Security <security@resend.dev>',
         to: email,
@@ -42,7 +52,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
-// Local store helper functions (unused exported values forbidden in Next.js route definitions)
-const getOTP = (email: string) => otpStore.get(email);
-const deleteOTP = (email: string) => otpStore.delete(email);

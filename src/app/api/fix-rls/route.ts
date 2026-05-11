@@ -1,23 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import fs from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function walkDir(dir: string, callback: (filePath: string) => void) {
-    if (!fs.existsSync(dir)) return;
-    fs.readdirSync(dir).forEach((f: string) => {
-        let dirPath = path.join(dir, f);
-        let isDirectory = fs.statSync(dirPath).isDirectory();
-        if (isDirectory) {
-            walkDir(dirPath, callback);
-        } else {
-            callback(path.join(dir, f));
-        }
-    });
-}
+
 
 
 export async function GET() {

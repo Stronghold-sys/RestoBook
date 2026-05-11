@@ -16,14 +16,7 @@ function formatPhone(phone: string) {
 
 export async function POST(req: Request) {
   try {
-    // 1. Validasi Env Vars di dalam runtime
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const resendKey = process.env.RESEND_API_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'Server configuration error: Supabase keys missing' }, { status: 500 });
-    }
 
     let body;
     try {

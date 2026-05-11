@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -9,15 +9,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
     }
 
-    // Initialize admin client to bypass RLS and update Auth
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!url || !key) {
-      return NextResponse.json({ error: 'Konfigurasi Server tidak lengkap' }, { status: 500 });
-    }
-
-    const supabaseAdmin = createClient(url, key);
 
     // 1. Update Password in Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(

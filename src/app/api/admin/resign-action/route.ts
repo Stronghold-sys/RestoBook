@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -6,14 +6,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, requestId, profileId, notes, employeeId, decision, suspensionTime } = body;
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!url || !key) {
-      return NextResponse.json({ error: "Server Configuration Error: Database keys not found" }, { status: 500 });
-    }
-
-    const supabaseAdmin = createClient(url, key);
 
     if (action === 'notify_submission') {
       const { phone, fullName, employeeId } = notes || {};

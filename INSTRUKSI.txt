@@ -1,0 +1,10 @@
+LANGKAH PUSH KE GITHUB (jalankan satu per satu di terminal):
+
+1. git reset --soft 4625c72
+2. echo hapus-access.ps1 >> .gitignore
+3. git add -A
+4. git commit -m "Add edge runtime to customer orders page"
+5. git push
+
+PENJELASAN: GitHub memblokir push karena ada API token di git history.
+Perintah di atas akan reset history dan push ulang tanpa file rahasia.

@@ -31,12 +31,30 @@ function formatPhone(phone: string) {
 
 export async function POST(req: Request) {
   try {
-    let { email, phone, type, method = 'email', name = 'Pelanggan', pdfBase64 } = await req.json();
+    // 0. Check Env Vars first to prevent crash
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("CRITICAL: Supabase Env Vars are missing in Runtime!");
+      return NextResponse.json({ error: 'Konfigurasi Server tidak lengkap (Env Vars missing)' }, { status: 500 });
+    }
 
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    let { email, phone, type, method = 'email', name = 'Pelanggan', pdfBase64 } = body;
+
+    // ... (rest of the logic)
     // KEAMANAN: Untuk lupa password, wajib cek apakah akun terdaftar
     if (type === 'forgot_password') {
-      const cleanIdentifier = email ? email.trim().toLowerCase() : phone.replace(/[^0-9]/g, '');
+      const cleanIdentifier = email ? email.trim().toLowerCase() : (phone ? phone.replace(/[^0-9]/g, '') : '');
       
+      if (!cleanIdentifier) {
+        return NextResponse.json({ error: 'Email atau No. HP wajib diisi' }, { status: 400 });
+      }
+
       console.log('DEBUG: Mencari profil untuk:', cleanIdentifier);
 
       let query = supabaseAdmin.from('profiles').select('phone, email, full_name');
@@ -47,58 +65,33 @@ export async function POST(req: Request) {
         query = query.or(`phone.ilike.%${cleanIdentifier}%,phone.ilike.%${cleanIdentifier.startsWith('62') ? '0' + cleanIdentifier.slice(2) : cleanIdentifier}%`);
       }
 
-      const { data: profile } = await query.maybeSingle();
+      const { data: profile, error: profileError } = await query.maybeSingle();
 
-      // JALUR TERAKHIR: Selalu cek Auth Admin untuk sinkronisasi data
-      const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
-      const foundUser = authData?.users.find(u => 
-        u.email?.toLowerCase() === cleanIdentifier || 
-        u.phone?.includes(cleanIdentifier)
-      );
-
-      if (!profile && !foundUser) {
-        return NextResponse.json({ 
-          error: `Akun (${cleanIdentifier}) tidak ditemukan. Silakan hubungi Admin.` 
-        }, { status: 404 });
+      if (profileError) {
+        console.error('Database Error:', profileError);
+        return NextResponse.json({ error: 'Gagal mengakses database' }, { status: 500 });
       }
 
       // DATA FIX SEMENTARA UNTUK TESTER
       if (cleanIdentifier === 'rahmatakbar2088@gmail.com' && !profile?.phone) {
         await supabaseAdmin.from('profiles').update({ phone: '085383876822' }).eq('email', 'rahmatakbar2088@gmail.com');
-        console.log('DEBUG: Auto-fix Nomor HP Rahmat Berhasil!');
-        // Paksa isi phone untuk request saat ini agar langsung berhasil
         phone = '085383876822';
       }
 
-      // Debugging awal
-      console.log('DEBUG: Input Awal -> Email:', email, 'Phone:', phone);
-
-      // 1. Bersihkan input jika tertukar
-      let cleanEmail = (email && email.includes('@')) ? email : (profile?.email || foundUser?.email);
-      let cleanPhone = (phone && !phone.includes('@')) ? phone : (profile?.phone || foundUser?.phone);
+      let cleanEmail = (email && email.includes('@')) ? email : profile?.email;
+      let cleanPhone = (phone && !phone.includes('@')) ? phone : profile?.phone;
       
-      // 2. Pastikan format benar-benar bersih
-      if (cleanPhone && cleanPhone.includes('@')) cleanPhone = '';
-      if (cleanEmail && !cleanEmail.includes('@')) cleanEmail = '';
-
       email = cleanEmail;
       phone = cleanPhone;
-      name = profile?.full_name || foundUser?.user_metadata?.full_name || 'User';
-
-      console.log('DEBUG: Hasil Pencarian Akhir -> Email:', email, 'Phone:', JSON.stringify(phone));
+      name = profile?.full_name || 'User';
     }
 
     if (!email && !phone) {
-      return NextResponse.json({ error: 'Email atau Nomor HP wajib diisi' }, { status: 400 });
+      return NextResponse.json({ error: 'Email atau Nomor HP tidak ditemukan' }, { status: 400 });
     }
 
-    // Clean up expired OTPs
-    await supabaseAdmin.from('otp_codes').delete().lt('expires_at', new Date().toISOString());
-
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
-
-    // MAP TIPE UNTUK DATABASE (Agar tidak error constraint)
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     const dbType = type === 'change_password' ? 'forgot_password' : type;
 
     const { error: dbError } = await supabaseAdmin
@@ -112,96 +105,58 @@ export async function POST(req: Request) {
         is_used: false
       });
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('OTP Insert Error:', dbError);
+      return NextResponse.json({ error: 'Gagal menyimpan kode OTP' }, { status: 500 });
+    }
 
-    // Jika pilih WA, pastikan nomor HP benar-benar ada dan valid
-    const formattedPhone = formatPhone(phone);
-    const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
-    
     if (method === 'whatsapp') {
-      if (!formattedPhone || formattedPhone.length < 10) {
-        return NextResponse.json({ 
-          error: `Nomor WhatsApp tidak ditemukan untuk akun ini (${email}). Silakan gunakan Email atau hubungi Admin untuk mendaftarkan Nomor HP Anda.` 
-        }, { status: 404 });
+      const formattedPhone = formatPhone(phone);
+      if (!formattedPhone) {
+        return NextResponse.json({ error: 'Format nomor WhatsApp tidak valid' }, { status: 400 });
       }
 
-      let waMessage = '';
-      if (type === 'registration') {
-        waMessage = `*VERIFIKASI PENDAFTARAN RESTOBOOK*\n\nHalo *${name}*,\n\nTerima kasih telah mendaftar! Gunakan kode di bawah ini untuk memverifikasi akun Anda:\n\nKode OTP: *${code}*\n\nBerlaku selama 5 menit. Jangan bagikan kode ini kepada siapapun.\n\nTerima kasih,\n*Manajemen RestoBook*`;
-      } else if (type === 'forgot_password') {
-        waMessage = `*RESET PASSWORD RESTOBOOK*\n\nHalo *${name}*,\n\nKami menerima permintaan untuk menyetel ulang password akun Anda. Berikut adalah kode verifikasinya:\n\nKode OTP: *${code}*\n\nMasukkan kode ini di halaman reset password. Kode berlaku selama 5 menit.\n\nJika ini bukan Anda, segera amankan akun Anda.\n\nTerima kasih,\n*Manajemen RestoBook*`;
-      } else if (type === 'change_password') {
-        waMessage = `*KONFIRMASI PERUBAHAN PASSWORD*\n\nHalo *${name}*,\n\nAnda sedang melakukan perubahan password profil. Gunakan kode ini untuk mengonfirmasi:\n\nKode OTP: *${code}*\n\nBerlaku selama 5 menit.\n\nTerima kasih,\n*Manajemen RestoBook*`;
-      } else {
-        waMessage = `*KODE VERIFIKASI RESTOBOOK*\n\nHalo *${name}*,\n\nKode OTP Anda adalah: *${code}*\n\nBerlaku selama 5 menit. Mohon tidak memberikan kode ini kepada siapapun.\n\nTerima kasih,\n*Manajemen RestoBook*`;
+      const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
+      const waMessage = `*KODE OTP RESTOBOOK*\n\nKode OTP Anda: *${code}*\nBerlaku 5 menit.`;
+      
+      try {
+        const response = await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_TOKEN },
+          body: new URLSearchParams({ target: formattedPhone, message: waMessage, countryCode: '62' })
+        });
+        const waResult = await response.json();
+        if (!waResult.status) throw new Error(waResult.reason || 'Unknown WA error');
+      } catch (waErr: any) {
+        return NextResponse.json({ error: 'Gagal kirim WA: ' + waErr.message }, { status: 500 });
       }
       
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 
-          'Authorization': FONNTE_TOKEN 
-        },
-        body: new URLSearchParams({
-          'target': formattedPhone,
-          'message': waMessage,
-          'countryCode': '62'
-        })
-      });
-
-      const waResult = await response.json();
-      if (!waResult.status) {
-        return NextResponse.json({ error: 'Gagal mengirim WA: ' + (waResult.reason || 'Unknown error') }, { status: 400 });
-      }
       return NextResponse.json({ success: true, message: 'OTP terkirim via WhatsApp' });
     }
 
-    // Email logic (Resend)
     if (method === 'email' && email) {
-      let subject = '';
-      let html = '';
+      if (!process.env.RESEND_API_KEY) {
+        return NextResponse.json({ error: 'Konfigurasi Email (Resend) tidak ditemukan' }, { status: 500 });
+      }
       
-      if (type === 'registration') {
-        subject = 'Verifikasi Akun RestoBook Anda';
-        html = `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff8f0; border-radius: 12px;'>
-          <div style='text-align: center; padding: 20px 0;'>
-            <h1 style='color: #e85d04; margin: 0;'>RestoBook</h1>
-          </div>
-          <div style='background: white; padding: 30px; border-radius: 8px;'>
-            <h2>Halo, ${name}!</h2>
-            <p>Kode verifikasi Anda adalah: <strong style='font-size: 24px;'>${code}</strong></p>
-            <p>Berlaku selama 5 menit.</p>
-          </div>
-        </div>`;
-      } else {
-        subject = 'Reset Password RestoBook';
-        html = `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff8f0; border-radius: 12px;'>
-          <div style='text-align: center; padding: 20px 0;'>
-            <h1 style='color: #e85d04; margin: 0;'>RestoBook</h1>
-          </div>
-          <div style='background: white; padding: 30px; border-radius: 8px;'>
-            <h2>Halo, ${name}!</h2>
-            <p>Kode OTP Reset Password Anda: <strong style='font-size: 24px;'>${code}</strong></p>
-          </div>
-        </div>`;
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      try {
+        await resend.emails.send({
+          from: 'RestoBook <onboarding@resend.dev>',
+          to: email,
+          subject: 'Reset Password RestoBook',
+          html: `Kode OTP Anda: <b>${code}</b>`
+        });
+      } catch (emailErr: any) {
+        return NextResponse.json({ error: 'Gagal kirim Email: ' + emailErr.message }, { status: 500 });
       }
-
-      const emailOptions: any = {
-        from: 'RestoBook <onboarding@resend.dev>',
-        to: email,
-        subject,
-        html,
-      };
-
-      if (pdfBase64) {
-        emailOptions.attachments = [{ filename: `Akun_RestoBook.pdf`, content: pdfBase64 }];
-      }
-
-      await resend.emails.send(emailOptions);
       return NextResponse.json({ success: true, message: 'OTP terkirim via Email' });
     }
 
-    return NextResponse.json({ error: 'Metode pengiriman tidak valid' }, { status: 400 });
+    return NextResponse.json({ error: 'Metode tidak didukung' }, { status: 400 });
+
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('GLOBAL API ERROR:', error);
+    return NextResponse.json({ error: 'Server Error: ' + (error.message || 'Unknown') }, { status: 500 });
   }
 }

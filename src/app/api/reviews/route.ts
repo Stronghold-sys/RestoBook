@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET() {
   try {
-    // Buat client baru setiap request untuk menghindari schema cache
-    const freshClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
-        db: { schema: 'public' }
-      }
-    );
-
-    // Ambil reviews dulu
-    const { data: reviews, error: revErr } = await freshClient
+    const { data: reviews, error: revErr } = await supabaseAdmin
       .from('reviews')
       .select('id, customer_id, order_id, rating, comment, is_published, created_at')
+      .eq('is_published', true)
       .order('created_at', { ascending: false });
 
     if (revErr) {

@@ -1,18 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    // MENGGUNAKAN SERVICE ROLE KEY (MATA SUPER BYPASS RLS)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = supabaseAdmin;
 
     console.log("API ADMIN SHIFTS INVOKED! BYPASSING RLS...");
 
@@ -28,17 +22,6 @@ export async function GET() {
         )
       `)
       .order('created_at', { ascending: false });
-
-    // DUMP THE RAW RESPONSE TO A LOG FILE IMMEDIATELY
-    try {
-       fs.writeFileSync(path.join(process.cwd(), 'DEBUG_GET_ALL_SHIFTS.log'), JSON.stringify({
-          status: 'fetched',
-          timestamp: new Date().toISOString(),
-          count: data?.length || 0,
-          error: error || null,
-          first_item: data?.[0] || null
-       }, null, 2));
-    } catch(e) {}
 
     if (error) {
        console.error("Super Join Error:", error);

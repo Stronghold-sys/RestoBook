@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -8,11 +8,6 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'User ID diperlukan' }, { status: 400 });
     }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     // 1. Ambil data profil untuk mendapatkan user_id (UUID Auth)
     const { data: profile, error: getError } = await supabaseAdmin

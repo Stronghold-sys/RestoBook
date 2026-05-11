@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cf-deploy": "npm run build && npx wrangler pages deploy .next"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.9",

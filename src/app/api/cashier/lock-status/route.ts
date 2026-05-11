@@ -54,11 +54,15 @@ export async function GET(req: NextRequest) {
       .select('*, work_shifts(*)')
       .eq('profile_id', profileRaw.id);
 
-    // 3. Hitung kandidat shift aktif hari ini
-    const todayObj = new Date();
-    const todayISOStr = todayObj.toLocaleDateString('sv-SE');
+    // 3. Hitung kandidat shift aktif hari ini (PENTING: Gunakan Waktu Jakarta)
+    const jakartaTime = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+    const todayISOStr = jakartaTime.toLocaleDateString('sv-SE'); // Format YYYY-MM-DD
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const todayIndoName = dayNames[todayObj.getDay()];
+    const todayIndoName = dayNames[jakartaTime.getDay()];
+
+    // Reset todayObj untuk filter created_at nanti
+    const startOfJakartaDay = new Date(jakartaTime);
+    startOfJakartaDay.setHours(0,0,0,0);
 
     const activeCandidates = (assignments || []).filter((a: any) => {
        if (a.substitute_date === todayISOStr) return true;
@@ -69,13 +73,12 @@ export async function GET(req: NextRequest) {
     });
 
     // 4. Tarik semua checkout hari ini
-    todayObj.setHours(0,0,0,0);
     const { data: checkOuts } = await supabaseAdmin
       .from('attendance')
       .select('work_shift_id')
       .eq('user_id', userId)
       .eq('type', 'check_out')
-      .gte('created_at', todayObj.toISOString());
+      .gte('created_at', startOfJakartaDay.toISOString());
 
     const completedIds = (checkOuts || []).map(c => c.work_shift_id).filter(Boolean);
 

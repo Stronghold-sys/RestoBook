@@ -419,7 +419,7 @@ export default function ProfileContent() {
         effective_date: effectiveDate,
         reason: reason,
         additional_notes: additionalNotes,
-        status: "Menunggu Konfirmasi"
+        status: "Menunggu Konfirmasi" // Pastikan ini sesuai dengan CONSTRAINT di DB
       });
 
       if (error) throw error;

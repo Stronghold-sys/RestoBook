@@ -46,6 +46,9 @@ export async function GET(req: NextRequest) {
 
     // 2. Tarik SEMUA penugasan hari ini
     const { data: profileRaw } = await supabaseAdmin.from('profiles').select('id').eq('user_id', userId).single();
+    if (!profileRaw) {
+      return NextResponse.json({ hasOpenShift: false, error: 'Profile not found' });
+    }
     const { data: assignments } = await supabaseAdmin
       .from('work_shift_assignments')
       .select('*, work_shifts(*)')

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { md5 } from '@/lib/md5';
 import { Resend } from 'resend';
 
 export const runtime = 'edge';

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { md5 } from '@/lib/md5';
 import { Resend } from 'resend';
-import { jsPDF } from 'jspdf';
 
 export const runtime = 'edge';
 

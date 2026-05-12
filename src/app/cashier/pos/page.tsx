@@ -508,6 +508,35 @@ export default function POSPage() {
     }
   };
 
+  const handleCancelOnlineOrder = async () => {
+    if (!foundOrder) return;
+    const confirmCancel = window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?");
+    if (!confirmCancel) return;
+
+    setSearchingOrder(true);
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId: foundOrder.id, 
+          action: 'update_status', 
+          status: 'cancelled',
+          reason: 'Dibatalkan oleh Kasir POS'
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal membatalkan pesanan");
+
+      toast.success("Pesanan online berhasil dibatalkan.");
+      setFoundOrder(null);
+    } catch (e: any) {
+      toast.error("Gagal: " + e.message);
+    } finally {
+      setSearchingOrder(false);
+    }
+  };
+
   // --- PAYMENT LOGIC ---
   const handleCheckout = () => {
     if (!isRestaurantOpen(openingTime, closingTime)) {
@@ -911,22 +940,30 @@ export default function POSPage() {
                   </div>
                   <div className="flex gap-2">
                     {foundOrder.status === "pending" && (
-                      <button 
-                        onClick={() => {
-                          if (!isRestaurantOpen(openingTime, closingTime)) {
-                            return toast.error("Tidak dapat memproses pesanan online! Restoran sedang TUTUP.");
-                          }
-                          handleDirectProcessOrder();
-                        }} 
-                        disabled={!isRestaurantOpen(openingTime, closingTime)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                          isRestaurantOpen(openingTime, closingTime)
-                            ? "bg-green-500 hover:bg-green-600 text-white"
-                            : "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
-                        }`}
-                      >
-                        Proses Langsung
-                      </button>
+                      <>
+                        <button 
+                          onClick={() => {
+                            if (!isRestaurantOpen(openingTime, closingTime)) {
+                              return toast.error("Tidak dapat memproses pesanan online! Restoran sedang TUTUP.");
+                            }
+                            handleDirectProcessOrder();
+                          }} 
+                          disabled={!isRestaurantOpen(openingTime, closingTime)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
+                            isRestaurantOpen(openingTime, closingTime)
+                              ? "bg-green-500 hover:bg-green-600 text-white"
+                              : "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          Proses
+                        </button>
+                        <button 
+                          onClick={handleCancelOnlineOrder}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
+                        >
+                          Batal
+                        </button>
+                      </>
                     )}
                     <button 
                       onClick={() => {
@@ -942,7 +979,7 @@ export default function POSPage() {
                           : "bg-gray-300 dark:bg-gray-800 border-transparent text-gray-500 cursor-not-allowed"
                       }`}
                     >
-                      Muat ke Kasir
+                      Muat
                     </button>
                   </div>
                 </div>
@@ -1436,21 +1473,10 @@ export default function POSPage() {
         {showReceipts && completedOrder && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="relative w-full max-w-4xl flex flex-col md:flex-row gap-6">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="relative w-full max-w-md">
               
-              {/* Struk Kasir */}
-              <div className="flex-1 bg-white rounded-3xl p-6 shadow-2xl relative">
-                <div className="absolute -top-4 -left-4 bg-primary text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg">Arsip Kasir</div>
-                <div className="h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
-                  <Receipt ref={receiptKasirRef} order={completedOrder} orderItems={completedOrder.order_items.map((i:any)=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={true} />
-                </div>
-                <button onClick={() => handlePrint(receiptKasirRef)} className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800">
-                  <Printer className="w-4 h-4" /> Cetak Struk Kasir
-                </button>
-              </div>
-
-              {/* Struk Pelanggan */}
-              <div className="flex-1 bg-white rounded-3xl p-6 shadow-2xl relative">
+              {/* Struk Pelanggan (Satu saja sesuai request) */}
+              <div className="bg-white rounded-3xl p-6 shadow-2xl relative">
                 <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg">Untuk Pelanggan</div>
                 <div className="h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
                   <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i:any)=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />

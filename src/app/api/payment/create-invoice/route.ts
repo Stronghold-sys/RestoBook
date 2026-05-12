@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { md5 } from '@/lib/md5';
 
 export const runtime = 'edge';
 
@@ -126,16 +127,13 @@ export async function POST(req: NextRequest) {
       ? `Pesanan: ${itemNames.join(', ')}`.substring(0, 255) 
       : `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`;
 
-    // === DUITKU POP API ===
-    const timestamp = String(Date.now());
-    // Signature: merchantCode + timestamp + merchantKey
-    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
-
+    // === DUITKU API ===
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     // Suffix Order ID untuk Sandbox agar tidak duplikat saat testing berulang
+    const timestamp = String(Date.now());
     const finalOrderId = isSandbox ? `${merchantOrderId}-${timestamp.substring(8)}` : merchantOrderId;
 
-    const payload = {
+    const payload: any = {
       merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
       merchantOrderId: finalOrderId,
@@ -146,7 +144,7 @@ export async function POST(req: NextRequest) {
       customerVaName: `${customerDetail.firstName} ${customerDetail.lastName}`.trim().substring(0, 30),
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      paymentMethod: paymentMethod || "", 
+      paymentMethod: paymentMethod || "",
       customerDetail: {
         firstName: customerDetail.firstName,
         lastName: customerDetail.lastName,
@@ -158,21 +156,36 @@ export async function POST(req: NextRequest) {
       expiryPeriod: 60
     };
 
-    // Duitku Pop API (Inquiry) - Gunakan URL Sandbox jika isSandbox true
-    const url = isSandbox 
-      ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
-      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+    let url: string;
+    let fetchOptions: any;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'merchantcode': DUITKU_MERCHANT_CODE,
-        'signature': signature,
-        'timestamp': timestamp
-      },
-      body: JSON.stringify(payload)
-    });
+    if (isSandbox) {
+      // Sandbox: MD5 signature in body
+      const signatureString = `${DUITKU_MERCHANT_CODE}${finalOrderId}${paymentAmount}${DUITKU_API_KEY}`;
+      payload.signature = md5(signatureString);
+      url = 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry';
+      fetchOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      };
+    } else {
+      // Production: SHA256 signature in headers
+      const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
+      url = 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+      fetchOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'merchantcode': DUITKU_MERCHANT_CODE,
+          'signature': signature,
+          'timestamp': timestamp
+        },
+        body: JSON.stringify(payload)
+      };
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     let data;
     const responseText = await response.text();

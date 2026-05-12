@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const paymentAmount = Math.floor(order.total_amount);
     const merchantOrderId = order.id;
 
-    // Default Customer Detail
+    // Default Customer Detail Shell
     let customerDetail = {
       firstName: 'Pelanggan',
       lastName: '',
@@ -56,48 +56,57 @@ export async function POST(req: NextRequest) {
       phoneNumber: '081234567890'
     };
 
-    // 1. Prioritaskan data dari Profile (Jika Pelanggan Terdaftar)
-    // Kita sudah join di query awal (profiles(*))
-    const profile = order.profiles;
+    // 1. Prioritas Profil (Robust handle for array/object response structure)
+    const rawProfile = order.profiles;
+    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+    
     if (profile) {
       if (profile.full_name) {
-        const names = profile.full_name.trim().split(' ');
+        const names = profile.full_name.trim().split(/\s+/);
         customerDetail.firstName = names[0];
-        customerDetail.lastName = names.slice(1).join(' ') || names[0];
+        customerDetail.lastName = names.slice(1).join(' ') || '';
       }
       if (profile.email) customerDetail.email = profile.email;
       if (profile.phone) customerDetail.phoneNumber = profile.phone;
     } 
-    // 2. Fallback ke data dari Notes (Untuk Guest/Walk-in dari POS)
-    else if (order.notes) {
-      if (order.notes.includes('[NAMA: ')) {
-        const extractedName = order.notes.split('[NAMA: ')[1].split(']')[0];
-        if (extractedName) {
-           const names = extractedName.trim().split(' ');
-           customerDetail.firstName = names[0];
-           customerDetail.lastName = names.slice(1).join(' ') || names[0];
-        }
+    
+    // 2. Parser Fallback Data dari Notes (Untuk Walk-in POS)
+    if (order.notes) {
+      const nameMatch = order.notes.match(/\[NAMA:\s*(.*?)\]/i);
+      if (nameMatch && nameMatch[1] && nameMatch[1].trim().toLowerCase() !== 'guest') {
+         const cleanName = nameMatch[1].trim();
+         const names = cleanName.split(/\s+/);
+         customerDetail.firstName = names[0];
+         customerDetail.lastName = names.slice(1).join(' ') || '';
+      } else if (nameMatch && nameMatch[1].trim().toLowerCase() === 'guest') {
+         customerDetail.firstName = 'Guest';
+         customerDetail.lastName = ''; // Supaya tidak jadi "Guest Guest"
       }
-      if (order.notes.includes('[EMAIL: ')) {
-        const extractedEmail = order.notes.split('[EMAIL: ')[1].split(']')[0];
-        if (extractedEmail) customerDetail.email = extractedEmail;
-      }
-      if (order.notes.includes('[TELP: ')) {
-        const extractedTelp = order.notes.split('[TELP: ')[1].split(']')[0];
-        if (extractedTelp) customerDetail.phoneNumber = extractedTelp;
-      }
+
+      const emailMatch = order.notes.match(/\[EMAIL:\s*(.*?)\]/i);
+      if (emailMatch && emailMatch[1]) customerDetail.email = emailMatch[1].trim();
+
+      const telpMatch = order.notes.match(/\[TELP:\s*(.*?)\]/i);
+      if (telpMatch && telpMatch[1]) customerDetail.phoneNumber = telpMatch[1].trim();
     }
 
-    // ITEM DETAILS MAPPING
+    // === ITEM DETAILS MAPPING RIGOROUSLY ===
     const itemDetails: any[] = [];
     let itemsSum = 0;
     const itemNames: string[] = [];
 
-    if (order.order_items && order.order_items.length > 0) {
-      order.order_items.forEach((item: any) => {
-        const name = item.menu_items?.name || 'Item Pesanan';
+    const rawItems = order.order_items;
+    const orderItems = Array.isArray(rawItems) ? rawItems : (rawItems ? [rawItems] : []);
+
+    if (orderItems.length > 0) {
+      orderItems.forEach((item: any) => {
+        if (!item) return;
+        const rawMenu = item.menu_items;
+        const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
+        
+        const name = menuItem?.name || 'Item Menu';
         const price = Math.floor(item.price);
-        const qty = item.quantity;
+        const qty = Number(item.quantity) || 1;
         
         itemDetails.push({
           name: name,
@@ -110,31 +119,40 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Handle discrepancy (tax, service charge, or discount)
+    // Sinkronisasi diskon/biaya lain (Discrepancy checker)
     const discrepancy = paymentAmount - itemsSum;
     if (discrepancy !== 0) {
       itemDetails.push({
-        name: discrepancy > 0 ? 'Biaya Layanan/Lainnya' : 'Potongan/Diskon',
+        name: discrepancy > 0 ? 'Biaya Tambahan / Layanan' : 'Potongan Diskon',
         price: discrepancy,
         quantity: 1
       });
     }
 
-    // Derive host dynamically from the current request to prevent hardcoding errors or incorrect env variables
     const protocol = req.headers.get('x-forwarded-proto') || 'https';
     const host = req.headers.get('host');
     const baseUrl = `${protocol}://${host}`;
     
-    // Construct a more descriptive product detail string
-    const productDetails = itemNames.length > 0 
-      ? `Pesanan: ${itemNames.join(', ')}`.substring(0, 255) 
-      : `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`;
+    // Ekstrak Catatan Pelanggan Murni (Buang semua tag sistem seperti [METODE: ...])
+    const userNotesRaw = order.notes || "";
+    const cleanNotes = userNotesRaw
+      .replace(/\[[^\]]+\]/g, '') // Hapus semua [TAG]
+      .replace(/Kasir:\s*[^\s,]+/gi, '') // Hapus tag Kasir
+      .replace(/\s+/g, ' ') // Normalisasi spasi
+      .trim();
 
-    // === DUITKU API ===
+    // Susun deskripsi produk yang menampung ringkasan barang DAN pesan pelanggan
+    const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `Pesanan #${merchantOrderId.substring(0, 8)}`;
+    
+    // Gabungkan ke visual productDetails
+    const productDetails = cleanNotes 
+      ? `Pesanan: ${summaryString} | Catatan: ${cleanNotes}`.substring(0, 255) 
+      : `Pesanan: ${summaryString}`.substring(0, 255);
+
+    // === DUITKU POP BASE PAYLOAD ===
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
-    // Suffix Order ID untuk Sandbox agar tidak duplikat saat testing berulang
-    const timestamp = String(Date.now());
-    const finalOrderId = isSandbox ? `${merchantOrderId}-${timestamp.substring(8)}` : merchantOrderId;
+    const timestampForUnique = String(Date.now());
+    const finalOrderId = isSandbox ? `${merchantOrderId}-${timestampForUnique.substring(8)}` : merchantOrderId;
 
     const payload: any = {
       paymentAmount: paymentAmount,

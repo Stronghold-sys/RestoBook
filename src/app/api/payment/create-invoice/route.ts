@@ -97,7 +97,14 @@ export async function POST(req: Request) {
       body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Duitku Non-JSON Response:', responseText);
+      return NextResponse.json({ error: `Duitku Server Error: ${responseText.substring(0, 100)}` }, { status: 500 });
+    }
 
     if (result.statusCode === '00' && result.paymentUrl) {
       return NextResponse.json({ 
@@ -112,7 +119,7 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error('Create Invoice Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Create Invoice Error:', error.stack || error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

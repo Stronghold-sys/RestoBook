@@ -47,7 +47,7 @@ export default function POSPage() {
   const [processing, setProcessing] = useState(false);
   
   // Non-Cash State
-  const [verificationStep, setVerificationStep] = useState<"select_method" | "instructions" | "verify">("select_method");
+  const [verificationStep, setVerificationStep] = useState<"select_method" | "instructions" | "verify" | "duitku_waiting">("select_method");
   const [nonCashType, setNonCashType] = useState<"ewallet" | "transfer" | "qris" | "other" | "">("");
   const [nonCashProvider, setNonCashProvider] = useState<string>("");
   
@@ -108,6 +108,24 @@ export default function POSPage() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [showPaymentModal, paymentMethod, nonCashType]);
+
+  // Polling for Duitku Payment Status
+  useEffect(() => {
+    let pollingTimer: NodeJS.Timeout;
+    if (verificationStep === "duitku_waiting" && foundOrder?.id) {
+      pollingTimer = setInterval(async () => {
+        const { data } = await supabase.from('orders').select('payment_status').eq('id', foundOrder.id).single();
+        if (data && data.payment_status === 'paid') {
+          clearInterval(pollingTimer);
+          toast.success("Pembayaran berhasil dikonfirmasi Duitku!");
+          processPayment(true, "Pembayaran Online Duitku");
+        }
+      }, 3000);
+    }
+    return () => {
+      if (pollingTimer) clearInterval(pollingTimer);
+    };
+  }, [verificationStep, foundOrder]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -482,6 +500,75 @@ export default function POSPage() {
     }
     setCashAmount("");
     setShowPaymentModal(true);
+  };
+
+  const handleGenerateDuitkuPOS = async () => {
+    setProcessing(true);
+    const loadingToast = toast.loading("Menyiapkan pembayaran Duitku...");
+    try {
+      let orderId = foundOrder?.id;
+      let notesStr = `[METODE: Pembayaran Online Duitku] Kasir: ${cashierName}`;
+      
+      if (!orderId) {
+        // Walk-in order
+        const walkinNotes = `${notesStr} ${customerName ? `[NAMA: ${customerName}]` : '[NAMA: Guest]'}`;
+        const orderData = {
+          order_type: orderType || "takeaway",
+          table_id: selectedTableId || null,
+          status: "pending",
+          payment_status: "unpaid",
+          payment_method: "non_cash",
+          total_amount: cartTotal,
+          cashier_id: cashierId,
+          notes: walkinNotes
+        };
+
+        const itemsData = cart.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.qty,
+          price: item.price,
+          subtotal: item.price * item.qty
+        }));
+
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'create_walkin', orderData, itemsData })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Gagal menyimpan pesanan');
+        orderId = result.order.id;
+        setFoundOrder(result.order);
+      } else {
+        // Update existing order
+        const { error } = await supabase.from("orders").update({
+          payment_status: "unpaid",
+          payment_method: "non_cash",
+          notes: notesStr
+        }).eq("id", orderId);
+        if (error) throw error;
+      }
+
+      // Generate invoice
+      const res = await fetch('/api/payment/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+
+      toast.success("Tagihan dibuat! Menunggu pembayaran...", { id: loadingToast });
+      
+      // Open in popup
+      window.open(data.paymentUrl, "DuitkuPaymentPOS", "width=450,height=700");
+      setVerificationStep("duitku_waiting");
+      
+    } catch (e: any) {
+      toast.error(e.message, { id: loadingToast });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const processPayment = async (isPaid = true, paymentDetails = "") => {
@@ -1056,21 +1143,52 @@ export default function POSPage() {
                         </div>
                       ) : (
                         <>
-                          <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setNonCashType("ewallet")} className={`p-4 border-2 rounded-2xl flex flex-col items-center gap-2 transition-all ${nonCashType === "ewallet" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-border-light dark:border-border-dark hover:border-blue-300"}`}><Smartphone className="w-6 h-6" /><span className="font-bold text-sm">E-Wallet</span></button>
-                            <button onClick={() => setNonCashType("transfer")} className={`p-4 border-2 rounded-2xl flex flex-col items-center gap-2 transition-all ${nonCashType === "transfer" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-border-light dark:border-border-dark hover:border-blue-300"}`}><Banknote className="w-6 h-6" /><span className="font-bold text-sm">Transfer Bank</span></button>
-                            <button onClick={() => setNonCashType("qris")} className={`p-4 border-2 rounded-2xl flex flex-col items-center gap-2 transition-all ${nonCashType === "qris" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-border-light dark:border-border-dark hover:border-blue-300"}`}><QrCode className="w-6 h-6" /><span className="font-bold text-sm">QRIS</span></button>
-                            <button onClick={() => setNonCashType("other")} className={`p-4 border-2 rounded-2xl flex flex-col items-center gap-2 transition-all ${nonCashType === "other" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-border-light dark:border-border-dark hover:border-blue-300"}`}><CreditCard className="w-6 h-6" /><span className="font-bold text-sm">Lainnya</span></button>
-                          </div>
-                          
-                          <button onClick={() => setVerificationStep("instructions")} disabled={!nonCashType} className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4">
-                            Lanjut
+                          <button 
+                            onClick={handleGenerateDuitkuPOS} 
+                            disabled={processing} 
+                            className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4"
+                          >
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Buat Tagihan Duitku"}
                           </button>
                         </>
                       )}
                     </div>
                   )}
                 </>
+              )}
+
+              {verificationStep === "duitku_waiting" && (
+                <div className="space-y-6 text-center py-8">
+                  <div className="relative mx-auto w-24 h-24 mb-4">
+                    <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
+                    <p className="text-sm text-muted mb-4">Minta pelanggan memindai QR Code di halaman tagihan Duitku. Halaman ini akan tertutup otomatis saat pembayaran berhasil.</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
+                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                    <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                  </div>
+                  <div className="pt-4 flex gap-3">
+                    <button 
+                      onClick={() => setVerificationStep("select_method")} 
+                      className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    >
+                      Batal / Ganti Metode
+                    </button>
+                    <button 
+                      onClick={() => processPayment(true)} 
+                      className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
+                    >
+                      Verifikasi Manual
+                    </button>
+                  </div>
+                </div>
               )}
 
               {verificationStep === "instructions" && paymentMethod === "non_cash" && (

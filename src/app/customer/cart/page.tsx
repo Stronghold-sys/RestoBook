@@ -269,28 +269,19 @@ export default function CartPage() {
     return `${m}:${s}`;
   };
 
-  const handleCheckoutClick = () => {
+  const handleProcessPayment = () => handleCheckoutClick();
+
+  const handleCheckoutClick = async () => {
     if (items.length === 0) return toast.error("Keranjang kosong");
     const storeStatus = getStoreStatus(openingTime, closingTime, isTemporaryClosed, isHoliday, holidayReopenDate, temporaryClosedReopenTime, is24Hours);
     if (!storeStatus.isOpen) {
-      toast.error(`Gagal Checkout! Mohon maaf, ${storeStatus.message}`, {
-        duration: 6000,
-        id: "cart-closed-checkout-error"
-      });
+      toast.error(`Gagal Checkout! Mohon maaf, ${storeStatus.message}`, { duration: 6000 });
       return;
     }
     if (orderType === "dine_in" && !selectedTable) return toast.error("Silakan pilih meja");
-    setShowPaymentModal(true);
-  };
-
-  const handleProcessPayment = async () => {
-    const storeStatus = getStoreStatus(openingTime, closingTime, isTemporaryClosed, isHoliday, holidayReopenDate, temporaryClosedReopenTime, is24Hours);
-    if (!storeStatus.isOpen) {
-      toast.error(`Gagal memproses transaksi! ${storeStatus.message}`);
-      setShowPaymentModal(false);
-      return;
-    }
+    
     setLoading(true);
+    const loadingToast = toast.loading("Memproses pesanan...");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Silakan login kembali");
@@ -300,22 +291,7 @@ export default function CartPage() {
       const totalAmount = getTotal();
       const dbPaymentMethod = paymentMethod === "cash" ? "cash" : "non_cash";
       
-      // Determine the detailed notes
-      let detailedPaymentNotes = "";
-      if (paymentMethod === "non_cash") {
-        if (nonCashCategory === "ewallet") {
-          detailedPaymentNotes = `[E-Wallet: ${selectedProvider || "Umum"}]`;
-        } else if (nonCashCategory === "transfer") {
-          detailedPaymentNotes = `[Transfer Bank: ${selectedProvider || "Umum"}]`;
-        } else if (nonCashCategory === "qris") {
-          detailedPaymentNotes = `[QRIS]`;
-        } else {
-          detailedPaymentNotes = `[Lainnya: ${selectedProvider || "EDC/Voucher"}]`;
-        }
-      } else {
-        detailedPaymentNotes = "[Tunai di Kasir]";
-      }
-
+      const detailedPaymentNotes = paymentMethod === "non_cash" ? "[Pembayaran Online Duitku]" : "[Tunai di Kasir]";
       const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
 
       const { data: orderData, error: orderError } = await supabase.from("orders").insert({
@@ -326,8 +302,6 @@ export default function CartPage() {
         notes: finalNotes,
         status: "pending", 
         payment_method: dbPaymentMethod, 
-        // Untuk sinkronisasi Duitku, pembayaran non-tunai akan berstatus 'unpaid' 
-        // hingga ada callback sukses dari Duitku.
         payment_status: 'unpaid',
       }).select().single();
 
@@ -349,7 +323,7 @@ export default function CartPage() {
         await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
       }
 
-      // Trigger Notification via API
+      // Trigger Notification
       await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -357,19 +331,32 @@ export default function CartPage() {
       });
 
       isOrderCompleted.current = true;
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("selected_table");
-      }
+      if (typeof window !== "undefined") localStorage.removeItem("selected_table");
       clearCart();
-      setShowPaymentModal(false);
-      toast.success(paymentMethod === "non_cash" 
-        ? "Pesanan berhasil dibuat! Menunggu verifikasi pembayaran Duitku." 
-        : "Pesanan berhasil dibuat! Silakan bayar tunai di kasir."
-      );
+
+      if (paymentMethod === "non_cash") {
+        toast.loading("Mengarahkan ke pembayaran Duitku...", { id: loadingToast });
+        const res = await fetch('/api/payment/create-invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: orderData.id })
+        });
+        const duitkuData = await res.json();
+        
+        if (!res.ok) throw new Error(duitkuData.error || 'Gagal membuat tagihan Duitku');
+        
+        if (duitkuData.paymentUrl) {
+          window.location.href = duitkuData.paymentUrl;
+          return; // Stop execution here since we redirect
+        }
+      }
+
+      toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
       router.push(`/customer/orders/${orderData.id}`);
     } catch (error: any) {
-      toast.error(error.message || "Gagal membuat pesanan");
-    } finally { setLoading(false); }
+      toast.error(error.message || "Gagal membuat pesanan", { id: loadingToast });
+      setLoading(false);
+    }
   };
 
   const getBankAccounts = (bank: string) => {

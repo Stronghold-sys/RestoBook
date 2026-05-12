@@ -6,7 +6,7 @@ export const runtime = 'edge';
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, returnUrl } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       itemDetails: itemDetails,
       customerDetail: customerDetail,
       callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback`,
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/customer/orders/${merchantOrderId}`,
+      returnUrl: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/customer/orders/${merchantOrderId}`,
       signature: signature,
       expiryPeriod: 60 // 60 menit
     };

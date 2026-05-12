@@ -308,7 +308,7 @@ export default function OrderTrackingPage() {
             {!refundData ? (
               <>
                 <p className="text-red-600/80 mt-1 mb-4">{order.cancel_reason || "Dibatalkan oleh sistem/kasir"}</p>
-                {order.payment_method === "non_cash" && (
+                {order.payment_status === "paid" && (
                   <button onClick={() => setShowRefundModal(true)} className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm shadow-md flex items-center gap-2 transition-all">
                     <RotateCcw className="w-4 h-4" /> Ajukan Pengembalian Dana (Refund)
                   </button>

@@ -22,6 +22,8 @@ export default function RootLayout({
         <DynamicFavicon />
         {children}
         <Toaster position="top-center" />
+        {/* Duitku Pop SDK - untuk popup pembayaran transparan */}
+        <script src="https://api-sandbox.duitku.com/lib/js/duitku.js" async></script>
       </body>
     </html>
   );

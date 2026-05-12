@@ -94,7 +94,7 @@ export default function OrderTrackingPage() {
   const handlePayDuitku = async () => {
     if (paying) return;
     setPaying(true);
-    const pToast = toast.loading("Mengarahkan ke pembayaran...");
+    const pToast = toast.loading("Menyiapkan pembayaran...");
     try {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
@@ -105,10 +105,33 @@ export default function OrderTrackingPage() {
       
       if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
       
-      toast.success("Berhasil! Mengalihkan ke halaman pembayaran...", { id: pToast });
-      
-      // Redirect ke halaman Duitku
-      if (data.paymentUrl) {
+      if (data.reference) {
+        toast.dismiss(pToast);
+        // Gunakan Duitku Pop SDK untuk popup transparan
+        const checkout = new (window as any).checkout();
+        checkout.process(data.reference, {
+          successEvent: function(result: any) {
+            toast.success("Pembayaran berhasil!");
+            fetchOrderDetails();
+            setPaying(false);
+          },
+          pendingEvent: function(result: any) {
+            toast.success("Menunggu pembayaran...");
+            fetchOrderDetails();
+            setPaying(false);
+          },
+          errorEvent: function(result: any) {
+            toast.error("Pembayaran gagal. Silakan coba lagi.");
+            setPaying(false);
+          },
+          closeEvent: function() {
+            fetchOrderDetails();
+            setPaying(false);
+          }
+        });
+      } else if (data.paymentUrl) {
+        // Fallback: redirect jika Pop SDK tidak tersedia
+        toast.success("Mengalihkan ke halaman pembayaran...", { id: pToast });
         window.location.href = data.paymentUrl;
       }
     } catch (error: any) {

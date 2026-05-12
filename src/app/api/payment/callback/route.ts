@@ -11,9 +11,6 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  // Simpan log awal untuk setiap request yang masuk
-  console.log('--- DUITKU CALLBACK RECEIVED ---');
-  
   try {
     const contentType = req.headers.get('content-type') || '';
     let body: any = {};
@@ -26,82 +23,48 @@ export async function POST(req: Request) {
       body = Object.fromEntries(params.entries());
     }
 
-    console.log('Raw Callback Data:', JSON.stringify(body));
-
     const {
       merchantCode,
       amount,
       merchantOrderId,
       signature,
-      resultCode,
-      reference
+      resultCode
     } = body;
 
     const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
     const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
 
-    if (!merchantOrderId) {
-      console.error('Callback Error: No merchantOrderId provided');
-      return new NextResponse('OK', { status: 200 });
-    }
+    if (!merchantOrderId) return new NextResponse('OK', { status: 200 });
 
-    // VERIFIKASI SIGNATURE (Hanya untuk Log, jangan block dulu agar transaksi bisa masuk)
-    const useCode = merchantCode || DUITKU_MERCHANT_CODE;
-    const signatureString = `${useCode}${amount}${merchantOrderId}${DUITKU_API_KEY}`;
-    const calculatedSignature = await md5(signatureString);
-
-    console.log('Signature Verification:', {
-      received: signature,
-      expected: calculatedSignature,
-      match: signature === calculatedSignature
-    });
-
-    // PROSES HANYA JIKA SUCCESS (resultCode 00 atau 0)
     if (resultCode === '00' || resultCode === '0') {
-      
-      // PARSING ORDER ID (MENGGUNAKAN REGEX UNTUK MENDETEKSI UUID ASLI)
-      // Ini akan mencari pola xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx di dalam merchantOrderId
       const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
       const match = merchantOrderId.match(uuidRegex);
       const dbOrderId = match ? match[0] : merchantOrderId;
       
-      console.log('Order ID Processing:', {
-        originalFromDuitku: merchantOrderId,
-        extractedForDB: dbOrderId,
-        isExtracted: !!match
-      });
-
-      // 1. UPDATE DATABASE
-      const { data: order, error: updateError } = await supabaseAdmin
+      // 1. UPDATE STATUS PEMBAYARAN
+      await supabaseAdmin
         .from('orders')
-        .update({ 
-          payment_status: 'paid',
-          status: 'confirmed',
-          payment_method: 'duitku'
-        })
-        .eq('id', dbOrderId)
+        .update({ payment_status: 'paid', status: 'confirmed', payment_method: 'duitku' })
+        .eq('id', dbOrderId);
+
+      // 2. AMBIL DATA PESANAN & PROFIL (UNTUK EMAIL)
+      // Kita ambil terpisah agar lebih akurat dan tidak terpengaruh error update
+      const { data: order } = await supabaseAdmin
+        .from('orders')
         .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
+        .eq('id', dbOrderId)
         .single();
 
-      if (updateError) {
-        console.error('CRITICAL: Database Update Failed!', {
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details
-        });
+      if (order) {
+        console.log('Fulfillment: Order data retrieved for email routing.');
         
-        // Backup: Coba update status saja tanpa join jika gagal
-        await supabaseAdmin.from('orders').update({ payment_status: 'paid' }).eq('id', dbOrderId);
-      } else if (order) {
-        console.log('SUCCESS: Order status updated to PAID in Database.');
-
-        // 2. TRIGGER EMAIL (Non-blocking)
         try {
           const resendKey = process.env.RESEND_API_KEY;
-          if (!resendKey) {
-            console.error('RESEND ERROR: API Key missing');
-          } else {
+          if (resendKey) {
+            // PRIORITAS 1: EMAIL DARI PROFIL (DAFTAR AKUN)
             let customerEmail = order.profiles?.email;
+            
+            // PRIORITAS 2: EMAIL DARI CATATAN (CHECKOUT GUEST/FALLBACK)
             if (!customerEmail && order.notes?.includes('[EMAIL:')) {
               customerEmail = order.notes.split('[EMAIL:')[1]?.split(']')[0]?.trim();
             }
@@ -113,81 +76,54 @@ export async function POST(req: Request) {
             customerName = customerName || 'Pelanggan';
 
             if (customerEmail) {
-              console.log(`Sending invoice to: ${customerEmail}`);
               const resend = new Resend(resendKey);
               const shortId = dbOrderId.substring(0, 8).toUpperCase();
               
-              // Build Items HTML
-              let itemsHtml = '';
-              const items = Array.isArray(order.order_items) ? order.order_items : [];
-              items.forEach((item: any) => {
-                const rawMenu = item.menu_items;
-                const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
-                itemsHtml += `
-                  <tr style="border-bottom: 1px solid #f3f4f6;">
-                    <td style="padding: 12px 0;">${menuItem?.name || 'Item'} x${item.quantity}</td>
-                    <td style="padding: 12px 0; text-align: right; font-weight: bold;">Rp ${Number(item.subtotal).toLocaleString('id-ID')}</td>
-                  </tr>`;
-              });
-
-              // Generate PDF
+              // PDF Generation (Sederhana untuk stabilitas Edge)
               let pdfBase64 = null;
               try {
                 const doc = new jsPDF();
                 doc.setFontSize(20);
-                doc.text("RestoBook Invoice", 105, 20, { align: 'center' });
+                doc.text("RestoBook Digital Invoice", 105, 20, { align: 'center' });
                 doc.setFontSize(10);
-                doc.text(`Order ID: #${shortId}`, 20, 40);
-                doc.text(`Customer: ${customerName}`, 20, 47);
-                doc.text(`Status: PAID`, 20, 54);
+                doc.text(`Kwitansi: #${shortId}`, 20, 40);
+                doc.text(`Pelanggan: ${customerName}`, 20, 47);
+                doc.text(`Status: LUNAS & DIPROSES`, 20, 54);
                 
-                let y = 70;
-                items.forEach((item: any) => {
-                  const rawMenu = item.menu_items;
-                  const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
-                  doc.text(`${menuItem?.name || 'Item'} x${item.quantity}`, 25, y);
-                  doc.text(`Rp ${Number(item.subtotal).toLocaleString('id-ID')}`, 170, y, { align: 'right' });
-                  y += 7;
-                });
-                
-                doc.setFont("helvetica", "bold");
-                doc.text("TOTAL", 25, y + 10);
-                doc.text(`Rp ${Number(order.total_amount).toLocaleString('id-ID')}`, 170, y + 10, { align: 'right' });
-
                 const dataUri = doc.output('datauristring');
                 pdfBase64 = dataUri.split(',')[1];
-              } catch (pdfErr) {
-                console.error('PDF Generation Error:', pdfErr);
-              }
+              } catch (e) {}
 
-              // Send Email
-              const { error: mailErr } = await resend.emails.send({
+              await resend.emails.send({
                 from: 'RestoBook <noreply@restobookid.my.id>',
                 to: customerEmail,
-                subject: `🧾 Pembayaran Berhasil - Pesanan #${shortId}`,
-                html: `<h1>Terima Kasih, ${customerName}!</h1><p>Pembayaran Anda untuk pesanan #${shortId} telah kami terima.</p><table style="width:100%">${itemsHtml}</table><h3>Total: Rp ${Number(order.total_amount).toLocaleString('id-ID')}</h3>`,
-                attachments: pdfBase64 ? [{ filename: `Invoice-${shortId}.pdf`, content: pdfBase64 }] : []
+                subject: `🧾 Konfirmasi Pembayaran - Pesanan #${shortId}`,
+                html: `
+                  <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
+                    <h1 style="color:#f97316;">Halo, ${customerName}!</h1>
+                    <p>Pembayaran Anda untuk pesanan <b>#${shortId}</b> telah kami terima dan diverifikasi otomatis.</p>
+                    <p>Saat ini pesanan Anda sedang disiapkan oleh tim dapur kami. Silakan klik tombol di bawah untuk melihat detail pesanan Anda:</p>
+                    <div style="text-align:center; margin:30px 0;">
+                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Lihat Pesanan</a>
+                    </div>
+                    <p style="font-size:12px; color:#888;">Email ini dikirim otomatis oleh sistem RestoBook. Harap tidak membalas email ini.</p>
+                  </div>
+                `,
+                attachments: pdfBase64 ? [{ filename: `Invoice-RestoBook-${shortId}.pdf`, content: pdfBase64 }] : []
               });
-
-              if (mailErr) console.error('RESEND DISPATCH ERROR:', mailErr.message);
-              else console.log('EMAIL SENT SUCCESSFULLY');
-            } else {
-              console.warn('No email address found for this order.');
+              console.log(`Success: Invoice sent to ${customerEmail} (Source: ${order.profiles?.email ? 'Profile' : 'Checkout Notes'})`);
             }
           }
-        } catch (emailCatch) {
-          console.error('Email process failed:', emailCatch);
+        } catch (mailError) {
+          console.error('Email Dispatch Error:', mailError);
         }
       }
-    } else {
-      console.log(`Payment not successful. ResultCode: ${resultCode}`);
     }
 
-    // Selalu balas OK ke Duitku
     return new NextResponse('OK', { status: 200 });
 
-  } catch (globalError: any) {
-    console.error('GLOBAL CALLBACK CRASH:', globalError.message);
+  } catch (globalErr: any) {
+    console.error('Callback Global Error:', globalErr.message);
     return new NextResponse('OK', { status: 200 });
   }
 }

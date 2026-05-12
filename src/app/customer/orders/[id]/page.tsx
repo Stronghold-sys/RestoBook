@@ -258,7 +258,7 @@ export default function OrderTrackingPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 border-amber-200 dark:border-amber-800";
-      case "confirmed": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-500 border-blue-200 dark:border-blue-800";
+      case "confirmed": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-500 border-orange-200 dark:border-orange-800";
       case "completed": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500 border-green-200 dark:border-green-800";
       case "cancelled": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-500 border-red-200 dark:border-red-800";
       default: return "bg-gray-100 text-gray-700 border-gray-200";
@@ -349,7 +349,7 @@ export default function OrderTrackingPage() {
                 const done = i <= currentIdx; const current = i === currentIdx; const Icon = step.icon;
                 return (
                   <div key={step.id} className="relative z-10 flex flex-col items-center gap-3">
-                    <motion.div animate={{ scale: current ? 1.2 : 1, backgroundColor: done ? "#e85d04" : "var(--card-color)" }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${done ? "border-primary text-white" : "border-gray-300 dark:border-gray-600 text-gray-400 bg-card-light dark:bg-card-dark"}`}>
+                    <motion.div animate={{ scale: current ? 1.2 : 1, backgroundColor: done ? "#f97316" : "var(--card-color)" }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${done ? "border-primary text-white" : "border-gray-300 dark:border-gray-600 text-gray-400 bg-card-light dark:bg-card-dark"}`}>
                       <Icon className="w-6 h-6" />
                     </motion.div>
                     <span className={`text-xs font-black absolute top-14 w-24 text-center uppercase tracking-tighter ${current ? "text-primary" : done ? "text-text-light dark:text-text-dark" : "text-muted"}`}>{step.label}</span>

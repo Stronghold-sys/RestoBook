@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
 
     // Duitku Pop API (Inquiry) - Gunakan URL Sandbox jika isSandbox true
     const url = isSandbox 
-      ? 'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+      ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
       : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
 
     const response = await fetch(url, {

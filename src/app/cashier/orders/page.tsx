@@ -12,7 +12,7 @@ export default function CashierOrders() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "online" | "pending" | "paid" | "cancelled">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "paid" | "cancelled">("all");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -53,7 +53,11 @@ export default function CashierOrders() {
 
   const fetchOrders = async () => {
     try {
-      const { data } = await supabase.from("orders").select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)").order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("orders")
+        .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
+        .neq('order_type', 'delivery') // Sembunyikan pesanan online dari sini
+        .order("created_at", { ascending: false });
       setOrders(data || []);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -251,7 +255,6 @@ export default function CashierOrders() {
   const filtered = orders.filter(o => {
     const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || getCustomerName(o).toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
-    if (activeTab === "online") return !!o.customer_id;
     if (activeTab === "pending") return o.status === "pending";
     if (activeTab === "paid") return o.payment_status === "paid";
     if (activeTab === "cancelled") return o.status === "cancelled";
@@ -283,7 +286,6 @@ export default function CashierOrders() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {[
           { id: "all", label: "Semua", count: orders.length },
-          { id: "online", label: "Online", count: orders.filter(o => !!o.customer_id).length },
           { id: "pending", label: "Menunggu", count: orders.filter(o => o.status === "pending").length },
           { id: "paid", label: "Lunas", count: orders.filter(o => o.payment_status === "paid").length },
           { id: "cancelled", label: "Dibatalkan", count: orders.filter(o => o.status === "cancelled").length }

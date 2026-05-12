@@ -51,6 +51,7 @@ const getMenuLinks = (role: Role) => {
         { name: "Status Menu", href: "/cashier/menu", icon: UtensilsCrossed },
         { name: "Status Meja", href: "/cashier/tables", icon: Armchair },
         { name: "Pesanan", href: "/cashier/orders", icon: ShoppingBag },
+        { name: "Pesanan Online", href: "/cashier/online-orders", icon: Globe },
         { name: "Antrian Dapur", href: "/cashier/queue", icon: ListOrdered },
         { name: "Reservasi", href: "/cashier/reservations", icon: CalendarDays },
         { name: "Transaksi", href: "/cashier/transactions", icon: Receipt },

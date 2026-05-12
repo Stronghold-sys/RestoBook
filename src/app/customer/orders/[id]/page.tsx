@@ -105,19 +105,35 @@ export default function OrderTrackingPage() {
          toast.dismiss(pToast);
          setPaying(false);
          (window as any).checkout.process(data.reference, {
-            successEvent: function(result: any) {
+            successEvent: async function(result: any) {
                toast.success("Pembayaran Berhasil!");
+               await fetch('/api/payment/check-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: id })
+               });
                fetchOrderDetails();
             },
-            pendingEvent: function(result: any) {
+            pendingEvent: async function(result: any) {
                toast("Menunggu Konfirmasi...", { icon: "⏳" });
+               await fetch('/api/payment/check-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: id })
+               });
                fetchOrderDetails();
             },
             errorEvent: function(result: any) {
                toast.error("Transaksi dibatalkan.");
             },
             closeEvent: async function() {
-               fetchOrderDetails(); // Sinkronisasi ulang
+               // Proaktif cek status ke Duitku saat popup ditutup
+               await fetch('/api/payment/check-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: id })
+               });
+               fetchOrderDetails();
             }
          });
       } else if (data.paymentUrl) {

@@ -17,6 +17,11 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  
   const supabase = createClient();
 
   useEffect(() => {
@@ -47,6 +52,55 @@ export default function AdminCustomersPage() {
     customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.phone?.includes(searchQuery)
   );
+
+  const handleDelete = async (customer: any) => {
+    if (!confirm(`Yakin ingin menghapus seluruh data pelanggan ${customer.full_name || customer.email}?`)) return;
+    setIsDeleting(customer.id);
+    const toastId = toast.loading("Sedang menghapus data...");
+    try {
+      const res = await fetch("/api/profile/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: customer.user_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus pelanggan");
+      toast.success("Pelanggan berhasil dihapus", { id: toastId });
+      fetchCustomers();
+    } catch (e: any) {
+      toast.error(e.message, { id: toastId });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleEditClick = (customer: any) => {
+    setIsEditing(customer);
+    setEditForm({ full_name: customer.full_name || "", phone: customer.phone || "" });
+  };
+
+  const submitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isEditing) return;
+    setSavingEdit(true);
+    const toastId = toast.loading("Menyimpan perubahan...");
+    try {
+      const res = await fetch("/api/admin/customers/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: isEditing.id, full_name: editForm.full_name, phone: editForm.phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memperbarui data");
+      toast.success("Data berhasil diperbarui", { id: toastId });
+      setIsEditing(null);
+      fetchCustomers();
+    } catch (e: any) {
+      toast.error(e.message, { id: toastId });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -198,11 +252,21 @@ export default function AdminCustomersPage() {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 hover:bg-amber-100 hover:text-amber-600 rounded-xl transition-colors text-muted" title="Edit">
+                        <button 
+                          onClick={() => handleEditClick(customer)}
+                          disabled={isDeleting === customer.id}
+                          className="p-2 hover:bg-amber-100 hover:text-amber-600 rounded-xl transition-colors text-muted" 
+                          title="Edit"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-2 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors text-muted" title="Hapus">
-                          <Trash2 className="w-4 h-4" />
+                        <button 
+                          onClick={() => handleDelete(customer)}
+                          disabled={isDeleting === customer.id}
+                          className="p-2 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors text-muted disabled:opacity-50" 
+                          title="Hapus"
+                        >
+                          {isDeleting === customer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </td>
@@ -213,6 +277,58 @@ export default function AdminCustomersPage() {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {isEditing && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsEditing(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark"
+            >
+              <h3 className="text-2xl font-black text-text-light dark:text-text-dark mb-6">Edit Data Pelanggan</h3>
+              <form onSubmit={submitEdit} className="space-y-5">
+                <div>
+                  <label htmlFor="customerFullName" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">Nama Lengkap</label>
+                  <input 
+                    id="customerFullName"
+                    type="text" 
+                    required
+                    placeholder="Masukkan nama lengkap"
+                    value={editForm.full_name}
+                    onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="customerPhone" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">No. WhatsApp / Telepon</label>
+                  <input 
+                    id="customerPhone"
+                    type="text" 
+                    placeholder="Contoh: 08123456789"
+                    value={editForm.phone}
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setIsEditing(null)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    Batal
+                  </button>
+                  <button type="submit" disabled={savingEdit} className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
+                    {savingEdit ? <Loader2 className="w-5 h-5 animate-spin" /> : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

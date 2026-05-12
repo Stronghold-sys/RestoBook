@@ -4,54 +4,80 @@ import { md5 } from '@/lib/md5';
 export const runtime = 'edge';
 
 export async function GET() {
-  const DUITKU_MERCHANT_CODE = 'DS30558';
-  const DUITKU_API_KEY = 'd1654f16f0139301e10e1b2bb7f575ac';
+  const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
+  const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
 
-  const paymentAmount = 65000;
-  const merchantOrderId = 'test-' + Date.now();
+  const merchantOrderId = `TEST-${Date.now()}`;
+  const paymentAmount = 10000;
 
-  const signatureString = `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-  const signature = md5(signatureString);
+  const signature = md5(`${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`);
 
   const payload = {
     merchantCode: DUITKU_MERCHANT_CODE,
     paymentAmount: paymentAmount,
     merchantOrderId: merchantOrderId,
-    productDetails: `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`,
-    email: 'test@example.com',
-    customerVaName: 'Test Customer',
-    phoneNumber: '081234567890',
-    itemDetails: [{
-      name: `Pesanan RestoBook #${merchantOrderId.substring(0, 8)}`,
-      price: paymentAmount,
-      quantity: 1
-    }],
-    customerDetail: {
-      firstName: 'Test Customer',
-      lastName: '',
-      email: 'test@example.com',
-      phoneNumber: '081234567890'
-    },
-    callbackUrl: `http://localhost:3000/api/payment/callback`,
-    returnUrl: `http://localhost:3000/customer/orders/${merchantOrderId}`,
+    productDetails: "Test Payment",
+    additionalParam: "",
+    merchantUserInfo: "",
+    email: "test@test.com",
+    customerVaName: "Test Customer",
+    phoneNumber: "081234567890",
+    itemDetails: [{ name: "Test Item", price: 10000, quantity: 1 }],
+    paymentMethod: "",
+    creditCardDetail: { saveCardToken: 0 },
+    callbackUrl: "https://example.com/callback",
+    returnUrl: "https://example.com/return",
     signature: signature,
-    expiryPeriod: 60
+    expiryPeriod: 10
   };
 
-  const duitkuUrl = 'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry';
-  
-  try {
-    const response = await fetch(duitkuUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+  // Test ALL possible Duitku endpoints
+  const urls = [
+    'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry',
+    'https://api-sandbox.duitku.com/webapi/api/merchant/createInvoice',
+    'https://api-sandbox.duitku.com/api/merchant/createInvoice',
+    'https://api-sandbox.duitku.com/api/merchant/v2/inquiry',
+    'https://api-sandbox.duitku.com/api/merchant/createinvoice',
+    'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry',
+    'https://sandbox.duitku.com/webapi/api/merchant/createInvoice',
+  ];
 
-    const result = await response.json();
-    return NextResponse.json({ payload, result });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const results: any[] = [];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      results.push({
+        url,
+        status: res.status,
+        statusText: res.statusText,
+        body: text.substring(0, 300),
+        isJSON: (() => { try { JSON.parse(text); return true; } catch { return false; } })()
+      });
+    } catch (err: any) {
+      results.push({
+        url,
+        status: 'ERROR',
+        error: err.message
+      });
+    }
   }
+
+  return NextResponse.json({
+    merchantCode: DUITKU_MERCHANT_CODE,
+    apiKeyPresent: !!DUITKU_API_KEY,
+    signatureInput: `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`,
+    signature,
+    payload,
+    results
+  }, { status: 200 });
 }

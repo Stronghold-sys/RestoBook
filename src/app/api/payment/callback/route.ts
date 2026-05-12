@@ -59,21 +59,17 @@ export async function POST(req: Request) {
     // PROSES HANYA JIKA SUCCESS (resultCode 00 atau 0)
     if (resultCode === '00' || resultCode === '0') {
       
-      // PARSING ORDER ID (Menangani ID unik sandbox)
-      // Jika merchantOrderId adalah "UUID-TIMESTAMP", ambil bagian pertamanya saja (UUID)
-      let dbOrderId = merchantOrderId;
-      if (merchantOrderId.includes('-') && merchantOrderId.length > 36) {
-        // Asumsi UUID standard adalah 36 karakter
-        const parts = merchantOrderId.split('-');
-        if (parts.length > 5) {
-            // Ini kemungkinan UUID (5 parts) + suffix
-            dbOrderId = parts.slice(0, 5).join('-');
-        } else {
-            dbOrderId = merchantOrderId.substring(0, merchantOrderId.lastIndexOf('-'));
-        }
-      }
+      // PARSING ORDER ID (MENGGUNAKAN REGEX UNTUK MENDETEKSI UUID ASLI)
+      // Ini akan mencari pola xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx di dalam merchantOrderId
+      const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      const match = merchantOrderId.match(uuidRegex);
+      const dbOrderId = match ? match[0] : merchantOrderId;
       
-      console.log(`Attempting to update Order ID: ${dbOrderId} for Amount: ${amount}`);
+      console.log('Order ID Processing:', {
+        originalFromDuitku: merchantOrderId,
+        extractedForDB: dbOrderId,
+        isExtracted: !!match
+      });
 
       // 1. UPDATE DATABASE
       const { data: order, error: updateError } = await supabaseAdmin
@@ -81,17 +77,21 @@ export async function POST(req: Request) {
         .update({ 
           payment_status: 'paid',
           status: 'confirmed',
-          payment_method: 'duitku' // Pastikan terisi
+          payment_method: 'duitku'
         })
         .eq('id', dbOrderId)
         .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
         .single();
 
       if (updateError) {
-        console.error('SUPABASE UPDATE ERROR:', updateError.message);
-        // Coba cari tanpa .single() jika gagal
-        const { data: retryData } = await supabaseAdmin.from('orders').select('*').eq('id', dbOrderId);
-        console.log('Retry fetch check (exists?):', !!retryData?.length);
+        console.error('CRITICAL: Database Update Failed!', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details
+        });
+        
+        // Backup: Coba update status saja tanpa join jika gagal
+        await supabaseAdmin.from('orders').update({ payment_status: 'paid' }).eq('id', dbOrderId);
       } else if (order) {
         console.log('SUCCESS: Order status updated to PAID in Database.');
 

@@ -11,10 +11,22 @@ function getFormattedDate() {
 }
 
 const STATIC_FALLBACK = [
+  // E-Wallet & QRIS
   { paymentMethod: "NQ", paymentName: "QRIS", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg", totalFee: "0" },
-  { paymentMethod: "VA", paymentName: "Virtual Account (All Banks)", paymentImage: "https://duitku.com/wp-content/uploads/2021/04/virtual-account.png", totalFee: "4000" },
   { paymentMethod: "OV", paymentName: "OVO", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg", totalFee: "1.5%" },
-  { paymentMethod: "DA", paymentName: "DANA", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg", totalFee: "1.5%" }
+  { paymentMethod: "DA", paymentName: "DANA", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg", totalFee: "1.5%" },
+  { paymentMethod: "SP", paymentName: "ShopeePay", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/f/fe/ShopeePay.svg", totalFee: "1.5%" },
+  
+  // Virtual Accounts
+  { paymentMethod: "BC", paymentName: "BCA Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/5/5c/Logo_BCA.svg", totalFee: "4000" },
+  { paymentMethod: "M2", paymentName: "Mandiri Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg", totalFee: "4000" },
+  { paymentMethod: "I1", paymentName: "BNI Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_Bank_Negara_Indonesia.svg", totalFee: "4000" },
+  { paymentMethod: "BR", paymentName: "BRI Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/2/2e/BRI_Logo.svg", totalFee: "4000" },
+  { paymentMethod: "BT", paymentName: "Permata Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/b/bc/Bank_Permata_logo.svg", totalFee: "4000" },
+  { paymentMethod: "B1", paymentName: "CIMB Niaga Virtual Account", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/3/38/CIMB_Niaga_logo.svg", totalFee: "4000" },
+  
+  // Retail Store
+  { paymentMethod: "FT", paymentName: "Alfamart", paymentImage: "https://upload.wikimedia.org/wikipedia/commons/8/86/Alfamart_logo.svg", totalFee: "3500" }
 ];
 
 export async function POST(req: Request) {

@@ -14,11 +14,15 @@ async function sha256(message: string): Promise<string> {
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, duitkuOrderId } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
+
+    // Use the actual Duitku-issued transaction order ID for checking status
+    // Falls back to original orderId if not passed by client
+    const queryOrderId = duitkuOrderId || orderId;
 
     const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
     const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
@@ -29,12 +33,14 @@ export async function POST(req: Request) {
 
     // Duitku Pop API - Check Transaction Status
     const timestamp = String(Date.now());
-    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${orderId}${timestamp}${DUITKU_API_KEY}`);
+    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${queryOrderId}${timestamp}${DUITKU_API_KEY}`);
 
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     const checkUrl = isSandbox
       ? 'https://api-sandbox.duitku.com/api/merchant/transactionStatus'
       : 'https://api.duitku.com/api/merchant/transactionStatus';
+
+    console.log('Querying Duitku for ID:', queryOrderId);
 
     const response = await fetch(checkUrl, {
       method: 'POST',
@@ -46,7 +52,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         merchantCode: DUITKU_MERCHANT_CODE,
-        merchantOrderId: orderId
+        merchantOrderId: queryOrderId
       })
     });
 

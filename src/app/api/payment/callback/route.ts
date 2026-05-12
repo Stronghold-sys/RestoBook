@@ -73,14 +73,22 @@ export async function POST(req: Request) {
     if (resultCode === '00' || resultCode === '0') {
       console.log('Payment SUCCESS for order:', merchantOrderId);
       
+      // Strip suffix from Sandbox orderId if present to find original DB UUID
+      // Standard UUID has 36 chars. If longer and contains suffix, strip it.
+      const dbOrderId = merchantOrderId.includes('-') && merchantOrderId.length > 36 
+        ? merchantOrderId.substring(0, merchantOrderId.lastIndexOf('-'))
+        : merchantOrderId;
+      
+      console.log('Updating DB Order ID:', dbOrderId);
+
       // 1. Update order payment status to 'paid'
-      const { error: updateError, data: updateData } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('orders')
         .update({ 
           payment_status: 'paid',
           status: 'confirmed'
         })
-        .eq('id', merchantOrderId);
+        .eq('id', dbOrderId);
 
       if (updateError) {
         console.error('Error updating order:', updateError);

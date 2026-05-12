@@ -572,7 +572,7 @@ export default function POSPage() {
             await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId })
+              body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
             });
             setShowPaymentModal(false);
             setFoundOrder(null);
@@ -593,7 +593,7 @@ export default function POSPage() {
             const checkRes = await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId })
+              body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
             });
             const checkData = await checkRes.json();
             if (checkData.status === 'paid') {
@@ -1189,35 +1189,18 @@ export default function POSPage() {
                     </div>
                   ) : (
                     <div className="mb-6 space-y-4">
-                      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl mb-4">
-                        <button onClick={() => setNonCashType("online_duitku")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "online_duitku" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>Otomatis</button>
-                        <button onClick={() => setNonCashType("qris")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "qris" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>QRIS Manual</button>
-                        <button onClick={() => setNonCashType("ewallet")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "ewallet" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>E-Wallet Manual</button>
-                      </div>
-
-                      {nonCashType === "online_duitku" ? (
-                        <>
-                          <PaymentMethodSelector 
-                            amount={cartTotal} 
-                            onSelect={(method) => setDuitkuMethod(method)} 
-                            selectedMethod={duitkuMethod} 
-                          />
-                          <button 
-                            onClick={handleGenerateDuitkuPOS} 
-                            disabled={processing || !duitkuMethod} 
-                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
-                          >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
-                          </button>
-                        </>
-                      ) : (
-                        <button 
-                          onClick={() => setVerificationStep("instructions")} 
-                          className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all uppercase tracking-wider flex justify-center items-center gap-2"
-                        >
-                          Lanjut ke Instruksi
-                        </button>
-                      )}
+                      <PaymentMethodSelector 
+                        amount={cartTotal} 
+                        onSelect={(method) => setDuitkuMethod(method)} 
+                        selectedMethod={duitkuMethod} 
+                      />
+                      <button 
+                        onClick={handleGenerateDuitkuPOS} 
+                        disabled={processing || !duitkuMethod} 
+                        className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
+                      >
+                        {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
+                      </button>
                     </div>
                   )}
                 </>
@@ -1257,238 +1240,7 @@ export default function POSPage() {
                 </div>
               )}
 
-              {verificationStep === "instructions" && paymentMethod === "non_cash" && (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 text-center border border-border-light dark:border-border-dark mb-4">
-                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                    <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                  </div>
-                  
-                  {nonCashType === "ewallet" && (
-                    <>
-                      <select aria-label="Pilih Provider E-Wallet" title="Pilih Provider E-Wallet" value={nonCashProvider} onChange={e => setNonCashProvider(e.target.value)} className="w-full p-3 border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark rounded-xl mb-4 outline-none focus:border-blue-500 font-bold">
-                        <option value="">Pilih Provider E-Wallet</option>
-                        <option value="GoPay">GoPay</option>
-                        <option value="OVO">OVO</option>
-                        <option value="Dana">Dana</option>
-                        <option value="ShopeePay">ShopeePay</option>
-                        <option value="LinkAja">LinkAja</option>
-                      </select>
-                      {nonCashProvider && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm flex flex-col items-center">
-                          <div className="bg-white p-3 rounded-2xl shadow-md border border-gray-100 mb-4">
-                            <img 
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(
-                                getEWalletDeepLink(
-                                  nonCashProvider,
-                                  merchant[nonCashProvider.toLowerCase() as keyof typeof merchant] || "08123456789",
-                                  cartTotal
-                                )
-                              )}`}
-                              alt={`QR ${nonCashProvider}`}
-                              className="w-40 h-40 mx-auto object-contain"
-                            />
-                          </div>
-                          <div className="w-full text-left">
-                            <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi Pembayaran:</h4>
-                            <ol className="list-decimal pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                              <li>Buka aplikasi <b>{nonCashProvider}</b> di smartphone</li>
-                              <li>Pilih menu Bayar atau Scan QR</li>
-                              <li>Arahkan kamera ke kode QR di atas (No: <b>{merchant[nonCashProvider.toLowerCase() as keyof typeof merchant] || "08123456789"}</b>)</li>
-                              <li>Pastikan nominal yang tertera sesuai (<b>Rp {cartTotal.toLocaleString("id-ID")}</b>)</li>
-                              <li>Masukkan PIN untuk konfirmasi pembayaran</li>
-                              <li>Tunjukkan bukti notifikasi sukses kepada kasir</li>
-                              <li>Kasir akan memverifikasi dan mencetak struk</li>
-                            </ol>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  
-                  {nonCashType === "transfer" && (
-                    <>
-                      <select aria-label="Pilih Bank" title="Pilih Bank" value={nonCashProvider} onChange={e => setNonCashProvider(e.target.value)} className="w-full p-3 border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark rounded-xl mb-4 outline-none focus:border-blue-500 font-bold">
-                        <option value="">Pilih Bank</option>
-                        <option value="BCA">BCA</option>
-                        <option value="BRI">BRI</option>
-                        <option value="BNI">BNI</option>
-                        <option value="Mandiri">Mandiri</option>
-                        <option value="BSI">BSI</option>
-                        <option value="Bank Lainnya">Bank Lainnya</option>
-                      </select>
-                      {nonCashProvider && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm">
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg mb-3 text-center border shadow-sm">
-                            <p className="text-xs text-gray-500 uppercase font-bold">Rekening Tujuan ({nonCashProvider})</p>
-                            <p className="text-xl font-black text-gray-800 dark:text-gray-200 my-1">1234-5678-90</p>
-                            <p className="text-sm font-bold text-gray-600 dark:text-gray-400">A/N RestoBook Official</p>
-                          </div>
-                          <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi Pembayaran:</h4>
-                          <ol className="list-decimal pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                            <li>Buka aplikasi m-banking atau kunjungi ATM <b>{nonCashProvider}</b></li>
-                            <li>Pilih menu Transfer ke rekening tujuan di atas</li>
-                            <li>Masukkan nominal transfer persis <b>Rp {cartTotal.toLocaleString("id-ID")}</b></li>
-                            <li>Periksa detail transfer sebelum konfirmasi</li>
-                            <li>Lakukan konfirmasi dan simpan bukti transfer</li>
-                            <li>Tunjukkan bukti transfer kepada kasir</li>
-                            <li>Kasir mengecek mutasi rekening dan mencetak struk</li>
-                          </ol>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  
-                   {nonCashType === "qris" && (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm flex flex-col items-center text-center">
-                      <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-primary/20 relative mb-4">
-                        <img 
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(
-                            generateQRISString({
-                              merchantName: merchant.merchantName,
-                              merchantId: merchant.merchantId,
-                              city: merchant.city,
-                              postalCode: merchant.postalCode,
-                              categoryCode: merchant.categoryCode,
-                              amount: cartTotal,
-                              txId: txId || "TX8888"
-                            })
-                          )}`}
-                          alt="QRIS Code"
-                          className="w-48 h-48 mx-auto object-contain"
-                        />
-                        {qrisExpired && (
-                          <div className="absolute inset-0 bg-white/95 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center p-4">
-                            <AlertTriangle className="w-10 h-10 text-red-500 mb-2" />
-                            <span className="font-bold text-sm text-text-light dark:text-text-dark">Kode QRIS Kedaluwarsa</span>
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi Pembayaran QRIS:</h4>
-                      <ol className="list-decimal text-left pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                        <li>Tunjukkan kode QRIS dinamis di atas kepada pelanggan</li>
-                        <li>Minta pelanggan membuka aplikasi e-wallet atau mobile banking</li>
-                        <li>Scan kode QRIS dan pastikan nama merchant <b>{merchant.merchantName}</b> sesuai</li>
-                        <li>Konfirmasi nominal <b>Rp {cartTotal.toLocaleString("id-ID")}</b></li>
-                        <li>Kasir akan memverifikasi pembayaran dan mencetak struk</li>
-                      </ol>
-                      {!qrisExpired ? (
-                        <p className="text-xs text-amber-500 font-bold mt-3 animate-pulse">QR Code berlaku: {formatTime(qrisTimer)}</p>
-                      ) : (
-                        <p className="text-xs text-red-500 font-bold mt-3">QR Code kedaluwarsa, silakan perbarui</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {nonCashType === "other" && (
-                    <>
-                      <select aria-label="Pilih Metode Lainnya" title="Pilih Metode Lainnya" value={nonCashProvider} onChange={e => setNonCashProvider(e.target.value)} className="w-full p-3 border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark rounded-xl mb-4 outline-none focus:border-blue-500 font-bold">
-                        <option value="">Pilih Metode Lainnya</option>
-                        <option value="EDC Debit/Kredit">Kartu Debit / Kredit (EDC)</option>
-                        <option value="Voucher/Kupon">Voucher atau Kupon Toko</option>
-                        <option value="Paylater">Paylater (Akulaku/Kredivo)</option>
-                        <option value="Cicilan">Cicilan</option>
-                      </select>
-                      {nonCashProvider === "EDC Debit/Kredit" && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm">
-                          <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi EDC:</h4>
-                          <ol className="list-decimal pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                            <li>Berikan kartu kepada kasir</li>
-                            <li>Kasir menggesek/menempelkan kartu pada EDC</li>
-                            <li>Pilih jenis transaksi Debit atau Kredit</li>
-                            <li>Masukkan PIN atau tanda tangani struk</li>
-                            <li>Tunggu konfirmasi dari mesin EDC</li>
-                            <li>Simpan struk EDC sebagai bukti pembayaran</li>
-                          </ol>
-                        </div>
-                      )}
-                      {nonCashProvider === "Voucher/Kupon" && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm">
-                          <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi Voucher:</h4>
-                          <ol className="list-decimal pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                            <li>Tunjukkan voucher fisik/kode kepada kasir</li>
-                            <li>Kasir memverifikasi kode voucher</li>
-                            <li>Nilai voucher dikurangkan dari total tagihan</li>
-                            <li>Sisa tagihan dibayarkan dengan metode lain jika ada</li>
-                          </ol>
-                        </div>
-                      )}
-                      {(nonCashProvider === "Paylater" || nonCashProvider === "Cicilan") && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-sm">
-                          <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2">Instruksi Paylater/Cicilan:</h4>
-                          <ol className="list-decimal pl-4 space-y-1 text-gray-700 dark:text-gray-300">
-                            <li>Buka aplikasi Paylater yang digunakan</li>
-                            <li>Pilih menu Bayar lalu scan QR merchant</li>
-                            <li>Pilih tenor cicilan yang diinginkan</li>
-                            <li>Konfirmasi pembayaran</li>
-                            <li>Tunjukkan bukti persetujuan kepada kasir</li>
-                          </ol>
-                        </div>
-                      )}
-                    </>
-                  )}
 
-                  <div className="flex gap-2 mt-4 flex-col sm:flex-row">
-                    <button onClick={() => setVerificationStep("select_method")} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-sm">Kembali</button>
-                    {nonCashType === "qris" && (
-                      <button onClick={() => { setQrisTimer(600); setQrisExpired(false); setTxId(`TX${Date.now().toString().slice(-8)}`); toast.success("QRIS diperbarui"); }} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 transition-all text-sm">Perbarui QR</button>
-                    )}
-                    <button 
-                      onClick={() => setVerificationStep("verify")} 
-                      disabled={!nonCashProvider && nonCashType !== "qris"}
-                      className="flex-[2] py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-hover transition-all text-sm disabled:opacity-50"
-                    >
-                      Sudah Dilakukan
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {verificationStep === "verify" && (
-                <div className="space-y-4 text-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <CheckCircle className="w-8 h-8 text-blue-500 dark:text-blue-400" />
-                  </div>
-                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">Verifikasi Kasir</h3>
-                  <p className="text-sm text-muted">Pelanggan telah mengkonfirmasi pembayaran. Silakan cek aplikasi merchant atau mesin EDC Anda.</p>
-                  
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-border-light dark:border-border-dark mb-6 text-left">
-                    <p className="text-xs text-gray-500 font-bold uppercase mb-1">Detail Konfirmasi</p>
-                    <div className="flex justify-between font-medium text-sm mb-1"><span>Metode:</span><span className="font-bold uppercase">{nonCashProvider || "QRIS"}</span></div>
-                    <div className="flex justify-between font-medium text-sm"><span>Nominal:</span><span className="font-bold text-primary">Rp {cartTotal.toLocaleString("id-ID")}</span></div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <button 
-                      onClick={() => processPayment(true, nonCashProvider || "QRIS")} 
-                      disabled={processing}
-                      className="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
-                    >
-                      {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi & Cetak Struk (LUNAS)</>}
-                    </button>
-                    
-                    <button 
-                      onClick={() => processPayment(false, nonCashProvider || "QRIS")} 
-                      disabled={processing}
-                      className="w-full py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Clock className="w-5 h-5" /> {nonCashType === "transfer" ? "Tunda Menunggu Transfer" : "Belum Terkonfirmasi (PENDING)"}
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        toast.error("Transaksi Dibatalkan/Ditolak");
-                        setShowPaymentModal(false);
-                        setVerificationStep("select_method");
-                      }} 
-                      disabled={processing}
-                      className="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-200 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Ban className="w-5 h-5" /> Gagal / Batal
-                    </button>
-                  </div>
-                </div>
-              )}
             </motion.div>
           </div>
         )}

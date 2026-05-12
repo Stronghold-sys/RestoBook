@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         reference: data.reference,
         paymentUrl: data.paymentUrl,
-        merchantOrderId: merchantOrderId
+        merchantOrderId: finalOrderId
       });
     } else {
       console.error("Duitku Inquiry Error:", JSON.stringify(data));

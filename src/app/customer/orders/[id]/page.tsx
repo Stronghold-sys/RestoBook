@@ -118,7 +118,7 @@ export default function OrderTrackingPage() {
             await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: id })
+              body: JSON.stringify({ orderId: id, duitkuOrderId: data.merchantOrderId })
             });
             fetchOrderDetails();
           },
@@ -133,7 +133,7 @@ export default function OrderTrackingPage() {
             await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: id })
+              body: JSON.stringify({ orderId: id, duitkuOrderId: data.merchantOrderId })
             });
             fetchOrderDetails();
           }

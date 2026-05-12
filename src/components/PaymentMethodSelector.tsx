@@ -54,11 +54,28 @@ export default function PaymentMethodSelector({ amount, onSelect, selectedMethod
     );
   }
 
-  // Grouping methods (Optional, for better UX)
+  // Optimized grouping logic: include explicit codes and generalized keyword search
   const categories = {
-    "E-Wallet & QRIS": methods.filter(m => ["SP", "DA", "OV", "NQ", "LA"].includes(m.paymentMethod) || m.paymentName.toLowerCase().includes("qris")),
-    "Virtual Account": methods.filter(m => ["VA", "BT", "B1", "M2", "I1"].includes(m.paymentMethod) || m.paymentName.toLowerCase().includes("va") || m.paymentName.toLowerCase().includes("virtual")),
-    "Retail Store": methods.filter(m => ["FT", "AL"].includes(m.paymentMethod) || m.paymentName.toLowerCase().includes("alfamart") || m.paymentName.toLowerCase().includes("indomaret")),
+    "E-Wallet & QRIS": methods.filter(m => 
+      ["SP", "DA", "OV", "NQ", "LA"].includes(m.paymentMethod) || 
+      m.paymentName.toLowerCase().includes("qris") || 
+      m.paymentName.toLowerCase().includes("dana") || 
+      m.paymentName.toLowerCase().includes("ovo") || 
+      m.paymentName.toLowerCase().includes("shopee") || 
+      m.paymentName.toLowerCase().includes("linkaja")
+    ),
+    "Virtual Account": methods.filter(m => 
+      ["VA", "BT", "B1", "M2", "I1", "BC", "BR", "NC"].includes(m.paymentMethod) || 
+      m.paymentName.toLowerCase().includes("va") || 
+      m.paymentName.toLowerCase().includes("virtual") ||
+      m.paymentName.toLowerCase().includes("bank")
+    ),
+    "Retail Store": methods.filter(m => 
+      ["FT", "AL", "IR"].includes(m.paymentMethod) || 
+      m.paymentName.toLowerCase().includes("alfamart") || 
+      m.paymentName.toLowerCase().includes("indomaret") ||
+      m.paymentName.toLowerCase().includes("pegadaian")
+    ),
   };
 
   return (

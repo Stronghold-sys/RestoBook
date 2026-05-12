@@ -362,7 +362,7 @@ export default function CartPage() {
               await fetch('/api/payment/check-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: currentOrderId })
+                body: JSON.stringify({ orderId: currentOrderId, duitkuOrderId: duitkuData.merchantOrderId })
               });
               router.push(`/customer/orders/${currentOrderId}`);
             },
@@ -378,7 +378,7 @@ export default function CartPage() {
               await fetch('/api/payment/check-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: currentOrderId })
+                body: JSON.stringify({ orderId: currentOrderId, duitkuOrderId: duitkuData.merchantOrderId })
               });
               router.push(`/customer/orders/${currentOrderId}`);
             }

@@ -573,11 +573,27 @@ export default function POSPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
 
-      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+      if (data.paymentUrl) {
         toast.dismiss(loadingToast);
         
-        // Ganti mode verifikasi ke status Aktif agar tombol "Kembali/Tutup" muncul di pojok
-        setVerificationStep("duitku_pop_active");
+        // OPEN DUITKU IN ISOLATED WINDOW (Prevents JS block crashes and SDK concurrency issues forever)
+        const wWidth = 500;
+        const wHeight = 700;
+        const wLeft = (window.screen.width / 2) - (wWidth / 2);
+        const wTop = (window.screen.height / 2) - (wHeight / 2);
+        
+        const popupName = `DuitkuPayment_${Date.now()}`; // Unique name for multiple concurrent windows support
+        const paymentWindow = window.open(
+          data.paymentUrl, 
+          popupName, 
+          `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes,status=no,menubar=no,toolbar=no`
+        );
+
+        // Focus the popup window if browsers allowed it
+        if (paymentWindow) paymentWindow.focus();
+
+        // Switch view on RestoBook to 'Waiting' so user sees loader and local exit buttons
+        setVerificationStep("duitku_waiting");
         setShowPaymentModal(true);
         setProcessing(false);
 
@@ -589,21 +605,27 @@ export default function POSPage() {
           isHandled = true;
           if (pollInterval) clearInterval(pollInterval);
           
-          forceCloseDuitku();
+          // Close secondary payment window instantly upon successful resolution
+          try {
+             if (paymentWindow && !paymentWindow.closed) {
+                paymentWindow.close();
+             }
+          } catch (e) { console.error("Failed to close popup automatically:", e); }
+
           toast.success("Pembayaran Lunas & Terkonfirmasi!", { duration: 4000 });
           
-          // Final security check/update to DB before finishing UI
+          // Final check & update to internal DB
           await fetch('/api/payment/check-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
           });
           
-          // Trigger complete native POS workflow to show receipts and clear cart
+          // Trigger Native workflow (receipt & cart clear)
           processPayment(true, methodName);
         };
 
-        // Start realtime status polling immediately upon popup showing
+        // REALTIME LISTENER (Independent of any SDK listeners)
         pollInterval = setInterval(async () => {
           try {
             const checkRes = await fetch('/api/payment/check-status', {
@@ -616,47 +638,15 @@ export default function POSPage() {
               handleFinalSuccess("Duitku (Realtime Detect)");
             }
           } catch(err) {
-            console.error("Background poll error:", err);
+            console.error("Poll Error:", err);
           }
-        }, 3000); // Poll every 3 seconds for true instant feedback
+        }, 3000);
 
-        (window as any).checkout.process(data.reference, {
-          successEvent: function(result: any) {
-            handleFinalSuccess("Duitku Pop");
-          },
-          pendingEvent: function(result: any) {
-            // Leave polling running to detect completion seamlessly
-            console.log("Duitku pending state received, waiting for real-time poll to confirm...");
-          },
-          errorEvent: function(result: any) {
-            if (pollInterval) clearInterval(pollInterval);
-            toast.error("Terjadi gangguan pada popup pembayaran.");
-            setProcessing(false);
-          },
-          closeEvent: async function() {
-            if (pollInterval) clearInterval(pollInterval);
-            // Instant final fetch upon manual close to see if paid while open
-            const checkRes = await fetch('/api/payment/check-status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
-            });
-            const checkData = await checkRes.json();
-            
-            if (checkData.status === 'paid') {
-              handleFinalSuccess("Duitku Close Manual");
-            } else {
-              // Only bounce back to menu if explicitly NOT paid yet
-              setVerificationStep("select_method");
-              setShowPaymentModal(true);
-              setProcessing(false);
-            }
-          }
-        });
-      } else if (data.paymentUrl) {
-        toast.success("Tagihan dibuat! Mengarahkan ke halaman pembayaran...", { id: loadingToast });
-        // Use direct redirect to match customer payment flow consistency
-        window.location.href = data.paymentUrl;
+        // Stop polling automatically if user clicks the internal Batal button and switches views
+        // We can handle this in cleaning the side-effects or within the effect dependency logic already set up earlier.
+      } else {
+        toast.error("Gagal generate link pembayaran.", { id: loadingToast });
+        setProcessing(false);
       }
     } catch (e: any) {
       toast.error(e.message, { id: loadingToast });
@@ -1184,133 +1174,109 @@ export default function POSPage() {
       {/* Modal Pembayaran */}
       <AnimatePresence>
         {showPaymentModal && (
-          <div className={`fixed inset-0 flex items-center justify-center p-4 ${verificationStep === 'duitku_pop_active' ? 'z-[2147483647]' : 'z-[100]'}`}>
-            {/* Only show overlay backdrop if NOT currently viewing the Duitku popup itself */}
-            {verificationStep !== 'duitku_pop_active' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-            )}
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
+                <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
 
-            {/* SCENARIO 1: Normal Payment Modal Views */}
-            {verificationStep !== 'duitku_pop_active' && (
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
-                  <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
-                </div>
-
-                {verificationStep === "select_method" && (
-                  <>
-                    <div className="mb-6">
-                      <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
-                      <div className="flex gap-3">
-                        <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                          <Banknote className="w-6 h-6" /> Tunai
-                        </button>
-                        <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                          <CreditCard className="w-6 h-6" /> Non-Tunai
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
-                      <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                      <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                    </div>
-
-                    {paymentMethod === "cash" ? (
-                      <div className="space-y-4 mb-6">
-                        <div>
-                          <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
-                          <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
-                        </div>
-                        
-                        {Number(cashAmount) > 0 && (
-                          <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                            <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
-                            <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
-                          </div>
-                        )}
-                        
-                        <button 
-                          onClick={() => processPayment(true)} 
-                          disabled={processing || Number(cashAmount) < cartTotal} 
-                          className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
-                        >
-                          {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mb-6 space-y-4">
-                        <PaymentMethodSelector 
-                          amount={cartTotal} 
-                          onSelect={(method) => setDuitkuMethod(method)} 
-                          selectedMethod={duitkuMethod} 
-                        />
-                        <button 
-                          onClick={handleGenerateDuitkuPOS} 
-                          disabled={processing || !duitkuMethod} 
-                          className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
-                        >
-                          {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {verificationStep === "duitku_waiting" && (
-                  <div className="space-y-6 text-center py-8">
-                    <div className="relative mx-auto w-24 h-24 mb-4">
-                      <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-                      <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
-                      <p className="text-sm text-muted mb-4">Minta pelanggan memindai QR Code di halaman tagihan pembayaran. Halaman ini akan tertutup otomatis saat pembayaran berhasil.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
-                      <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                      <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                    </div>
-                    <div className="pt-4 flex gap-3">
-                      <button 
-                        onClick={() => setVerificationStep("select_method")} 
-                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                      >
-                        Batal / Ganti Metode
+              {verificationStep === "select_method" && (
+                <>
+                  <div className="mb-6">
+                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                        <Banknote className="w-6 h-6" /> Tunai
                       </button>
-                      <button 
-                        onClick={() => processPayment(true)} 
-                        className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
-                      >
-                        Verifikasi Manual
+                      <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                        <CreditCard className="w-6 h-6" /> Non-Tunai
                       </button>
                     </div>
                   </div>
-                )}
-              </motion.div>
-            )}
 
-            {/* SCENARIO 2: DUITKU POP IS ACTIVE - RENDER GLOBAL EMERGENCY EXIT BUTTON ABOVE THE IFRAME */}
-            {verificationStep === 'duitku_pop_active' && (
-              <div className="fixed top-4 right-4 z-[2147483647]">
-                 <motion.button
-                   initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                   onClick={() => {
-                      forceCloseDuitku(); // Helper globally accessible
-                      setVerificationStep("select_method"); // Reset step
-                   }}
-                   className="flex items-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-sm tracking-wider shadow-[0_10px_40px_-10px_rgba(220,38,38,0.5)] border-2 border-white/20 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0.5"
-                 >
-                   <X className="w-5 h-5 font-black" /> BATAL / GANTI METODE
-                 </motion.button>
-              </div>
-            )}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
+                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                    <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                  </div>
+
+                  {paymentMethod === "cash" ? (
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
+                        <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
+                      </div>
+                      
+                      {Number(cashAmount) > 0 && (
+                        <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                          <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
+                          <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      
+                      <button 
+                        onClick={() => processPayment(true)} 
+                        disabled={processing || Number(cashAmount) < cartTotal} 
+                        className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
+                      >
+                        {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mb-6 space-y-4">
+                      <PaymentMethodSelector 
+                        amount={cartTotal} 
+                        onSelect={(method) => setDuitkuMethod(method)} 
+                        selectedMethod={duitkuMethod} 
+                      />
+                      <button 
+                        onClick={handleGenerateDuitkuPOS} 
+                        disabled={processing || !duitkuMethod} 
+                        className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
+                      >
+                        {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {verificationStep === "duitku_waiting" && (
+                <div className="space-y-6 text-center py-8">
+                  <div className="relative mx-auto w-24 h-24 mb-4">
+                    <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
+                    <p className="text-sm text-muted mb-4">Sebuah jendela pembayaran terpisah telah dibuka. Silakan minta pelanggan untuk menyelesaikan pembayaran disana.</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
+                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                    <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                  </div>
+                  <div className="pt-4 flex gap-3">
+                    <button 
+                      onClick={() => setVerificationStep("select_method")} 
+                      className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    >
+                      Batal / Ganti Metode
+                    </button>
+                    <button 
+                      onClick={() => processPayment(true)} 
+                      className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
+                    >
+                      Verifikasi Manual
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

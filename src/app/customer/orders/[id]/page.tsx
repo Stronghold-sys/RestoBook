@@ -108,8 +108,7 @@ export default function OrderTrackingPage() {
       if (data.reference) {
         toast.dismiss(pToast);
         // Gunakan Duitku Pop SDK untuk popup transparan
-        const checkout = new (window as any).checkout();
-        checkout.process(data.reference, {
+        (window as any).checkout.process(data.reference, {
           successEvent: function(result: any) {
             toast.success("Pembayaran berhasil!");
             fetchOrderDetails();

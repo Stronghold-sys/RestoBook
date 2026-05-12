@@ -348,8 +348,7 @@ export default function CartPage() {
         if (duitkuData.reference) {
           toast.dismiss(loadingToast);
           // Gunakan Duitku Pop SDK untuk popup transparan
-          const checkout = new (window as any).checkout();
-          checkout.process(duitkuData.reference, {
+          (window as any).checkout.process(duitkuData.reference, {
             successEvent: function(result: any) {
               toast.success("Pembayaran berhasil!");
               router.push(`/customer/orders/${orderData.id}`);

@@ -15,11 +15,12 @@ import toast from "react-hot-toast";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  role?: string;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, role: initialRole }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(initialRole || null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);

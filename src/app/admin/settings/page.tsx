@@ -96,14 +96,27 @@ export default function AdminSettingsPage() {
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 50, height: 50, x: 25, y: 25 });
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
+  const [cropTarget, setCropTarget] = useState<"logo" | "favicon">("logo");
+  const [faviconVersion, setFaviconVersion] = useState<number>(Date.now());
 
-  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onSelectLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      setCropTarget("logo");
       const reader = new FileReader();
       reader.addEventListener('load', () => setUpImg(reader.result));
       reader.readAsDataURL(e.target.files[0]);
       setShowCropModal(true);
-      // Reset crop
+      setCrop({ unit: '%', width: 50, height: 50, x: 25, y: 25 });
+    }
+  };
+
+  const onSelectFaviconFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCropTarget("favicon");
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setUpImg(reader.result));
+      reader.readAsDataURL(e.target.files[0]);
+      setShowCropModal(true);
       setCrop({ unit: '%', width: 50, height: 50, x: 25, y: 25 });
     }
   };
@@ -153,11 +166,14 @@ export default function AdminSettingsPage() {
     
     try {
       const croppedBlob = await getCroppedImg(imgRef.current, completedCrop, 'logo.png');
-      const file = new File([croppedBlob], `res_logo_${Date.now()}.png`, { type: 'image/png' });
+      const file = new File([croppedBlob], cropTarget === 'favicon' ? 'favicon.png' : `res_logo_${Date.now()}.png`, { type: 'image/png' });
       
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("bucket", "logos"); // Bypass RLS by using our server-side route
+      formData.append("bucket", "logos"); 
+      if (cropTarget === 'favicon') {
+        formData.append("customFileName", "favicon.png");
+      }
       
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -165,15 +181,22 @@ export default function AdminSettingsPage() {
       });
       
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Gagal mengunggah logo");
+      if (!res.ok) throw new Error(result.error || `Gagal mengunggah ${cropTarget}`);
       
-      // Auto-save to database so it doesn't disappear on refresh
-      if (settings.id) {
-        await supabase.from("restaurant_settings").update({ logo_url: result.url }).eq("id", settings.id);
+      if (cropTarget === 'logo') {
+        if (settings.id) {
+          await supabase.from("restaurant_settings").update({ logo_url: result.url }).eq("id", settings.id);
+        }
+        setSettings(prev => ({ ...prev, logo_url: result.url }));
+        toast.success("Logo berhasil diperbarui dan disimpan!");
+      } else {
+        // Trigger a tiny update to force realtime subscription across clients
+        if (settings.id) {
+          await supabase.from("restaurant_settings").update({ updated_at: new Date().toISOString() }).eq("id", settings.id);
+        }
+        setFaviconVersion(Date.now());
+        toast.success("Favicon berhasil diperbarui!");
       }
-      
-      setSettings(prev => ({ ...prev, logo_url: result.url }));
-      toast.success("Logo berhasil diperbarui dan disimpan!");
     } catch(err:any){ 
       toast.error(err.message); 
     } finally { 
@@ -273,8 +296,32 @@ export default function AdminSettingsPage() {
                 <p className="text-xs text-muted mb-3">Format PNG, JPG (Maks. 2MB)</p>
                 <label className="inline-flex items-center gap-2 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-xl text-xs font-black cursor-pointer hover:bg-border-light dark:hover:bg-border-dark transition-all">
                   <Upload className="w-3.5 h-3.5 text-primary" />
-                  <span>{uploading ? "PROSES..." : "UNGGAH LOGO"}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={onSelectFile} disabled={uploading} />
+                  <span>{uploading && cropTarget === 'logo' ? "PROSES..." : "UNGGAH LOGO"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={onSelectLogoFile} disabled={uploading} />
+                </label>
+              </div>
+            </div>
+
+            {/* FAVICON UPLOAD COMPONENT */}
+            <div className="pb-4 border-b border-border-light dark:border-border-dark flex items-center gap-5">
+              <div className="h-16 w-16 bg-background-light dark:bg-background-dark border-2 border-dashed border-muted/50 rounded-xl flex items-center justify-center overflow-hidden relative shadow-inner">
+                {process.env.NEXT_PUBLIC_SUPABASE_URL ? (
+                  <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logos/favicon.png?v=${faviconVersion}`} 
+                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                       onLoad={(e) => { e.currentTarget.style.display = 'block'; }}
+                       alt="Favicon" className="h-full w-full object-contain p-2 bg-white" />
+                ) : (
+                  <ImageIcon className="text-muted h-6 w-6 opacity-40" />
+                )}
+                {uploading && cropTarget === 'favicon' && <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center"><Loader2 className="animate-spin text-white w-4 h-4" /></div>}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm text-text-light dark:text-text-dark">Favicon / Ikon Browser</p>
+                <p className="text-xs text-muted mb-3">Tampil di samping judul tab (Rasio 1:1)</p>
+                <label className="inline-flex items-center gap-2 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-xl text-xs font-black cursor-pointer hover:bg-border-light dark:hover:bg-border-dark transition-all">
+                  <Upload className="w-3.5 h-3.5 text-primary" />
+                  <span>{uploading && cropTarget === 'favicon' ? "PROSES..." : "UNGGAH FAVICON"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={onSelectFaviconFile} disabled={uploading} />
                 </label>
               </div>
             </div>
@@ -679,18 +726,20 @@ export default function AdminSettingsPage() {
         {showCropModal && upImg && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl max-w-lg w-full">
-              <h3 className="text-xl font-black mb-4 text-gray-900 dark:text-white uppercase tracking-wider">Potong Logo</h3>
+              <h3 className="text-xl font-black mb-4 text-gray-900 dark:text-white uppercase tracking-wider">Potong {cropTarget === 'favicon' ? 'Favicon' : 'Logo'}</h3>
               <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] p-4">
                 <ReactCrop
                   crop={crop}
                   onChange={(c) => setCrop(c)}
                   onComplete={(c) => setCompletedCrop(c)}
-                  aspect={1}
+                  aspect={cropTarget === 'favicon' ? 1 : undefined}
                 >
                   <img src={upImg} onLoad={(e) => onLoad(e.currentTarget)} alt="Upload Preview" style={{ maxHeight: '60vh' }} />
                 </ReactCrop>
               </div>
-              <p className="text-xs text-muted mt-3 text-center">Gunakan aspek rasio 1:1 (Persegi) wajib agar ikon/logo terlihat jelas di tab browser.</p>
+              <p className="text-xs text-muted mt-3 text-center">
+                {cropTarget === 'favicon' ? "Gunakan aspek rasio 1:1 (Persegi) wajib agar favicon terlihat jelas di tab browser." : "Gunakan crop box untuk menentukan batas logo Anda."}
+              </p>
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowCropModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
                   Batal

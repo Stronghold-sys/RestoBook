@@ -16,14 +16,15 @@ export async function POST(req: NextRequest) {
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId || 'anon'}/${Date.now()}.${fileExt}`;
-    const filePath = isProfile ? `avatars/${fileName}` : `attachments/${fileName}`;
-
     const bucketName = formData.get('bucket') as string || 'profiles';
+    const customFileName = formData.get('customFileName') as string;
+    
+    const filePath = customFileName ? customFileName : (isProfile ? `avatars/${fileName}` : `attachments/${fileName}`);
     
     // 1. Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(bucketName)
-      .upload(filePath, file);
+      .upload(filePath, file, { upsert: true });
 
     if (uploadError) throw uploadError;
 

@@ -17,20 +17,33 @@ export default function DynamicFavicon() {
       link.href = url;
     };
 
-    // Initial fetch
-    const fetchLogo = async () => {
-      const { data } = await supabase.from('restaurant_settings').select('logo_url').single();
-      if (data && data.logo_url) {
-        updateFavicon(data.logo_url);
-      }
+    const getFaviconUrl = async (fallbackLogoUrl: string) => {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const faviconPath = `${supabaseUrl}/storage/v1/object/public/logos/favicon.png`;
+      try {
+        // Quick HEAD request to check if custom favicon exists
+        const res = await fetch(faviconPath, { method: 'HEAD', cache: 'no-store' });
+        if (res.ok) {
+          return `${faviconPath}?v=${Date.now()}`;
+        }
+      } catch (e) {}
+      return fallbackLogoUrl;
     };
-    fetchLogo();
+
+    // Initial fetch
+    const fetchFavicon = async () => {
+      const { data } = await supabase.from('restaurant_settings').select('logo_url').single();
+      const finalUrl = await getFaviconUrl(data?.logo_url || '/favicon.ico');
+      updateFavicon(finalUrl);
+    };
+    fetchFavicon();
 
     // Subscribe to realtime changes
     const channel = supabase.channel("favicon_sync")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurant_settings" }, (payload: any) => {
-        if (payload.new && payload.new.logo_url) {
-          updateFavicon(payload.new.logo_url);
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurant_settings" }, async (payload: any) => {
+        if (payload.new) {
+          const finalUrl = await getFaviconUrl(payload.new.logo_url || '/favicon.ico');
+          updateFavicon(finalUrl);
         }
       })
       .subscribe();

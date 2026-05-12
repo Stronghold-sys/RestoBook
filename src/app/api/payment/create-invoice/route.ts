@@ -174,7 +174,17 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    let data;
+    const responseText = await response.text();
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Duitku Non-JSON Response:", responseText);
+      return NextResponse.json({ 
+        error: `Duitku Error (${response.status}): Respon tidak valid`,
+        details: responseText.substring(0, 100)
+      }, { status: 400 });
+    }
 
     if (data.statusCode === '00') {
       return NextResponse.json({

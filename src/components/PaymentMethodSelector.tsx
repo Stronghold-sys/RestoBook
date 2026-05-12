@@ -86,7 +86,9 @@ export default function PaymentMethodSelector({ amount, onSelect, selectedMethod
                       <p className={`font-bold text-sm ${selectedMethod === method.paymentMethod ? "text-primary" : "text-text-light dark:text-text-dark"}`}>
                         {method.paymentName}
                       </p>
-                      <p className="text-[10px] text-muted font-medium">Biaya: Rp {Number(method.totalFee).toLocaleString("id-ID")}</p>
+                      <p className="text-[10px] text-muted font-medium">
+                        Biaya: {method.totalFee.includes('%') ? method.totalFee : `Rp ${Number(method.totalFee).toLocaleString("id-ID")}`}
+                      </p>
                     </div>
                   </div>
                   {selectedMethod === method.paymentMethod ? (

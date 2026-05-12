@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // Ambil detail order dengan join yang lengkap
     const { data: order, error } = await supabaseAdmin
       .from('orders')
-      .select('*, order_items(*, menu_items(name)), profiles(*)')
+      .select('*, order_items(*, menu_items(name)), profiles!customer_id(*)')
       .eq('id', orderId)
       .single();
 

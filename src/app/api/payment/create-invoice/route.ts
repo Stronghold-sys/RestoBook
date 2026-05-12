@@ -59,11 +59,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const itemDetails = (order.order_items || []).map((item: any) => ({
-      name: item.menu_items?.name || 'Menu Item',
-      price: Math.floor(item.price || 0),
-      quantity: item.quantity
-    }));
+    // Gunakan satu item gabungan untuk menghindari error validasi total amount Duitku
+    const itemDetails = [{
+      name: `Pesanan RestoBook #${merchantOrderId.substring(0, 8)}`,
+      price: paymentAmount,
+      quantity: 1
+    }];
 
     const payload = {
       merchantCode: DUITKU_MERCHANT_CODE,
@@ -81,10 +82,12 @@ export async function POST(req: Request) {
       expiryPeriod: 60 // 60 menit
     };
 
-    // Panggil API Duitku (Sandbox / Production)
-    // Gunakan passport.duitku.com untuk Production, api-sandbox.duitku.com untuk Sandbox
-    // Kita asumsikan Production sesuai permintaan user
-    const duitkuUrl = 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+    // Auto-detect Sandbox vs Production berdasarkan awalan Merchant Code
+    // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
+    const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
+    const duitkuUrl = isSandbox 
+      ? 'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
     
     const response = await fetch(duitkuUrl, {
       method: 'POST',

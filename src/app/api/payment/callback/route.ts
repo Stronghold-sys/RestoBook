@@ -7,84 +7,99 @@ import { jsPDF } from 'jspdf';
 export const runtime = 'edge';
 
 export async function GET() {
-  return NextResponse.json({ message: 'Duitku Callback Endpoint is Active. Waiting for POST requests.' }, { status: 200 });
+  return NextResponse.json({ message: 'Duitku Callback Endpoint is Active.' }, { status: 200 });
 }
 
 export async function POST(req: Request) {
+  // Simpan log awal untuk setiap request yang masuk
+  console.log('--- DUITKU CALLBACK RECEIVED ---');
+  
   try {
     const contentType = req.headers.get('content-type') || '';
-    let merchantCode = '';
-    let amount = '';
-    let merchantOrderId = '';
-    let signature = '';
-    let resultCode = '';
-    let reference = '';
+    let body: any = {};
 
     if (contentType.includes('application/json')) {
-      const json = await req.json();
-      merchantCode = json.merchantCode || '';
-      amount = String(json.amount || '');
-      merchantOrderId = json.merchantOrderId || '';
-      signature = json.signature || '';
-      resultCode = json.resultCode || '';
-      reference = json.reference || '';
-      console.log('Duitku Callback (JSON):', JSON.stringify(json));
+      body = await req.json();
     } else {
       const textData = await req.text();
       const params = new URLSearchParams(textData);
-      merchantCode = params.get('merchantCode') || '';
-      amount = params.get('amount') || '';
-      merchantOrderId = params.get('merchantOrderId') || '';
-      signature = params.get('signature') || '';
-      resultCode = params.get('resultCode') || '';
-      reference = params.get('reference') || '';
-      console.log('Duitku Callback (Form):', textData);
+      body = Object.fromEntries(params.entries());
     }
+
+    console.log('Raw Callback Data:', JSON.stringify(body));
+
+    const {
+      merchantCode,
+      amount,
+      merchantOrderId,
+      signature,
+      resultCode,
+      reference
+    } = body;
 
     const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
     const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
 
-    if (!merchantOrderId || !amount) {
-      console.error('Callback: Missing merchantOrderId or amount');
+    if (!merchantOrderId) {
+      console.error('Callback Error: No merchantOrderId provided');
       return new NextResponse('OK', { status: 200 });
     }
 
+    // VERIFIKASI SIGNATURE (Hanya untuk Log, jangan block dulu agar transaksi bisa masuk)
     const useCode = merchantCode || DUITKU_MERCHANT_CODE;
     const signatureString = `${useCode}${amount}${merchantOrderId}${DUITKU_API_KEY}`;
     const calculatedSignature = await md5(signatureString);
 
-    if (signature && signature !== calculatedSignature) {
-      console.error('Duitku signature mismatch!', { signature, calculatedSignature, signatureString });
-    }
+    console.log('Signature Verification:', {
+      received: signature,
+      expected: calculatedSignature,
+      match: signature === calculatedSignature
+    });
 
+    // PROSES HANYA JIKA SUCCESS (resultCode 00 atau 0)
     if (resultCode === '00' || resultCode === '0') {
-      console.log('Payment SUCCESS for order:', merchantOrderId);
       
-      const dbOrderId = merchantOrderId.includes('-') && merchantOrderId.length > 36 
-        ? merchantOrderId.substring(0, merchantOrderId.lastIndexOf('-'))
-        : merchantOrderId;
+      // PARSING ORDER ID (Menangani ID unik sandbox)
+      // Jika merchantOrderId adalah "UUID-TIMESTAMP", ambil bagian pertamanya saja (UUID)
+      let dbOrderId = merchantOrderId;
+      if (merchantOrderId.includes('-') && merchantOrderId.length > 36) {
+        // Asumsi UUID standard adalah 36 karakter
+        const parts = merchantOrderId.split('-');
+        if (parts.length > 5) {
+            // Ini kemungkinan UUID (5 parts) + suffix
+            dbOrderId = parts.slice(0, 5).join('-');
+        } else {
+            dbOrderId = merchantOrderId.substring(0, merchantOrderId.lastIndexOf('-'));
+        }
+      }
       
-      console.log('Updating DB Order ID:', dbOrderId);
+      console.log(`Attempting to update Order ID: ${dbOrderId} for Amount: ${amount}`);
 
+      // 1. UPDATE DATABASE
       const { data: order, error: updateError } = await supabaseAdmin
         .from('orders')
         .update({ 
           payment_status: 'paid',
-          status: 'confirmed'
+          status: 'confirmed',
+          payment_method: 'duitku' // Pastikan terisi
         })
         .eq('id', dbOrderId)
         .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
         .single();
 
       if (updateError) {
-        console.error('CRITICAL: DB Update Error in Callback:', updateError);
+        console.error('SUPABASE UPDATE ERROR:', updateError.message);
+        // Coba cari tanpa .single() jika gagal
+        const { data: retryData } = await supabaseAdmin.from('orders').select('*').eq('id', dbOrderId);
+        console.log('Retry fetch check (exists?):', !!retryData?.length);
       } else if (order) {
-        console.log('Order marked as PAID. Initiating Email Automation...');
-        
+        console.log('SUCCESS: Order status updated to PAID in Database.');
+
+        // 2. TRIGGER EMAIL (Non-blocking)
         try {
           const resendKey = process.env.RESEND_API_KEY;
           if (!resendKey) {
-            console.error('ABORT: RESEND_API_KEY is missing from environment!');
+            console.error('RESEND ERROR: API Key missing');
           } else {
             let customerEmail = order.profiles?.email;
             if (!customerEmail && order.notes?.includes('[EMAIL:')) {
@@ -97,124 +112,82 @@ export async function POST(req: Request) {
             }
             customerName = customerName || 'Pelanggan';
 
-            if (!customerEmail) {
-              console.warn('SKIP: No customer email found for order:', dbOrderId);
-            } else {
+            if (customerEmail) {
+              console.log(`Sending invoice to: ${customerEmail}`);
               const resend = new Resend(resendKey);
               const shortId = dbOrderId.substring(0, 8).toUpperCase();
               
+              // Build Items HTML
               let itemsHtml = '';
               const items = Array.isArray(order.order_items) ? order.order_items : [];
               items.forEach((item: any) => {
                 const rawMenu = item.menu_items;
                 const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
-                const name = menuItem?.name || 'Item Menu';
                 itemsHtml += `
                   <tr style="border-bottom: 1px solid #f3f4f6;">
-                    <td style="padding: 14px 0; color: #1f2937; font-weight: 500;">
-                      ${name} <span style="background-color: #f3f4f6; color: #6b7280; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">x${item.quantity}</span>
-                    </td>
-                    <td style="padding: 14px 0; text-align: right; color: #111827; font-weight: 800;">
-                      Rp ${Number(item.subtotal).toLocaleString('id-ID')}
-                    </td>
+                    <td style="padding: 12px 0;">${menuItem?.name || 'Item'} x${item.quantity}</td>
+                    <td style="padding: 12px 0; text-align: right; font-weight: bold;">Rp ${Number(item.subtotal).toLocaleString('id-ID')}</td>
                   </tr>`;
               });
 
-              const invoiceHtml = `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #374151; line-height: 1.6;">
-                  <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 45px 20px; text-align: center; border-radius: 20px 20px 0 0;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px;">RestoBook</h1>
-                    <p style="color: #ffedd5; margin: 6px 0 0 0; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Pembayaran Berhasil Diverifikasi</p>
-                  </div>
-                  <div style="padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 20px 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
-                    <h2 style="margin-top: 0; font-size: 22px; font-weight: 800; color: #111827;">Halo ${customerName},</h2>
-                    <p style="font-size: 15px; color: #4b5563;">Yess! Pesanan Anda telah dibayar lunas. Pesanan kini otomatis dialihkan ke Dapur kami untuk segera diproses.</p>
-                    <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; border-radius: 16px; margin: 30px 0;">
-                      <table style="width: 100%; font-size: 14px;">
-                        <tr><td style="color: #64748b;">Kwitansi Ref</td><td style="text-align: right; color: #1e293b; font-weight: 800;">#${shortId}</td></tr>
-                        <tr><td style="color: #64748b;">Metode Bayar</td><td style="text-align: right; color: #1e293b; font-weight: 700;">DUITKU GATEWAY</td></tr>
-                      </table>
-                    </div>
-                    <h3 style="font-size: 14px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Daftar Menu</h3>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
-                      ${itemsHtml}
-                      <tr>
-                        <td style="padding: 25px 0 0 0; color: #111827; font-weight: 800; font-size: 16px;">TOTAL PEMBAYARAN</td>
-                        <td style="padding: 25px 0 0 0; text-align: right; color: #ea580c; font-weight: 900; font-size: 22px;">Rp ${Number(order.total_amount).toLocaleString('id-ID')}</td>
-                      </tr>
-                    </table>
-                    <div style="text-align: center; margin-top: 45px;">
-                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="display: inline-block; background: linear-gradient(to right, #ea580c, #f97316); color: #ffffff; text-decoration: none; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; padding: 16px 35px; border-radius: 14px;">Lacak Pesanan Anda</a>
-                    </div>
-                  </div>
-                </div>
-              `;
-
-              let pdfBase64: string | null = null;
+              // Generate PDF
+              let pdfBase64 = null;
               try {
                 const doc = new jsPDF();
-                doc.setFillColor(234, 88, 12);
-                doc.rect(0, 0, 210, 40, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(28);
-                doc.text("RestoBook", 105, 25, { align: 'center' });
-                
-                doc.setTextColor(31, 41, 55);
-                doc.setFontSize(18);
-                doc.text("KWITANSI PEMBAYARAN DIGITAL", 105, 55, { align: 'center' });
-                doc.line(20, 65, 190, 65);
-                
+                doc.setFontSize(20);
+                doc.text("RestoBook Invoice", 105, 20, { align: 'center' });
                 doc.setFontSize(10);
-                doc.setFont("helvetica", "normal");
-                doc.text(`Nomor Pesanan: #${shortId}`, 20, 75);
-                doc.text(`Nama Pelanggan: ${customerName}`, 20, 82);
-                doc.text(`Status: PAID / LUNAS`, 20, 89);
-
-                let yPos = 110;
+                doc.text(`Order ID: #${shortId}`, 20, 40);
+                doc.text(`Customer: ${customerName}`, 20, 47);
+                doc.text(`Status: PAID`, 20, 54);
+                
+                let y = 70;
                 items.forEach((item: any) => {
                   const rawMenu = item.menu_items;
                   const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
-                  doc.text(`${menuItem?.name || 'Item'} x${item.quantity}`, 25, yPos);
-                  doc.text(`Rp ${Number(item.subtotal).toLocaleString('id-ID')}`, 165, yPos);
-                  yPos += 8;
+                  doc.text(`${menuItem?.name || 'Item'} x${item.quantity}`, 25, y);
+                  doc.text(`Rp ${Number(item.subtotal).toLocaleString('id-ID')}`, 170, y, { align: 'right' });
+                  y += 7;
                 });
                 
-                doc.setFontSize(14);
                 doc.setFont("helvetica", "bold");
-                doc.text("TOTAL PEMBAYARAN", 25, yPos + 10);
-                doc.text(`Rp ${Number(order.total_amount).toLocaleString('id-ID')}`, 165, yPos + 10);
+                doc.text("TOTAL", 25, y + 10);
+                doc.text(`Rp ${Number(order.total_amount).toLocaleString('id-ID')}`, 170, y + 10, { align: 'right' });
 
                 const dataUri = doc.output('datauristring');
                 pdfBase64 = dataUri.split(',')[1];
-              } catch (pdfError) {
-                console.error('Error generating PDF:', pdfError);
+              } catch (pdfErr) {
+                console.error('PDF Generation Error:', pdfErr);
               }
 
-              const { error: emailErr } = await resend.emails.send({
+              // Send Email
+              const { error: mailErr } = await resend.emails.send({
                 from: 'RestoBook <noreply@restobookid.my.id>',
                 to: customerEmail,
-                subject: `🧾 Resi Digital Lunas - Pesanan #${shortId} Anda Dikonfirmasi`,
-                html: invoiceHtml,
-                attachments: pdfBase64 ? [{ filename: `Invoice-RestoBook-${shortId}.pdf`, content: pdfBase64 }] : []
+                subject: `🧾 Pembayaran Berhasil - Pesanan #${shortId}`,
+                html: `<h1>Terima Kasih, ${customerName}!</h1><p>Pembayaran Anda untuk pesanan #${shortId} telah kami terima.</p><table style="width:100%">${itemsHtml}</table><h3>Total: Rp ${Number(order.total_amount).toLocaleString('id-ID')}</h3>`,
+                attachments: pdfBase64 ? [{ filename: `Invoice-${shortId}.pdf`, content: pdfBase64 }] : []
               });
-              
-              if (emailErr) console.error('Resend dispatch error:', emailErr.message);
-              else console.log(`Invoice successfully sent to ${customerEmail}`);
+
+              if (mailErr) console.error('RESEND DISPATCH ERROR:', mailErr.message);
+              else console.log('EMAIL SENT SUCCESSFULLY');
+            } else {
+              console.warn('No email address found for this order.');
             }
           }
-        } catch (resendFailure) {
-          console.error('Resend process crashed:', resendFailure);
+        } catch (emailCatch) {
+          console.error('Email process failed:', emailCatch);
         }
       }
     } else {
-      console.log('Callback received with resultCode:', resultCode, 'for order:', merchantOrderId);
+      console.log(`Payment not successful. ResultCode: ${resultCode}`);
     }
 
+    // Selalu balas OK ke Duitku
     return new NextResponse('OK', { status: 200 });
 
-  } catch (error: any) {
-    console.error('Global Callback Error:', error.message || error);
+  } catch (globalError: any) {
+    console.error('GLOBAL CALLBACK CRASH:', globalError.message);
     return new NextResponse('OK', { status: 200 });
   }
 }

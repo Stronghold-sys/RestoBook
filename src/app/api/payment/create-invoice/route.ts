@@ -66,8 +66,11 @@ export async function POST(req: Request) {
       quantity: 1
     }];
 
+    const merchantCode = DUITKU_MERCHANT_CODE || '';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
     const payload = {
-      merchantCode: DUITKU_MERCHANT_CODE,
+      merchantCode: merchantCode,
       paymentAmount: paymentAmount,
       merchantOrderId: merchantOrderId,
       productDetails: `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`,
@@ -75,15 +78,16 @@ export async function POST(req: Request) {
       customerVaName: customerDetail.firstName,
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback`,
-      returnUrl: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/customer/orders/${merchantOrderId}`,
+      paymentMethod: "", // Kosongkan agar user bisa pilih metode pembayaran di Duitku
+      callbackUrl: `${baseUrl}/api/payment/callback`,
+      returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
       signature: signature,
       expiryPeriod: 60 // 60 menit
     };
 
     // Auto-detect Sandbox vs Production berdasarkan awalan Merchant Code
     // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
-    const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
+    const isSandbox = merchantCode.startsWith('DS');
     const duitkuUrl = isSandbox 
       ? 'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
       : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';

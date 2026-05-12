@@ -343,7 +343,8 @@ export default function CartPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             orderId: orderData.id,
-            paymentMethod: duitkuMethod 
+            paymentMethod: duitkuMethod,
+            returnUrl: `${window.location.origin}/customer/orders/${orderData.id}`
           })
         });
         const duitkuData = await res.json();
@@ -568,7 +569,7 @@ export default function CartPage() {
                         disabled={loading || !duitkuMethod} 
                         className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
                       >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Globe className="w-5 h-5" /> Bayar Sekarang</>}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
                       </button>
                     </div>
                   </div>

@@ -551,7 +551,8 @@ export default function POSPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           orderId,
-          paymentMethod: duitkuMethod // Gunakan metode yang dipilih user
+          paymentMethod: duitkuMethod,
+          returnUrl: window.location.href
         })
       });
       const data = await res.json();
@@ -607,11 +608,9 @@ export default function POSPage() {
           }
         });
       } else if (data.paymentUrl) {
-        toast.success("Tagihan dibuat! Menunggu pembayaran...", { id: loadingToast });
-        // Fallback: copy link & open window
-        window.open(data.paymentUrl, "OnlinePaymentPOS", "width=450,height=700");
-        setVerificationStep("duitku_waiting");
-        setProcessing(false);
+        toast.success("Tagihan dibuat! Mengarahkan ke halaman pembayaran...", { id: loadingToast });
+        // Use direct redirect to match customer payment flow consistency
+        window.location.href = data.paymentUrl;
       }
     } catch (e: any) {
       toast.error(e.message, { id: loadingToast });
@@ -1208,7 +1207,7 @@ export default function POSPage() {
                             disabled={processing || !duitkuMethod} 
                             className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
                           >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Globe className="w-5 h-5" /> Bayar Sekarang</>}
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
                           </button>
                         </>
                       ) : (

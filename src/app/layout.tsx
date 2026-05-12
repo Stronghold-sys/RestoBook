@@ -16,6 +16,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isSandbox = process.env.DUITKU_MERCHANT_CODE?.startsWith('DS') ?? true;
+  // Use dynamic SDK URL based on environment, default to Sandbox if not specified
+  const duitkuScriptUrl = isSandbox 
+    ? "https://api-sandbox.duitku.com/lib/js/duitku.js" 
+    : "https://api-prod.duitku.com/lib/js/duitku.js";
+
   return (
     <html lang="id">
       <body className={inter.className}>
@@ -23,7 +29,7 @@ export default function RootLayout({
         {children}
         <Toaster position="top-center" />
         {/* Duitku Pop SDK - untuk popup pembayaran transparan */}
-        <script src="https://api-sandbox.duitku.com/lib/js/duitku.js" async></script>
+        <script src={duitkuScriptUrl} async></script>
       </body>
     </html>
   );

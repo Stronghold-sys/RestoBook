@@ -99,7 +99,8 @@ export default function OrderTrackingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           orderId: id,
-          paymentMethod: duitkuMethod
+          paymentMethod: duitkuMethod,
+          returnUrl: window.location.href
         })
       });
       const data = await res.json();
@@ -430,7 +431,7 @@ export default function OrderTrackingPage() {
                       disabled={paying}
                       className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
                     >
-                      {paying ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Globe className="w-6 h-6" /> Bayar Sekarang</>}
+                      {paying ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Bayar Sekarang</>}
                     </button>
                     <p className="text-[10px] text-center text-muted font-bold uppercase tracking-widest">
                       Aman & Terverifikasi Otomatis
@@ -482,7 +483,7 @@ export default function OrderTrackingPage() {
                   disabled={paying || !duitkuMethod} 
                   className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-primary/20 disabled:opacity-50 uppercase tracking-widest text-sm"
                 >
-                  {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Globe className="w-5 h-5" /> Bayar Sekarang</>}
+                  {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
                 </button>
               </div>
             </motion.div>

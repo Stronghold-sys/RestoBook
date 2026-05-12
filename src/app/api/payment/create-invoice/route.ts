@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { md5 } from '@/lib/md5';
+import { Resend } from 'resend';
 
 export const runtime = 'edge';
 
@@ -214,6 +215,43 @@ export async function POST(req: NextRequest) {
 
     // Standard validation: Capture token and payment URL issued by gateway
     if (data.reference && data.paymentUrl) {
+      // KIRIM EMAIL INSTRUKSI PEMBAYARAN (NON-BLOCKING)
+      try {
+        const resendKey = process.env.RESEND_API_KEY;
+        if (resendKey && customerDetail.email) {
+          const resend = new Resend(resendKey);
+          await resend.emails.send({
+            from: 'RestoBook <noreply@restobookid.my.id>',
+            to: customerDetail.email,
+            subject: `💳 Instruksi Pembayaran Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()}`,
+            html: `
+              <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
+                <h2 style="color:#f97316;">Menunggu Pembayaran</h2>
+                <p>Halo ${customerDetail.firstName},</p>
+                <p>Pesanan Anda telah kami terima. Silakan selesaikan pembayaran menggunakan tautan di bawah ini:</p>
+                <div style="text-align:center; margin:30px 0;">
+                  <a href="${data.paymentUrl}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Selesaikan Pembayaran Sekarang</a>
+                </div>
+                <div style="background:#fff7ed; padding:15px; border-radius:10px; border:1px solid #ffedd5;">
+                  <p style="margin:0; font-weight:bold; color:#9a3412;">💡 Petunjuk Pembayaran Virtual Account & Retail:</p>
+                  <ul style="color:#9a3412; font-size:14px; margin-top:10px;">
+                    <li>Buka aplikasi Bank atau m-Banking Anda.</li>
+                    <li>Pilih menu Transfer / Virtual Account.</li>
+                    <li>Masukkan nomor Virtual Account yang tertera di halaman pembayaran.</li>
+                    <li>Pastikan nominal sesuai dengan total pesanan Anda.</li>
+                    <li>Simpan bukti pembayaran Anda.</li>
+                  </ul>
+                </div>
+                <p style="font-size:12px; color:#888; margin-top:20px;">Pesanan akan diproses otomatis setelah pembayaran Anda terverifikasi oleh sistem kami.</p>
+              </div>
+            `
+          });
+          console.log('Instruction email sent to:', customerDetail.email);
+        }
+      } catch (mailErr) {
+        console.error('Failed to send instruction email:', mailErr);
+      }
+
       return NextResponse.json({
         reference: data.reference,
         paymentUrl: data.paymentUrl,

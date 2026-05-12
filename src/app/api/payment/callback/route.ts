@@ -79,16 +79,24 @@ export async function POST(req: Request) {
               await resend.emails.send({
                 from: 'RestoBook <noreply@restobookid.my.id>',
                 to: customerEmail,
-                subject: `🧾 Pembayaran Diterima - Pesanan #${shortId} Menunggu Konfirmasi`,
+                subject: `✅ Pembayaran Berhasil - Pesanan #${shortId} Sedang Diverifikasi`,
                 html: `
                   <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
-                    <h1 style="color:#f97316;">Pembayaran Berhasil!</h1>
-                    <p>Halo ${customerName}, pembayaran Anda untuk pesanan <b>#${shortId}</b> telah kami terima.</p>
-                    <p><b>Status Saat Ini:</b> Menunggu Konfirmasi Kasir.</p>
-                    <p>Mohon tunggu sebentar, kami akan segera mengonfirmasi pesanan Anda untuk mulai diproses di dapur.</p>
-                    <div style="text-align:center; margin:30px 0;">
-                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Pantau Pesanan</a>
+                    <div style="text-align:center; padding-bottom:20px; border-bottom:2px solid #f97316; margin-bottom:20px;">
+                      <h1 style="color:#f97316; margin:0;">RestoBook</h1>
                     </div>
+                    <h2 style="color:#111827;">Pembayaran Anda Berhasil!</h2>
+                    <p>Halo <b>${customerName}</b>,</p>
+                    <p>Terima kasih! Kami telah menerima pembayaran Anda untuk pesanan <b>#${shortId}</b>.</p>
+                    <div style="background-color:#f8fafc; padding:15px; border-radius:10px; margin:20px 0;">
+                       <p style="margin:0; font-size:14px; color:#64748b;">Langkah Selanjutnya:</p>
+                       <p style="margin:5px 0 0 0; font-weight:bold; color:#1e293b;">Mohon tunggu sebentar, Kasir kami sedang memverifikasi pesanan Anda untuk segera diproses di dapur.</p>
+                    </div>
+                    <div style="text-align:center; margin:30px 0;">
+                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Pantau Pesanan Anda</a>
+                    </div>
+                    <hr style="border:none; border-top:1px solid #eee;" />
+                    <p style="font-size:12px; color:#999; text-align:center;">RestoBook ID - Solusi Pemesanan Restoran Modern</p>
                   </div>
                 `
               });

@@ -2,12 +2,13 @@
 
 export const runtime = 'edge';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { 
   ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
-  ChevronRight, ArrowRight, Printer, MessageSquare, 
-  Timer, Globe, Check, X, AlertTriangle
+  Globe, Check, X, AlertTriangle, Filter, 
+  ArrowRight, MessageSquare, Timer, Zap, History,
+  Volume2, VolumeX, ChevronRight, MapPin
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -20,6 +21,7 @@ export default function OnlineOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"pending" | "processing" | "history">("pending");
   const [cashierName, setCashierName] = useState("");
   const supabase = createClient();
 
@@ -32,9 +34,15 @@ export default function OnlineOrdersPage() {
     fetchOrders();
     fetchCashierName();
 
+    // Realtime Listener
     const channel = supabase
-      .channel('online-orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .channel('online-orders-management')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'orders',
+        filter: "order_type=eq.delivery"
+      }, () => fetchOrders())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -49,11 +57,10 @@ export default function OnlineOrdersPage() {
   };
 
   const fetchOrders = async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from('orders')
-      .select('*, profiles(full_name, email), order_items(*, menu_items(*))')
-      .eq('order_type', 'delivery') // Fokus hanya pesanan online (delivery)
+      .select('*, profiles(full_name, email, phone), order_items(*, menu_items(*))')
+      .eq('order_type', 'delivery')
       .order('created_at', { ascending: false });
 
     if (!error) setOrders(data || []);
@@ -77,8 +84,16 @@ export default function OnlineOrdersPage() {
 
       if (error) throw error;
       
-      toast.success(newStatus === 'confirmed' ? "Pesanan Diterima & Masuk Dapur" : "Pesanan Berhasil Dibatalkan", { id: loadingToast });
-      setSelectedOrder(null);
+      toast.success(
+        newStatus === 'confirmed' ? "Pesanan Diterima!" : 
+        newStatus === 'processing' ? "Pesanan Mulai Diproses" :
+        newStatus === 'completed' ? "Pesanan Selesai" : "Pesanan Dibatalkan", 
+        { id: loadingToast }
+      );
+      
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
       setShowRejectModal(false);
       setRejectionReason("");
       fetchOrders();
@@ -87,234 +102,315 @@ export default function OnlineOrdersPage() {
     }
   };
 
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(search.toLowerCase()) ||
-    order.profiles?.full_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = 
+      order.id.toLowerCase().includes(search.toLowerCase()) ||
+      order.profiles?.full_name?.toLowerCase().includes(search.toLowerCase());
+    
+    if (!matchesSearch) return false;
 
-  const getStatusColor = (status: string) => {
+    if (activeTab === "pending") return order.status === "pending";
+    if (activeTab === "processing") return order.status === "confirmed" || order.status === "processing";
+    if (activeTab === "history") return order.status === "completed" || order.status === "cancelled";
+    
+    return true;
+  });
+
+  const getStatusInfo = (status: string) => {
     switch (status) {
-      case "pending": return "bg-amber-100 text-amber-700 border-amber-200";
-      case "confirmed": return "bg-orange-100 text-orange-700 border-orange-200";
-      case "processing": return "bg-blue-100 text-blue-700 border-blue-200";
-      case "completed": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "cancelled": return "bg-rose-100 text-rose-700 border-rose-200";
-      default: return "bg-gray-100 text-gray-700";
+      case "pending": return { label: "Baru", color: "bg-rose-100 text-rose-700 border-rose-200", icon: Zap };
+      case "confirmed": return { label: "Diterima", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 };
+      case "processing": return { label: "Diproses", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Timer };
+      case "completed": return { label: "Selesai", color: "bg-gray-100 text-gray-700 border-gray-200", icon: History };
+      case "cancelled": return { label: "Ditolak", color: "bg-rose-100 text-rose-700 border-rose-200", icon: XCircle };
+      default: return { label: status, color: "bg-gray-100 text-gray-700 border-gray-200", icon: Clock };
     }
   };
 
   return (
-    <div className="p-4 lg:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 lg:p-8 space-y-8 bg-background-light dark:bg-background-dark min-h-screen">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-black text-text-light dark:text-text-dark flex items-center gap-2">
-            <Globe className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-black text-text-light dark:text-text-dark flex items-center gap-3 tracking-tight">
+            <div className="p-2.5 bg-primary/10 rounded-2xl text-primary">
+              <Globe className="w-8 h-8" />
+            </div>
             Manajemen Pesanan Online
           </h1>
-          <p className="text-muted text-sm mt-1">Kelola dan verifikasi pesanan yang masuk melalui aplikasi pelanggan.</p>
+          <p className="text-muted text-sm mt-1 font-medium">Monitoring dan verifikasi pesanan pelanggan secara real-time.</p>
         </div>
         
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Cari ID atau nama pelanggan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-4 py-2.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none w-full md:w-80 transition-all text-sm"
-          />
+        <div className="flex items-center gap-4">
+           <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Cari Pesanan..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-12 pr-4 py-3.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl focus:ring-2 focus:ring-primary outline-none w-full md:w-64 transition-all text-sm font-bold shadow-sm"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Order List */}
-        <div className="lg:col-span-7 space-y-4">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark">
-              <Clock className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-muted text-sm animate-pulse">Menghubungkan ke database...</p>
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark">
-              <ShoppingBag className="w-12 h-12 text-muted/30" />
-              <p className="text-muted font-medium">Belum ada pesanan online masuk.</p>
-            </div>
-          ) : (
-            filteredOrders.map((order) => (
-              <motion.div
-                key={order.id}
-                layoutId={order.id}
-                onClick={() => setSelectedOrder(order)}
-                className={`p-5 rounded-3xl border transition-all cursor-pointer group relative overflow-hidden ${
-                  selectedOrder?.id === order.id 
-                    ? "bg-primary/5 border-primary shadow-lg shadow-primary/10" 
-                    : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-xl hover:translate-y-[-2px]"
-                }`}
+      {/* Tabs Selector */}
+      <div className="flex gap-2 p-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl w-fit shadow-sm">
+        {[
+          { id: "pending", label: "Baru", icon: Zap, count: orders.filter(o => o.status === "pending").length },
+          { id: "processing", label: "Aktif", icon: Timer, count: orders.filter(o => ["confirmed", "processing"].includes(o.status)).length },
+          { id: "history", label: "Riwayat", icon: History, count: orders.filter(o => ["completed", "cancelled"].includes(o.status)).length }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
+              activeTab === tab.id 
+                ? "bg-primary text-white shadow-lg shadow-primary/20 scale-105" 
+                : "text-muted hover:text-text-light dark:hover:text-text-dark"
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+            {tab.count > 0 && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.id ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Order List List */}
+        <div className="lg:col-span-7 space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
+          <AnimatePresence mode="popLayout">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-4 bg-card-light dark:bg-card-dark rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-sm">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-muted font-black text-xs uppercase tracking-widest animate-pulse">Menghubungkan Server...</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center h-64 gap-4 bg-card-light dark:bg-card-dark rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-sm"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Globe className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-black text-sm text-text-light dark:text-text-dark">
-                        #{order.id.substring(0, 8).toUpperCase()}
-                      </h3>
-                      <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
-                        {format(new Date(order.created_at), "HH:mm · dd MMM yyyy", { locale: localeId })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(order.status)}`}>
-                    {order.status === 'pending' ? 'Menunggu' : order.status === 'confirmed' ? 'Diterima' : order.status}
-                  </div>
+                <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-full text-muted/30">
+                  <ShoppingBag className="w-10 h-10" />
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted uppercase">Pelanggan</p>
-                    <p className="text-sm font-black text-text-light dark:text-text-dark">{order.profiles?.full_name || 'Pelanggan Umum'}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="text-xs font-bold text-muted uppercase">Total Bayar</p>
-                    <p className="text-base font-black text-primary">Rp {Number(order.total_amount).toLocaleString('id-ID')}</p>
-                  </div>
-                </div>
-
-                {order.status === 'pending' && (
-                  <div className="mt-4 flex gap-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'confirmed'); }}
-                      className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-4 h-4" /> Terima
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setOrderToReject(order); setShowRejectModal(true); }}
-                      className="flex-1 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-                    >
-                      <X className="w-4 h-4" /> Tolak
-                    </button>
-                  </div>
-                )}
+                <p className="text-muted font-bold">Tidak ada pesanan di tab {activeTab}.</p>
               </motion.div>
-            ))
-          )}
+            ) : (
+              filteredOrders.map((order) => {
+                const statusInfo = getStatusInfo(order.status);
+                const Icon = statusInfo.icon;
+                return (
+                  <motion.div
+                    key={order.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    onClick={() => setSelectedOrder(order)}
+                    className={`p-6 rounded-[2rem] border transition-all cursor-pointer group relative overflow-hidden ${
+                      selectedOrder?.id === order.id 
+                        ? "bg-primary/5 border-primary shadow-2xl shadow-primary/10" 
+                        : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-xl hover:translate-y-[-2px]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-5">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl ${statusInfo.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-base text-text-light dark:text-text-dark tracking-tight">
+                            #{order.id.substring(0, 8).toUpperCase()}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Clock className="w-3 h-3 text-muted" />
+                            <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
+                              {format(new Date(order.created_at), "HH:mm · dd MMM", { locale: localeId })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-2xl border border-border-light/50 dark:border-border-dark/50">
+                      <div>
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Pelanggan</p>
+                        <p className="text-sm font-black text-text-light dark:text-text-dark truncate">
+                          {order.profiles?.full_name || 'Guest'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Total Bayar</p>
+                        <p className="text-base font-black text-primary">Rp {Number(order.total_amount).toLocaleString('id-ID')}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                       <div className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase">
+                          <MapPin className="w-3 h-3 text-primary" /> Delivery Order
+                       </div>
+                       <ChevronRight className={`w-5 h-5 text-muted transition-transform ${selectedOrder?.id === order.id ? 'rotate-90 text-primary' : 'group-hover:translate-x-1'}`} />
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Order Details Panel */}
+        {/* Detail Panel */}
         <div className="lg:col-span-5">
           <AnimatePresence mode="wait">
             {selectedOrder ? (
               <motion.div
                 key={selectedOrder.id}
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-6 sticky top-8 shadow-2xl"
+                exit={{ opacity: 0, x: 30 }}
+                className="bg-card-light dark:bg-card-dark rounded-[2.5rem] border border-border-light dark:border-border-dark p-8 sticky top-8 shadow-2xl overflow-hidden"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-text-light dark:text-text-dark">Detail Pesanan</h2>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <h2 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Detail Transaksi</h2>
                   <button 
                     onClick={() => setSelectedOrder(null)} 
                     aria-label="Tutup Detail"
                     title="Tutup Detail"
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
                   >
-                    <X className="w-5 h-5 text-muted" />
+                    <X className="w-6 h-6 text-muted" />
                   </button>
                 </div>
 
-                <div className="space-y-6">
-                  {/* Customer Info */}
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-border-light dark:border-border-dark">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                <div className="space-y-8 relative z-10">
+                  {/* Customer Info Card */}
+                  <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-xl shadow-lg shadow-primary/30">
                         {selectedOrder.profiles?.full_name?.charAt(0) || 'P'}
                       </div>
                       <div>
-                        <p className="text-sm font-black text-text-light dark:text-text-dark">{selectedOrder.profiles?.full_name || 'Pelanggan Umum'}</p>
-                        <p className="text-[10px] text-muted font-bold">{selectedOrder.profiles?.email || 'No Email'}</p>
+                        <p className="text-base font-black text-text-light dark:text-text-dark leading-none">{selectedOrder.profiles?.full_name || 'Pelanggan Umum'}</p>
+                        <p className="text-xs text-muted font-bold mt-1.5">{selectedOrder.profiles?.email || 'Tidak ada email'}</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Items */}
-                  <div className="space-y-3">
-                    <p className="text-xs font-black text-muted uppercase tracking-widest">Daftar Menu</p>
-                    {selectedOrder.order_items?.map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                            {item.menu_items?.image_url ? (
-                              <Image src={item.menu_items.image_url} alt={item.menu_items.name} width={48} height={48} className="object-cover w-full h-full" />
-                            ) : (
-                              <ShoppingBag className="w-5 h-5 text-muted/30" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-text-light dark:text-text-dark">{item.menu_items?.name}</p>
-                            <p className="text-[10px] text-muted font-bold uppercase">{item.quantity} x Rp {Number(item.price).toLocaleString('id-ID')}</p>
-                            {item.notes && <p className="text-[9px] text-primary font-bold mt-1 italic">Note: {item.notes}</p>}
-                          </div>
-                        </div>
-                        <p className="text-sm font-black text-text-light dark:text-text-dark">Rp {Number(item.subtotal).toLocaleString('id-ID')}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Summary */}
-                  <div className="pt-6 border-t border-border-light dark:border-border-dark space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-muted">Subtotal</span>
-                      <span className="text-sm font-bold text-text-light dark:text-text-dark">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-lg font-black">
-                      <span className="text-text-light dark:text-text-dark">Total</span>
-                      <span className="text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  {selectedOrder.status === 'pending' && (
-                    <div className="flex gap-3 pt-4">
-                      <button 
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}
-                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
-                      >
-                        <Check className="w-5 h-5" /> TERIMA PESANAN
-                      </button>
-                      <button 
-                        onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
-                        aria-label="Tolak Pesanan"
-                        title="Tolak Pesanan"
-                        className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-rose-500/20"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedOrder.status === 'confirmed' && (
-                    <div className="flex flex-col gap-2 pt-4">
-                       <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Pesanan telah diterima dan sedang diproses di dapur.</p>
+                    <div className="flex gap-2">
+                       <div className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border-light dark:border-border-dark text-[10px] font-black text-muted uppercase tracking-widest text-center">
+                          {selectedOrder.profiles?.phone || 'Tanpa HP'}
                        </div>
-                       <button 
-                          onClick={() => updateOrderStatus(selectedOrder.id, 'processing')}
-                          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
-                        >
-                          PROSES SEKARANG
-                        </button>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Items List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-black text-muted uppercase tracking-widest">Daftar Menu</p>
+                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-black">{selectedOrder.order_items?.length} Items</span>
+                    </div>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      {selectedOrder.order_items?.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800/40 rounded-2xl border border-border-light/50 dark:border-border-dark/50">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border-light dark:border-border-dark">
+                              {item.menu_items?.image_url ? (
+                                <Image src={item.menu_items.image_url} alt={item.menu_items.name} width={48} height={48} className="object-cover w-full h-full" />
+                              ) : (
+                                <ShoppingBag className="w-5 h-5 text-muted/30" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-text-light dark:text-text-dark">{item.menu_items?.name}</p>
+                              <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{item.quantity} x Rp {Number(item.price).toLocaleString('id-ID')}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-black text-primary">Rp {Number(item.subtotal).toLocaleString('id-ID')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pricing Summary */}
+                  <div className="pt-6 border-t-2 border-dashed border-border-light dark:border-border-dark space-y-3">
+                    <div className="flex justify-between items-center text-sm font-bold text-muted uppercase tracking-wider">
+                      <span>Subtotal</span>
+                      <span className="text-text-light dark:text-text-dark">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Total Akhir</span>
+                      <span className="text-3xl font-black text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+
+                  {/* Conditional Actions */}
+                  <div className="pt-4">
+                    {selectedOrder.status === 'pending' && (
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                          <Check className="w-5 h-5" /> TERIMA
+                        </button>
+                        <button 
+                          onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
+                          aria-label="Tolak Pesanan"
+                          title="Tolak Pesanan"
+                          className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedOrder.status === 'confirmed' && (
+                      <button 
+                        onClick={() => updateOrderStatus(selectedOrder.id, 'processing')}
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-sm"
+                      >
+                        <Timer className="w-6 h-6" /> MULAI PROSES MASAK
+                      </button>
+                    )}
+
+                    {selectedOrder.status === 'processing' && (
+                      <button 
+                        onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-sm"
+                      >
+                        <CheckCircle2 className="w-6 h-6" /> SELESAIKAN PESANAN
+                      </button>
+                    )}
+                    
+                    {['completed', 'cancelled'].includes(selectedOrder.status) && (
+                      <div className={`p-5 rounded-2xl border flex items-center gap-4 ${
+                        selectedOrder.status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                      }`}>
+                        {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                        <div>
+                           <p className="text-sm font-black uppercase tracking-widest">Transaksi Selesai</p>
+                           <p className="text-[10px] font-bold opacity-80">{selectedOrder.status === 'completed' ? 'Pesanan telah diantar dan sukses.' : 'Pesanan ini telah ditolak/dibatalkan.'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8 bg-card-light/50 dark:bg-card-dark/50 rounded-3xl border-2 border-dashed border-border-light dark:border-border-dark opacity-50">
-                <Globe className="w-16 h-16 text-muted mb-4" />
-                <p className="text-center font-bold text-muted">Pilih pesanan online di samping untuk melihat rincian.</p>
+              <div className="h-[500px] flex flex-col items-center justify-center p-12 bg-card-light/50 dark:bg-card-dark/50 rounded-[3rem] border-2 border-dashed border-border-light dark:border-border-dark opacity-50">
+                <div className="p-8 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
+                  <Globe className="w-16 h-16 text-muted/30" />
+                </div>
+                <p className="text-center font-black text-muted uppercase tracking-widest text-sm">Pilih pesanan untuk kelola</p>
+                <p className="text-center text-xs text-muted font-medium mt-2">Detail transaksi akan muncul di sini secara real-time.</p>
               </div>
             )}
           </AnimatePresence>
@@ -324,47 +420,47 @@ export default function OnlineOrdersPage() {
       {/* Reject Modal */}
       <AnimatePresence>
         {showRejectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowRejectModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
             />
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-6 w-full max-w-md shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              className="relative bg-card-light dark:bg-card-dark rounded-[2.5rem] border border-border-light dark:border-border-dark p-8 w-full max-w-md shadow-2xl"
             >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-                  <AlertTriangle className="w-6 h-6" />
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shadow-inner">
+                  <AlertTriangle className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-text-light dark:text-text-dark">Tolak Pesanan Online</h3>
-                  <p className="text-xs text-muted font-bold uppercase tracking-widest">#{orderToReject?.id.substring(0, 8).toUpperCase()}</p>
+                  <h3 className="text-xl font-black text-text-light dark:text-text-dark tracking-tight">Tolak Pesanan</h3>
+                  <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mt-1">#{orderToReject?.id.substring(0, 8).toUpperCase()}</p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-sm text-muted">Mohon berikan alasan penolakan pesanan ini agar pelanggan mengetahuinya.</p>
+              <div className="space-y-6">
+                <p className="text-sm text-muted font-medium">Mohon tuliskan alasan penolakan. Pelanggan akan menerima notifikasi alasan ini.</p>
                 <textarea 
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Contoh: Menu habis, Restoran sedang sangat ramai, dll..."
-                  className="w-full h-32 p-4 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all"
+                  placeholder="Contoh: Maaf, stok menu tersebut sudah habis atau restoran sedang tutup..."
+                  className="w-full h-40 p-5 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-[1.5rem] focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all font-medium resize-none shadow-inner"
                 />
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-4">
                   <button 
                     onClick={() => setShowRejectModal(false)}
-                    className="flex-1 py-3 font-black text-xs uppercase tracking-widest text-muted hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                    className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-muted hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all"
                   >
                     Batal
                   </button>
                   <button 
                     onClick={() => updateOrderStatus(orderToReject.id, 'cancelled', rejectionReason)}
                     disabled={!rejectionReason.trim()}
-                    className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-rose-500/20"
+                    className="flex-1 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-xl shadow-rose-500/20"
                   >
-                    TOLAK PESANAN
+                    KIRIM PENOLAKAN
                   </button>
                 </div>
               </div>

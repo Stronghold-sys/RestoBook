@@ -171,7 +171,7 @@ export async function POST(req: Request) {
               `;
 
               // 3. Generate PDF Invoice for Attachment
-              let pdfUint8Array: Uint8Array | null = null;
+              let pdfBase64: string | null = null;
               try {
                 const doc = new jsPDF();
                 doc.setFillColor(234, 88, 12);
@@ -208,8 +208,10 @@ export async function POST(req: Request) {
                 doc.text("TOTAL PEMBAYARAN", 25, yPos + 10);
                 doc.text(`Rp ${Number(order.total_amount).toLocaleString('id-ID')}`, 165, yPos + 10);
 
-                const pdfArrayBuffer = doc.output('arraybuffer');
-                pdfUint8Array = new Uint8Array(pdfArrayBuffer);
+                // Export to Base64 for Resend compatibility in Edge
+                const dataUri = doc.output('datauristring');
+                pdfBase64 = dataUri.split(',')[1];
+                console.log('PDF Invoice generated and encoded to Base64');
               } catch (pdfError) {
                 console.error('Error generating PDF:', pdfError);
               }
@@ -219,7 +221,7 @@ export async function POST(req: Request) {
                 to: customerEmail,
                 subject: `🧾 Resi Digital Lunas - Pesanan #${shortId} Anda Dikonfirmasi`,
                 html: invoiceHtml,
-                attachments: pdfUint8Array ? [{ filename: `Invoice-RestoBook-${shortId}.pdf`, content: pdfUint8Array }] : []
+                attachments: pdfBase64 ? [{ filename: `Invoice-RestoBook-${shortId}.pdf`, content: pdfBase64 }] : []
               });
               
               if (emailErr) console.error('Resend dispatch error:', emailErr.message);

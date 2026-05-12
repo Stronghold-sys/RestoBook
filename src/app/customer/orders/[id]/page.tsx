@@ -500,7 +500,14 @@ export default function OrderTrackingPage() {
             <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
               <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                 <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2"><RotateCcw className="w-5 h-5 text-primary" /> Pengajuan Refund</h3>
-                <button onClick={() => setShowRefundModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
+                <button 
+                  onClick={() => setShowRefundModal(false)} 
+                  aria-label="Tutup"
+                  title="Tutup"
+                  className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               <div className="p-6 overflow-y-auto space-y-5">
                 <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 font-bold leading-relaxed flex items-start gap-3">
@@ -549,7 +556,13 @@ export default function OrderTrackingPage() {
                <div className="p-8 space-y-6">
                  <div className="flex justify-center gap-3">
                    {[1, 2, 3, 4, 5].map(star => (
-                     <button key={star} onClick={() => setReviewRating(star)} className="transition-all hover:scale-125 transform active:scale-95">
+                     <button 
+                       key={star} 
+                       onClick={() => setReviewRating(star)} 
+                       aria-label={`Beri Bintang ${star}`}
+                       title={`Beri Bintang ${star}`}
+                       className="transition-all hover:scale-125 transform active:scale-95"
+                     >
                        <Star className={`w-12 h-12 ${reviewRating >= star ? "fill-yellow-400 text-yellow-400 drop-shadow-sm" : "text-gray-200 dark:text-gray-700 fill-gray-50 dark:fill-gray-800"}`} />
                      </button>
                    ))}
@@ -580,7 +593,14 @@ export default function OrderTrackingPage() {
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                    <h4 className="font-black text-xs uppercase tracking-widest text-gray-500">Pratinjau Kwitansi</h4>
-                   <button onClick={() => setShowReceipt(false)} className="p-2 text-muted hover:bg-gray-200 rounded-xl"><X className="w-4 h-4" /></button>
+                   <button 
+                      onClick={() => setShowReceipt(false)} 
+                      aria-label="Tutup Pratinjau"
+                      title="Tutup"
+                      className="p-2 text-muted hover:bg-gray-200 rounded-xl"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
                    <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} />

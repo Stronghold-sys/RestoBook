@@ -131,10 +131,13 @@ export async function POST(req: NextRequest) {
     // Signature: merchantCode + timestamp + merchantKey
     const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
 
+    // Suffix Order ID untuk Sandbox agar tidak duplikat saat testing berulang
+    const finalOrderId = isSandbox ? `${merchantOrderId}-${timestamp.substring(8)}` : merchantOrderId;
+
     const payload = {
       merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
-      merchantOrderId: merchantOrderId,
+      merchantOrderId: finalOrderId,
       productDetails: productDetails,
       additionalParam: "",
       merchantUserInfo: "",
@@ -177,7 +180,7 @@ export async function POST(req: NextRequest) {
     } else {
       console.error("Duitku Inquiry Error:", data);
       return NextResponse.json({ 
-        error: data.statusMessage || 'Gagal membuat tagihan Duitku',
+        error: `Duitku: ${data.statusMessage || 'Gagal membuat tagihan'}`,
         details: data
       }, { status: 400 });
     }

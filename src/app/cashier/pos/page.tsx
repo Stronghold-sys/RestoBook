@@ -447,7 +447,17 @@ export default function POSPage() {
     }));
     
     setCart(newCart);
-    setCustomerName(foundOrder.profiles?.full_name || "Guest");
+    
+    // Robustly parse name, checking for profiles array, object, and metadata fallback in notes
+    const rawProfile = foundOrder.profiles;
+    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+    let extractedName = profile?.full_name;
+    
+    if (!extractedName && foundOrder.notes?.includes("[NAMA: ")) {
+      extractedName = foundOrder.notes.split("[NAMA: ")[1]?.split("]")[0]?.trim();
+    }
+    
+    setCustomerName(extractedName || "Guest");
     toast.success("Pesanan dimuat ke keranjang!");
   };
 

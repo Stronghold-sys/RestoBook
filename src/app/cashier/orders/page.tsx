@@ -59,9 +59,18 @@ export default function CashierOrders() {
   };
 
   const getCustomerName = (order: any) => {
-    if (order.profiles?.full_name) return order.profiles.full_name;
+    if (!order) return "Guest";
+    // Robustly unpack relationship just in case Supabase returns an array wrapper
+    const rawProfile = order.profiles;
+    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+
+    if (profile?.full_name) return profile.full_name;
+    
     if (order.notes?.includes("[NAMA: ")) {
-      return order.notes.split("[NAMA: ")[1].split("]")[0];
+      const nameSegment = order.notes.split("[NAMA: ")[1]?.split("]")[0];
+      if (nameSegment && nameSegment.trim()) {
+         return nameSegment.trim();
+      }
     }
     return "Guest";
   };

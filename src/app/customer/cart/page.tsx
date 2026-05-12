@@ -286,7 +286,7 @@ export default function CartPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Silakan login kembali");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
 
       const totalAmount = getTotal();
@@ -342,8 +342,10 @@ export default function CartPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             orderId: orderData.id,
-            paymentMethod: "", // Kosongkan untuk pemicuan Pop universal
-            returnUrl: `${window.location.origin}/customer/orders/${orderData.id}`
+            paymentMethod: "", 
+            returnUrl: `${window.location.origin}/customer/orders/${orderData.id}`,
+            customer_name: profile.full_name,
+            customer_email: profile.email
           })
         });
         const duitkuData = await res.json();

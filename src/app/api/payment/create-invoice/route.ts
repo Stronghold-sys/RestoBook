@@ -49,18 +49,26 @@ export async function POST(req: Request) {
 
     // Customer detail
     let customerDetail = {
-      firstName: 'Customer',
+      firstName: 'Pelanggan',
       lastName: '',
       email: 'customer@restobook.com',
       phoneNumber: '081234567890'
     };
 
-    if (order.customer_id) {
+    // 1. Coba ambil nama dari catatan kasir (POS Kasir sering menyimpan nama tamu di notes: "[NAMA: Budi]")
+    if (order.notes && order.notes.includes('[NAMA: ')) {
+      const extractedName = order.notes.split('[NAMA: ')[1].split(']')[0];
+      if (extractedName) {
+        customerDetail.firstName = extractedName;
+      }
+    } 
+    // 2. Jika ada customer_id terdaftar (Pelanggan yang login)
+    else if (order.customer_id) {
       const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('id', order.customer_id).single();
-      if (profile) {
-        customerDetail.firstName = profile.full_name || 'Customer';
-        customerDetail.email = profile.email || 'customer@restobook.com';
-        customerDetail.phoneNumber = profile.phone || '081234567890';
+      if (profile && profile.full_name) {
+        customerDetail.firstName = profile.full_name;
+        if (profile.email) customerDetail.email = profile.email;
+        if (profile.phone) customerDetail.phoneNumber = profile.phone;
       }
     }
 

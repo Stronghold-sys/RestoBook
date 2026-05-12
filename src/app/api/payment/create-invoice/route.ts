@@ -89,6 +89,12 @@ export async function POST(req: Request) {
       customerVaName: customerDetail.firstName,
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
+      customerDetail: {
+        firstName: customerDetail.firstName,
+        lastName: customerDetail.lastName || "",
+        email: customerDetail.email,
+        phoneNumber: customerDetail.phoneNumber
+      },
       callbackUrl: `${baseUrl}/api/payment/callback`,
       returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
       expiryPeriod: 60

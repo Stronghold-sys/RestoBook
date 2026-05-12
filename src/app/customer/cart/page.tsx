@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Image from "next/image";
-import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/operationalHours";
 
@@ -337,26 +336,48 @@ export default function CartPage() {
       clearCart();
 
       if (paymentMethod === "non_cash") {
-        toast.loading("Menyiapkan pembayaran...", { id: loadingToast });
+        toast.loading("Membangun portal pembayaran aman...", { id: loadingToast });
         const res = await fetch('/api/payment/create-invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             orderId: orderData.id,
-            paymentMethod: duitkuMethod,
+            paymentMethod: "", // Kosongkan untuk pemicuan Pop universal
             returnUrl: `${window.location.origin}/customer/orders/${orderData.id}`
           })
         });
         const duitkuData = await res.json();
         
-        if (!res.ok) throw new Error(duitkuData.error || 'Gagal menyiapkan tagihan');
+        if (!res.ok) throw new Error(duitkuData.error || 'Gagal memicu gateway pembayaran');
         
-        if (duitkuData.paymentUrl) {
-          toast.success("Tagihan dibuat! Mengarahkan ke pembayaran...", { id: loadingToast });
+        if (duitkuData.reference && typeof (window as any).checkout !== 'undefined') {
+          toast.dismiss(loadingToast);
+          setLoading(false);
+          
+          // INJECT DUITKU POP SDK OVERLAY
+          (window as any).checkout.process(duitkuData.reference, {
+             successEvent: function() {
+               toast.success("Pembayaran Berhasil!");
+               router.push(`/customer/orders/${orderData.id}`);
+             },
+             pendingEvent: function() {
+               router.push(`/customer/orders/${orderData.id}?status=pending`);
+             },
+             errorEvent: function() {
+               router.push(`/customer/orders/${orderData.id}`);
+             },
+             closeEvent: function() {
+               // Forward always to destination order status view for post-payment clarity
+               router.push(`/customer/orders/${orderData.id}`);
+             }
+          });
+          return;
+        } else if (duitkuData.paymentUrl) {
+          toast.success("Mengalihkan ke halaman pembayaran...", { id: loadingToast });
           window.location.href = duitkuData.paymentUrl;
           return;
         } else {
-          throw new Error("Link pembayaran tidak diterima.");
+          throw new Error("Parameter pembayaran ditolak gateway.");
         }
       }
 
@@ -476,8 +497,8 @@ export default function CartPage() {
             <motion.button 
               whileHover={isOpen ? { scale: 1.02 } : {}} 
               whileTap={isOpen ? { scale: 0.98 } : {}} 
-              onClick={() => setShowPaymentModal(true)} 
-              disabled={!isOpen}
+              onClick={() => paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
+              disabled={!isOpen || loading}
               className={`w-full py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 isOpen 
                   ? "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer" 
@@ -505,7 +526,7 @@ export default function CartPage() {
               </div>
 
               <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                {paymentMethod === "cash" ? (
+                {paymentMethod === "cash" && (
                   <div className="space-y-6 text-center py-6">
                     <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
                       <Banknote className="w-10 h-10" />
@@ -520,26 +541,6 @@ export default function CartPage() {
                       <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
                       <button onClick={handleCheckoutClick} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi Pesanan</>}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <p className="text-xs font-bold uppercase text-muted tracking-widest px-2">Pilih Metode Pembayaran Online:</p>
-                    <PaymentMethodSelector 
-                      amount={getTotal()} 
-                      onSelect={(method) => setDuitkuMethod(method)} 
-                      selectedMethod={duitkuMethod} 
-                    />
-                    
-                    <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">
-                      <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
-                      <button 
-                        onClick={handleCheckoutClick} 
-                        disabled={loading || !duitkuMethod} 
-                        className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
-                      >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
                       </button>
                     </div>
                   </div>

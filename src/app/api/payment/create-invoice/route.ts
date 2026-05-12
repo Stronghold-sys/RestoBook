@@ -137,17 +137,13 @@ export async function POST(req: NextRequest) {
     const finalOrderId = isSandbox ? `${merchantOrderId}-${timestamp.substring(8)}` : merchantOrderId;
 
     const payload: any = {
-      merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
       merchantOrderId: finalOrderId,
       productDetails: productDetails,
-      additionalParam: "",
-      merchantUserInfo: "",
       email: customerDetail.email,
-      customerVaName: `${customerDetail.firstName} ${customerDetail.lastName}`.trim().substring(0, 30),
+      paymentMethod: paymentMethod || "",
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      paymentMethod: paymentMethod || "",
       customerDetail: {
         firstName: customerDetail.firstName,
         lastName: customerDetail.lastName,
@@ -156,59 +152,60 @@ export async function POST(req: NextRequest) {
       },
       callbackUrl: `${baseUrl}/api/payment/callback`,
       returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
-      expiryPeriod: 60
+      expiryPeriod: 1440 // Duitku Pop default in minutes
     };
 
-    // Duitku Standard API: MD5(merchantCode + merchantOrderId + paymentAmount + merchantKey)
-    const signatureString = `${DUITKU_MERCHANT_CODE}${finalOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-    const signature = await md5(signatureString);
+    // === DUITKU POP AUTHENTICATION ===
+    // Signature requires consistent timestamp in headers and payload verification
+    const reqTimestamp = String(Date.now());
     
-    // Add signature to payload body (standard API format)
-    payload.signature = signature;
-
+    // Signature Construction: SHA256(merchantCode + timestamp + apiKey)
+    const signatureString = `${DUITKU_MERCHANT_CODE}${reqTimestamp}${DUITKU_API_KEY}`;
+    const signature = await sha256(signatureString);
+    
+    // Duitku Pop API Base Endpoints
     const url = isSandbox 
-      ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
-      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+      ? 'https://api-sandbox.duitku.com/api/merchant/createInvoice'
+      : 'https://api-prod.duitku.com/api/merchant/createInvoice';
 
-    console.log('Duitku Debug:', JSON.stringify({
-      url,
-      merchantCode: DUITKU_MERCHANT_CODE,
-      merchantOrderId: finalOrderId,
-      paymentAmount,
-      signatureString: signatureString.replace(DUITKU_API_KEY, '***'),
-      signature,
-      paymentMethod: paymentMethod || ''
-    }));
+    console.log('Duitku Pop Request:', { url, orderId: finalOrderId, timestamp: reqTimestamp });
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-duitku-signature': signature,
+        'x-duitku-timestamp': reqTimestamp,
+        'x-duitku-merchantcode': DUITKU_MERCHANT_CODE
+      },
       body: JSON.stringify(payload)
     });
 
-    let data;
     const responseText = await response.text();
+    let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Duitku Non-JSON Response:", responseText);
+      console.error("Duitku API Invalid Response Format:", responseText);
       return NextResponse.json({ 
-        error: `Duitku Error (${response.status}): Respon tidak valid`,
-        details: responseText.substring(0, 100)
+        error: `Duitku Gateway Error (${response.status})`,
+        details: responseText.substring(0, 120)
       }, { status: 400 });
     }
 
-    if (data.statusCode === '00') {
+    // Standard validation: Capture token and payment URL issued by gateway
+    if (data.reference && data.paymentUrl) {
       return NextResponse.json({
         reference: data.reference,
         paymentUrl: data.paymentUrl,
         merchantOrderId: finalOrderId
       });
     } else {
-      console.error("Duitku Inquiry Error:", JSON.stringify(data));
-      const msg = data.Message || data.statusMessage || data.message || JSON.stringify(data);
+      console.error("Duitku Invoice Creation Rejected:", JSON.stringify(data));
+      const errorMsg = data.message || data.Message || data.statusMessage || "Unknown API Error";
       return NextResponse.json({ 
-        error: `Duitku: ${msg}`,
+        error: `Duitku: ${errorMsg}`,
         details: data
       }, { status: 400 });
     }

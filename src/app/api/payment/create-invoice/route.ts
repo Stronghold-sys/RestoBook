@@ -120,7 +120,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://restobookid.my.id';
+    // Derive host dynamically from the current request to prevent hardcoding errors or incorrect env variables
+    const protocol = req.headers.get('x-forwarded-proto') || 'https';
+    const host = req.headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
     
     // Construct a more descriptive product detail string
     const productDetails = itemNames.length > 0 

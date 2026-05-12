@@ -602,7 +602,10 @@ export default function POSPage() {
               setFoundOrder(null);
               clearCart();
             } else {
-              setVerificationStep("duitku_waiting");
+              // If payment is cancelled/closed, return user to selection screen instead of waiting screen
+              setVerificationStep("select_method");
+              // Show explicit selector again for consistency
+              setShowPaymentModal(true);
             }
             setProcessing(false);
           }

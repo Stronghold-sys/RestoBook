@@ -1,12 +1,12 @@
 export function md5(message: string): string {
   // A clean, standard MD5 implementation suitable for Edge runtime
-  const k = [], i = 0;
+  const k: number[] = [];
   for (let i = 0; i < 64; i++) {
     k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * (Math.pow(2, 32)));
   }
 
   const str = unescape(encodeURIComponent(message));
-  const words = [];
+  const words: number[] = [];
   const strLen = str.length;
   for (let i = 0; i < strLen; i++) {
     words[i >>> 2] |= (str.charCodeAt(i) & 0xff) << (8 * (i % 4));
@@ -59,7 +59,7 @@ export function md5(message: string): string {
     d = (d + D) | 0;
   }
 
-  const hex = [];
+  const hex: string[] = [];
   const result = [a, b, c, d];
   for (let i = 0; i < 4; i++) {
     for (let j = 0; j < 4; j++) {

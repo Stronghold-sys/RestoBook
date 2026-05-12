@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
     const itemDetails = (order.order_items || []).map((item: any) => ({
       name: item.menu_items?.name || 'Menu Item',
-      price: Math.floor(item.price_at_time),
+      price: Math.floor(item.price || 0),
       quantity: item.quantity
     }));
 
@@ -102,8 +102,8 @@ export async function POST(req: Request) {
         reference: result.reference
       });
     } else {
-      console.error('Duitku Error:', result);
-      return NextResponse.json({ error: result.statusMessage || 'Gagal membuat tagihan Duitku' }, { status: 400 });
+      console.error('Payment Gateway Error:', result);
+      return NextResponse.json({ error: result.statusMessage || 'Gagal membuat tagihan pembayaran' }, { status: 400 });
     }
 
   } catch (error: any) {

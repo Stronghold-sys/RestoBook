@@ -1,36 +1,37 @@
-import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export const runtime = 'edge';
 
-// SHA256 menggunakan Web Crypto API (Edge-compatible)
-async function sha256(message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+// Database Admin Client (Bypass RLS)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE!;
+const DUITKU_API_KEY = process.env.DUITKU_API_KEY!;
+
+async function sha256(message: string) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { orderId, returnUrl } = await req.json();
+    const { orderId, paymentMethod, returnUrl } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE;
-    const DUITKU_API_KEY = process.env.DUITKU_API_KEY;
-
-    if (!DUITKU_MERCHANT_CODE || !DUITKU_API_KEY) {
-      return NextResponse.json({ error: 'Duitku credentials not configured' }, { status: 500 });
-    }
-
-    // Ambil detail order tanpa profiles join untuk mencegah error "Order not found" jika relasi bermasalah
+    // Ambil detail order dengan join yang lengkap
     const { data: order, error } = await supabaseAdmin
       .from('orders')
-      .select('*, order_items(*, menu_items(name))')
+      .select('*, order_items(*, menu_items(name)), profiles(*)')
       .eq('id', orderId)
       .single();
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     const paymentAmount = Math.floor(order.total_amount);
     const merchantOrderId = order.id;
 
-    // Customer detail extraction
+    // Default Customer Detail
     let customerDetail = {
       firstName: 'Pelanggan',
       lastName: '',
@@ -55,54 +56,61 @@ export async function POST(req: Request) {
       phoneNumber: '081234567890'
     };
 
-    // 1. Check for details in notes (common for Guest orders from POS)
-    if (order.notes) {
-      // Extract [NAMA: Budi]
+    // 1. Prioritaskan data dari Profile (Jika Pelanggan Terdaftar)
+    // Kita sudah join di query awal (profiles(*))
+    const profile = order.profiles;
+    if (profile) {
+      if (profile.full_name) {
+        const names = profile.full_name.trim().split(' ');
+        customerDetail.firstName = names[0];
+        customerDetail.lastName = names.slice(1).join(' ') || names[0];
+      }
+      if (profile.email) customerDetail.email = profile.email;
+      if (profile.phone) customerDetail.phoneNumber = profile.phone;
+    } 
+    // 2. Fallback ke data dari Notes (Untuk Guest/Walk-in dari POS)
+    else if (order.notes) {
       if (order.notes.includes('[NAMA: ')) {
         const extractedName = order.notes.split('[NAMA: ')[1].split(']')[0];
-        if (extractedName) customerDetail.firstName = extractedName;
+        if (extractedName) {
+           const names = extractedName.trim().split(' ');
+           customerDetail.firstName = names[0];
+           customerDetail.lastName = names.slice(1).join(' ') || names[0];
+        }
       }
-      // Extract [EMAIL: budi@gmail.com] if exists
       if (order.notes.includes('[EMAIL: ')) {
         const extractedEmail = order.notes.split('[EMAIL: ')[1].split(']')[0];
         if (extractedEmail) customerDetail.email = extractedEmail;
       }
-      // Extract [TELP: 0812...] if exists
       if (order.notes.includes('[TELP: ')) {
         const extractedTelp = order.notes.split('[TELP: ')[1].split(']')[0];
         if (extractedTelp) customerDetail.phoneNumber = extractedTelp;
       }
-    } 
-    
-    // 2. If it's a registered customer, use profile data (this overrides generic "Pelanggan")
-    if (order.customer_id) {
-      const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('id', order.customer_id).single();
-      if (profile) {
-        if (profile.full_name) customerDetail.firstName = profile.full_name;
-        if (profile.email) customerDetail.email = profile.email;
-        if (profile.phone) customerDetail.phoneNumber = profile.phone;
-      }
     }
 
     // ITEM DETAILS MAPPING
-    // Duitku require that sum(price * quantity) == paymentAmount
     const itemDetails: any[] = [];
     let itemsSum = 0;
+    const itemNames: string[] = [];
 
     if (order.order_items && order.order_items.length > 0) {
       order.order_items.forEach((item: any) => {
+        const name = item.menu_items?.name || 'Item Pesanan';
         const price = Math.floor(item.price);
         const qty = item.quantity;
+        
         itemDetails.push({
-          name: item.menu_items?.name || 'Item Pesanan',
+          name: name,
           price: price,
           quantity: qty
         });
+        
         itemsSum += (price * qty);
+        itemNames.push(`${name} x${qty}`);
       });
     }
 
-    // Handle discrepancies (e.g., due to rounding, taxes, or service fees not listed in items)
+    // Handle discrepancy (tax, service charge, or discount)
     const discrepancy = paymentAmount - itemsSum;
     if (discrepancy !== 0) {
       itemDetails.push({
@@ -113,25 +121,32 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://restobookid.my.id';
+    
+    // Construct a more descriptive product detail string
+    const productDetails = itemNames.length > 0 
+      ? `Pesanan: ${itemNames.join(', ')}`.substring(0, 255) 
+      : `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`;
 
     // === DUITKU POP API ===
     const timestamp = String(Date.now());
+    // Signature: merchantCode + timestamp + merchantKey
     const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
 
     const payload = {
       merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
       merchantOrderId: merchantOrderId,
-      productDetails: `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`,
+      productDetails: productDetails,
       additionalParam: "",
       merchantUserInfo: "",
       email: customerDetail.email,
-      customerVaName: customerDetail.firstName.substring(0, 30), // VaName limited to 30 chars
+      customerVaName: `${customerDetail.firstName} ${customerDetail.lastName}`.trim().substring(0, 30),
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
+      paymentMethod: paymentMethod || "", 
       customerDetail: {
-        firstName: customerDetail.firstName.split(' ')[0] || customerDetail.firstName,
-        lastName: customerDetail.firstName.split(' ').slice(1).join(' ') || "",
+        firstName: customerDetail.firstName,
+        lastName: customerDetail.lastName,
         email: customerDetail.email,
         phoneNumber: customerDetail.phoneNumber
       },
@@ -140,59 +155,36 @@ export async function POST(req: Request) {
       expiryPeriod: 60
     };
 
-    // Auto-detect Sandbox vs Production berdasarkan awalan Merchant Code
-    // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
-    const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
-    const duitkuUrl = isSandbox 
-      ? 'https://api-sandbox.duitku.com/api/merchant/createInvoice'
-      : 'https://api.duitku.com/api/merchant/createInvoice';
-    
-    const response = await fetch(duitkuUrl, {
+    // Duitku Pop API (Inquiry)
+    const response = await fetch('https://passport.duitku.com/webapi/api/merchant/v2/inquiry', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-duitku-signature': signature,
-        'x-duitku-timestamp': timestamp,
-        'x-duitku-merchantcode': DUITKU_MERCHANT_CODE
+        'merchantcode': DUITKU_MERCHANT_CODE,
+        'signature': signature,
+        'timestamp': timestamp
       },
       body: JSON.stringify(payload)
     });
 
-    const responseText = await response.text();
-    
-    // Jika response kosong atau HTTP error
-    if (!responseText || responseText.trim() === '') {
-      return NextResponse.json({ 
-        error: `Duitku mengembalikan respons kosong (HTTP ${response.status}). Pastikan DUITKU_MERCHANT_CODE (${DUITKU_MERCHANT_CODE}) dan DUITKU_API_KEY sudah benar di Cloudflare Environment Variables.` 
-      }, { status: 500 });
-    }
+    const data = await response.json();
 
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      // Respons bukan JSON — kemungkinan HTML error page
-      return NextResponse.json({ 
-        error: `Duitku Server Error (HTTP ${response.status}): ${responseText.substring(0, 200)}` 
-      }, { status: 500 });
-    }
-
-    // Duitku Pop API mengembalikan statusCode "00" jika berhasil
-    if (result.statusCode === '00' && result.paymentUrl) {
-      return NextResponse.json({ 
-        paymentUrl: result.paymentUrl,
-        reference: result.reference
+    if (data.statusCode === '00') {
+      return NextResponse.json({
+        reference: data.reference,
+        paymentUrl: data.paymentUrl,
+        merchantOrderId: merchantOrderId
       });
     } else {
-      console.error('Payment Gateway Error:', result);
-      // Ambil pesan error spesifik dari Duitku
-      const errMessage = result.statusMessage || result.Message || JSON.stringify(result);
-      return NextResponse.json({ error: `Duitku Error: ${errMessage}` }, { status: 400 });
+      console.error("Duitku Inquiry Error:", data);
+      return NextResponse.json({ 
+        error: data.statusMessage || 'Gagal membuat tagihan Duitku',
+        details: data
+      }, { status: 400 });
     }
 
   } catch (error: any) {
-    console.error('Create Invoice Error:', error.stack || error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    console.error('Payment API Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

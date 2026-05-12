@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle } from "lucide-react";
+import { Search, Loader2, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
+import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen as originalIsRestaurantOpen, getOperationalStatus } from "@/utils/operationalHours";
 
@@ -48,8 +49,9 @@ export default function POSPage() {
   
   // Non-Cash State
   const [verificationStep, setVerificationStep] = useState<"select_method" | "instructions" | "verify" | "duitku_waiting">("select_method");
-  const [nonCashType, setNonCashType] = useState<"ewallet" | "transfer" | "qris" | "other" | "">("");
+  const [nonCashType, setNonCashType] = useState<"ewallet" | "transfer" | "qris" | "other" | "online_duitku" | "">("online_duitku");
   const [nonCashProvider, setNonCashProvider] = useState<string>("");
+  const [duitkuMethod, setDuitkuMethod] = useState("");
   
   // Dynamic Merchant & Transaction state
   const [merchant, setMerchant] = useState({
@@ -547,13 +549,21 @@ export default function POSPage() {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({ 
+          orderId,
+          paymentMethod: duitkuMethod // Gunakan metode yang dipilih user
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
 
       if (data.reference && typeof (window as any).checkout !== 'undefined') {
         toast.dismiss(loadingToast);
+        
+        // Tutup modal pembayaran agar tidak menumpuk di belakang popup Duitku
+        setShowPaymentModal(false);
+        setProcessing(false);
+
         // Gunakan Duitku Pop SDK untuk popup transparan
         (window as any).checkout.process(data.reference, {
           successEvent: async function(result: any) {
@@ -1145,7 +1155,7 @@ export default function POSPage() {
                       <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
                         <Banknote className="w-6 h-6" /> Tunai
                       </button>
-                      <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType(""); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                      <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
                         <CreditCard className="w-6 h-6" /> Non-Tunai
                       </button>
                     </div>
@@ -1180,22 +1190,34 @@ export default function POSPage() {
                     </div>
                   ) : (
                     <div className="mb-6 space-y-4">
-                      {foundOrder && foundOrder.payment_status === "paid" ? (
-                        <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl mb-4">
-                          <CheckCircle className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-                          <p className="font-bold text-blue-700 dark:text-blue-400">Pembayaran online sudah dikonfirmasi lunas.</p>
-                          <button onClick={() => processPayment(true)} className="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700">Proses Pesanan</button>
-                        </div>
-                      ) : (
+                      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl mb-4">
+                        <button onClick={() => setNonCashType("online_duitku")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "online_duitku" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>Otomatis</button>
+                        <button onClick={() => setNonCashType("qris")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "qris" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>QRIS Manual</button>
+                        <button onClick={() => setNonCashType("ewallet")} className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${nonCashType === "ewallet" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}>E-Wallet Manual</button>
+                      </div>
+
+                      {nonCashType === "online_duitku" ? (
                         <>
+                          <PaymentMethodSelector 
+                            amount={cartTotal} 
+                            onSelect={(method) => setDuitkuMethod(method)} 
+                            selectedMethod={duitkuMethod} 
+                          />
                           <button 
                             onClick={handleGenerateDuitkuPOS} 
-                            disabled={processing} 
-                            className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4"
+                            disabled={processing || !duitkuMethod} 
+                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
                           >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Buat Tagihan Online"}
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Globe className="w-5 h-5" /> Bayar Sekarang</>}
                           </button>
                         </>
+                      ) : (
+                        <button 
+                          onClick={() => setVerificationStep("instructions")} 
+                          className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all uppercase tracking-wider flex justify-center items-center gap-2"
+                        >
+                          Lanjut ke Instruksi
+                        </button>
                       )}
                     </div>
                   )}

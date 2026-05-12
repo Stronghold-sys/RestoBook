@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/operationalHours";
 
@@ -16,7 +17,8 @@ interface Table { id: string; table_number: number; capacity: number; status: st
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway">("dine_in");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash">("non_cash");
+  const [duitkuMethod, setDuitkuMethod] = useState("");
   const [openingTime, setOpeningTime] = useState<string | null>(null);
   const [closingTime, setClosingTime] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -339,7 +341,10 @@ export default function CartPage() {
         const res = await fetch('/api/payment/create-invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: orderData.id })
+          body: JSON.stringify({ 
+            orderId: orderData.id,
+            paymentMethod: duitkuMethod 
+          })
         });
         const duitkuData = await res.json();
         
@@ -347,7 +352,8 @@ export default function CartPage() {
         
         if (duitkuData.reference) {
           toast.dismiss(loadingToast);
-          // Gunakan Duitku Pop SDK untuk popup transparan
+          setLoading(false);
+          setShowPaymentModal(false); // Close the selector modal before Duitku pops up
           const currentOrderId = orderData.id;
           (window as any).checkout.process(duitkuData.reference, {
             successEvent: async function(result: any) {
@@ -378,7 +384,6 @@ export default function CartPage() {
           });
           return;
         } else if (duitkuData.paymentUrl) {
-          // Fallback: redirect jika Pop SDK tidak tersedia
           window.location.href = duitkuData.paymentUrl;
           return;
         }
@@ -390,18 +395,6 @@ export default function CartPage() {
       toast.error(error.message || "Gagal membuat pesanan", { id: loadingToast });
       setLoading(false);
     }
-  };
-
-  const getBankAccounts = (bank: string) => {
-    const accounts: Record<string, { num: string; name: string }> = {
-      BCA: { num: "8691234567", name: "PT RESTOBOOK JAYA UTAMA" },
-      BRI: { num: "0341-01-000123-45-6", name: "PT RESTOBOOK JAYA UTAMA" },
-      BNI: { num: "1234567890", name: "PT RESTOBOOK JAYA UTAMA" },
-      Mandiri: { num: "123-00-0987654-3", name: "PT RESTOBOOK JAYA UTAMA" },
-      BSI: { num: "7771234567", name: "PT RESTOBOOK JAYA UTAMA" },
-      Lainnya: { num: "011-4123456789 (Permata)", name: "PT RESTOBOOK JAYA UTAMA" }
-    };
-    return accounts[bank] || accounts["Lainnya"];
   };
 
   if (items.length === 0) {
@@ -419,7 +412,6 @@ export default function CartPage() {
 
   const storeStatus = getStoreStatus(openingTime, closingTime, isTemporaryClosed, isHoliday, holidayReopenDate, temporaryClosedReopenTime, is24Hours);
   const isOpen = storeStatus.isOpen;
-  const status = getOperationalStatus(openingTime, closingTime);
 
   return (
     <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20 p-4">
@@ -482,26 +474,11 @@ export default function CartPage() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 overflow-hidden">
                     <select value={selectedTable} onChange={e => handleTableChange(e.target.value)} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark font-medium" title="Pilih Meja">
                       <option value="">-- Pilih Meja --</option>
-                      {(() => {
-                        const hasSelected = tables.some(t => t.id === selectedTable);
-                        const renderedTables = [...tables];
-                        if (selectedTable && !hasSelected) {
-                          renderedTables.push({
-                            id: selectedTable,
-                            table_number: 99, // Fallback placeholder
-                            capacity: 0,
-                            status: "occupied"
-                          });
-                        }
-                        return renderedTables.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.table_number === 99 
-                              ? "Memuat Meja Terpilih..." 
-                              : `Meja ${t.table_number} (${t.capacity} Orang) ${t.status === "occupied" ? (t.id === selectedTable ? "- [MEJA ANDA]" : "- [TERISI]") : ""}`
-                            }
-                          </option>
-                        ));
-                      })()}
+                      {tables.map(t => (
+                        <option key={t.id} value={t.id}>
+                          Meja {t.table_number} ({t.capacity} Orang) {t.status === "occupied" ? (t.id === selectedTable ? "- [MEJA ANDA]" : "- [TERISI]") : ""}
+                        </option>
+                      ))}
                     </select>
                   </motion.div>
                 )}
@@ -528,7 +505,8 @@ export default function CartPage() {
             <motion.button 
               whileHover={isOpen ? { scale: 1.02 } : {}} 
               whileTap={isOpen ? { scale: 0.98 } : {}} 
-              onClick={handleCheckoutClick} 
+              onClick={() => setShowPaymentModal(true)} 
+              disabled={!isOpen}
               className={`w-full py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 isOpen 
                   ? "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer" 
@@ -542,12 +520,10 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Payment Flow Modal */}
       <AnimatePresence>
         {showPaymentModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowPaymentModal(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden border border-border-light dark:border-border-dark my-8">
-              
               <div className="bg-primary p-8 text-white flex justify-between items-center relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
                 <div className="relative">
@@ -557,7 +533,7 @@ export default function CartPage() {
                 <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-6 h-6" /></button>
               </div>
 
-              <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
+              <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {paymentMethod === "cash" ? (
                   <div className="space-y-6 text-center py-6">
                     <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
@@ -566,322 +542,35 @@ export default function CartPage() {
                     <div className="space-y-2 max-w-md mx-auto">
                       <h3 className="font-black text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
                       <p className="text-muted text-sm leading-relaxed">
-                        Pesanan Anda akan langsung dikirim ke antrian dapur. Pembayaran dapat dilakukan secara tunai kepada kasir saat pesanan selesai atau ketika Anda mengambil makanan.
+                        Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat pesanan selesai atau ketika Anda mengambil makanan.
                       </p>
                     </div>
                     <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">
-                      <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
-                      <button type="button" onClick={handleProcessPayment} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Selesaikan & Pesan</>}
+                      <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
+                      <button onClick={handleCheckoutClick} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi Pesanan</>}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Non cash category selection */}
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { id: "qris", label: "QRIS", icon: QrCode },
-                        { id: "transfer", label: "Transfer", icon: Landmark },
-                        { id: "ewallet", label: "E-Wallet", icon: Smartphone },
-                        { id: "others", label: "Lainnya", icon: CreditCard }
-                      ].map(cat => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => { setNonCashCategory(cat.id as any); setSelectedProvider(""); }}
-                          className={`py-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
-                            nonCashCategory === cat.id
-                              ? "bg-primary/10 border-primary text-primary"
-                              : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-muted"
-                          }`}
-                        >
-                          <cat.icon className="w-5 h-5" />
-                          <span className="text-[10px] font-black uppercase tracking-wider">{cat.label}</span>
-                        </button>
-                      ))}
+                    <p className="text-xs font-bold uppercase text-muted tracking-widest px-2">Pilih Metode Pembayaran Online:</p>
+                    <PaymentMethodSelector 
+                      amount={getTotal()} 
+                      onSelect={(method) => setDuitkuMethod(method)} 
+                      selectedMethod={duitkuMethod} 
+                    />
+                    
+                    <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">
+                      <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
+                      <button 
+                        onClick={handleCheckoutClick} 
+                        disabled={loading || !duitkuMethod} 
+                        className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
+                      >
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Globe className="w-5 h-5" /> Bayar Sekarang</>}
+                      </button>
                     </div>
-
-                    {/* QRIS Category */}
-                    {nonCashCategory === "qris" && (
-                      <div className="space-y-6">
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-6 border border-border-light dark:border-border-dark flex flex-col items-center justify-center text-center">
-                          <span className="text-xs font-black uppercase text-muted tracking-widest mb-1">SCAN QRIS UNTUK BAYAR</span>
-                          <span className="text-xl font-bold text-text-light dark:text-text-dark mb-4">{merchant.merchantName}</span>
-                          
-                          <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-primary/20 relative">
-                            {/* Real Dynamic QRIS Image */}
-                            <img 
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(
-                                generateQRISString({
-                                  merchantName: merchant.merchantName,
-                                  merchantId: merchant.merchantId,
-                                  city: merchant.city,
-                                  postalCode: merchant.postalCode,
-                                  categoryCode: merchant.categoryCode,
-                                  amount: getTotal(),
-                                  txId: txId || "TX8888"
-                                })
-                              )}`}
-                              alt="QRIS Code"
-                              className="w-48 h-48 mx-auto object-contain"
-                            />
-                            {qrisExpired && (
-                              <div className="absolute inset-0 bg-white/95 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center p-4">
-                                <AlertTriangle className="w-10 h-10 text-red-500 mb-2" />
-                                <span className="font-bold text-sm text-text-light dark:text-text-dark">Kode QRIS Kedaluwarsa</span>
-                                <span className="text-xs text-muted mt-1">Silakan perbarui kode QR</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="mt-4 space-y-1">
-                            <span className="text-2xl font-black text-primary block">Rp {getTotal().toLocaleString("id-ID")}</span>
-                            {!qrisExpired ? (
-                              <span className="text-xs text-muted flex items-center gap-1.5 justify-center">
-                                <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Kode berlaku selama: <span className="font-bold text-amber-600">{formatTime(qrisTimer)}</span>
-                              </span>
-                            ) : (
-                              <span className="text-xs text-red-500 font-bold">QRIS telah kedaluwarsa</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Langkah Pembayaran:</p>
-                          <ol className="text-xs text-muted space-y-2.5 list-decimal pl-4 leading-relaxed">
-                            <li>Buka aplikasi e-wallet apa saja (GoPay, OVO, Dana, ShopeePay, LinkAja) atau Mobile Banking Anda.</li>
-                            <li>Pilih fitur <b>Scan QR</b> atau <b>Bayar</b>.</li>
-                            <li>Arahkan kamera smartphone ke kode QRIS yang tampil di layar komputer/tablet.</li>
-                            <li>Pastikan nama merchant <b>{merchant.merchantName}</b> dan nominal tagihan sudah sesuai.</li>
-                            <li>Masukkan PIN pembayaran Anda untuk konfirmasi.</li>
-                            <li>Setelah pembayaran berhasil dilakukan, klik tombol <b>Saya Sudah Bayar</b> di bawah ini untuk memulai proses persiapan hidangan Anda.</li>
-                          </ol>
-                        </div>
-
-                        <div className="flex flex-wrap sm:flex-nowrap gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                          <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted text-sm hover:bg-gray-50">Batal</button>
-                          <button type="button" onClick={() => { setQrisTimer(600); setQrisExpired(false); setTxId(`TX${Date.now().toString().slice(-8)}`); }} className="px-5 py-4 border border-primary/30 text-primary hover:bg-primary/5 rounded-xl font-bold text-sm flex items-center gap-2 justify-center"><RefreshCw className="w-4 h-4" /> Perbarui QR</button>
-                          <button type="button" onClick={handleProcessPayment} disabled={loading || qrisExpired} className="flex-1 py-4 bg-primary text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Saya Sudah Bayar"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Transfer Bank Category */}
-                    {nonCashCategory === "transfer" && (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Pilih Bank Tujuan:</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {["BCA", "BRI", "BNI", "Mandiri", "BSI", "Lainnya"].map(bank => (
-                              <button
-                                key={bank}
-                                type="button"
-                                onClick={() => setSelectedProvider(bank)}
-                                className={`py-3.5 rounded-xl border-2 font-black text-xs transition-all ${
-                                  selectedProvider === bank
-                                    ? "bg-primary/10 border-primary text-primary"
-                                    : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-muted"
-                                }`}
-                              >
-                                {bank}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {selectedProvider && (() => {
-                          const acc = getBankAccounts(selectedProvider);
-                          return (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-border-light dark:border-border-dark space-y-4">
-                              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
-                                <div>
-                                  <span className="text-[10px] font-black uppercase text-muted block">BANK TUJUAN</span>
-                                  <span className="font-extrabold text-text-light dark:text-text-dark text-lg">{selectedProvider}</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-[10px] font-black uppercase text-muted block">TOTAL TAGIHAN</span>
-                                  <span className="font-black text-primary text-lg">Rp {getTotal().toLocaleString("id-ID")}</span>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-[10px] font-black uppercase text-muted block">NOMOR REKENING</span>
-                                  <span className="font-mono text-base font-extrabold text-text-light dark:text-text-dark select-all">{acc.num}</span>
-                                </div>
-                                <div>
-                                  <span className="text-[10px] font-black uppercase text-muted block">NAMA PEMILIK</span>
-                                  <span className="font-bold text-text-light dark:text-text-dark text-sm">{acc.name}</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })()}
-
-                        <div className="space-y-3">
-                          <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Langkah Pembayaran:</p>
-                          <ol className="text-xs text-muted space-y-2.5 list-decimal pl-4 leading-relaxed">
-                            <li>Buka aplikasi mobile banking Anda atau kunjungi mesin ATM terdekat.</li>
-                            <li>Pilih menu <b>Transfer</b> lalu masukkan nomor rekening bank tujuan yang tertera di atas.</li>
-                            <li>Pastikan nominal transfer sama persis dengan total tagihan: <b>Rp {getTotal().toLocaleString("id-ID")}</b>.</li>
-                            <li>Periksa kembali detail transaksi transfer Anda sebelum konfirmasi transfer.</li>
-                            <li>Selesaikan transaksi transfer dan simpan struk atau bukti transfer digital Anda.</li>
-                            <li>Setelah transfer selesai dilakukan, klik tombol <b>Saya Sudah Transfer</b> di bawah ini agar pesanan Anda langsung diproses.</li>
-                          </ol>
-                        </div>
-
-                        <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                          <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted text-sm hover:bg-gray-50">Batal</button>
-                          <button type="button" onClick={handleProcessPayment} disabled={loading || !selectedProvider} className="flex-1 py-4 bg-primary text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Saya Sudah Transfer"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* E-Wallet Category */}
-                    {nonCashCategory === "ewallet" && (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Pilih Provider E-Wallet:</p>
-                          <div className="grid grid-cols-5 gap-1.5">
-                            {["GoPay", "OVO", "Dana", "ShopeePay", "LinkAja"].map(ew => (
-                              <button
-                                key={ew}
-                                type="button"
-                                onClick={() => setSelectedProvider(ew)}
-                                className={`py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-wider text-center transition-all ${
-                                  selectedProvider === ew
-                                    ? "bg-primary/10 border-primary text-primary"
-                                    : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-muted"
-                                }`}
-                              >
-                                {ew}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {selectedProvider && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-6 border border-border-light dark:border-border-dark flex flex-col items-center justify-center text-center">
-                              <span className="text-xs font-black uppercase text-muted tracking-widest mb-1">PINDAI UNTUK TRANSFER {selectedProvider.toUpperCase()}</span>
-                              <span className="text-xl font-bold text-text-light dark:text-text-dark mb-4">{merchant.merchantName}</span>
-                              
-                              <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-primary/20 relative">
-                                <img 
-                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(
-                                    getEWalletDeepLink(
-                                      selectedProvider,
-                                      merchant[selectedProvider.toLowerCase() as keyof typeof merchant] || "08123456789",
-                                      getTotal()
-                                    )
-                                  )}`}
-                                  alt={`QR Code ${selectedProvider}`}
-                                  className="w-48 h-48 mx-auto object-contain"
-                                />
-                              </div>
-                              <div className="mt-4">
-                                <span className="text-2xl font-black text-primary block">Rp {getTotal().toLocaleString("id-ID")}</span>
-                                <span className="text-xs text-muted block mt-1">Nomor tujuan: {merchant[selectedProvider.toLowerCase() as keyof typeof merchant] || "08123456789"}</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Instruksi Pembayaran {selectedProvider}:</p>
-                              <ol className="text-xs text-muted space-y-2.5 list-decimal pl-4 leading-relaxed">
-                                <li>Buka aplikasi <b>{selectedProvider}</b> di smartphone Anda.</li>
-                                <li>Pilih menu <b>Bayar</b> atau <b>Scan QR</b>.</li>
-                                <li>Arahkan kamera smartphone Anda ke kode QR merchant utama yang ditampilkan oleh kasir di kasir restoran.</li>
-                                <li>Pastikan nama merchant dan nominal tagihan sudah sesuai dengan total belanja: <b>Rp {getTotal().toLocaleString("id-ID")}</b>.</li>
-                                <li>Masukkan PIN <b>{selectedProvider}</b> Anda untuk melakukan konfirmasi pembayaran.</li>
-                                <li>Tunjukkan atau simpan bukti notifikasi pembayaran sukses dari aplikasi {selectedProvider} Anda.</li>
-                                <li>Klik tombol <b>Saya Sudah Bayar</b> di bawah ini untuk menyelesaikan pesanan Anda.</li>
-                              </ol>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                          <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted text-sm hover:bg-gray-50">Batal</button>
-                          <button type="button" onClick={handleProcessPayment} disabled={loading || !selectedProvider} className="flex-1 py-4 bg-primary text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Saya Sudah Bayar"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Others Category */}
-                    {nonCashCategory === "others" && (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <p className="text-xs font-black uppercase text-muted tracking-wider ml-1">Pilih Jenis Pembayaran Lainnya:</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {["EDC (Debit/Kredit)", "Voucher / Kupon", "Paylater"].map(oth => (
-                              <button
-                                key={oth}
-                                type="button"
-                                onClick={() => setSelectedProvider(oth)}
-                                className={`py-3 rounded-xl border-2 font-bold text-xs text-center transition-all ${
-                                  selectedProvider === oth
-                                    ? "bg-primary/10 border-primary text-primary"
-                                    : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-muted"
-                                }`}
-                              >
-                                {oth}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {selectedProvider === "EDC (Debit/Kredit)" && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-border-light dark:border-border-dark">
-                            <span className="text-xs font-black uppercase text-primary block">Kartu Debit atau Kredit melalui Mesin EDC</span>
-                            <ol className="text-xs text-muted space-y-2 list-decimal pl-4 leading-relaxed">
-                              <li>Serahkan kartu debit atau kartu kredit Anda kepada kasir saat Anda tiba di kasir.</li>
-                              <li>Kasir akan memproses pembayaran transaksi Anda secara langsung melalui mesin EDC utama restoran.</li>
-                              <li>Masukkan PIN kartu debit Anda pada mesin EDC, atau berikan tanda tangan fisik pada struk cetak untuk pembayaran kartu kredit.</li>
-                              <li>Tunggu hingga transaksi Anda terkonfirmasi berhasil oleh mesin EDC kasir restoran.</li>
-                              <li>Simpan struk transaksi EDC yang diberikan sebagai bukti pembayaran sah Anda.</li>
-                            </ol>
-                          </motion.div>
-                        )}
-
-                        {selectedProvider === "Voucher / Kupon" && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-border-light dark:border-border-dark">
-                            <span className="text-xs font-black uppercase text-primary block">Voucher atau Kupon Diskon</span>
-                            <ol className="text-xs text-muted space-y-2 list-decimal pl-4 leading-relaxed">
-                              <li>Siapkan voucher fisik asli atau kode kupon diskon digital yang Anda miliki.</li>
-                              <li>Tunjukkan voucher tersebut langsung kepada kasir pada saat proses transaksi di kasir restoran dilakukan.</li>
-                              <li>Kasir akan melakukan verifikasi dan memotong nilai voucher dari total tagihan pesanan belanja Anda.</li>
-                              <li>Jika masih ada sisa tagihan pesanan setelah pemotongan voucher, bayarkan sisa tagihan tersebut dengan metode pembayaran lainnya.</li>
-                            </ol>
-                          </motion.div>
-                        )}
-
-                        {selectedProvider === "Paylater" && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-border-light dark:border-border-dark">
-                            <span className="text-xs font-black uppercase text-primary block">Paylater seperti Akulaku atau Kredivo</span>
-                            <ol className="text-xs text-muted space-y-2 list-decimal pl-4 leading-relaxed">
-                              <li>Buka aplikasi Paylater (Akulaku atau Kredivo) yang biasa Anda gunakan di smartphone Anda.</li>
-                              <li>Pilih menu **Bayar** lalu scan kode QR merchant restoran atau masukkan kode merchant unik yang tersedia.</li>
-                              <li>Pilih tenor jangka waktu cicilan sesuai dengan keinginan Anda pada aplikasi.</li>
-                              <li>Konfirmasikan pembayaran transaksi Anda pada aplikasi smartphone Anda.</li>
-                              <li>Tunjukkan bukti notifikasi sukses persetujuan pembayaran paylater Anda kepada kasir saat pesanan akan diambil atau disajikan.</li>
-                            </ol>
-                          </motion.div>
-                        )}
-
-                        <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                          <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted text-sm hover:bg-gray-50">Batal</button>
-                          <button type="button" onClick={handleProcessPayment} disabled={loading || !selectedProvider} className="flex-1 py-4 bg-primary text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ajukan Pesanan"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { md5 } from '@/lib/md5';
 
+export const runtime = 'edge';
+
 export async function GET() {
   const DUITKU_MERCHANT_CODE = 'DS30558';
   const DUITKU_API_KEY = 'd1654f16f0139301e10e1b2bb7f575ac';

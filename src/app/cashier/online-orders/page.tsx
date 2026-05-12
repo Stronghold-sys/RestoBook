@@ -215,7 +215,12 @@ export default function OnlineOrdersPage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-black text-text-light dark:text-text-dark">Detail Pesanan</h2>
-                  <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                  <button 
+                    onClick={() => setSelectedOrder(null)} 
+                    aria-label="Tutup Detail"
+                    title="Tutup Detail"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                  >
                     <X className="w-5 h-5 text-muted" />
                   </button>
                 </div>
@@ -281,7 +286,9 @@ export default function OnlineOrdersPage() {
                       </button>
                       <button 
                         onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
-                        className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95"
+                        aria-label="Tolak Pesanan"
+                        title="Tolak Pesanan"
+                        className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-rose-500/20"
                       >
                         <X className="w-6 h-6" />
                       </button>

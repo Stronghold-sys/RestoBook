@@ -158,8 +158,12 @@ export async function POST(req: NextRequest) {
       expiryPeriod: 60
     };
 
-    // Duitku Pop API (Inquiry)
-    const response = await fetch('https://passport.duitku.com/webapi/api/merchant/v2/inquiry', {
+    // Duitku Pop API (Inquiry) - Gunakan URL Sandbox jika isSandbox true
+    const url = isSandbox 
+      ? 'https://passport-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -356,31 +356,73 @@ export default function CartPage() {
           setLoading(false);
           setShowPaymentModal(false); // Close the selector modal before Duitku pops up
           const currentOrderId = orderData.id;
-          (window as any).checkout.process(duitkuData.reference, {
-            successEvent: async function(result: any) {
-              toast.success("Pembayaran berhasil!");
-              await fetch('/api/payment/check-status', {
+
+          const forceCloseDuitku = () => {
+            const iframes = document.getElementsByTagName('iframe');
+            for (let i = 0; i < iframes.length; i++) {
+              const src = iframes[i].getAttribute('src') || '';
+              if (src.includes('duitku')) {
+                const wrapper = iframes[i].parentElement;
+                if (wrapper && wrapper !== document.body) wrapper.remove();
+                else iframes[i].remove();
+              }
+            }
+          };
+
+          let isHandled = false;
+          let pollInterval: NodeJS.Timeout | null = null;
+
+          const handleFinalize = async () => {
+            if (isHandled) return;
+            isHandled = true;
+            if (pollInterval) clearInterval(pollInterval);
+            
+            // Essential: Purge iframe before internal router push
+            forceCloseDuitku(); 
+            
+            // Push the secure check to DB
+            await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: currentOrderId, duitkuOrderId: duitkuData.merchantOrderId })
+            });
+            
+            // Route immediately to tracking view
+            router.push(`/customer/orders/${currentOrderId}`);
+          };
+
+          // Poll every 3s for realtime response
+          pollInterval = setInterval(async () => {
+            try {
+              const checkRes = await fetch('/api/payment/check-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: currentOrderId, duitkuOrderId: duitkuData.merchantOrderId })
               });
-              router.push(`/customer/orders/${currentOrderId}`);
+              const checkData = await checkRes.json();
+              if (checkData.status === 'paid') {
+                toast.success("Pembayaran Terdeteksi!");
+                handleFinalize();
+              }
+            } catch(e) { console.error(e); }
+          }, 3000);
+
+          (window as any).checkout.process(duitkuData.reference, {
+            successEvent: function(result: any) {
+              toast.success("Pembayaran berhasil!");
+              handleFinalize();
             },
             pendingEvent: function(result: any) {
-              toast.success("Menunggu konfirmasi pembayaran...");
-              router.push(`/customer/orders/${currentOrderId}`);
+              // Do not forcibly route on pending, let interval do the work
             },
             errorEvent: function(result: any) {
-              toast.error("Pembayaran gagal. Silakan coba lagi.");
-              router.push(`/customer/orders/${currentOrderId}`);
+              if (pollInterval) clearInterval(pollInterval);
+              toast.error("Pembayaran gagal atau terhenti.");
+              handleFinalize(); // Drop to details to retry
             },
             closeEvent: async function() {
-              await fetch('/api/payment/check-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: currentOrderId, duitkuOrderId: duitkuData.merchantOrderId })
-              });
-              router.push(`/customer/orders/${currentOrderId}`);
+              if (pollInterval) clearInterval(pollInterval);
+              handleFinalize(); // Always route when popup manually closed
             }
           });
           return;

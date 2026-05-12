@@ -112,30 +112,69 @@ export default function OrderTrackingPage() {
         setPaying(false);
         setShowPaymentSelector(false);
 
-        (window as any).checkout.process(data.reference, {
-          successEvent: async function(result: any) {
-            toast.success("Pembayaran berhasil!");
-            await fetch('/api/payment/check-status', {
+        const forceCloseDuitku = () => {
+          const iframes = document.getElementsByTagName('iframe');
+          for (let i = 0; i < iframes.length; i++) {
+            const src = iframes[i].getAttribute('src') || '';
+            if (src.includes('duitku')) {
+              const wrapper = iframes[i].parentElement;
+              if (wrapper && wrapper !== document.body) wrapper.remove();
+              else iframes[i].remove();
+            }
+          }
+        };
+
+        let isHandled = false;
+        let pollInterval: NodeJS.Timeout | null = null;
+
+        const handleFinalUpdate = async () => {
+          if (isHandled) return;
+          isHandled = true;
+          if (pollInterval) clearInterval(pollInterval);
+          
+          forceCloseDuitku();
+          
+          // Update core DB and update local page state immediately
+          await fetch('/api/payment/check-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: id, duitkuOrderId: data.merchantOrderId })
+          });
+          fetchOrderDetails();
+        };
+
+        // Setup polling listener every 3.5s for the track view
+        pollInterval = setInterval(async () => {
+          try {
+            const checkRes = await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ orderId: id, duitkuOrderId: data.merchantOrderId })
             });
-            fetchOrderDetails();
+            const checkData = await checkRes.json();
+            if (checkData.status === 'paid') {
+              toast.success("Konfirmasi Real-time Berhasil!");
+              handleFinalUpdate();
+            }
+          } catch (e) { console.error(e); }
+        }, 3500);
+
+        (window as any).checkout.process(data.reference, {
+          successEvent: function(result: any) {
+            toast.success("Pembayaran berhasil!");
+            handleFinalUpdate();
           },
           pendingEvent: function(result: any) {
-            toast.success("Menunggu konfirmasi pembayaran...");
-            fetchOrderDetails();
+            // Intentionally silent to let polling resolve the view
           },
           errorEvent: function(result: any) {
-            toast.error("Pembayaran gagal. Silakan coba lagi.");
+            if (pollInterval) clearInterval(pollInterval);
+            toast.error("Gagal diproses di popup.");
+            fetchOrderDetails();
           },
           closeEvent: async function() {
-            await fetch('/api/payment/check-status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: id, duitkuOrderId: data.merchantOrderId })
-            });
-            fetchOrderDetails();
+            if (pollInterval) clearInterval(pollInterval);
+            handleFinalUpdate(); // Fetch final definitive state
           }
         });
       } else if (data.paymentUrl) {

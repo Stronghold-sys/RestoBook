@@ -565,31 +565,48 @@ export default function POSPage() {
         setShowPaymentModal(false);
         setProcessing(false);
 
-        // Gunakan Duitku Pop SDK untuk popup transparan
-        (window as any).checkout.process(data.reference, {
-          successEvent: async function(result: any) {
-            toast.success("Pembayaran berhasil!");
-            await fetch('/api/payment/check-status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
-            });
-            setShowPaymentModal(false);
-            setFoundOrder(null);
-            clearCart();
-            setProcessing(false);
-          },
-          pendingEvent: function(result: any) {
-            toast.success("Menunggu konfirmasi pembayaran...");
-            setShowPaymentModal(false);
-            clearCart();
-            setProcessing(false);
-          },
-          errorEvent: function(result: any) {
-            toast.error("Pembayaran gagal.");
-            setProcessing(false);
-          },
-          closeEvent: async function() {
+        // Helper function to forcefully remove stuck Duitku popups from current DOM
+        const forceCloseDuitku = () => {
+          const iframes = document.getElementsByTagName('iframe');
+          for (let i = 0; i < iframes.length; i++) {
+            const src = iframes[i].getAttribute('src') || '';
+            if (src.includes('duitku')) {
+              const wrapper = iframes[i].parentElement;
+              // Duitku usually puts the iframe inside an overlay wrapper div
+              if (wrapper && wrapper !== document.body) {
+                wrapper.remove();
+              } else {
+                iframes[i].remove();
+              }
+            }
+          }
+        };
+
+        let isHandled = false;
+        let pollInterval: NodeJS.Timeout | null = null;
+
+        const handleFinalSuccess = async (methodName = "Duitku") => {
+          if (isHandled) return;
+          isHandled = true;
+          if (pollInterval) clearInterval(pollInterval);
+          
+          forceCloseDuitku();
+          toast.success("Pembayaran Lunas & Terkonfirmasi!", { duration: 4000 });
+          
+          // Final security check/update to DB before finishing UI
+          await fetch('/api/payment/check-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
+          });
+          
+          // Trigger complete native POS workflow to show receipts and clear cart
+          processPayment(true, methodName);
+        };
+
+        // Start realtime status polling immediately upon popup showing
+        pollInterval = setInterval(async () => {
+          try {
             const checkRes = await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -597,17 +614,44 @@ export default function POSPage() {
             });
             const checkData = await checkRes.json();
             if (checkData.status === 'paid') {
-              toast.success("Pembayaran berhasil!");
-              setShowPaymentModal(false);
-              setFoundOrder(null);
-              clearCart();
-            } else {
-              // If payment is cancelled/closed, return user to selection screen instead of waiting screen
-              setVerificationStep("select_method");
-              // Show explicit selector again for consistency
-              setShowPaymentModal(true);
+              handleFinalSuccess("Duitku (Realtime Detect)");
             }
+          } catch(err) {
+            console.error("Background poll error:", err);
+          }
+        }, 3000); // Poll every 3 seconds for true instant feedback
+
+        (window as any).checkout.process(data.reference, {
+          successEvent: function(result: any) {
+            handleFinalSuccess("Duitku Pop");
+          },
+          pendingEvent: function(result: any) {
+            // Leave polling running to detect completion seamlessly
+            console.log("Duitku pending state received, waiting for real-time poll to confirm...");
+          },
+          errorEvent: function(result: any) {
+            if (pollInterval) clearInterval(pollInterval);
+            toast.error("Terjadi gangguan pada popup pembayaran.");
             setProcessing(false);
+          },
+          closeEvent: async function() {
+            if (pollInterval) clearInterval(pollInterval);
+            // Instant final fetch upon manual close to see if paid while open
+            const checkRes = await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
+            });
+            const checkData = await checkRes.json();
+            
+            if (checkData.status === 'paid') {
+              handleFinalSuccess("Duitku Close Manual");
+            } else {
+              // Only bounce back to menu if explicitly NOT paid yet
+              setVerificationStep("select_method");
+              setShowPaymentModal(true);
+              setProcessing(false);
+            }
           }
         });
       } else if (data.paymentUrl) {

@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const paymentAmount = Math.floor(order.total_amount);
     const merchantOrderId = order.id;
 
-    // Customer detail
+    // Customer detail extraction
     let customerDetail = {
       firstName: 'Pelanggan',
       lastName: '',
@@ -55,34 +55,66 @@ export async function POST(req: Request) {
       phoneNumber: '081234567890'
     };
 
-    // 1. Coba ambil nama dari catatan kasir (POS Kasir sering menyimpan nama tamu di notes: "[NAMA: Budi]")
-    if (order.notes && order.notes.includes('[NAMA: ')) {
-      const extractedName = order.notes.split('[NAMA: ')[1].split(']')[0];
-      if (extractedName) {
-        customerDetail.firstName = extractedName;
+    // 1. Check for details in notes (common for Guest orders from POS)
+    if (order.notes) {
+      // Extract [NAMA: Budi]
+      if (order.notes.includes('[NAMA: ')) {
+        const extractedName = order.notes.split('[NAMA: ')[1].split(']')[0];
+        if (extractedName) customerDetail.firstName = extractedName;
+      }
+      // Extract [EMAIL: budi@gmail.com] if exists
+      if (order.notes.includes('[EMAIL: ')) {
+        const extractedEmail = order.notes.split('[EMAIL: ')[1].split(']')[0];
+        if (extractedEmail) customerDetail.email = extractedEmail;
+      }
+      // Extract [TELP: 0812...] if exists
+      if (order.notes.includes('[TELP: ')) {
+        const extractedTelp = order.notes.split('[TELP: ')[1].split(']')[0];
+        if (extractedTelp) customerDetail.phoneNumber = extractedTelp;
       }
     } 
-    // 2. Jika ada customer_id terdaftar (Pelanggan yang login)
-    else if (order.customer_id) {
+    
+    // 2. If it's a registered customer, use profile data (this overrides generic "Pelanggan")
+    if (order.customer_id) {
       const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('id', order.customer_id).single();
-      if (profile && profile.full_name) {
-        customerDetail.firstName = profile.full_name;
+      if (profile) {
+        if (profile.full_name) customerDetail.firstName = profile.full_name;
         if (profile.email) customerDetail.email = profile.email;
         if (profile.phone) customerDetail.phoneNumber = profile.phone;
       }
     }
 
-    // Gunakan satu item gabungan untuk menghindari error validasi total amount Duitku
-    const itemDetails = [{
-      name: `Pesanan RestoBook #${merchantOrderId.substring(0, 8)}`,
-      price: paymentAmount,
-      quantity: 1
-    }];
+    // ITEM DETAILS MAPPING
+    // Duitku require that sum(price * quantity) == paymentAmount
+    const itemDetails: any[] = [];
+    let itemsSum = 0;
+
+    if (order.order_items && order.order_items.length > 0) {
+      order.order_items.forEach((item: any) => {
+        const price = Math.floor(item.price);
+        const qty = item.quantity;
+        itemDetails.push({
+          name: item.menu_items?.name || 'Item Pesanan',
+          price: price,
+          quantity: qty
+        });
+        itemsSum += (price * qty);
+      });
+    }
+
+    // Handle discrepancies (e.g., due to rounding, taxes, or service fees not listed in items)
+    const discrepancy = paymentAmount - itemsSum;
+    if (discrepancy !== 0) {
+      itemDetails.push({
+        name: discrepancy > 0 ? 'Biaya Layanan/Lainnya' : 'Potongan/Diskon',
+        price: discrepancy,
+        quantity: 1
+      });
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://restobookid.my.id';
 
     // === DUITKU POP API ===
-    // Signature: SHA256(merchantCode + timestamp + merchantKey)
     const timestamp = String(Date.now());
     const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
 
@@ -94,12 +126,12 @@ export async function POST(req: Request) {
       additionalParam: "",
       merchantUserInfo: "",
       email: customerDetail.email,
-      customerVaName: customerDetail.firstName,
+      customerVaName: customerDetail.firstName.substring(0, 30), // VaName limited to 30 chars
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
       customerDetail: {
-        firstName: customerDetail.firstName,
-        lastName: customerDetail.lastName || "",
+        firstName: customerDetail.firstName.split(' ')[0] || customerDetail.firstName,
+        lastName: customerDetail.firstName.split(' ').slice(1).join(' ') || "",
         email: customerDetail.email,
         phoneNumber: customerDetail.phoneNumber
       },

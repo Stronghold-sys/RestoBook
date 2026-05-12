@@ -58,6 +58,10 @@ export async function GET() {
     -- Drop payment method constraint to allow new types (QRIS, E-Wallet, etc.)
     ALTER TABLE IF EXISTS orders DROP CONSTRAINT IF EXISTS orders_payment_method_check;
 
+    -- Update order_type constraint to allow 'delivery'
+    ALTER TABLE IF EXISTS orders DROP CONSTRAINT IF EXISTS orders_order_type_check;
+    ALTER TABLE IF EXISTS orders ADD CONSTRAINT orders_order_type_check CHECK (order_type IN ('dine_in', 'takeaway', 'delivery'));
+
     -- Ensure salary_records has late minutes tracking
     ALTER TABLE IF EXISTS salary_records ADD COLUMN IF NOT EXISTS total_late_minutes INTEGER DEFAULT 0;
     ALTER TABLE IF EXISTS salary_records ADD COLUMN IF NOT EXISTS late_deduction NUMERIC DEFAULT 0;

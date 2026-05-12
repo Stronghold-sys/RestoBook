@@ -19,15 +19,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Duitku credentials not configured' }, { status: 500 });
     }
 
-    // Ambil detail order
+    // Ambil detail order tanpa profiles join untuk mencegah error "Order not found" jika relasi bermasalah
     const { data: order, error } = await supabaseAdmin
       .from('orders')
-      .select('*, order_items(*, menu_items(name)), profiles(full_name, email, phone)')
+      .select('*, order_items(*, menu_items(name))')
       .eq('id', orderId)
       .single();
 
     if (error || !order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      console.error("Create Invoice - Order fetch error:", error, "ID:", orderId);
+      return NextResponse.json({ error: error?.message || 'Order not found' }, { status: 404 });
     }
 
     // Jika sudah lunas, tidak perlu buat invoice
@@ -42,12 +43,21 @@ export async function POST(req: Request) {
     const signatureString = `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`;
     const signature = md5(signatureString);
 
-    const customerDetail = {
-      firstName: order.profiles?.full_name || 'Customer',
+    let customerDetail = {
+      firstName: 'Customer',
       lastName: '',
-      email: order.profiles?.email || 'customer@restobook.com',
-      phoneNumber: order.profiles?.phone || '081234567890'
+      email: 'customer@restobook.com',
+      phoneNumber: '081234567890'
     };
+
+    if (order.customer_id) {
+      const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('id', order.customer_id).single();
+      if (profile) {
+        customerDetail.firstName = profile.full_name || 'Customer';
+        customerDetail.email = profile.email || 'customer@restobook.com';
+        customerDetail.phoneNumber = profile.phone || '081234567890';
+      }
+    }
 
     const itemDetails = (order.order_items || []).map((item: any) => ({
       name: item.menu_items?.name || 'Menu Item',

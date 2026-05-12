@@ -138,7 +138,7 @@ export default function CashierOrders() {
 
   const handleGenerateDuitkuLink = async (orderId: string) => {
     setProcessingPayment(true);
-    const loadingToast = toast.loading("Membuat tagihan Duitku...");
+    const loadingToast = toast.loading("Membuat tautan pembayaran...");
     try {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
@@ -147,14 +147,14 @@ export default function CashierOrders() {
       });
       const data = await res.json();
       
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
       
       if (data.paymentUrl) {
         // Copy to clipboard
         await navigator.clipboard.writeText(data.paymentUrl);
-        toast.success("Link Duitku berhasil dicopy! Silakan berikan ke pelanggan.", { id: loadingToast, duration: 5000 });
+        toast.success("Tautan pembayaran berhasil disalin! Silakan berikan ke pelanggan.", { id: loadingToast, duration: 5000 });
         // Optionally open in a small window so the Kasir can show the QR to the customer
-        window.open(data.paymentUrl, "DuitkuPayment", "width=450,height=700");
+        window.open(data.paymentUrl, "OnlinePayment", "width=450,height=700");
       }
     } catch (error: any) {
       toast.error(error.message || 'Terjadi kesalahan sistem', { id: loadingToast });
@@ -387,7 +387,7 @@ export default function CashierOrders() {
                             {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
                           </motion.button>
                           <motion.button whileTap={{ scale: 0.98 }} onClick={() => handleGenerateDuitkuLink(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-blue-100 text-blue-700 rounded-2xl font-black hover:bg-blue-200 flex flex-col items-center justify-center gap-1 shadow-sm transition-all uppercase text-[10px] tracking-wider text-center">
-                            {processingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>QR Duitku</>}
+                            {processingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>QR Pembayaran</>}
                           </motion.button>
                         </>
                       )}

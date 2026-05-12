@@ -291,7 +291,7 @@ export default function CartPage() {
       const totalAmount = getTotal();
       const dbPaymentMethod = paymentMethod === "cash" ? "cash" : "non_cash";
       
-      const detailedPaymentNotes = paymentMethod === "non_cash" ? "[Pembayaran Online Duitku]" : "[Tunai di Kasir]";
+      const detailedPaymentNotes = paymentMethod === "non_cash" ? "[Pembayaran Online]" : "[Tunai di Kasir]";
       const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
 
       const { data: orderData, error: orderError } = await supabase.from("orders").insert({
@@ -335,7 +335,7 @@ export default function CartPage() {
       clearCart();
 
       if (paymentMethod === "non_cash") {
-        toast.loading("Mengarahkan ke pembayaran Duitku...", { id: loadingToast });
+        toast.loading("Mengarahkan ke pembayaran...", { id: loadingToast });
         const res = await fetch('/api/payment/create-invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -343,7 +343,7 @@ export default function CartPage() {
         });
         const duitkuData = await res.json();
         
-        if (!res.ok) throw new Error(duitkuData.error || 'Gagal membuat tagihan Duitku');
+        if (!res.ok) throw new Error(duitkuData.error || 'Gagal menyiapkan tagihan');
         
         if (duitkuData.paymentUrl) {
           window.location.href = duitkuData.paymentUrl;

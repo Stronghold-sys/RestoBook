@@ -89,11 +89,12 @@ export default function OrderTrackingPage() {
     } finally { setLoading(false); }
   };
 
-  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const handlePayDuitku = async () => {
-    setLoadingPayment(true);
-    const pToast = toast.loading("Sedang menghubungi Duitku...");
+    if (paying) return;
+    setPaying(true);
+    const pToast = toast.loading("Mengarahkan ke pembayaran...");
     try {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
@@ -102,7 +103,7 @@ export default function OrderTrackingPage() {
       });
       const data = await res.json();
       
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+      if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
       
       toast.success("Berhasil! Mengalihkan ke halaman pembayaran...", { id: pToast });
       
@@ -112,7 +113,7 @@ export default function OrderTrackingPage() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Terjadi kesalahan sistem', { id: pToast });
-      setLoadingPayment(false);
+      setPaying(false);
     }
   };
 
@@ -269,7 +270,7 @@ export default function OrderTrackingPage() {
   const steps = [
     { id: "pending", label: "Menunggu", icon: Clock },
     { id: "confirmed", label: "Dikonfirmasi", icon: CheckCircle2 },
-    { id: "processing", label: "Dimasak", icon: ChefHat },
+    { id: "processing", label: "Diproses", icon: ChefHat },
     { id: "ready", label: "Siap", icon: PackageCheck },
     { id: "completed", label: "Selesai", icon: CheckCircle2 },
   ];
@@ -434,14 +435,10 @@ export default function OrderTrackingPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-3">
                 <button
                   onClick={handlePayDuitku}
-                  disabled={loadingPayment}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={paying}
+                  className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-2"
                 >
-                  {loadingPayment ? (
-                    <Clock className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>Bayar Online via Duitku <ArrowRight className="w-5 h-5" /></>
-                  )}
+                  {paying ? <Loader2 className="w-6 h-6 animate-spin" /> : <>BAYAR SEKARANG <ArrowRight className="w-5 h-5" /></>}
                 </button>
                 <p className="text-[11px] text-center text-muted">
                   Pembayaran Anda dijamin aman. Status akan otomatis Lunas setelah berhasil.

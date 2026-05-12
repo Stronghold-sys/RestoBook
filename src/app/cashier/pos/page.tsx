@@ -117,8 +117,8 @@ export default function POSPage() {
         const { data } = await supabase.from('orders').select('payment_status').eq('id', foundOrder.id).single();
         if (data && data.payment_status === 'paid') {
           clearInterval(pollingTimer);
-          toast.success("Pembayaran berhasil dikonfirmasi Duitku!");
-          processPayment(true, "Pembayaran Online Duitku");
+          toast.success("Pembayaran online berhasil dikonfirmasi!");
+          processPayment(true, "Pembayaran Online");
         }
       }, 3000);
     }
@@ -504,10 +504,10 @@ export default function POSPage() {
 
   const handleGenerateDuitkuPOS = async () => {
     setProcessing(true);
-    const loadingToast = toast.loading("Menyiapkan pembayaran Duitku...");
+    const loadingToast = toast.loading("Menyiapkan pembayaran online...");
     try {
       let orderId = foundOrder?.id;
-      let notesStr = `[METODE: Pembayaran Online Duitku] Kasir: ${cashierName}`;
+      let notesStr = `[METODE: Pembayaran Online] Kasir: ${cashierName}`;
       
       if (!orderId) {
         // Walk-in order
@@ -556,12 +556,12 @@ export default function POSPage() {
         body: JSON.stringify({ orderId })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan Duitku');
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
 
       toast.success("Tagihan dibuat! Menunggu pembayaran...", { id: loadingToast });
       
       // Open in popup
-      window.open(data.paymentUrl, "DuitkuPaymentPOS", "width=450,height=700");
+      window.open(data.paymentUrl, "OnlinePaymentPOS", "width=450,height=700");
       setVerificationStep("duitku_waiting");
       
     } catch (e: any) {
@@ -1148,7 +1148,7 @@ export default function POSPage() {
                             disabled={processing} 
                             className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4"
                           >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Buat Tagihan Duitku"}
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Buat Tagihan Online"}
                           </button>
                         </>
                       )}
@@ -1168,7 +1168,7 @@ export default function POSPage() {
                   </div>
                   <div>
                     <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
-                    <p className="text-sm text-muted mb-4">Minta pelanggan memindai QR Code di halaman tagihan Duitku. Halaman ini akan tertutup otomatis saat pembayaran berhasil.</p>
+                    <p className="text-sm text-muted mb-4">Minta pelanggan memindai QR Code di halaman tagihan pembayaran. Halaman ini akan tertutup otomatis saat pembayaran berhasil.</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
                     <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>

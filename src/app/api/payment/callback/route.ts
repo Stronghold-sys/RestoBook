@@ -89,23 +89,36 @@ export async function POST(req: Request) {
           status: 'confirmed'
         })
         .eq('id', dbOrderId)
-        .select('*, profiles!customer_id(email, full_name), order_items(*, menu_items(name))')
+        .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
         .single();
 
       if (updateError) {
-        console.error('Error updating order in callback:', updateError);
-      } 
+        console.error('CRITICAL: DB Update Error in Callback:', updateError);
+      } else {
+        console.log('Order marked as PAID. Metadata retrieved:', {
+          id: order.id,
+          hasProfile: !!order.profiles,
+          profileData: order.profiles,
+          hasItems: !!order.order_items?.length
+        });
+      }
       
       // 2. Send Dynamic Digital Invoice to Customer Email via Resend
       if (order && !updateError) {
-        console.log('DB update successful. Initiating Email trigger for order:', dbOrderId);
         try {
           const resendKey = process.env.RESEND_API_KEY;
-          if (resendKey) {
-            // Try extract email from joined Profile object, fallback to notes text parser
+          if (!resendKey) {
+            console.error('ABORT: RESEND_API_KEY is missing from environment!');
+          } else {
+            // Extract email with multiple fallbacks
             let customerEmail = order.profiles?.email;
+            
+            // Log raw notes for debugging
+            console.log('Checking order notes for email fallback:', order.notes);
+
             if (!customerEmail && order.notes?.includes('[EMAIL:')) {
               customerEmail = order.notes.split('[EMAIL:')[1]?.split(']')[0]?.trim();
+              console.log('Email found in notes fallback:', customerEmail);
             }
             
             // Same logic for full name retrieval
@@ -115,15 +128,18 @@ export async function POST(req: Request) {
             }
             customerName = customerName || 'Pelanggan';
 
-            if (customerEmail) {
-              console.log(`Routing dynamic receipt email to: ${customerEmail}`);
+            if (!customerEmail) {
+              console.warn('SKIP: No customer email found for order:', dbOrderId);
+            } else {
+              console.log(`Routing invoice email to: ${customerEmail}`);
               const resend = new Resend(resendKey);
               const shortId = dbOrderId.substring(0, 8).toUpperCase();
               
               // Build table rows for ordered items dynamically
               let itemsHtml = '';
-              if (Array.isArray(order.order_items)) {
-                order.order_items.forEach((item: any) => {
+              const items = Array.isArray(order.order_items) ? order.order_items : [];
+              
+              items.forEach((item: any) => {
                   const rawMenu = item.menu_items;
                   const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
                   const name = menuItem?.name || 'Item Menu';

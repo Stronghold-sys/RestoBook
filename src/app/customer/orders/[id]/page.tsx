@@ -429,12 +429,15 @@ export default function OrderTrackingPage() {
         </div>
 
         {isPaid && (
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <button onClick={() => setShowReceipt(true)} className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 transition-all uppercase tracking-wider">
-              <ReceiptIcon className="w-6 h-6" /> Kwitansi
-            </button>
-            <button onClick={() => { setShowReceipt(true); setTimeout(handlePrint, 300); }} className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 transition-all uppercase tracking-wider">
-              <Printer className="w-6 h-6" /> Cetak
+          <div className="mt-10">
+            <button 
+              onClick={() => setShowReceipt(true)} 
+              className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-2xl font-black flex items-center justify-center gap-4 shadow-xl shadow-emerald-500/20 transition-all uppercase tracking-widest group"
+            >
+              <div className="bg-white/20 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <ReceiptIcon className="w-6 h-6" />
+              </div>
+              Lihat Kwitansi Digital
             </button>
           </div>
         )}

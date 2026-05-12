@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
     // Signature: merchantCode + timestamp + merchantKey
     const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
 
+    const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     // Suffix Order ID untuk Sandbox agar tidak duplikat saat testing berulang
     const finalOrderId = isSandbox ? `${merchantOrderId}-${timestamp.substring(8)}` : merchantOrderId;
 

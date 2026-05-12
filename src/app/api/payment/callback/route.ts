@@ -9,6 +9,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  console.log('--- DUITKU CALLBACK START ---');
   try {
     const contentType = req.headers.get('content-type') || '';
     let body: any = {};
@@ -21,49 +22,65 @@ export async function POST(req: Request) {
       body = Object.fromEntries(params.entries());
     }
 
+    console.log('Callback Body:', JSON.stringify(body));
+
     const {
-      merchantCode,
-      amount,
       merchantOrderId,
-      signature,
       resultCode
     } = body;
 
-    const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
-    const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
+    if (!merchantOrderId) {
+      console.error('CRITICAL: merchantOrderId is missing from callback body');
+      return new NextResponse('OK', { status: 200 });
+    }
 
-    if (!merchantOrderId) return new NextResponse('OK', { status: 200 });
-
+    // Hanya proses jika sukses (00 atau 0)
     if (resultCode === '00' || resultCode === '0') {
+      console.log(`Payment SUCCESS for Order: ${merchantOrderId}`);
+      
       const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
       const match = merchantOrderId.match(uuidRegex);
       const dbOrderId = match ? match[0] : merchantOrderId;
       
-      // 1. UPDATE STATUS PEMBAYARAN (TETAP PENDING AGAR DIKONFIRMASI KASIR)
-      await supabaseAdmin
-        .from('orders')
-        .update({ payment_status: 'paid', status: 'pending', payment_method: 'duitku' })
-        .eq('id', dbOrderId);
+      console.log(`Target DB Order ID: ${dbOrderId}`);
 
-      // 2. AMBIL DATA PESANAN & PROFIL (UNTUK EMAIL)
-      const { data: order } = await supabaseAdmin
+      // 1. UPDATE STATUS DI DATABASE
+      const { data: updatedOrder, error: updateError } = await supabaseAdmin
         .from('orders')
-        .update({ payment_status: 'paid' }) // Memastikan terupdate
+        .update({ 
+          payment_status: 'paid', 
+          status: 'pending', // Tetap pending agar dikonfirmasi kasir
+          payment_method: 'duitku' 
+        })
         .eq('id', dbOrderId)
-        .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
+        .select('*, profiles(email, full_name)')
         .single();
 
+      if (updateError) {
+        console.error('SUPABASE UPDATE ERROR:', updateError.message);
+      } else {
+        console.log('Database updated successfully.');
+      }
+
+      const order = updatedOrder;
+
       if (order) {
-        console.log('Fulfillment: Order paid, status kept at PENDING for cashier review.');
-        
         try {
           const resendKey = process.env.RESEND_API_KEY;
-          if (resendKey) {
+          if (!resendKey) {
+            console.error('CRITICAL: RESEND_API_KEY is missing from environment variables!');
+          } else {
+            const resend = new Resend(resendKey);
+            
+            // PRIORITAS EMAIL
             let customerEmail = order.profiles?.email;
+            console.log('Email from Profile:', customerEmail);
+
             if (!customerEmail && order.notes?.includes('[EMAIL:')) {
               customerEmail = order.notes.split('[EMAIL:')[1]?.split(']')[0]?.trim();
+              console.log('Email from Notes Fallback:', customerEmail);
             }
-            
+
             let customerName = order.profiles?.full_name;
             if (!customerName && order.notes?.includes('[NAMA:')) {
               customerName = order.notes.split('[NAMA:')[1]?.split(']')[0]?.trim();
@@ -71,10 +88,10 @@ export async function POST(req: Request) {
             customerName = customerName || 'Pelanggan';
 
             if (customerEmail) {
-              const resend = new Resend(resendKey);
               const shortId = dbOrderId.substring(0, 8).toUpperCase();
-              
-              await resend.emails.send({
+              console.log(`Attempting to send success email to: ${customerEmail}`);
+
+              const { data: mailData, error: mailError } = await resend.emails.send({
                 from: 'RestoBook <noreply@restobookid.my.id>',
                 to: customerEmail,
                 subject: `✅ Pembayaran Berhasil - Pesanan #${shortId} Sedang Diverifikasi`,
@@ -98,18 +115,29 @@ export async function POST(req: Request) {
                   </div>
                 `
               });
+
+              if (mailError) {
+                console.error('RESEND MAIL ERROR:', mailError);
+              } else {
+                console.log('Email sent successfully! ID:', mailData?.id);
+              }
+            } else {
+              console.warn('WARNING: No customer email found. Skipping email dispatch.');
             }
           }
-        } catch (mailError) {
-          console.error('Email Dispatch Error:', mailError);
+        } catch (mailEx) {
+          console.error('RESEND EXCEPTION:', mailEx);
         }
       }
+    } else {
+      console.log(`Payment Pending/Failed. ResultCode: ${resultCode}`);
     }
 
+    console.log('--- DUITKU CALLBACK END ---');
     return new NextResponse('OK', { status: 200 });
 
   } catch (globalErr: any) {
-    console.error('Callback Global Error:', globalErr.message);
+    console.error('CALLBACK GLOBAL ERROR:', globalErr.message);
     return new NextResponse('OK', { status: 200 });
   }
 }

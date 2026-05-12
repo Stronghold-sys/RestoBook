@@ -193,9 +193,10 @@ export async function POST(req: NextRequest) {
         merchantOrderId: merchantOrderId
       });
     } else {
-      console.error("Duitku Inquiry Error:", data);
+      console.error("Duitku Inquiry Error:", JSON.stringify(data));
+      const msg = data.Message || data.statusMessage || data.message || JSON.stringify(data);
       return NextResponse.json({ 
-        error: `Duitku: ${data.statusMessage || 'Gagal membuat tagihan'}`,
+        error: `Duitku: ${msg}`,
         details: data
       }, { status: 400 });
     }

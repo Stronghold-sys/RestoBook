@@ -438,10 +438,161 @@ export default function OrderTrackingPage() {
             </button>
           </div>
         )}
+
+        {/* FOOTER ACTIONS (CANCEL, REFUND, REVIEW) */}
+        <div className="mt-6 flex flex-wrap gap-4 border-t border-border-light dark:border-border-dark pt-6">
+          {!isCancelled && order.status === "pending" && (
+            isPaid ? (
+              <button 
+                onClick={() => setShowRefundModal(true)}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 font-bold text-xs uppercase tracking-wider bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl border border-red-200 transition-all shadow-sm"
+              >
+                <RotateCcw className="w-4 h-4" /> Ajukan Pembatalan & Refund
+              </button>
+            ) : (
+              <button 
+                onClick={() => setShowCancelConfirm(true)}
+                className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-bold text-xs uppercase tracking-wider hover:bg-red-50 px-4 py-2.5 rounded-xl transition-all"
+              >
+                <XCircle className="w-4 h-4" /> Batalkan Pesanan
+              </button>
+            )
+          )}
+          
+          {order.status === "completed" && !hasReviewed && (
+            <button 
+              onClick={() => setShowReviewModal(true)}
+              className="w-full mt-4 py-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-orange-500/30 transition-all uppercase tracking-wider transform hover:-translate-y-1"
+            >
+              <Star className="w-6 h-6 fill-white" /> Beri Ulasan & Penilaian
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* ================== MODALS ZONE ================== */}
 
-      {/* END OF MAIN WRAPPER */}
+      {/* 1. CANCEL CONFIRM MODAL */}
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCancelConfirm(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800">
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-red-100"><ShieldAlert className="w-8 h-8 text-red-500" /></div>
+              <h3 className="font-black text-xl text-gray-900 dark:text-white mb-2">Batalkan Pesanan?</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">Tindakan ini tidak dapat dibatalkan. Lanjutkan membatalkan pesanan Anda?</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Kembali</button>
+                <button onClick={handleCancelOrder} disabled={cancelling} className="flex-1 py-3.5 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center hover:bg-red-600">
+                  {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Batalkan"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. REFUND APPLICATION MODAL */}
+      <AnimatePresence>
+        {showRefundModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRefundModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2"><RotateCcw className="w-5 h-5 text-primary" /> Pengajuan Refund</h3>
+                <button onClick={() => setShowRefundModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-5">
+                <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 font-bold leading-relaxed flex items-start gap-3">
+                  <Info className="w-5 h-5 shrink-0" />
+                  Dana yang sudah dibayar akan diproses pengembaliannya secara manual oleh tim Kasir/Admin ke rekening tujuan di bawah.
+                </p>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bank / Platform E-Wallet</label>
+                  <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Contoh: BCA / DANA / OVO" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nomor Rekening / Nomor HP</label>
+                  <input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Nomor akun/nomor HP yang terdaftar" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Atas Nama Pemilik Akun</label>
+                  <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} placeholder="Nama lengkap pemilik rekening" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Pembatalan</label>
+                  <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Mengapa Anda membatalkan pesanan ini?" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+                <button onClick={handleSubmitRefund} disabled={submittingRefund} className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 transition-all uppercase">
+                  {submittingRefund ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Pengajuan Refund"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 3. REVIEW MODAL */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReviewModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 50 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden text-center border border-gray-200 dark:border-gray-800">
+               <div className="p-10 bg-gradient-to-br from-orange-400 via-primary to-red-600 text-white flex flex-col items-center relative overflow-hidden">
+                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent animate-pulse" />
+                 <Star className="w-16 h-16 mb-4 fill-yellow-300 text-yellow-300 drop-shadow-[0_5px_15px_rgba(253,224,71,0.5)] relative z-10" />
+                 <h3 className="text-3xl font-black uppercase tracking-tight relative z-10">Berikan Ulasan</h3>
+                 <p className="text-white/90 text-sm mt-2 font-bold relative z-10">Kepuasan Anda adalah prioritas utama kami!</p>
+               </div>
+               <div className="p-8 space-y-6">
+                 <div className="flex justify-center gap-3">
+                   {[1, 2, 3, 4, 5].map(star => (
+                     <button key={star} onClick={() => setReviewRating(star)} className="transition-all hover:scale-125 transform active:scale-95">
+                       <Star className={`w-12 h-12 ${reviewRating >= star ? "fill-yellow-400 text-yellow-400 drop-shadow-sm" : "text-gray-200 dark:text-gray-700 fill-gray-50 dark:fill-gray-800"}`} />
+                     </button>
+                   ))}
+                 </div>
+                 <div className="text-center">
+                    <span className="px-4 py-1 bg-orange-50 dark:bg-orange-900/20 text-primary font-black text-sm rounded-full border border-orange-100 dark:border-orange-800 uppercase tracking-widest">
+                        {reviewRating === 5 ? "Luar Biasa! ✨" : reviewRating === 4 ? "Sangat Enak! 👍" : reviewRating === 3 ? "Biasa Saja 😐" : reviewRating === 2 ? "Kurang Memuaskan 👎" : "Sangat Buruk 😤"}
+                    </span>
+                 </div>
+                 <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={3} placeholder="Tulis pengalaman bersantap Anda di sini (Rasa, pelayanan, porsi, dll)..." className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-4 text-sm outline-none focus:border-primary text-left font-medium text-text-light dark:text-text-dark" />
+                 <div className="flex gap-3 pt-2">
+                    <button onClick={() => setShowReviewModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Nanti</button>
+                    <button onClick={handleSendReview} disabled={submittingReview} className="flex-[2] py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 hover:bg-primary-hover transition-all">
+                      {submittingReview ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Kirim Ulasan"}
+                    </button>
+                 </div>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. RECEIPT OVERLAY MODAL */}
+      <AnimatePresence>
+        {showReceipt && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReceipt(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                   <h4 className="font-black text-xs uppercase tracking-widest text-gray-500">Pratinjau Kwitansi</h4>
+                   <button onClick={() => setShowReceipt(false)} className="p-2 text-muted hover:bg-gray-200 rounded-xl"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
+                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} />
+                </div>
+                <div className="p-4 border-t border-gray-100 bg-white">
+                   <button onClick={handlePrint} className="w-full py-3 bg-blue-600 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700"><Printer className="w-4 h-4" /> Cetak Sekarang</button>
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

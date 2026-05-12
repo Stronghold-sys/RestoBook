@@ -106,34 +106,43 @@ export default function OrderTrackingPage() {
          setPaying(false);
          (window as any).checkout.process(data.reference, {
             successEvent: async function(result: any) {
+               console.log("Duitku Success Event:", result);
                toast.success("Pembayaran Berhasil!");
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: id })
+                  body: JSON.stringify({ 
+                    orderId: id,
+                    duitkuOrderId: result?.merchantOrderId || id 
+                  })
                });
-               fetchOrderDetails();
+               setTimeout(() => fetchOrderDetails(), 500);
             },
             pendingEvent: async function(result: any) {
+               console.log("Duitku Pending Event:", result);
                toast("Menunggu Konfirmasi...", { icon: "⏳" });
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: id })
+                  body: JSON.stringify({ 
+                    orderId: id,
+                    duitkuOrderId: result?.merchantOrderId || id 
+                  })
                });
-               fetchOrderDetails();
+               setTimeout(() => fetchOrderDetails(), 500);
             },
             errorEvent: function(result: any) {
                toast.error("Transaksi dibatalkan.");
             },
             closeEvent: async function() {
+               console.log("Duitku Pop Closed. Syncing status...");
                // Proaktif cek status ke Duitku saat popup ditutup
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ orderId: id })
                });
-               fetchOrderDetails();
+               setTimeout(() => fetchOrderDetails(), 500);
             }
          });
       } else if (data.paymentUrl) {

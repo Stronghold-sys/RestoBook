@@ -3,7 +3,6 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'edge';
 
-// Fungsi MD5 sederhana untuk Edge Runtime (Tanpa library eksternal)
 async function md5(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('MD5' as any, msgUint8);
@@ -13,61 +12,66 @@ async function md5(message: string) {
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, duitkuOrderId } = await req.json();
 
     if (!orderId) return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
 
     const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
     const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
 
-    if (!DUITKU_MERCHANT_CODE || !DUITKU_API_KEY) {
-      return NextResponse.json({ error: 'Duitku credentials not configured' }, { status: 500 });
-    }
+    // ID yang akan kita tanyakan ke Duitku (Gunakan ID dari Duitku jika ada, atau ID pesanan asli)
+    const queryOrderId = (duitkuOrderId || orderId).trim();
 
-    // Pembersihan ID Pesanan (Penting!)
-    const cleanOrderId = orderId.trim();
-
-    // Signature Cek Status Duitku: md5(merchantCode + merchantOrderId + apiKey)
-    const signature = await md5(`${DUITKU_MERCHANT_CODE}${cleanOrderId}${DUITKU_API_KEY}`);
+    // Signature: md5(merchantCode + merchantOrderId + apiKey)
+    const signature = await md5(`${DUITKU_MERCHANT_CODE}${queryOrderId}${DUITKU_API_KEY}`);
 
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     const checkUrl = isSandbox
       ? 'https://api-sandbox.duitku.com/api/merchant/transactionStatus'
       : 'https://api.duitku.com/api/merchant/transactionStatus';
 
+    console.log(`Checking Duitku for ID: ${queryOrderId}`);
+
     const response = await fetch(checkUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         merchantCode: DUITKU_MERCHANT_CODE,
-        merchantOrderId: cleanOrderId,
+        merchantOrderId: queryOrderId,
         signature: signature
       })
     });
 
     const result = await response.json();
+    console.log("Duitku Status Result:", result.statusCode, result.statusMessage);
 
-    // statusCode "00" = LUNAS
     if (result.statusCode === '00') {
+      // Pembayaran LUNAS, update database
+      // Gunakan ID asli (orderId) untuk update di database kita
       const { data, error: updateError } = await supabaseAdmin
         .from('orders')
         .update({ 
           payment_status: 'paid',
           payment_method: 'duitku',
-          notes: `[VERIFIED SUCCESS: ${result.reference || 'Duitku'}]`
+          notes: `[CHECK-STATUS SUCCESS: ${result.reference || 'Duitku'}]`
         })
-        .eq('id', cleanOrderId)
+        .eq('id', orderId) // orderId adalah UUID asli kita
         .select()
         .single();
 
-      if (updateError) throw updateError;
-      return NextResponse.json({ status: 'paid', order: data });
+      if (updateError) {
+        // Retry jika ID yang dikirim ternyata mengandung suffix
+        const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+        const match = orderId.match(uuidRegex);
+        const cleanId = match ? match[0] : orderId;
+        
+        await supabaseAdmin.from('orders').update({ payment_status: 'paid' }).eq('id', cleanId);
+      }
+
+      return NextResponse.json({ status: 'paid', reference: result.reference });
     }
 
-    return NextResponse.json({ 
-      status: result.statusMessage || 'pending',
-      raw: result 
-    });
+    return NextResponse.json({ status: result.statusMessage || 'pending', raw: result });
 
   } catch (error: any) {
     console.error('Check status error:', error);

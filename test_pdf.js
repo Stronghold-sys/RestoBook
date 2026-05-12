@@ -1,4 +1,4 @@
-const { jsPDF } = require('jspdf');
+import { jsPDF } from 'jspdf';
 const doc = new jsPDF();
 doc.text("Hello World", 10, 10);
 const buff = doc.output('arraybuffer');

@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, Utensils, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
+import { Search, Loader2, Loader, ExternalLink, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, Utensils, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
-import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen as originalIsRestaurantOpen, getOperationalStatus } from "@/utils/operationalHours";
 
@@ -567,44 +566,39 @@ export default function POSPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           orderId,
-          paymentMethod: duitkuMethod,
+          paymentMethod: "", // Kosongkan untuk membiarkan Duitku Pop menampilkan semua pilihan metode
           returnUrl: window.location.href
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
 
-      if (data.paymentUrl) {
+      if (data.reference) {
         toast.dismiss(loadingToast);
-        
-        // Set URL target and switch to gorgeous embedded overlay view
-        setActiveDuitkuUrl(data.paymentUrl);
-        setVerificationStep("duitku_embedded");
-        setShowPaymentModal(true);
         setProcessing(false);
 
-        let isHandled = false;
+        // Setup handler for finalized resolution logic shared by SDK and Pollers
         let pollInterval: NodeJS.Timeout | null = null;
+        let isHandled = false;
 
-        const handleFinalSuccess = async (methodName = "Duitku") => {
+        const handleFinalSuccess = async (methodName = "Duitku Pop") => {
           if (isHandled) return;
           isHandled = true;
           if (pollInterval) clearInterval(pollInterval);
-
-          toast.success("Pembayaran Lunas & Terkonfirmasi!", { duration: 4000 });
+          toast.success("Pembayaran Terkonfirmasi!", { duration: 3000 });
           
-          // Final check & update to internal DB
+          // Send manual check verification to finalize in internal DB
           await fetch('/api/payment/check-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
           });
           
-          // Trigger Native workflow (receipt & cart clear)
+          // Core state cleanup (clear cart + order confirm)
           processPayment(true, methodName);
         };
 
-        // REALTIME LISTENER (Independent of any SDK listeners)
+        // Parallel Background Listener to maintain UI state integrity
         pollInterval = setInterval(async () => {
           try {
             const checkRes = await fetch('/api/payment/check-status', {
@@ -614,15 +608,57 @@ export default function POSPage() {
             });
             const checkData = await checkRes.json();
             if (checkData.status === 'paid') {
-              handleFinalSuccess("Duitku (Realtime Detect)");
+              handleFinalSuccess("Duitku Pop (Background Poll)");
             }
-          } catch(err) {
-            console.error("Poll Error:", err);
-          }
+          } catch(err) {}
         }, 3000);
 
-        // Stop polling automatically if user clicks the internal Batal button and switches views
-        // We can handle this in cleaning the side-effects or within the effect dependency logic already set up earlier.
+        // ⚡ VENDOR SDK INTEGRATION: Fire Duitku Pop overlay system
+        if (typeof (window as any).checkout !== 'undefined') {
+           (window as any).checkout.process(data.reference, {
+             successEvent: function(result: any) {
+               handleFinalSuccess("Duitku Pop SDK");
+             },
+             pendingEvent: function(result: any) {
+               toast("Status: Menunggu Konfirmasi Pelanggan...", { icon: "⏳" });
+             },
+             errorEvent: function(result: any) {
+               toast.error("Transaksi gagal atau dibatalkan oleh pelanggan.");
+               if (pollInterval) clearInterval(pollInterval);
+             },
+             closeEvent: async function() {
+               // Safe double check triggered when modal is exited manually
+               try {
+                 const finalCheck = await fetch('/api/payment/check-status', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
+                 });
+                 const checkResData = await finalCheck.json();
+                 if (checkResData.status === 'paid') {
+                   handleFinalSuccess("Duitku Pop (Close Event Verify)");
+                 } else {
+                   // Grace period cleanup to save CPU cycle if confirmed idle
+                   setTimeout(() => { if(!isHandled && pollInterval) clearInterval(pollInterval); }, 15000);
+                 }
+               } catch(e){}
+             }
+           });
+        } else {
+           // 🚨 ROBUST FAILOVER: Standard secure window pop in case SDK load yields timing race error
+           const wWidth = 520, wHeight = 780;
+           const wLeft = (window.screen.width / 2) - (wWidth / 2);
+           const wTop = (window.screen.height / 2) - (wHeight / 2);
+           const win = window.open(data.paymentUrl, `DuitkuPayment_${Date.now()}`, `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes`);
+           
+           if (win) {
+             setActiveDuitkuUrl(data.paymentUrl);
+             setVerificationStep("duitku_embedded");
+             setShowPaymentModal(true);
+           } else {
+             toast.error("Browser memblokir popup. Mohon izinkan popup untuk pembayaran ini.");
+           }
+        }
       } else {
         toast.error("Gagal generate link pembayaran.", { id: loadingToast });
         setProcessing(false);
@@ -1183,30 +1219,52 @@ export default function POSPage() {
                     transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
                     className="relative z-10"
                   >
-                    <div className="w-[90vw] max-w-[420px] h-[80vh] max-h-[820px] bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.4)] border-[8px] border-white/90 dark:border-gray-800 flex flex-col relative overflow-hidden ring-1 ring-black/5">
-                       {/* Simple status bar styling */}
-                       <div className="h-6 bg-white dark:bg-gray-900 shrink-0 flex justify-center items-center">
-                         <div className="w-16 h-1 rounded-full bg-gray-200 dark:bg-gray-700 mt-1"></div>
-                       </div>
-                       
-                       {/* THE EMBED: Reliable pure HTML container with isolation from react environment */}
-                       <div className="flex-1 w-full h-full bg-gray-50 dark:bg-gray-950 relative">
-                          <iframe 
-                            src={activeDuitkuUrl} 
-                            className="absolute inset-0 w-full h-full border-0" 
-                            title="Halaman Pembayaran"
-                          />
-                       </div>
-                    </div>
+                    <div className="w-[90vw] max-w-[440px] bg-white dark:bg-gray-900 rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(234,88,12,0.4)] border-[12px] border-white dark:border-gray-800 relative overflow-hidden transition-all">
+                       <div className="p-10 md:p-12 flex flex-col items-center text-center">
+                          {/* STUNNING ANIMATED PULSER */}
+                          <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
+                             <div className="absolute inset-0 bg-orange-500/10 rounded-full animate-ping opacity-40"></div>
+                             <div className="absolute inset-6 bg-orange-500/20 rounded-full animate-pulse"></div>
+                             <div className="relative z-10 w-28 h-28 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-[0_15px_35px_-5px_rgba(234,88,12,0.6)]">
+                                <Loader className="w-12 h-12 text-white animate-spin stroke-[3]" style={{ animationDuration: '3s' }} />
+                             </div>
+                          </div>
 
-                    {/* BILINGUAL INSTRUCTION - DUAL LANGUAGE REQUIREMENTS */}
-                    <div className="mt-8 text-center max-w-[420px] mx-auto">
-                       <h3 className="font-black text-xl text-gray-900 dark:text-white tracking-tight drop-shadow-sm">
-                         Silakan Selesaikan Pembayaran
-                       </h3>
-                       <p className="font-bold text-gray-600 dark:text-gray-400 text-sm italic mt-1 uppercase tracking-widest">
-                         Please Complete The Payment
-                       </p>
+                          {/* DYNAMIC TEXT BLOCK */}
+                          <div className="space-y-2">
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                              Menunggu Pembayaran
+                            </h2>
+                            <p className="font-bold text-gray-500 dark:text-gray-400 text-xs tracking-widest uppercase italic">
+                              Waiting For Payment
+                            </p>
+                          </div>
+
+                          {/* INVOICE PILL */}
+                          <div className="mt-8 bg-orange-50 dark:bg-orange-900/20 px-8 py-4 rounded-3xl flex flex-col items-center shadow-inner border border-orange-100/50 dark:border-orange-800/30 w-full max-w-[280px]">
+                             <span className="text-[10px] font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest mb-1">Total Tagihan</span>
+                             <span className="text-3xl font-black text-gray-900 dark:text-white">
+                                Rp {cartTotal.toLocaleString("id-ID")}
+                             </span>
+                          </div>
+
+                          {/* RE-OPEN ACTION BUTTON */}
+                          <button 
+                            onClick={() => {
+                               const wWidth = 520, wHeight = 780;
+                               const wLeft = (window.screen.width / 2) - (wWidth / 2);
+                               const wTop = (window.screen.height / 2) - (wHeight / 2);
+                               window.open(activeDuitkuUrl, `DuitkuPayment_${Date.now()}`, `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes,status=no,menubar=no`);
+                            }}
+                            className="mt-10 w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-black py-5 px-8 rounded-2xl shadow-[0_20px_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_25px_50px_-10px_rgba(234,88,12,0.6)] transition-all active:scale-[0.96] flex items-center justify-center gap-3 uppercase tracking-wider text-sm group"
+                          >
+                            <ExternalLink className="w-5 h-5 group-hover:scale-110 transition-transform" /> Buka Portal Pembayaran
+                          </button>
+
+                          <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed max-w-[300px]">
+                             Sebuah jendela pembayaran telah dibuka. Tekan tombol di atas jika Anda tidak melihat jendela tersebut.
+                          </p>
+                       </div>
                     </div>
                   </motion.div>
 
@@ -1298,18 +1356,25 @@ export default function POSPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="mb-6 space-y-4">
-                          <PaymentMethodSelector 
-                            amount={cartTotal} 
-                            onSelect={(method) => setDuitkuMethod(method)} 
-                            selectedMethod={duitkuMethod} 
-                          />
+                        <div className="mb-6 space-y-6">
+                          <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-100 dark:border-blue-800 rounded-3xl flex items-start gap-4 shadow-sm">
+                            <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 text-white">
+                              <QrCode className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase tracking-tight">Pembayaran Online</h4>
+                              <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                                Pelanggan dapat memilih E-Wallet (ShopeePay, OVO, Dana), QRIS, Virtual Account, atau gerai retail langsung di jendela pembayaran Duitku Pop yang akan muncul.
+                              </p>
+                            </div>
+                          </div>
+
                           <button 
                             onClick={handleGenerateDuitkuPOS} 
-                            disabled={processing || !duitkuMethod} 
-                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
+                            disabled={processing} 
+                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black rounded-2xl transition-all uppercase tracking-wider flex justify-center items-center gap-3 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 active:scale-[0.98]"
                           >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Mulai Pembayaran Pop</>}
                           </button>
                         </div>
                       )}

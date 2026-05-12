@@ -13,7 +13,6 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
-import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -85,20 +84,16 @@ export default function OrderTrackingPage() {
 
   const handlePayDuitku = async () => {
     if (paying) return;
-    if (!duitkuMethod) {
-      setShowPaymentSelector(true);
-      return;
-    }
 
     setPaying(true);
-    const pToast = toast.loading("Menyiapkan pembayaran...");
+    const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
     try {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           orderId: id,
-          paymentMethod: duitkuMethod,
+          paymentMethod: "", // Kosongkan untuk pilihan lengkap
           returnUrl: window.location.href
         })
       });
@@ -106,7 +101,26 @@ export default function OrderTrackingPage() {
       
       if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
       
-      if (data.paymentUrl) {
+      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+         toast.dismiss(pToast);
+         setPaying(false);
+         (window as any).checkout.process(data.reference, {
+            successEvent: function(result: any) {
+               toast.success("Pembayaran Berhasil!");
+               fetchOrderDetails();
+            },
+            pendingEvent: function(result: any) {
+               toast("Menunggu Konfirmasi...", { icon: "⏳" });
+               fetchOrderDetails();
+            },
+            errorEvent: function(result: any) {
+               toast.error("Transaksi dibatalkan.");
+            },
+            closeEvent: async function() {
+               fetchOrderDetails(); // Sinkronisasi ulang
+            }
+         });
+      } else if (data.paymentUrl) {
         toast.success("Menuju halaman pembayaran...", { id: pToast });
         window.location.href = data.paymentUrl;
       } else {
@@ -426,41 +440,7 @@ export default function OrderTrackingPage() {
         )}
       </div>
 
-      <AnimatePresence>
-        {showPaymentSelector && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowPaymentSelector(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden border border-border-light dark:border-border-dark my-8">
-              <div className="bg-primary p-8 text-white flex justify-between items-center relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-                <div className="relative">
-                  <h2 className="text-2xl font-black uppercase tracking-tight">Metode Pembayaran</h2>
-                  <p className="text-white/80 text-sm mt-1">Total Tagihan: <span className="font-extrabold text-white text-base">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span></p>
-                </div>
-                <button onClick={() => setShowPaymentSelector(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-6 h-6" /></button>
-              </div>
 
-              <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <PaymentMethodSelector 
-                  amount={Number(order.total_amount)} 
-                  onSelect={(method) => setDuitkuMethod(method)} 
-                  selectedMethod={duitkuMethod} 
-                />
-              </div>
-
-              <div className="p-8 bg-gray-50 dark:bg-gray-800/50 border-t border-border-light dark:border-border-dark flex gap-4">
-                <button onClick={() => setShowPaymentSelector(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors uppercase text-sm">Batal</button>
-                <button 
-                  onClick={handlePayDuitku} 
-                  disabled={paying || !duitkuMethod} 
-                  className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-primary/20 disabled:opacity-50 uppercase tracking-widest text-sm"
-                >
-                  {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       {/* END OF MAIN WRAPPER */}
     </div>
   );

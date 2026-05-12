@@ -3,23 +3,19 @@ import { md5 } from '@/lib/md5';
 
 export const runtime = 'edge';
 
-// GET endpoint - accessible from browser for debugging
 export async function GET() {
   const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';
   const DUITKU_API_KEY = process.env.DUITKU_API_KEY || '';
 
   // Test 1: Verify MD5 implementation
-  const md5Test = md5('test');
+  const md5Test = await md5('test');
   const md5Expected = '098f6bcd4621d373cade4e832627b4f6';
   const md5Works = md5Test === md5Expected;
 
-  // Test 2: Try getPaymentMethod with MD5 signature
+  // Test 2: Try getPaymentMethod
   const datetime = new Date().toISOString().replace('T', ' ').substring(0, 19);
   const paymentAmount = '10000';
-  
-  // Signature for getPaymentMethod: md5(merchantCode + paymentAmount + datetime + merchantKey)
-  const sigString1 = `${DUITKU_MERCHANT_CODE}${paymentAmount}${datetime}${DUITKU_API_KEY}`;
-  const sig1 = md5(sigString1);
+  const sig1 = await md5(`${DUITKU_MERCHANT_CODE}${paymentAmount}${datetime}${DUITKU_API_KEY}`);
 
   let methodsResult: any = null;
   try {
@@ -40,10 +36,9 @@ export async function GET() {
     methodsResult = { error: e.message };
   }
 
-  // Test 3: Try createInvoice with MD5 signature (dry run)
+  // Test 3: Try createInvoice
   const testOrderId = 'TEST-' + Date.now();
-  const sigString2 = `${DUITKU_MERCHANT_CODE}${testOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-  const sig2 = md5(sigString2);
+  const sig2 = await md5(`${DUITKU_MERCHANT_CODE}${testOrderId}${paymentAmount}${DUITKU_API_KEY}`);
 
   let inquiryResult: any = null;
   try {
@@ -75,11 +70,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    md5: {
-      test: md5Test,
-      expected: md5Expected,
-      works: md5Works
-    },
+    md5: { test: md5Test, expected: md5Expected, works: md5Works },
     credentials: {
       merchantCode: DUITKU_MERCHANT_CODE,
       apiKeyLength: DUITKU_API_KEY.length,
@@ -87,16 +78,15 @@ export async function GET() {
       isSandbox: DUITKU_MERCHANT_CODE.startsWith('DS')
     },
     getPaymentMethod: {
-      datetime,
-      signatureInput: sigString1.replace(DUITKU_API_KEY, '***KEY***'),
+      signatureInput: `${DUITKU_MERCHANT_CODE}${paymentAmount}${datetime}***`,
       signature: sig1,
       result: methodsResult
     },
     createInvoice: {
       merchantOrderId: testOrderId,
-      signatureInput: sigString2.replace(DUITKU_API_KEY, '***KEY***'),
+      signatureInput: `${DUITKU_MERCHANT_CODE}${testOrderId}${paymentAmount}***`,
       signature: sig2,
       result: inquiryResult
     }
-  }, { status: 200 });
+  });
 }

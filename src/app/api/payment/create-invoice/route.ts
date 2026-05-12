@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
 
     // Duitku Standard API: MD5(merchantCode + merchantOrderId + paymentAmount + merchantKey)
     const signatureString = `${DUITKU_MERCHANT_CODE}${finalOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-    const signature = md5(signatureString);
+    const signature = await md5(signatureString);
     
     // Add signature to payload body (standard API format)
     payload.signature = signature;

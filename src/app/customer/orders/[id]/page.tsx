@@ -444,22 +444,42 @@ export default function OrderTrackingPage() {
 
         {/* FOOTER ACTIONS (CANCEL, REFUND, REVIEW) */}
         <div className="mt-6 flex flex-wrap gap-4 border-t border-border-light dark:border-border-dark pt-6">
-          {!isCancelled && order.status === "pending" && (
-            isPaid ? (
-              <button 
-                onClick={() => setShowRefundModal(true)}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700 font-bold text-xs uppercase tracking-wider bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl border border-red-200 transition-all shadow-sm"
-              >
-                <RotateCcw className="w-4 h-4" /> Ajukan Pembatalan & Refund
-              </button>
-            ) : (
-              <button 
-                onClick={() => setShowCancelConfirm(true)}
-                className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-bold text-xs uppercase tracking-wider hover:bg-red-50 px-4 py-2.5 rounded-xl transition-all"
-              >
-                <XCircle className="w-4 h-4" /> Batalkan Pesanan
-              </button>
-            )
+          {!isCancelled && (
+            <>
+              {order.status === "pending" ? (
+                isPaid ? (
+                  <button 
+                    onClick={() => setShowRefundModal(true)}
+                    className="flex items-center gap-2 text-red-600 hover:text-red-700 font-bold text-xs uppercase tracking-wider bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl border border-red-200 transition-all shadow-sm"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Batalkan & Refund
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-bold text-xs uppercase tracking-wider hover:bg-red-50 px-4 py-2.5 rounded-xl transition-all"
+                  >
+                    <XCircle className="w-4 h-4" /> Batalkan Pesanan
+                  </button>
+                )
+              ) : order.status === "confirmed" ? (
+                <button 
+                  disabled
+                  className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 rounded-xl cursor-not-allowed border border-gray-200 dark:border-gray-700 opacity-70"
+                >
+                  <Lock className="w-4 h-4" /> Sedang Diproses (Tidak Bisa Dibatalkan)
+                </button>
+              ) : null}
+            </>
+          )}
+
+          {isCancelled && isPaid && order.payment_method !== 'cash' && !refundData && (
+            <button 
+              onClick={() => setShowRefundModal(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-2xl shadow-lg shadow-red-500/20 hover:scale-105 transition-all"
+            >
+              <RotateCcw className="w-4 h-4" /> Ajukan Refund Dana Sekarang
+            </button>
           )}
           
           {order.status === "completed" && !hasReviewed && (

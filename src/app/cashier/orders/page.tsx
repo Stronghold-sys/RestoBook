@@ -12,7 +12,7 @@ export default function CashierOrders() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "paid" | "cancelled">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "online" | "pending" | "paid" | "cancelled">("all");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -251,6 +251,7 @@ export default function CashierOrders() {
   const filtered = orders.filter(o => {
     const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || getCustomerName(o).toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
+    if (activeTab === "online") return !!o.customer_id;
     if (activeTab === "pending") return o.status === "pending";
     if (activeTab === "paid") return o.payment_status === "paid";
     if (activeTab === "cancelled") return o.status === "cancelled";
@@ -282,6 +283,7 @@ export default function CashierOrders() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {[
           { id: "all", label: "Semua", count: orders.length },
+          { id: "online", label: "Online", count: orders.filter(o => !!o.customer_id).length },
           { id: "pending", label: "Menunggu", count: orders.filter(o => o.status === "pending").length },
           { id: "paid", label: "Lunas", count: orders.filter(o => o.payment_status === "paid").length },
           { id: "cancelled", label: "Dibatalkan", count: orders.filter(o => o.status === "cancelled").length }
@@ -427,31 +429,45 @@ export default function CashierOrders() {
                   {selectedOrder.status !== "cancelled" && selectedOrder.status !== "completed" && (
                     <>
                       {selectedOrder.status === "pending" && (
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "confirmed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider">
-                          <Check className="w-6 h-6" /> Konfirmasi
-                        </motion.button>
+                        <div className="flex flex-1 gap-3">
+                          <motion.button 
+                            whileTap={{ scale: 0.98 }} 
+                            onClick={() => updateOrderStatus(selectedOrder.id, "confirmed")} 
+                            className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 transition-all uppercase text-sm tracking-wider"
+                          >
+                            <CheckCircle className="w-6 h-6" /> Terima Pesanan
+                          </motion.button>
+                          
+                          <motion.button 
+                            whileTap={{ scale: 0.98 }} 
+                            onClick={() => setShowCancelModal(true)} 
+                            className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs"
+                          >
+                            <X className="w-5 h-5" /> Tolak Pesanan
+                          </motion.button>
+                        </div>
                       )}
                       
                       {selectedOrder.payment_method === "non_cash" && selectedOrder.payment_status !== "paid" && (
-                        <>
-                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-[2] py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider animate-pulse">
-                            {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
-                          </motion.button>
-                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => handleGenerateDuitkuLink(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-blue-100 text-blue-700 rounded-2xl font-black hover:bg-blue-200 flex flex-col items-center justify-center gap-1 shadow-sm transition-all uppercase text-[10px] tracking-wider text-center">
-                            {processingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>QR Pembayaran</>}
-                          </motion.button>
-                        </>
+                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider">
+                          {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
+                        </motion.button>
                       )}
                       
                       {(selectedOrder.status === "confirmed" || selectedOrder.status === "processing") && (
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-green-500 text-white rounded-2xl font-black hover:bg-green-600 flex items-center justify-center gap-2 shadow-xl shadow-green-500/30 transition-all uppercase text-sm tracking-wider">
-                          <CheckCircle className="w-6 h-6" /> Pesanan Selesai
-                        </motion.button>
+                        <div className="flex flex-1 gap-3">
+                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider">
+                            <CheckCircle className="w-6 h-6" /> Pesanan Selesai
+                          </motion.button>
+                          <motion.button 
+                            whileTap={{ scale: 0.98 }} 
+                            onClick={() => setShowCancelModal(true)} 
+                            className="py-4 px-6 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs"
+                          >
+                            Batalkan
+                          </motion.button>
+                        </div>
                       )}
-
-                      <motion.button whileTap={{ scale: 0.98 }} onClick={() => setShowCancelModal(true)} className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs">
-                        Batalkan / Refund
-                      </motion.button>
                     </>
                   )}
 

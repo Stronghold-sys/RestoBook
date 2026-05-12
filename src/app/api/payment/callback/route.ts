@@ -41,30 +41,27 @@ export async function POST(req: Request) {
       const match = merchantOrderId.match(uuidRegex);
       const dbOrderId = match ? match[0] : merchantOrderId;
       
-      // 1. UPDATE STATUS PEMBAYARAN
+      // 1. UPDATE STATUS PEMBAYARAN (TETAP PENDING AGAR DIKONFIRMASI KASIR)
       await supabaseAdmin
         .from('orders')
-        .update({ payment_status: 'paid', status: 'confirmed', payment_method: 'duitku' })
+        .update({ payment_status: 'paid', status: 'pending', payment_method: 'duitku' })
         .eq('id', dbOrderId);
 
       // 2. AMBIL DATA PESANAN & PROFIL (UNTUK EMAIL)
-      // Kita ambil terpisah agar lebih akurat dan tidak terpengaruh error update
       const { data: order } = await supabaseAdmin
         .from('orders')
-        .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
+        .update({ payment_status: 'paid' }) // Memastikan terupdate
         .eq('id', dbOrderId)
+        .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
         .single();
 
       if (order) {
-        console.log('Fulfillment: Order data retrieved for email routing.');
+        console.log('Fulfillment: Order paid, status kept at PENDING for cashier review.');
         
         try {
           const resendKey = process.env.RESEND_API_KEY;
           if (resendKey) {
-            // PRIORITAS 1: EMAIL DARI PROFIL (DAFTAR AKUN)
             let customerEmail = order.profiles?.email;
-            
-            // PRIORITAS 2: EMAIL DARI CATATAN (CHECKOUT GUEST/FALLBACK)
             if (!customerEmail && order.notes?.includes('[EMAIL:')) {
               customerEmail = order.notes.split('[EMAIL:')[1]?.split(']')[0]?.trim();
             }
@@ -79,39 +76,22 @@ export async function POST(req: Request) {
               const resend = new Resend(resendKey);
               const shortId = dbOrderId.substring(0, 8).toUpperCase();
               
-              // PDF Generation (Sederhana untuk stabilitas Edge)
-              let pdfBase64 = null;
-              try {
-                const doc = new jsPDF();
-                doc.setFontSize(20);
-                doc.text("RestoBook Digital Invoice", 105, 20, { align: 'center' });
-                doc.setFontSize(10);
-                doc.text(`Kwitansi: #${shortId}`, 20, 40);
-                doc.text(`Pelanggan: ${customerName}`, 20, 47);
-                doc.text(`Status: LUNAS & DIPROSES`, 20, 54);
-                
-                const dataUri = doc.output('datauristring');
-                pdfBase64 = dataUri.split(',')[1];
-              } catch (e) {}
-
               await resend.emails.send({
                 from: 'RestoBook <noreply@restobookid.my.id>',
                 to: customerEmail,
-                subject: `🧾 Konfirmasi Pembayaran - Pesanan #${shortId}`,
+                subject: `🧾 Pembayaran Diterima - Pesanan #${shortId} Menunggu Konfirmasi`,
                 html: `
                   <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
-                    <h1 style="color:#f97316;">Halo, ${customerName}!</h1>
-                    <p>Pembayaran Anda untuk pesanan <b>#${shortId}</b> telah kami terima dan diverifikasi otomatis.</p>
-                    <p>Saat ini pesanan Anda sedang disiapkan oleh tim dapur kami. Silakan klik tombol di bawah untuk melihat detail pesanan Anda:</p>
+                    <h1 style="color:#f97316;">Pembayaran Berhasil!</h1>
+                    <p>Halo ${customerName}, pembayaran Anda untuk pesanan <b>#${shortId}</b> telah kami terima.</p>
+                    <p><b>Status Saat Ini:</b> Menunggu Konfirmasi Kasir.</p>
+                    <p>Mohon tunggu sebentar, kami akan segera mengonfirmasi pesanan Anda untuk mulai diproses di dapur.</p>
                     <div style="text-align:center; margin:30px 0;">
-                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Lihat Pesanan</a>
+                      <a href="https://restobookid.my.id/customer/orders/${dbOrderId}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Pantau Pesanan</a>
                     </div>
-                    <p style="font-size:12px; color:#888;">Email ini dikirim otomatis oleh sistem RestoBook. Harap tidak membalas email ini.</p>
                   </div>
-                `,
-                attachments: pdfBase64 ? [{ filename: `Invoice-RestoBook-${shortId}.pdf`, content: pdfBase64 }] : []
+                `
               });
-              console.log(`Success: Invoice sent to ${customerEmail} (Source: ${order.profiles?.email ? 'Profile' : 'Checkout Notes'})`);
             }
           }
         } catch (mailError) {

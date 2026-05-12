@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { md5 } from '@/lib/md5';
-
-export const runtime = 'edge';
+import crypto from 'crypto';
 
 export async function POST(req: Request) {
   try {
@@ -41,7 +39,7 @@ export async function POST(req: Request) {
 
     // Signature: MD5(merchantCode + merchantOrderId + paymentAmount + apiKey)
     const signatureString = `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-    const signature = md5(signatureString);
+    const signature = crypto.createHash('md5').update(signatureString).digest('hex');
 
     let customerDetail = {
       firstName: 'Customer',
@@ -92,8 +90,8 @@ export async function POST(req: Request) {
     // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
     const isSandbox = merchantCode.startsWith('DS');
     const duitkuUrl = isSandbox 
-      ? 'https://api-sandbox.duitku.com/webapi/api/merchant/createInvoice'
-      : 'https://passport.duitku.com/webapi/api/merchant/createInvoice';
+      ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
     
     const response = await fetch(duitkuUrl, {
       method: 'POST',

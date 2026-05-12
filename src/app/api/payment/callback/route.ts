@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { md5 } from '@/lib/md5';
-
-export const runtime = 'edge'; // Changed to Edge runtime for Cloudflare compatibility
+import crypto from 'crypto';
 
 export async function GET() {
   return NextResponse.json({ message: 'Duitku Callback Endpoint is Active. Waiting for POST requests.' }, { status: 200 });
@@ -30,9 +28,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // Verify signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
-    const signatureString = `${DUITKU_MERCHANT_CODE}${amount}${merchantOrderId}${DUITKU_API_KEY}`;
-    const calculatedSignature = md5(signatureString);
+    // Calculate MD5 signature locally to verify
+    const signatureString = `${merchantCode}${amount}${merchantOrderId}${DUITKU_API_KEY}`;
+    const calculatedSignature = crypto.createHash('md5').update(signatureString).digest('hex');
 
     // Always verify signature to prevent fake callbacks
     if (signature !== calculatedSignature) {

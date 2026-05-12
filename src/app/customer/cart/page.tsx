@@ -15,7 +15,7 @@ interface Table { id: string; table_number: number; capacity: number; status: st
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
-  const [orderType, setOrderType] = useState<"dine_in" | "takeaway">("dine_in");
+  const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash">("non_cash");
   const [duitkuMethod, setDuitkuMethod] = useState("");
   const [openingTime, setOpeningTime] = useState<string | null>(null);
@@ -455,12 +455,15 @@ export default function CartPage() {
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Tipe Pesanan</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button onClick={() => setOrderType("dine_in")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "dine_in" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                  <UtensilsCrossed className="w-6 h-6" /><span className="font-bold text-xs uppercase">Dine In</span>
+                  <UtensilsCrossed className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Dine In</span>
                 </button>
                 <button onClick={() => setOrderType("takeaway")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "takeaway" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                  <Store className="w-6 h-6" /><span className="font-bold text-xs uppercase">Takeaway</span>
+                  <Store className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Takeaway</span>
+                </button>
+                <button onClick={() => setOrderType("delivery")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "delivery" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                  <Globe className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Delivery</span>
                 </button>
               </div>
               <AnimatePresence>

@@ -8,7 +8,7 @@ import {
   ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
   Globe, Check, X, AlertTriangle, Filter, 
   ArrowRight, MessageSquare, Timer, Zap, History,
-  Volume2, VolumeX, ChevronRight, MapPin
+  Volume2, VolumeX, ChevronRight, MapPin, Store
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -41,7 +41,7 @@ export default function OnlineOrdersPage() {
         event: '*', 
         schema: 'public', 
         table: 'orders',
-        filter: "order_type=eq.delivery"
+        filter: "order_type=in.(delivery,takeaway)"
       }, () => fetchOrders())
       .subscribe();
 
@@ -60,7 +60,7 @@ export default function OnlineOrdersPage() {
     const { data, error } = await supabase
       .from('orders')
       .select('*, profiles(full_name, email, phone), order_items(*, menu_items(*))')
-      .eq('order_type', 'delivery')
+      .in('order_type', ['delivery', 'takeaway'])
       .order('created_at', { ascending: false });
 
     if (!error) setOrders(data || []);
@@ -256,7 +256,11 @@ export default function OnlineOrdersPage() {
 
                     <div className="mt-4 flex items-center justify-between">
                        <div className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase">
-                          <MapPin className="w-3 h-3 text-primary" /> Delivery Order
+                          {order.order_type === 'delivery' ? (
+                            <><Globe className="w-3 h-3 text-primary" /> Delivery Order</>
+                          ) : (
+                            <><Store className="w-3 h-3 text-blue-500" /> Takeaway Order</>
+                          )}
                        </div>
                        <ChevronRight className={`w-5 h-5 text-muted transition-transform ${selectedOrder?.id === order.id ? 'rotate-90 text-primary' : 'group-hover:translate-x-1'}`} />
                     </div>

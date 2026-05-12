@@ -56,7 +56,7 @@ export default function CashierOrders() {
       const { data } = await supabase
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
-        .neq('order_type', 'delivery') // Sembunyikan pesanan online dari sini
+        .eq('order_type', 'dine_in') // Hanya tampilkan dine-in di sini (Offline)
         .order("created_at", { ascending: false });
       setOrders(data || []);
     } catch (e) { console.error(e); } finally { setLoading(false); }

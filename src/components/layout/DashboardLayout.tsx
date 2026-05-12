@@ -43,7 +43,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         event: 'INSERT', 
         schema: 'public', 
         table: 'orders',
-        filter: "order_type=eq.delivery" 
+        filter: "order_type=in.(delivery,takeaway)" 
       }, (payload) => {
         if (payload.new.status === 'pending') {
           playNotifSound();
@@ -80,7 +80,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     const { count } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .eq('order_type', 'delivery')
+      .in('order_type', ['delivery', 'takeaway'])
       .eq('status', 'pending');
     
     setOnlineOrderCount(count || 0);

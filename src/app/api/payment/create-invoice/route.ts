@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { md5 } from '@/lib/md5';
 
 export const runtime = 'edge';
+
+// SHA256 menggunakan Web Crypto API (Edge-compatible)
+async function sha256(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export async function POST(req: Request) {
   try {
@@ -39,10 +47,7 @@ export async function POST(req: Request) {
     const paymentAmount = Math.floor(order.total_amount);
     const merchantOrderId = order.id;
 
-    // Signature: MD5(merchantCode + merchantOrderId + paymentAmount + apiKey)
-    const signatureString = `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-    const signature = md5(signatureString);
-
+    // Customer detail
     let customerDetail = {
       firstName: 'Customer',
       lastName: '',
@@ -66,11 +71,15 @@ export async function POST(req: Request) {
       quantity: 1
     }];
 
-    const merchantCode = DUITKU_MERCHANT_CODE || '';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://restobookid.my.id';
+
+    // === DUITKU POP API ===
+    // Signature: SHA256(merchantCode + timestamp + merchantKey)
+    const timestamp = String(Date.now());
+    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
 
     const payload = {
-      merchantCode: merchantCode,
+      merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
       merchantOrderId: merchantOrderId,
       productDetails: `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`,
@@ -80,26 +89,26 @@ export async function POST(req: Request) {
       customerVaName: customerDetail.firstName,
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      paymentMethod: "", 
-      creditCardDetail: { saveCardToken: 0 },
       callbackUrl: `${baseUrl}/api/payment/callback`,
       returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
-      signature: signature,
       expiryPeriod: 60
     };
 
     // Auto-detect Sandbox vs Production berdasarkan awalan Merchant Code
     // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
-    const isSandbox = merchantCode.startsWith('DS');
+    const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     const duitkuUrl = isSandbox 
-      ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
-      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
+      ? 'https://api-sandbox.duitku.com/api/merchant/createInvoice'
+      : 'https://api.duitku.com/api/merchant/createInvoice';
     
     const response = await fetch(duitkuUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'x-duitku-signature': signature,
+        'x-duitku-timestamp': timestamp,
+        'x-duitku-merchantcode': DUITKU_MERCHANT_CODE
       },
       body: JSON.stringify(payload)
     });
@@ -109,20 +118,21 @@ export async function POST(req: Request) {
     // Jika response kosong atau HTTP error
     if (!responseText || responseText.trim() === '') {
       return NextResponse.json({ 
-        error: `Duitku mengembalikan respons kosong (HTTP ${response.status}). Pastikan DUITKU_MERCHANT_CODE (${merchantCode}) dan DUITKU_API_KEY sudah benar di Cloudflare Environment Variables.` 
+        error: `Duitku mengembalikan respons kosong (HTTP ${response.status}). Pastikan DUITKU_MERCHANT_CODE (${DUITKU_MERCHANT_CODE}) dan DUITKU_API_KEY sudah benar di Cloudflare Environment Variables.` 
       }, { status: 500 });
     }
 
     let result;
     try {
       result = JSON.parse(responseText);
-    } catch (e) {
+    } catch {
       // Respons bukan JSON — kemungkinan HTML error page
       return NextResponse.json({ 
         error: `Duitku Server Error (HTTP ${response.status}): ${responseText.substring(0, 200)}` 
       }, { status: 500 });
     }
 
+    // Duitku Pop API mengembalikan statusCode "00" jika berhasil
     if (result.statusCode === '00' && result.paymentUrl) {
       return NextResponse.json({ 
         paymentUrl: result.paymentUrl,

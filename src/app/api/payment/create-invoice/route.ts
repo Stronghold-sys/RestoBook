@@ -89,14 +89,14 @@ export async function POST(req: Request) {
     // Merchant Code Sandbox Duitku biasanya berawalan 'DS'
     const isSandbox = merchantCode.startsWith('DS');
     const duitkuUrl = isSandbox 
-      ? 'https://api-sandbox.duitku.com/api/merchant/createinvoice'
-      : 'https://passport.duitku.com/api/merchant/createinvoice';
+      ? 'https://api-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+      : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
     
     const response = await fetch(duitkuUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'Accept': 'application/json'
       },
       body: JSON.stringify(payload)
     });

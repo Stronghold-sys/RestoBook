@@ -10,6 +10,24 @@ async function sha256(message: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function getFormattedDate() {
+  const now = new Date();
+  // Offset to WIB (GMT+7)
+  const wibOffset = 7 * 60 * 60 * 1000;
+  const wibTime = new Date(now.getTime() + wibOffset);
+  
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  
+  const y = wibTime.getUTCFullYear();
+  const m = pad(wibTime.getUTCMonth() + 1);
+  const d = pad(wibTime.getUTCDate());
+  const h = pad(wibTime.getUTCHours());
+  const min = pad(wibTime.getUTCMinutes());
+  const s = pad(wibTime.getUTCSeconds());
+  
+  return `${y}-${m}-${d} ${h}:${min}:${s}`;
+}
+
 export async function POST(req: Request) {
   try {
     const { amount } = await req.json();
@@ -21,8 +39,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Kredensial Duitku belum diatur' }, { status: 500 });
     }
 
-    const timestamp = String(Date.now());
-    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
+    const datetime = getFormattedDate();
+    const paymentAmount = amount || 10000;
+    
+    // Duitku Get Payment Method Signature: SHA256(merchantCode + paymentAmount + datetime + merchantKey)
+    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${paymentAmount}${datetime}${DUITKU_API_KEY}`);
 
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     const url = isSandbox 
@@ -33,23 +54,26 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-duitku-signature': signature,
-        'x-duitku-timestamp': timestamp,
-        'x-duitku-merchantcode': DUITKU_MERCHANT_CODE
       },
       body: JSON.stringify({
         merchantCode: DUITKU_MERCHANT_CODE,
-        datetime: timestamp,
-        paymentAmount: amount || 10000 // Opsional: Duitku bisa filter bank berdasarkan limit nominal
+        datetime: datetime,
+        paymentAmount: paymentAmount,
+        signature: signature
       })
     });
 
     const data = await response.json();
+    console.log('Duitku Methods Response:', JSON.stringify(data));
     
     if (data.paymentFee) {
       return NextResponse.json({ methods: data.paymentFee });
     } else {
-      return NextResponse.json({ error: 'Gagal mengambil metode pembayaran', details: data }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Gagal mengambil metode pembayaran', 
+        details: data,
+        debug: { datetime, paymentAmount } 
+      }, { status: 400 });
     }
 
   } catch (error: any) {

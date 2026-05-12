@@ -138,7 +138,7 @@ export default function CashierOrders() {
 
   const handleGenerateDuitkuLink = async (orderId: string) => {
     setProcessingPayment(true);
-    const loadingToast = toast.loading("Membuat tautan pembayaran...");
+    const loadingToast = toast.loading("Membuat tagihan pembayaran...");
     try {
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
@@ -149,16 +149,58 @@ export default function CashierOrders() {
       
       if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
       
-      if (data.paymentUrl) {
-        // Copy to clipboard
+      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+        toast.dismiss(loadingToast);
+        // Gunakan Duitku Pop SDK untuk popup transparan
+        (window as any).checkout.process(data.reference, {
+          successEvent: async function(result: any) {
+            toast.success("Pembayaran berhasil!");
+            await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId })
+            });
+            fetchOrders();
+            if (selectedOrder?.id === orderId) {
+              setSelectedOrder({ ...selectedOrder, payment_status: "paid", status: "confirmed" });
+            }
+            setProcessingPayment(false);
+          },
+          pendingEvent: function(result: any) {
+            toast.success("Menunggu konfirmasi pembayaran...");
+            fetchOrders();
+            setProcessingPayment(false);
+          },
+          errorEvent: function(result: any) {
+            toast.error("Pembayaran gagal.");
+            setProcessingPayment(false);
+          },
+          closeEvent: async function() {
+            const checkRes = await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId })
+            });
+            const checkData = await checkRes.json();
+            if (checkData.status === 'paid') {
+              toast.success("Pembayaran berhasil!");
+              if (selectedOrder?.id === orderId) {
+                setSelectedOrder({ ...selectedOrder, payment_status: "paid", status: "confirmed" });
+              }
+            }
+            fetchOrders();
+            setProcessingPayment(false);
+          }
+        });
+      } else if (data.paymentUrl) {
+        // Fallback: copy link & open window
         await navigator.clipboard.writeText(data.paymentUrl);
-        toast.success("Tautan pembayaran berhasil disalin! Silakan berikan ke pelanggan.", { id: loadingToast, duration: 5000 });
-        // Optionally open in a small window so the Kasir can show the QR to the customer
+        toast.success("Tautan pembayaran berhasil disalin!", { id: loadingToast, duration: 5000 });
         window.open(data.paymentUrl, "OnlinePayment", "width=450,height=700");
+        setProcessingPayment(false);
       }
     } catch (error: any) {
       toast.error(error.message || 'Terjadi kesalahan sistem', { id: loadingToast });
-    } finally {
       setProcessingPayment(false);
     }
   };

@@ -544,7 +544,6 @@ export default function POSPage() {
         if (error) throw error;
       }
 
-      // Generate invoice
       const res = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -553,15 +552,59 @@ export default function POSPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal membuat tagihan pembayaran');
 
-      toast.success("Tagihan dibuat! Menunggu pembayaran...", { id: loadingToast });
-      
-      // Open in popup
-      window.open(data.paymentUrl, "OnlinePaymentPOS", "width=450,height=700");
-      setVerificationStep("duitku_waiting");
-      
+      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+        toast.dismiss(loadingToast);
+        // Gunakan Duitku Pop SDK untuk popup transparan
+        (window as any).checkout.process(data.reference, {
+          successEvent: async function(result: any) {
+            toast.success("Pembayaran berhasil!");
+            await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId })
+            });
+            setShowPaymentModal(false);
+            setFoundOrder(null);
+            clearCart();
+            setProcessing(false);
+          },
+          pendingEvent: function(result: any) {
+            toast.success("Menunggu konfirmasi pembayaran...");
+            setShowPaymentModal(false);
+            clearCart();
+            setProcessing(false);
+          },
+          errorEvent: function(result: any) {
+            toast.error("Pembayaran gagal.");
+            setProcessing(false);
+          },
+          closeEvent: async function() {
+            const checkRes = await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId })
+            });
+            const checkData = await checkRes.json();
+            if (checkData.status === 'paid') {
+              toast.success("Pembayaran berhasil!");
+              setShowPaymentModal(false);
+              setFoundOrder(null);
+              clearCart();
+            } else {
+              setVerificationStep("duitku_waiting");
+            }
+            setProcessing(false);
+          }
+        });
+      } else if (data.paymentUrl) {
+        toast.success("Tagihan dibuat! Menunggu pembayaran...", { id: loadingToast });
+        // Fallback: copy link & open window
+        window.open(data.paymentUrl, "OnlinePaymentPOS", "width=450,height=700");
+        setVerificationStep("duitku_waiting");
+        setProcessing(false);
+      }
     } catch (e: any) {
       toast.error(e.message, { id: loadingToast });
-    } finally {
       setProcessing(false);
     }
   };

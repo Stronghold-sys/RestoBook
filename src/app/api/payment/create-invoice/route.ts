@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import crypto from 'crypto';
+import { md5 } from '@/lib/md5';
+
+export const runtime = 'edge';
 
 export async function POST(req: Request) {
   try {
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
 
     // Signature: MD5(merchantCode + merchantOrderId + paymentAmount + apiKey)
     const signatureString = `${DUITKU_MERCHANT_CODE}${merchantOrderId}${paymentAmount}${DUITKU_API_KEY}`;
-    const signature = crypto.createHash('md5').update(signatureString).digest('hex');
+    const signature = md5(signatureString);
 
     let customerDetail = {
       firstName: 'Customer',

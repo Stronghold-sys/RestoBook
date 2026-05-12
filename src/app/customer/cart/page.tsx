@@ -348,21 +348,32 @@ export default function CartPage() {
         if (duitkuData.reference) {
           toast.dismiss(loadingToast);
           // Gunakan Duitku Pop SDK untuk popup transparan
+          const currentOrderId = orderData.id;
           (window as any).checkout.process(duitkuData.reference, {
-            successEvent: function(result: any) {
+            successEvent: async function(result: any) {
               toast.success("Pembayaran berhasil!");
-              router.push(`/customer/orders/${orderData.id}`);
+              await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: currentOrderId })
+              });
+              router.push(`/customer/orders/${currentOrderId}`);
             },
             pendingEvent: function(result: any) {
-              toast.success("Menunggu pembayaran...");
-              router.push(`/customer/orders/${orderData.id}`);
+              toast.success("Menunggu konfirmasi pembayaran...");
+              router.push(`/customer/orders/${currentOrderId}`);
             },
             errorEvent: function(result: any) {
               toast.error("Pembayaran gagal. Silakan coba lagi.");
-              router.push(`/customer/orders/${orderData.id}`);
+              router.push(`/customer/orders/${currentOrderId}`);
             },
-            closeEvent: function() {
-              router.push(`/customer/orders/${orderData.id}`);
+            closeEvent: async function() {
+              await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: currentOrderId })
+              });
+              router.push(`/customer/orders/${currentOrderId}`);
             }
           });
           return;

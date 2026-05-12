@@ -109,13 +109,19 @@ export default function OrderTrackingPage() {
         toast.dismiss(pToast);
         // Gunakan Duitku Pop SDK untuk popup transparan
         (window as any).checkout.process(data.reference, {
-          successEvent: function(result: any) {
-            toast.success("Pembayaran berhasil!");
+          successEvent: async function(result: any) {
+            toast.success("Pembayaran berhasil! Memperbarui status...");
+            // Verifikasi dan update status via API
+            await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: id })
+            });
             fetchOrderDetails();
             setPaying(false);
           },
           pendingEvent: function(result: any) {
-            toast.success("Menunggu pembayaran...");
+            toast.success("Menunggu konfirmasi pembayaran...");
             fetchOrderDetails();
             setPaying(false);
           },
@@ -123,7 +129,17 @@ export default function OrderTrackingPage() {
             toast.error("Pembayaran gagal. Silakan coba lagi.");
             setPaying(false);
           },
-          closeEvent: function() {
+          closeEvent: async function() {
+            // Cek status saat popup ditutup (mungkin sudah bayar)
+            const checkRes = await fetch('/api/payment/check-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: id })
+            });
+            const checkData = await checkRes.json();
+            if (checkData.status === 'paid') {
+              toast.success("Pembayaran berhasil!");
+            }
             fetchOrderDetails();
             setPaying(false);
           }

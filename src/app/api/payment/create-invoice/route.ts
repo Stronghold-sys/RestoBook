@@ -105,12 +105,22 @@ export async function POST(req: Request) {
     });
 
     const responseText = await response.text();
+    
+    // Jika response kosong atau HTTP error
+    if (!responseText || responseText.trim() === '') {
+      return NextResponse.json({ 
+        error: `Duitku mengembalikan respons kosong (HTTP ${response.status}). Pastikan DUITKU_MERCHANT_CODE (${merchantCode}) dan DUITKU_API_KEY sudah benar di Cloudflare Environment Variables.` 
+      }, { status: 500 });
+    }
+
     let result;
     try {
       result = JSON.parse(responseText);
     } catch (e) {
-      console.error('Duitku Non-JSON Response:', responseText);
-      return NextResponse.json({ error: `Duitku Server Error: ${responseText.substring(0, 100)}` }, { status: 500 });
+      // Respons bukan JSON — kemungkinan HTML error page
+      return NextResponse.json({ 
+        error: `Duitku Server Error (HTTP ${response.status}): ${responseText.substring(0, 200)}` 
+      }, { status: 500 });
     }
 
     if (result.statusCode === '00' && result.paymentUrl) {

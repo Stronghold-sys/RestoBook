@@ -443,8 +443,8 @@ export default function POSPage() {
     }
     setSearchingOrder(true);
     try {
-      const isCashless = foundOrder.payment_method === "non_cash";
-      const newPaymentStatus = isCashless ? "paid" : foundOrder.payment_status;
+      // Proses Langsung = selalu tandai lunas dan mulai diproses
+      const newPaymentStatus = "paid";
       const newStatus = "processing";
 
       // Send update status API trigger to notify customer via real-time channels & notifications table
@@ -490,13 +490,9 @@ export default function POSPage() {
       });
     }
     if (cart.length === 0) return toast.error("Keranjang kosong!");
-    if (foundOrder) {
-      // Determine payment method from order if exists
-      if (foundOrder.payment_method === "cash") setPaymentMethod("cash");
-      else setPaymentMethod("non_cash");
-    } else {
-      setPaymentMethod("cash"); // Walk-in defaults to cash
-    }
+    // Selalu default ke cash agar kasir bisa memilih metode pembayaran
+    // Kasir bisa ganti ke non-tunai lewat UI jika diinginkan
+    setPaymentMethod("cash");
     setCashAmount("");
     setShowPaymentModal(true);
   };

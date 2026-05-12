@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
+import { Search, Loader2, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, Utensils, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -48,10 +48,11 @@ export default function POSPage() {
   const [processing, setProcessing] = useState(false);
   
   // Non-Cash State
-  const [verificationStep, setVerificationStep] = useState<"select_method" | "instructions" | "verify" | "duitku_waiting" | "duitku_pop_active">("select_method");
+  const [verificationStep, setVerificationStep] = useState<"select_method" | "instructions" | "verify" | "duitku_waiting" | "duitku_pop_active" | "duitku_embedded">("select_method");
   const [nonCashType, setNonCashType] = useState<"ewallet" | "transfer" | "qris" | "other" | "online_duitku" | "">("online_duitku");
   const [nonCashProvider, setNonCashProvider] = useState<string>("");
   const [duitkuMethod, setDuitkuMethod] = useState("");
+  const [activeDuitkuUrl, setActiveDuitkuUrl] = useState<string>("");
   
   // Dynamic Merchant & Transaction state
   const [merchant, setMerchant] = useState({
@@ -576,24 +577,9 @@ export default function POSPage() {
       if (data.paymentUrl) {
         toast.dismiss(loadingToast);
         
-        // OPEN DUITKU IN ISOLATED WINDOW (Prevents JS block crashes and SDK concurrency issues forever)
-        const wWidth = 500;
-        const wHeight = 700;
-        const wLeft = (window.screen.width / 2) - (wWidth / 2);
-        const wTop = (window.screen.height / 2) - (wHeight / 2);
-        
-        const popupName = `DuitkuPayment_${Date.now()}`; // Unique name for multiple concurrent windows support
-        const paymentWindow = window.open(
-          data.paymentUrl, 
-          popupName, 
-          `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes,status=no,menubar=no,toolbar=no`
-        );
-
-        // Focus the popup window if browsers allowed it
-        if (paymentWindow) paymentWindow.focus();
-
-        // Switch view on RestoBook to 'Waiting' so user sees loader and local exit buttons
-        setVerificationStep("duitku_waiting");
+        // Set URL target and switch to gorgeous embedded overlay view
+        setActiveDuitkuUrl(data.paymentUrl);
+        setVerificationStep("duitku_embedded");
         setShowPaymentModal(true);
         setProcessing(false);
 
@@ -604,13 +590,6 @@ export default function POSPage() {
           if (isHandled) return;
           isHandled = true;
           if (pollInterval) clearInterval(pollInterval);
-          
-          // Close secondary payment window instantly upon successful resolution
-          try {
-             if (paymentWindow && !paymentWindow.closed) {
-                paymentWindow.close();
-             }
-          } catch (e) { console.error("Failed to close popup automatically:", e); }
 
           toast.success("Pembayaran Lunas & Terkonfirmasi!", { duration: 4000 });
           
@@ -1175,108 +1154,204 @@ export default function POSPage() {
       <AnimatePresence>
         {showPaymentModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-            
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
-                <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
-              </div>
+            {verificationStep === "duitku_embedded" ? (
+              <div className="fixed inset-0 z-[150] overflow-hidden bg-white/20 dark:bg-slate-900/20 backdrop-blur-[30px] flex items-center justify-center">
+                {/* Floating Background Aesthetic Details (matching design requirements) */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+                   <div className="absolute top-12 -left-24 w-[500px] h-[500px] bg-orange-100/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
+                   <div className="absolute bottom-12 -right-24 w-[600px] h-[600px] bg-orange-50/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
+                   <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] dark:opacity-[0.1] dark:invert"></div>
+                </div>
 
-              {verificationStep === "select_method" && (
-                <>
-                  <div className="mb-6">
-                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
-                    <div className="flex gap-3">
-                      <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                        <Banknote className="w-6 h-6" /> Tunai
-                      </button>
-                      <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                        <CreditCard className="w-6 h-6" /> Non-Tunai
-                      </button>
+                <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-12 xl:gap-32 p-8">
+                  {/* LEFT: Recreating visual box design from user reference */}
+                  <motion.div 
+                    initial={{ x: -100, opacity: 0 }} 
+                    animate={{ x: 0, opacity: 1 }} 
+                    transition={{ type: "spring", damping: 25, stiffness: 120 }}
+                    className="hidden lg:flex flex-col items-center"
+                  >
+                    <div className="w-56 h-56 xl:w-72 xl:h-72 bg-white/60 dark:bg-gray-800/60 border-[12px] border-white/90 dark:border-gray-700/90 rounded-[3.5rem] shadow-[0_40px_80px_-20px_rgba(234,88,12,0.25)] backdrop-blur-sm flex items-center justify-center text-primary">
+                      <Utensils className="w-32 h-32 xl:w-40 xl:h-40 stroke-[1.5]" />
                     </div>
+                  </motion.div>
+
+                  {/* CENTER: Embedded Duitku Frame in standardized width for optimal mobile gateway scale */}
+                  <motion.div 
+                    initial={{ y: 50, opacity: 0, scale: 0.95 }} 
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+                    className="relative z-10"
+                  >
+                    <div className="w-[90vw] max-w-[420px] h-[80vh] max-h-[820px] bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.4)] border-[8px] border-white/90 dark:border-gray-800 flex flex-col relative overflow-hidden ring-1 ring-black/5">
+                       {/* Simple status bar styling */}
+                       <div className="h-6 bg-white dark:bg-gray-900 shrink-0 flex justify-center items-center">
+                         <div className="w-16 h-1 rounded-full bg-gray-200 dark:bg-gray-700 mt-1"></div>
+                       </div>
+                       
+                       {/* THE EMBED: Reliable pure HTML container with isolation from react environment */}
+                       <div className="flex-1 w-full h-full bg-gray-50 dark:bg-gray-950 relative">
+                          <iframe 
+                            src={activeDuitkuUrl} 
+                            className="absolute inset-0 w-full h-full border-0" 
+                            title="Halaman Pembayaran"
+                          />
+                       </div>
+                    </div>
+
+                    {/* BILINGUAL INSTRUCTION - DUAL LANGUAGE REQUIREMENTS */}
+                    <div className="mt-8 text-center max-w-[420px] mx-auto">
+                       <h3 className="font-black text-xl text-gray-900 dark:text-white tracking-tight drop-shadow-sm">
+                         Silakan Selesaikan Pembayaran
+                       </h3>
+                       <p className="font-bold text-gray-600 dark:text-gray-400 text-sm italic mt-1 uppercase tracking-widest">
+                         Please Complete The Payment
+                       </p>
+                    </div>
+                  </motion.div>
+
+                  {/* RIGHT: Giant "Book" typography visual anchor */}
+                  <motion.div 
+                    initial={{ x: 100, opacity: 0 }} 
+                    animate={{ x: 0, opacity: 1 }} 
+                    transition={{ type: "spring", damping: 25, stiffness: 120, delay: 0.1 }}
+                    className="hidden lg:block"
+                  >
+                     <h1 className="text-[9rem] xl:text-[13rem] font-black text-primary leading-none tracking-tighter select-none drop-shadow-[0_25px_50px_rgba(234,88,12,0.3)]">
+                       Book
+                     </h1>
+                  </motion.div>
+                </div>
+
+                {/* FLOATING ACTION ROW (Bilingual) */}
+                <div className="absolute top-6 right-6 z-[200] flex items-center gap-4">
+                  {/* Manual Sync Visual Button */}
+                  <button 
+                    onClick={() => processPayment(true)}
+                    className="px-5 py-3 bg-emerald-600 text-white font-black rounded-2xl shadow-xl hover:bg-emerald-700 transition-all uppercase text-xs tracking-wider flex items-center gap-2 border border-emerald-500"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Konfirmasi / Confirm
+                  </button>
+
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setVerificationStep("select_method");
+                      setActiveDuitkuUrl("");
+                    }}
+                    className="px-6 py-3 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 font-black rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-950 transition-all uppercase text-xs tracking-wider"
+                  >
+                    <X className="w-5 h-5 font-black" /> Batal / Cancel
+                  </motion.button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+                
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
+                    <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
                   </div>
 
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
-                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                    <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                  </div>
-
-                  {paymentMethod === "cash" ? (
-                    <div className="space-y-4 mb-6">
-                      <div>
-                        <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
-                        <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
+                  {verificationStep === "select_method" && (
+                    <>
+                      <div className="mb-6">
+                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
+                        <div className="flex gap-3">
+                          <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                            <Banknote className="w-6 h-6" /> Tunai
+                          </button>
+                          <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                            <CreditCard className="w-6 h-6" /> Non-Tunai
+                          </button>
+                        </div>
                       </div>
-                      
-                      {Number(cashAmount) > 0 && (
-                        <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                          <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
-                          <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
+
+                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
+                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                        <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                      </div>
+
+                      {paymentMethod === "cash" ? (
+                        <div className="space-y-4 mb-6">
+                          <div>
+                            <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
+                            <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
+                          </div>
+                          
+                          {Number(cashAmount) > 0 && (
+                            <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                              <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
+                              <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
+                            </div>
+                          )}
+                          
+                          <button 
+                            onClick={() => processPayment(true)} 
+                            disabled={processing || Number(cashAmount) < cartTotal} 
+                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
+                          >
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mb-6 space-y-4">
+                          <PaymentMethodSelector 
+                            amount={cartTotal} 
+                            onSelect={(method) => setDuitkuMethod(method)} 
+                            selectedMethod={duitkuMethod} 
+                          />
+                          <button 
+                            onClick={handleGenerateDuitkuPOS} 
+                            disabled={processing || !duitkuMethod} 
+                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
+                          >
+                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
+                          </button>
                         </div>
                       )}
-                      
-                      <button 
-                        onClick={() => processPayment(true)} 
-                        disabled={processing || Number(cashAmount) < cartTotal} 
-                        className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
-                      >
-                        {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mb-6 space-y-4">
-                      <PaymentMethodSelector 
-                        amount={cartTotal} 
-                        onSelect={(method) => setDuitkuMethod(method)} 
-                        selectedMethod={duitkuMethod} 
-                      />
-                      <button 
-                        onClick={handleGenerateDuitkuPOS} 
-                        disabled={processing || !duitkuMethod} 
-                        className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all uppercase tracking-wider flex justify-center items-center gap-2 mt-4 shadow-lg shadow-primary/20"
-                      >
-                        {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Bayar Sekarang</>}
-                      </button>
+                    </>
+                  )}
+
+                  {verificationStep === "duitku_waiting" && (
+                    <div className="space-y-6 text-center py-8">
+                      <div className="relative mx-auto w-24 h-24 mb-4">
+                        <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
+                        <p className="text-sm text-muted mb-4">Sebuah jendela pembayaran terpisah telah dibuka. Silakan minta pelanggan untuk menyelesaikan pembayaran disana.</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
+                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                        <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                      </div>
+                      <div className="pt-4 flex gap-3">
+                        <button 
+                          onClick={() => setVerificationStep("select_method")} 
+                          className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                        >
+                          Batal / Ganti Metode
+                        </button>
+                        <button 
+                          onClick={() => processPayment(true)} 
+                          className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
+                        >
+                          Verifikasi Manual
+                        </button>
+                      </div>
                     </div>
                   )}
-                </>
-              )}
-
-              {verificationStep === "duitku_waiting" && (
-                <div className="space-y-6 text-center py-8">
-                  <div className="relative mx-auto w-24 h-24 mb-4">
-                    <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
-                    <p className="text-sm text-muted mb-4">Sebuah jendela pembayaran terpisah telah dibuka. Silakan minta pelanggan untuk menyelesaikan pembayaran disana.</p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
-                    <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                    <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                  </div>
-                  <div className="pt-4 flex gap-3">
-                    <button 
-                      onClick={() => setVerificationStep("select_method")} 
-                      className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                    >
-                      Batal / Ganti Metode
-                    </button>
-                    <button 
-                      onClick={() => processPayment(true)} 
-                      className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
-                    >
-                      Verifikasi Manual
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
+                </motion.div>
+              </>
+            )}
           </div>
         )}
       </AnimatePresence>

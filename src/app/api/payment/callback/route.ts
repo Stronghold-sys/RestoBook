@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     // Verify signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
     const useCode = merchantCode || DUITKU_MERCHANT_CODE;
     const signatureString = `${useCode}${amount}${merchantOrderId}${DUITKU_API_KEY}`;
-    const calculatedSignature = md5(signatureString);
+    const calculatedSignature = await md5(signatureString);
 
     console.log('Callback Signature Check:', { 
       received: signature, 

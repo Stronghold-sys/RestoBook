@@ -46,6 +46,19 @@ export default function OrderTrackingPage() {
   // Payment Selection States
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [duitkuMethod, setDuitkuMethod] = useState("");
+  const [isDuitkuActive, setIsDuitkuActive] = useState(false);
+
+  const forceCloseDuitku = () => {
+    const iframes = document.getElementsByTagName('iframe');
+    for (let i = 0; i < iframes.length; i++) {
+      const src = iframes[i].getAttribute('src') || '';
+      if (src.includes('duitku')) {
+        const wrapper = iframes[i].parentElement;
+        if (wrapper && wrapper !== document.body) wrapper.remove();
+        else iframes[i].remove();
+      }
+    }
+  };
 
   const supabase = createClient();
 
@@ -110,19 +123,7 @@ export default function OrderTrackingPage() {
       if (data.reference) {
         toast.dismiss(pToast);
         setPaying(false);
-        setShowPaymentSelector(false);
-
-        const forceCloseDuitku = () => {
-          const iframes = document.getElementsByTagName('iframe');
-          for (let i = 0; i < iframes.length; i++) {
-            const src = iframes[i].getAttribute('src') || '';
-            if (src.includes('duitku')) {
-              const wrapper = iframes[i].parentElement;
-              if (wrapper && wrapper !== document.body) wrapper.remove();
-              else iframes[i].remove();
-            }
-          }
-        };
+        setIsDuitkuActive(true);
 
         let isHandled = false;
         let pollInterval: NodeJS.Timeout | null = null;
@@ -133,6 +134,7 @@ export default function OrderTrackingPage() {
           if (pollInterval) clearInterval(pollInterval);
           
           forceCloseDuitku();
+          setIsDuitkuActive(false);
           
           // Update core DB and update local page state immediately
           await fetch('/api/payment/check-status', {
@@ -169,11 +171,13 @@ export default function OrderTrackingPage() {
           },
           errorEvent: function(result: any) {
             if (pollInterval) clearInterval(pollInterval);
+            setIsDuitkuActive(false);
             toast.error("Gagal diproses di popup.");
             fetchOrderDetails();
           },
           closeEvent: async function() {
             if (pollInterval) clearInterval(pollInterval);
+            setIsDuitkuActive(false);
             handleFinalUpdate(); // Fetch final definitive state
           }
         });
@@ -527,6 +531,29 @@ export default function OrderTrackingPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+      {/* EMERGENCY EXIT FOR DUITKU MODAL */}
+      <AnimatePresence>
+        {isDuitkuActive && (
+          <div className="fixed inset-0 z-[2147483647] pointer-events-none">
+            <div className="absolute top-4 right-4 pointer-events-auto">
+               <motion.button
+                 initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.8 }}
+                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                 onClick={() => {
+                    forceCloseDuitku();
+                    setIsDuitkuActive(false);
+                    fetchOrderDetails(); // Refresh display status
+                 }}
+                 className="flex items-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-sm tracking-wider shadow-[0_10px_40px_-10px_rgba(220,38,38,0.5)] border-2 border-white/20 backdrop-blur-md transition-all active:scale-95"
+               >
+                 <X className="w-5 h-5 font-black" /> BATAL / GANTI METODE
+               </motion.button>
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>

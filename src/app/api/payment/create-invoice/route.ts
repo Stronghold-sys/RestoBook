@@ -75,7 +75,6 @@ export async function POST(req: Request) {
       customerVaName: customerDetail.firstName,
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      customerDetail: customerDetail,
       callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback`,
       returnUrl: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/customer/orders/${merchantOrderId}`,
       signature: signature,
@@ -92,7 +91,8 @@ export async function POST(req: Request) {
     const response = await fetch(duitkuUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       },
       body: JSON.stringify(payload)
     });
@@ -106,7 +106,9 @@ export async function POST(req: Request) {
       });
     } else {
       console.error('Payment Gateway Error:', result);
-      return NextResponse.json({ error: result.statusMessage || 'Gagal membuat tagihan pembayaran' }, { status: 400 });
+      // Ambil pesan error spesifik dari Duitku
+      const errMessage = result.statusMessage || result.Message || JSON.stringify(result);
+      return NextResponse.json({ error: `Duitku Error: ${errMessage}` }, { status: 400 });
     }
 
   } catch (error: any) {

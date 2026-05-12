@@ -156,25 +156,32 @@ export async function POST(req: NextRequest) {
       expiryPeriod: 60
     };
 
-    // SHA256 signature: merchantCode + timestamp + merchantKey
-    const signature = await sha256(`${DUITKU_MERCHANT_CODE}${timestamp}${DUITKU_API_KEY}`);
+    // Duitku Standard API: MD5(merchantCode + merchantOrderId + paymentAmount + merchantKey)
+    const signatureString = `${DUITKU_MERCHANT_CODE}${finalOrderId}${paymentAmount}${DUITKU_API_KEY}`;
+    const signature = md5(signatureString);
+    
+    // Add signature to payload body (standard API format)
+    payload.signature = signature;
 
     const url = isSandbox 
       ? 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
       : 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry';
 
-    const fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-duitku-signature': signature,
-        'x-duitku-timestamp': timestamp,
-        'x-duitku-merchantcode': DUITKU_MERCHANT_CODE
-      },
-      body: JSON.stringify(payload)
-    };
+    console.log('Duitku Debug:', JSON.stringify({
+      url,
+      merchantCode: DUITKU_MERCHANT_CODE,
+      merchantOrderId: finalOrderId,
+      paymentAmount,
+      signatureString: signatureString.replace(DUITKU_API_KEY, '***'),
+      signature,
+      paymentMethod: paymentMethod || ''
+    }));
 
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
     let data;
     const responseText = await response.text();

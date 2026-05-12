@@ -125,6 +125,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: `Status pesanan diperbarui ke ${status}` });
     }
 
+    if (action === 'process_pos_payment') {
+      const pStatus = paymentStatus || 'paid';
+      const oStatus = status || 'completed';
+      const pMethod = body.paymentMethod || 'cash';
+      
+      const { error } = await supabaseAdmin
+        .from('orders')
+        .update({ 
+          payment_status: pStatus,
+          status: oStatus,
+          cashier_id: body.cashierId || null,
+          total_amount: body.totalAmount,
+          notes: body.notes,
+          payment_method: pMethod
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      if (pStatus === 'paid') {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: order.customer_id,
+          title: 'Pembayaran Berhasil',
+          message: `Pembayaran untuk pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
+          type: 'order'
+        });
+      }
+      
+      if (body.tableId && pStatus === 'paid') {
+        await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
+      }
+
+      return NextResponse.json({ success: true, message: 'Payment processed' });
+    }
+
     if (action === 'update_payment') {
       const pStatus = paymentStatus || 'paid';
       const cashierId = body.cashierId;

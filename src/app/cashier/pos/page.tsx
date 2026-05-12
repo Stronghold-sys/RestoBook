@@ -447,25 +447,24 @@ export default function POSPage() {
       const newPaymentStatus = isCashless ? "paid" : foundOrder.payment_status;
       const newStatus = "processing";
 
-      // Update in Supabase
-      const { error } = await supabase.from("orders").update({
-        status: newStatus,
-        payment_status: newPaymentStatus,
-        cashier_id: cashierId || null
-      }).eq("id", foundOrder.id);
-
-      if (error) throw error;
-
       // Send update status API trigger to notify customer via real-time channels & notifications table
-      await fetch('/api/orders', {
+      // We also use this to update payment status and bypass RLS
+      const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           orderId: foundOrder.id, 
-          action: 'update_status', 
-          status: newStatus 
+          action: 'process_pos_payment', 
+          status: newStatus,
+          paymentStatus: newPaymentStatus,
+          paymentMethod: foundOrder.payment_method || 'cash',
+          cashierId: cashierId || null,
+          totalAmount: foundOrder.total_amount,
+          notes: foundOrder.notes
         }),
       });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal memproses pesanan langsung");
 
       // Update local state
       setFoundOrder((prev: any) => ({
@@ -597,19 +596,26 @@ export default function POSPage() {
 
       if (foundOrder) {
         const oStatus = isPaid ? (foundOrder.status === "pending" ? "processing" : foundOrder.status) : foundOrder.status;
-        const { error } = await supabase.from("orders").update({
-          payment_status: pStatus,
-          status: oStatus,
-          cashier_id: cashierId,
-          total_amount: cartTotal,
-          notes: finalNotes
-        }).eq("id", foundOrder.id);
         
-        if (error) throw error;
-        
-        if (foundOrder.table_id && isPaid) {
-          await supabase.from("tables").update({ status: "occupied" }).eq("id", foundOrder.table_id);
-        }
+        // Use API to bypass RLS silently failing
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: foundOrder.id,
+            action: 'process_pos_payment',
+            paymentStatus: pStatus,
+            status: oStatus,
+            paymentMethod: paymentMethod,
+            cashierId: cashierId,
+            totalAmount: cartTotal,
+            notes: finalNotes,
+            tableId: foundOrder.table_id
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Gagal memproses pembayaran');
 
         toast.success(`Transaksi Online ${isPaid ? 'Lunas' : 'Pending'}!`);
         

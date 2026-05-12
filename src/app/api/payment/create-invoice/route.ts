@@ -74,15 +74,18 @@ export async function POST(req: Request) {
       paymentAmount: paymentAmount,
       merchantOrderId: merchantOrderId,
       productDetails: `Pembayaran Pesanan #${merchantOrderId.substring(0, 8)}`,
+      additionalParam: "",
+      merchantUserInfo: "",
       email: customerDetail.email,
       customerVaName: customerDetail.firstName,
       phoneNumber: customerDetail.phoneNumber,
       itemDetails: itemDetails,
-      paymentMethod: "", // Kosongkan agar user bisa pilih metode pembayaran di Duitku
+      paymentMethod: "", 
+      creditCardDetail: { saveCardToken: 0 },
       callbackUrl: `${baseUrl}/api/payment/callback`,
       returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
       signature: signature,
-      expiryPeriod: 60 // 60 menit
+      expiryPeriod: 60
     };
 
     // Auto-detect Sandbox vs Production berdasarkan awalan Merchant Code

@@ -74,6 +74,9 @@ export async function GET() {
     ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS status_karyawan TEXT DEFAULT 'aktif';
     UPDATE profiles SET status_karyawan = 'aktif' WHERE status_karyawan IS NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS profiles_employee_id_key ON profiles(employee_id);
+    
+    -- SYNC EMAILS from auth.users to profiles for better visibility
+    UPDATE profiles p SET email = u.email FROM auth.users u WHERE p.user_id = u.id AND (p.email IS NULL OR p.email = '');
 
     -- Ensure orders has cashier_id to track who processed the order
     ALTER TABLE IF EXISTS orders ADD COLUMN IF NOT EXISTS cashier_id UUID REFERENCES profiles(id);

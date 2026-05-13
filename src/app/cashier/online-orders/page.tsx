@@ -68,7 +68,7 @@ export default function OnlineOrdersPage() {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, profiles:profiles!orders_customer_id_fkey(full_name, email, phone), order_items(*, menu_items(*)), tables(table_number)')
+      .select('*, profiles:customer_id(full_name, email, phone), order_items(*, menu_items(*)), tables(table_number)')
       .in('order_type', ['delivery', 'takeaway', 'dine_in'])
       .order('created_at', { ascending: false });
 
@@ -363,9 +363,14 @@ export default function OnlineOrdersPage() {
                       <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-xl shadow-lg shadow-primary/30">
                         {selectedOrder.profiles?.full_name?.charAt(0) || 'P'}
                       </div>
-                      <div>
+                      <div className="flex flex-col">
                         <p className="text-base font-black text-text-light dark:text-text-dark leading-none">{selectedOrder.profiles?.full_name || 'Pelanggan Umum'}</p>
-                        <p className="text-xs text-muted font-bold mt-1.5">{selectedOrder.profiles?.email || 'Tidak ada email'}</p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <Mail className="w-3.5 h-3.5 text-primary" />
+                          <p className="text-[11px] text-muted font-bold tracking-tight">
+                            {selectedOrder.profiles?.email || 'Email tidak disinkron/tersedia'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">

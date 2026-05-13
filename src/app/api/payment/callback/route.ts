@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
 
 export const runtime = 'edge';
 
@@ -60,17 +61,10 @@ export async function POST(req: Request) {
 
       console.log("Order successfully marked as PAID:", dbOrderId);
 
-      // 2. TRIGGER AUTOMATIC RECEIPT EMAIL
+      // 2. Send Receipt Email directly
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-        if (baseUrl) {
-          await fetch(`${baseUrl}/api/send-receipt`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: dbOrderId })
-          });
-        }
-      } catch (e) { console.error('Receipt trigger error:', e); }
+        await sendReceiptEmail(dbOrderId);
+      } catch (e) { console.error('Receipt email error:', e); }
     }
 
     return new NextResponse('OK', { status: 200 });

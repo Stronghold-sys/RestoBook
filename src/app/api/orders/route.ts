@@ -2,6 +2,7 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
 
 export async function POST(req: NextRequest) {
   try {
@@ -156,17 +157,10 @@ export async function POST(req: NextRequest) {
           await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
         }
 
-        // Trigger Automatic Receipt Email
+        // Send Receipt Email directly (no HTTP fetch)
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-          if (baseUrl) {
-            await fetch(`${baseUrl}/api/send-receipt`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: orderId })
-            });
-          }
-        } catch (e) { console.error('Receipt trigger error:', e); }
+          await sendReceiptEmail(orderId);
+        } catch (e) { console.error('Receipt email error:', e); }
       }
 
       return NextResponse.json({ success: true, message: 'Payment processed' });
@@ -194,17 +188,10 @@ export async function POST(req: NextRequest) {
           type: 'order'
         });
 
-        // Trigger Automatic Receipt Email
+        // Send Receipt Email directly (no HTTP fetch)
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-          if (baseUrl) {
-            await fetch(`${baseUrl}/api/send-receipt`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: orderId })
-            });
-          }
-        } catch (e) { console.error('Receipt trigger error:', e); }
+          await sendReceiptEmail(orderId);
+        } catch (e) { console.error('Receipt email error:', e); }
       }
 
       return NextResponse.json({ success: true, message: 'Status pembayaran diperbarui' });

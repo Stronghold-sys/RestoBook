@@ -346,7 +346,7 @@ export default function OrderTrackingPage() {
         
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-border-light dark:border-border-dark">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-text-light dark:text-text-dark tracking-tight">No. Pesanan {id?.substring(0, 8).toUpperCase()}</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-text-light dark:text-text-dark tracking-tight">No. Pesanan #{id?.substring(0, 8).toUpperCase()}</h1>
             <p className="text-muted mt-2 font-medium">Dipesan pada {format(new Date(order.created_at), "d MMMM yyyy, HH:mm", { locale: localeId })}</p>
           </div>
           <div className="text-left md:text-right">

@@ -401,6 +401,8 @@ export default function POSPage() {
     
     setSearchingOrder(true);
     try {
+      const cleanSearchTerm = searchOrderNo.replace(/^#/, '').trim();
+      
       const { data, error } = await supabase.from("orders").select(`
         *, 
         profiles!orders_customer_id_fkey(full_name),
@@ -408,7 +410,7 @@ export default function POSPage() {
         order_items(quantity, price, notes, menu_items(*))
       `)
       .neq("status", "cancelled")
-      .ilike("id", `${searchOrderNo}%`)
+      .ilike("id", `${cleanSearchTerm}%`)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();

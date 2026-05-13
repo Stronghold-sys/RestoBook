@@ -4,17 +4,17 @@ export const runtime = 'edge';
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { 
-  ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
+import { ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
   Globe, Check, X, AlertTriangle, Filter, 
   ArrowRight, MessageSquare, Timer, Zap, History,
-  Volume2, VolumeX, ChevronRight, MapPin, Store
+  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import Receipt from "@/components/Receipt";
 
 export default function OnlineOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -29,6 +29,10 @@ export default function OnlineOrdersPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [orderToReject, setOrderToReject] = useState<any>(null);
+  
+  // Printing State
+  const [showReceipt, setShowReceipt] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -101,6 +105,36 @@ export default function OnlineOrdersPage() {
     } catch (err) {
       toast.error("Gagal memperbarui status", { id: loadingToast });
     }
+  };
+
+  const handlePrint = () => {
+    const el = receiptRef.current;
+    if (!el) return;
+    const win = window.open("", "_blank", "width=450,height=700");
+    if (!win) return;
+    
+    // Gunakan gaya yang konsisten dengan komponen Receipt
+    win.document.write(`
+      <html>
+        <head>
+          <title>Cetak Kwitansi</title>
+          <style>
+            body { margin: 0; padding: 0; font-family: monospace; }
+            @page { margin: 0; size: 80mm auto; }
+          </style>
+        </head>
+        <body>
+          ${el.outerHTML}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    win.document.close();
   };
 
   const filteredOrders = orders.filter(order => {
@@ -403,14 +437,25 @@ export default function OnlineOrdersPage() {
                     )}
                     
                     {['completed', 'cancelled'].includes(selectedOrder.status) && (
-                      <div className={`p-5 rounded-2xl border flex items-center gap-4 ${
-                        selectedOrder.status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
-                      }`}>
-                        {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
-                        <div>
-                           <p className="text-sm font-black uppercase tracking-widest">Transaksi Selesai</p>
-                           <p className="text-[10px] font-bold opacity-80">{selectedOrder.status === 'completed' ? 'Pesanan telah diantar dan sukses.' : 'Pesanan ini telah ditolak/dibatalkan.'}</p>
+                      <div className="space-y-4">
+                        <div className={`p-5 rounded-2xl border flex items-center gap-4 ${
+                          selectedOrder.status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                        }`}>
+                          {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                          <div>
+                             <p className="text-sm font-black uppercase tracking-widest">Transaksi Selesai</p>
+                             <p className="text-[10px] font-bold opacity-80">{selectedOrder.status === 'completed' ? 'Pesanan telah diantar dan sukses.' : 'Pesanan ini telah ditolak/dibatalkan.'}</p>
+                          </div>
                         </div>
+
+                        {selectedOrder.status === 'completed' && selectedOrder.payment_status === 'paid' && (
+                          <button 
+                            onClick={() => setShowReceipt(true)}
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                          >
+                            <Printer className="w-5 h-5" /> LIHAT & CETAK KWITANSI
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -478,6 +523,46 @@ export default function OnlineOrdersPage() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      {/* Receipt Modal */}
+      <AnimatePresence>
+        {showReceipt && selectedOrder && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setShowReceipt(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-[420px] w-full my-8"
+            >
+              <div className="p-6 bg-gray-50 flex justify-between items-center border-b border-gray-100">
+                <button 
+                  onClick={() => setShowReceipt(false)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"
+                >
+                  <ArrowLeft className="w-3 h-3" /> Kembali
+                </button>
+                <button 
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 shadow-lg shadow-primary/30 transition-all uppercase"
+                >
+                  <Printer className="w-4 h-4" /> Cetak Sekarang
+                </button>
+              </div>
+              <div className="p-4 bg-gray-100">
+                <Receipt 
+                  ref={receiptRef} 
+                  order={selectedOrder} 
+                  orderItems={selectedOrder.order_items} 
+                  customerName={selectedOrder.profiles?.full_name || "Guest"} 
+                  cashierName={cashierName} 
+                />
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

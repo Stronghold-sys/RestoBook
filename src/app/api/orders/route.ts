@@ -156,20 +156,17 @@ export async function POST(req: NextRequest) {
           await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
         }
 
-        // Trigger Automatic Receipt Email (PDF)
-        const sendReceipt = async () => {
-          try {
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-            if (baseUrl) {
-              await fetch(`${baseUrl}/api/send-receipt`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: orderId })
-              });
-            }
-          } catch (e) { console.error("Email Receipt Trigger Error:", e); }
-        };
-        sendReceipt();
+        // Trigger Automatic Receipt Email
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+          if (baseUrl) {
+            await fetch(`${baseUrl}/api/send-receipt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: orderId })
+            });
+          }
+        } catch (e) { console.error('Receipt trigger error:', e); }
       }
 
       return NextResponse.json({ success: true, message: 'Payment processed' });
@@ -197,20 +194,17 @@ export async function POST(req: NextRequest) {
           type: 'order'
         });
 
-        // Trigger Automatic Receipt Email (PDF)
-        const sendReceipt = async () => {
-          try {
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-            if (baseUrl) {
-              await fetch(`${baseUrl}/api/send-receipt`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: orderId })
-              });
-            }
-          } catch (e) { console.error("Email Receipt Trigger Error:", e); }
-        };
-        sendReceipt();
+        // Trigger Automatic Receipt Email
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+          if (baseUrl) {
+            await fetch(`${baseUrl}/api/send-receipt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: orderId })
+            });
+          }
+        } catch (e) { console.error('Receipt trigger error:', e); }
       }
 
       return NextResponse.json({ success: true, message: 'Status pembayaran diperbarui' });

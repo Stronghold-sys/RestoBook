@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { Resend } from 'resend';
-import { jsPDF } from 'jspdf';
 
 export const runtime = 'edge';
 
@@ -62,20 +60,17 @@ export async function POST(req: Request) {
 
       console.log("Order successfully marked as PAID:", dbOrderId);
 
-      // 2. TRIGGER AUTOMATIC RECEIPT EMAIL (PDF)
-      const sendReceipt = async () => {
-        try {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
-          if (baseUrl) {
-            await fetch(`${baseUrl}/api/send-receipt`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: dbOrderId })
-            });
-          }
-        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
-      };
-      sendReceipt();
+      // 2. TRIGGER AUTOMATIC RECEIPT EMAIL
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+        if (baseUrl) {
+          await fetch(`${baseUrl}/api/send-receipt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: dbOrderId })
+          });
+        }
+      } catch (e) { console.error('Receipt trigger error:', e); }
     }
 
     return new NextResponse('OK', { status: 200 });

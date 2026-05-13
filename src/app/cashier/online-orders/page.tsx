@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
   Globe, Check, X, AlertTriangle, Filter, 
   ArrowRight, MessageSquare, Timer, Zap, History,
-  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed
+  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed, Mail
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";

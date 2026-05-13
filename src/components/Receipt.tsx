@@ -135,8 +135,6 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
     </>
   );
 });
-  );
-});
 
 Receipt.displayName = "Receipt";
 export default Receipt;

@@ -104,7 +104,7 @@ export default function AdminOrdersPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
               <div className="p-6 border-b border-border-light dark:border-border-dark">
-                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Detail No. Pesanan #{selectedOrder.id.split("-")[0]}</h2>
+                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Detail No. Pesanan {selectedOrder.id.split("-")[0]}</h2>
               </div>
               <div className="p-6 space-y-4">
                 {orderItems.map(item => (

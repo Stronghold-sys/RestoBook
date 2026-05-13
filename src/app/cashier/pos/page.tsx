@@ -403,41 +403,33 @@ export default function POSPage() {
     try {
       const cleanSearchTerm = searchOrderNo.replace(/^#/, '').trim().toLowerCase();
       
-      // PostgreSQL doesn't allow ILIKE on UUID types without casting.
-      // A more efficient way to search by prefix on a UUID is using range comparison (gte/lt).
-      // e.g. starting with 'abcd' means >= 'abcd' and < 'abce'
-      const getNextHex = (hex: string): string => {
-        const chars = "0123456789abcdef";
-        let res = hex.split("");
-        for (let i = res.length - 1; i >= 0; i--) {
-          const idx = chars.indexOf(res[i]);
-          if (idx < 15) {
-            res[i] = chars[idx + 1];
-            return res.join("");
-          }
-          res[i] = "0";
-        }
-        return "f" + res.join(""); // Overflow case
-      };
-
-      const nextSearchTerm = getNextHex(cleanSearchTerm);
+      // To avoid PostgreSQL UUID type errors with partial matches, we fetch recent order IDs
+      // and filter them in JavaScript. This is robust and avoids casting issues.
+      const { data: recentOrders, error: fetchError } = await supabase.from("orders")
+        .select('id')
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: false })
+        .limit(1000); // Check the last 1000 orders
       
+      if (fetchError) throw fetchError;
+      
+      const matchedOrder = recentOrders?.find(o => o.id.toLowerCase().startsWith(cleanSearchTerm));
+      
+      if (!matchedOrder) throw new Error("Pesanan tidak ditemukan");
+
+      // Fetch the full details for the specific matched order
       const { data, error } = await supabase.from("orders").select(`
         *, 
         profiles!orders_customer_id_fkey(full_name),
         tables(table_number),
         order_items(quantity, price, notes, menu_items(*))
       `)
-      .neq("status", "cancelled")
-      .gte('id', cleanSearchTerm)
-      .lt('id', nextSearchTerm)
-      .order("created_at", { ascending: false })
-      .limit(1);
+      .eq('id', matchedOrder.id)
+      .single();
       
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Pesanan tidak ditemukan");
+      if (error || !data) throw new Error("Pesanan tidak ditemukan");
       
-      setFoundOrder(data[0]);
+      setFoundOrder(data);
       
     } catch (e: any) {
       toast.error(e.message || "Pesanan tidak ditemukan");

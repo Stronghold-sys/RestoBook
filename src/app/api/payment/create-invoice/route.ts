@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       .trim();
 
     // Susun deskripsi produk yang menampung ringkasan barang DAN pesan pelanggan
-    const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `No. Pesanan #${merchantOrderId.substring(0, 8)}`;
+    const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `No. Pesanan ${merchantOrderId.substring(0, 8)}`;
     
     // Gabungkan ke visual productDetails
     const productDetails = cleanNotes 
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
           await resend.emails.send({
             from: 'RestoBook <noreply@restobookid.my.id>',
             to: customerDetail.email,
-            subject: `No. Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`,
+            subject: `No. Pesanan ${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`,
             html: `
               <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
                 <h2 style="color:#f97316;">Menunggu Pembayaran</h2>

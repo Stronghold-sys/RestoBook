@@ -407,7 +407,7 @@ export default function CashierOrders() {
               <div className="p-8 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-black text-2xl text-text-light dark:text-text-dark">No. Pesanan #{selectedOrder.id.split("-")[0]}</h3>
+                    <h3 className="font-black text-2xl text-text-light dark:text-text-dark">No. Pesanan {selectedOrder.id.split("-")[0]}</h3>
                     <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase ${selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder.status}</span>
                   </div>
                   <p className="text-sm text-muted mt-1">{format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm")}</p>

@@ -119,7 +119,7 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     const emailPayload: any = {
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
-      subject: `Kwitansi Pembayaran Lunas - ${restoName} - #${orderId8}`,
+      subject: `Kwitansi Pembayaran Lunas - ${restoName} - ${orderId8}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width:600px; margin:0 auto; background:#ffffff;">
           <div style="background: linear-gradient(135deg, #ff5722, #e64a19); padding:30px 20px; text-align:center; border-radius:12px 12px 0 0;">
@@ -136,7 +136,7 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
               Terima kasih atas pesanan Anda di <strong>${restoName}</strong>. Berikut adalah kwitansi resmi Anda:
             </p>
             <table style="width:100%; margin:15px 0; font-size:13px; color:#444;">
-              <tr><td style="padding:6px 0; font-weight:bold; width:45%;">No. Pesanan</td><td style="padding:6px 0;">#${orderId8}</td></tr>
+              <tr><td style="padding:6px 0; font-weight:bold; width:45%;">No. Pesanan</td><td style="padding:6px 0;">${orderId8}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tanggal</td><td style="padding:6px 0;">${orderDate}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tipe</td><td style="padding:6px 0; text-transform:capitalize;">${order.order_type?.replace('_', ' ') || '-'}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Pembayaran</td><td style="padding:6px 0; font-weight:bold;">${displayPayment}</td></tr>

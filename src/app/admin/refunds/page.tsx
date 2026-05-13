@@ -219,7 +219,7 @@ export default function AdminRefundsPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-start border-b pb-3 border-border-light dark:border-border-dark">
                     <div>
-                      <span className="text-[10px] uppercase font-black tracking-wider text-primary">No. Pesanan #{order.id.split("-")[0]}</span>
+                      <span className="text-[10px] uppercase font-black tracking-wider text-primary">No. Pesanan {order.id.split("-")[0]}</span>
                       <p className="text-sm font-black text-text-light dark:text-text-dark mt-0.5">{order.profiles?.full_name || "Walk-In Customer"}</p>
                     </div>
                     <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase ${

@@ -952,33 +952,6 @@ export default function POSPage() {
                   ) : null}
 
                   <div className="flex gap-2 mt-auto">
-                    {foundOrder.status === "pending" && (
-                      <>
-                        <button 
-                          onClick={() => {
-                            if (!isRestaurantOpen(openingTime, closingTime)) {
-                              return toast.error("Tidak dapat memproses pesanan online! Restoran sedang TUTUP.");
-                            }
-                            handleDirectProcessOrder();
-                          }} 
-                          disabled={!isRestaurantOpen(openingTime, closingTime)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                            isRestaurantOpen(openingTime, closingTime)
-                              ? "bg-green-500 hover:bg-green-600 text-white"
-                              : "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
-                          }`}
-                        >
-                          Terima & Proses
-                        </button>
-                        <button 
-                          onClick={handleCancelOnlineOrder}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
-                        >
-                          Batal/Tolak
-                        </button>
-                      </>
-                    )}
-                    
                     {foundOrder.payment_status === "unpaid" && foundOrder.payment_method === "cash" && foundOrder.status !== "completed" && (
                       <button 
                         onClick={() => {

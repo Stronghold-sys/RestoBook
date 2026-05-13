@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
         title: 'Pesanan Dibatalkan',
-        message: `Pesanan #${orderId.split('-')[0]} telah dibatalkan. Alasan: ${cancelReason}`,
+        message: `No. Pesanan #${orderId.split('-')[0]} telah dibatalkan. Alasan: ${cancelReason}`,
         type: 'order'
       });
 
@@ -92,11 +92,11 @@ export async function POST(req: NextRequest) {
 
       // Add Notification
       let notifTitle = 'Update Pesanan';
-      let notifMsg = `Status pesanan #${orderId.split('-')[0]} diperbarui ke: ${status}`;
+      let notifMsg = `Status No. Pesanan #${orderId.split('-')[0]} diperbarui ke: ${status}`;
       
       if (status === 'confirmed') {
         notifTitle = 'Pesanan Dikonfirmasi';
-        notifMsg = `Pesanan #${orderId.split('-')[0]} telah dikonfirmasi oleh kasir.`;
+        notifMsg = `No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi oleh kasir.`;
       } else if (status === 'processing') {
         notifTitle = 'Pesanan Dimasak';
         notifMsg = `Chef sedang menyiapkan hidangan Anda. Mohon tunggu sebentar!`;
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
           title: 'Pembayaran Berhasil',
-          message: `Pembayaran untuk pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
+          message: `Pembayaran untuk No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
           type: 'order'
         });
 
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
           title: 'Pembayaran Berhasil',
-          message: `Pembayaran untuk pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas.`,
+          message: `Pembayaran untuk No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas.`,
           type: 'order'
         });
       }
@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
         title: 'Pengajuan Refund Dikirim',
-        message: `Pengajuan refund untuk pesanan #${orderId.split('-')[0]} telah diterima dan sedang diproses.`,
+        message: `Pengajuan refund untuk No. Pesanan #${orderId.split('-')[0]} telah diterima dan sedang diproses.`,
         type: 'order'
       });
 
@@ -227,8 +227,8 @@ export async function POST(req: NextRequest) {
         user_id: order.customer_id,
         title: refundDetails.refundStatus === 'approved' ? 'Refund Disetujui' : 'Refund Ditolak',
         message: refundDetails.refundStatus === 'approved'
-          ? `Pengajuan refund pesanan #${orderId.split('-')[0]} Anda disetujui sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")}.`
-          : `Pengajuan refund pesanan #${orderId.split('-')[0]} Anda ditolak. Alasan: ${refundDetails.adminNotes || 'Tidak ada catatan'}`,
+          ? `Pengajuan refund No. Pesanan #${orderId.split('-')[0]} Anda disetujui sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")}.`
+          : `Pengajuan refund No. Pesanan #${orderId.split('-')[0]} Anda ditolak. Alasan: ${refundDetails.adminNotes || 'Tidak ada catatan'}`,
         type: 'order'
       });
 
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
         title: 'Pesanan Dibuat',
-        message: `Pesanan #${orderId.split('-')[0]} berhasil dibuat. Menunggu konfirmasi dari kasir.`,
+        message: `No. Pesanan #${orderId.split('-')[0]} berhasil dibuat. Menunggu konfirmasi dari kasir.`,
         type: 'order'
       });
       return NextResponse.json({ success: true });

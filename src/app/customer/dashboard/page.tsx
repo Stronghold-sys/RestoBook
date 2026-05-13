@@ -140,7 +140,7 @@ export default function CustomerDashboard() {
                 <Link key={order.id} href={`/customer/orders/${order.id}`}>
                   <motion.div whileHover={{ x: 4 }} className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
                     <div>
-                      <p className="font-semibold text-text-light dark:text-text-dark text-sm">Pesanan #{order.id.split('-')[0]}</p>
+                      <p className="font-semibold text-text-light dark:text-text-dark text-sm">No. Pesanan #{order.id.split('-')[0]}</p>
                       <p className="text-xs text-muted mt-1">{format(new Date(order.created_at), 'dd MMM yyyy, HH:mm', { locale: id })}</p>
                     </div>
                     <div className="text-right">

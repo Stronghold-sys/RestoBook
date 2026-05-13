@@ -1603,7 +1603,7 @@ export default function CashierDashboard() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border-light dark:border-border-dark text-muted text-sm">
-                <th className="pb-3 font-medium">ID Pesanan</th>
+                <th className="pb-3 font-medium">No. Pesanan</th>
                 <th className="pb-3 font-medium">Waktu</th>
                 <th className="pb-3 font-medium">Tipe</th>
                 <th className="pb-3 font-medium">Total</th>

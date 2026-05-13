@@ -132,7 +132,7 @@ export default function CashierTransactionsPage() {
     reportData.push([]); // Empty row
     
     // Table Headers
-    reportData.push(["ID Pesanan", "Pelanggan", "Tipe Pesanan", "Pesanan", "Metode Pembayaran", "Total (Rp)", "Tanggal Waktu"]);
+    reportData.push(["No. Pesanan", "Pelanggan", "Tipe Pesanan", "Pesanan", "Metode Pembayaran", "Total (Rp)", "Tanggal Waktu"]);
     
     // Table Data
     filtered.forEach(order => {
@@ -151,7 +151,7 @@ export default function CashierTransactionsPage() {
     
     // Auto-size columns perfectly for maximum neatness in Excel
     const wscols = [
-      { wch: 15 }, // ID Pesanan
+      { wch: 15 }, // No. Pesanan
       { wch: 25 }, // Pelanggan
       { wch: 15 }, // Tipe Pesanan
       { wch: 50 }, // Pesanan (widened to 50 for full readability)
@@ -339,7 +339,7 @@ export default function CashierTransactionsPage() {
           <table className="w-full">
             <thead className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-border-light dark:border-border-dark">
               <tr>
-                <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">ID Pesanan</th>
+                <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">No. Pesanan</th>
                 <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Pelanggan</th>
                 <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Pesanan</th>
                 <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Tipe</th>

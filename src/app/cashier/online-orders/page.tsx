@@ -122,12 +122,8 @@ export default function OnlineOrdersPage() {
       <html>
         <head>
           <title>Cetak Kwitansi</title>
-          <style>
-            body { margin: 0; padding: 0; font-family: monospace; }
-            @page { margin: 0; size: 80mm auto; }
-          </style>
         </head>
-        <body>
+        <body style="margin:0; padding:0;">
           ${el.outerHTML}
           <script>
             window.onload = function() {

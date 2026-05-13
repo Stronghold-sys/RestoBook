@@ -27,32 +27,27 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     let targetName = 'Pelanggan';
 
     if (order.customer_id) {
-      // Prioritas 1: Ambil langsung dari Auth Supabase agar selalu update jika user ganti email
-      const { data: authData } = await supabaseAdmin.auth.admin.getUserById(order.customer_id);
-      if (authData?.user?.email) {
-        targetEmail = authData.user.email;
-      }
-
-      // Prioritas 2: Cek di profiles untuk mendapatkan full_name (dan email fallback)
-      const { data: p1 } = await supabaseAdmin
+      // Step 1: Resolve the profile using customer_id (which is actually profile.id)
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('email, full_name')
+        .select('id, user_id, email, full_name')
         .eq('id', order.customer_id)
         .maybeSingle();
 
-      if (p1) {
-        if (!targetEmail && p1.email) targetEmail = p1.email;
-        if (p1.full_name) targetName = p1.full_name;
-      } else {
-        const { data: p2 } = await supabaseAdmin
-          .from('profiles')
-          .select('email, full_name')
-          .eq('user_id', order.customer_id)
-          .maybeSingle();
+      // If we couldn't find it by id, maybe customer_id IS the user_id (fallback for old orders)
+      const resolvedUserId = profile?.user_id || order.customer_id;
+      
+      if (profile) {
+        if (profile.full_name) targetName = profile.full_name;
+        // Fallback email from profile if auth fails later
+        if (profile.email) targetEmail = profile.email;
+      }
 
-        if (p2) {
-          if (!targetEmail && p2.email) targetEmail = p2.email;
-          if (p2.full_name) targetName = p2.full_name;
+      // Step 2: Always try to get the FRESH email from Supabase Auth!
+      if (resolvedUserId) {
+        const { data: authData } = await supabaseAdmin.auth.admin.getUserById(resolvedUserId);
+        if (authData?.user?.email) {
+          targetEmail = authData.user.email;
         }
       }
     }

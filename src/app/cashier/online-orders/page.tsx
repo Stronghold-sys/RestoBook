@@ -83,7 +83,7 @@ export default function OnlineOrdersPage() {
       
       if (newStatus === 'cancelled' && reason) {
         const timestamp = format(new Date(), "HH:mm:ss");
-        updateData.notes = `[Dibatalkan Kasir ${cashierName} jam ${timestamp}]: ${reason}`;
+        updateData.cancel_reason = `[Dibatalkan Kasir ${cashierName} jam ${timestamp}]: ${reason}`;
       }
 
       const { error } = await supabase

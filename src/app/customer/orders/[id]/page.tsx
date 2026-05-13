@@ -158,30 +158,37 @@ export default function OrderTrackingPage() {
   };
 
   const handlePrint = () => {
-    if (receiptRef.current) {
-      const content = receiptRef.current.innerHTML;
-      const win = window.open('', '', 'height=600,width=400');
-      win?.document.write(`
-        <html>
-          <head>
-            <title>Cetak Kwitansi</title>
-            <style>
-              body { font-family: monospace; padding: 20px; }
-              @media print { body { padding: 0; } }
-            </style>
-          </head>
-          <body>${content}</body>
-        </html>
-      `);
-      win?.document.close();
-      win?.focus();
-      setTimeout(() => { win?.print(); win?.close(); }, 500);
-    }
+    const el = receiptRef.current;
+    if (!el) return;
+    const win = window.open("", "_blank", "width=450,height=700");
+    if (!win) return;
+    win.document.write(`
+      <html>
+        <head>
+          <title>Cetak Kwitansi</title>
+          <style>
+            body { margin: 0; padding: 0; font-family: monospace; }
+            @page { margin: 0; size: 80mm auto; }
+          </style>
+        </head>
+        <body>
+          ${el.outerHTML}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    win.document.close();
   };
 
   const handleCancelOrder = async () => {
     setCancelling(true);
     try {
+      // Jika tunai, langsung batalkan tanpa data refund
       const { error } = await supabase.from("orders").update({ 
         status: "cancelled",
         cancel_reason: "Dibatalkan oleh pelanggan"
@@ -237,12 +244,19 @@ export default function OrderTrackingPage() {
         requestedAt: new Date().toISOString()
       };
       
-      const { error } = await supabase.from("orders").update({
-        cancel_reason: JSON.stringify(refundInfo),
-        status: "cancelled"
-      }).eq("id", id);
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: id,
+          action: 'submit_refund',
+          refundDetails: refundInfo
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Gagal mengirim pengajuan refund');
       
-      if (error) throw error;
       toast.success("Pengajuan refund berhasil dikirim!");
       fetchOrderDetails();
       setShowRefundModal(false);
@@ -338,30 +352,90 @@ export default function OrderTrackingPage() {
         </div>
 
         {isCancelled ? (
-          <div className="bg-red-50 dark:bg-red-950/30 border-2 border-red-100 dark:border-red-900 rounded-3xl p-8 flex flex-col items-center text-center">
+          <div className="bg-red-50 dark:bg-red-950/30 border-2 border-red-100 dark:border-red-900 rounded-3xl p-8 flex flex-col items-center">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/50 text-red-500 rounded-2xl flex items-center justify-center mb-4"><XCircle className="w-8 h-8" /></div>
             <h3 className="text-xl font-black text-red-900 dark:text-red-400 mb-2 uppercase tracking-tight">Pesanan Dibatalkan</h3>
             
             {!refundData ? (
-              <p className="text-red-600/80 mt-1 mb-4 font-medium">{order.cancel_reason || "Dibatalkan oleh sistem/kasir"}</p>
+              <p className="text-red-600/80 mt-1 mb-4 font-medium text-center">{order.cancel_reason || "Dibatalkan oleh sistem/kasir"}</p>
             ) : (
-              <div className="mt-4 p-5 bg-white dark:bg-gray-800 rounded-2xl border border-red-200 dark:border-red-900 text-left w-full max-w-lg space-y-4 shadow-sm">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <span className="font-bold text-xs uppercase tracking-wider text-muted">Status Refund:</span>
-                  <span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${
-                    refundData.refundStatus === "pending" ? "bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse" :
-                    refundData.refundStatus === "approved" ? "bg-green-100 text-green-700 border border-green-200" :
-                    "bg-red-100 text-red-700 border border-red-200"
-                  }`}>
-                    {refundData.refundStatus === "pending" ? "Menunggu" :
-                     refundData.refundStatus === "approved" ? "Disetujui" : "Ditolak"}
-                  </span>
+              <div className="mt-6 w-full space-y-6">
+                <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-red-200 dark:border-red-900 shadow-sm">
+                   <div className="flex items-center gap-3">
+                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${refundData.refundStatus === 'approved' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                       {refundData.refundStatus === 'approved' ? <CheckCircle2 className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-black uppercase text-muted tracking-widest">Status Refund</p>
+                       <p className="text-sm font-black text-text-light dark:text-text-dark uppercase">
+                         {refundData.refundStatus === "pending" ? "Menunggu Persetujuan" :
+                          refundData.refundStatus === "approved" ? "Refund Disetujui" : "Refund Ditolak"}
+                       </p>
+                     </div>
+                   </div>
+                   <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${
+                     refundData.refundStatus === "pending" ? "bg-yellow-100 text-yellow-700 animate-pulse" :
+                     refundData.refundStatus === "approved" ? "bg-green-100 text-green-700" :
+                     "bg-red-100 text-red-700"
+                   }`}>
+                     {refundData.refundStatus === "pending" ? "Proses" :
+                      refundData.refundStatus === "approved" ? "Berhasil" : "Gagal"}
+                   </span>
                 </div>
-                <div className="text-xs text-text-light dark:text-text-dark space-y-2 font-semibold">
-                  <p><span className="text-muted">Bank/E-Wallet:</span> {refundData.bankName}</p>
-                  <p><span className="text-muted">No. Rekening/HP:</span> {refundData.accountNo}</p>
-                  <p><span className="text-muted">Atas Nama:</span> {refundData.accountName}</p>
-                  <p><span className="text-muted">Alasan:</span> {refundData.refundReason}</p>
+
+                {/* Refund Details Grid (Seperti di Gambar) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Metode Refund</p>
+                    <p className="text-lg font-black text-primary flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" /> {refundData.bankName}
+                    </p>
+                  </div>
+                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Nomor Rekening</p>
+                    <p className="text-lg font-black text-text-light dark:text-text-dark tracking-tighter">
+                      {refundData.accountNo}
+                    </p>
+                  </div>
+                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm md:col-span-2">
+                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Atas Nama Pemilik</p>
+                    <p className="text-lg font-black text-text-light dark:text-text-dark uppercase">
+                      {refundData.accountName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Alasan Pengaju</p>
+                  <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                    {refundData.refundReason}
+                  </p>
+                </div>
+
+                {refundData.adminNotes && (
+                  <div className="p-6 bg-orange-50 dark:bg-orange-950/20 rounded-2xl border border-orange-100 dark:border-orange-900 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-1">Catatan Admin</p>
+                    <p className="text-sm font-semibold text-orange-900 dark:text-orange-400 leading-relaxed">
+                      {refundData.adminNotes}
+                    </p>
+                  </div>
+                )}
+
+                {refundData.proofUrl && (
+                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-3">Bukti Transfer Refund</p>
+                    <div className="relative rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group cursor-zoom-in" onClick={() => window.open(refundData.proofUrl)}>
+                      <img src={refundData.proofUrl} alt="Bukti Transfer" className="w-full h-auto max-h-[300px] object-contain bg-gray-50 rounded-xl" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                        <span className="bg-white/90 text-black text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-wider">Perbesar Gambar</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-red-200 dark:border-red-900 flex justify-between items-center">
+                   <span className="text-[10px] font-black uppercase text-muted tracking-widest">Total Refund</span>
+                   <span className="text-2xl font-black text-primary">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span>
                 </div>
               </div>
             )}
@@ -472,7 +546,7 @@ export default function OrderTrackingPage() {
           {!isCancelled && (
             <>
               {order.status === "pending" ? (
-                isPaid ? (
+                order.payment_method !== 'cash' && isPaid ? (
                   <button 
                     onClick={() => setShowRefundModal(true)}
                     className="flex items-center gap-2 text-red-600 hover:text-red-700 font-bold text-xs uppercase tracking-wider bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl border border-red-200 transition-all shadow-sm"
@@ -487,7 +561,7 @@ export default function OrderTrackingPage() {
                     <XCircle className="w-4 h-4" /> Batalkan Pesanan
                   </button>
                 )
-              ) : order.status === "confirmed" ? (
+              ) : ["confirmed", "processing"].includes(order.status) ? (
                 <button 
                   disabled
                   className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 rounded-xl cursor-not-allowed border border-gray-200 dark:border-gray-700 opacity-70"
@@ -576,7 +650,7 @@ export default function OrderTrackingPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Pembatalan</label>
-                  <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Mengapa Anda membatalkan pesanan ini?" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />
+                  <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Contoh: Menunggu terlalu lama karena pesanan tidak kunjung diproses atau alasan lainnya..." className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />
                 </div>
               </div>
               <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">

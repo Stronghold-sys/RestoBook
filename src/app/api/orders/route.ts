@@ -192,10 +192,21 @@ export async function POST(req: NextRequest) {
 
       const { error } = await supabaseAdmin
         .from('orders')
-        .update({ cancel_reason: JSON.stringify(refundDetails) })
+        .update({ 
+          status: 'cancelled',
+          cancel_reason: JSON.stringify(refundDetails) 
+        })
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Add Notification
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id,
+        title: 'Pengajuan Refund Dikirim',
+        message: `Pengajuan refund untuk pesanan #${orderId.split('-')[0]} telah diterima dan sedang diproses.`,
+        type: 'order'
+      });
 
       return NextResponse.json({ success: true, message: 'Refund request submitted' });
     }

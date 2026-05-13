@@ -403,7 +403,25 @@ export default function POSPage() {
     try {
       const cleanSearchTerm = searchOrderNo.replace(/^#/, '').trim().toLowerCase();
       
-      // We fetch multiple just in case of collisions, and pick the first one
+      // PostgreSQL doesn't allow ILIKE on UUID types without casting.
+      // A more efficient way to search by prefix on a UUID is using range comparison (gte/lt).
+      // e.g. starting with 'abcd' means >= 'abcd' and < 'abce'
+      const getNextHex = (hex: string): string => {
+        const chars = "0123456789abcdef";
+        let res = hex.split("");
+        for (let i = res.length - 1; i >= 0; i--) {
+          const idx = chars.indexOf(res[i]);
+          if (idx < 15) {
+            res[i] = chars[idx + 1];
+            return res.join("");
+          }
+          res[i] = "0";
+        }
+        return "f" + res.join(""); // Overflow case
+      };
+
+      const nextSearchTerm = getNextHex(cleanSearchTerm);
+      
       const { data, error } = await supabase.from("orders").select(`
         *, 
         profiles!orders_customer_id_fkey(full_name),
@@ -411,7 +429,8 @@ export default function POSPage() {
         order_items(quantity, price, notes, menu_items(*))
       `)
       .neq("status", "cancelled")
-      .filter('id', 'ilike', `${cleanSearchTerm}%`)
+      .gte('id', cleanSearchTerm)
+      .lt('id', nextSearchTerm)
       .order("created_at", { ascending: false })
       .limit(1);
       

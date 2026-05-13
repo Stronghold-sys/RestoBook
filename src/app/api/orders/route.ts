@@ -157,14 +157,19 @@ export async function POST(req: NextRequest) {
         }
 
         // Trigger Automatic Receipt Email (PDF)
-        try {
-          const origin = req.url ? new URL(req.url).origin : '';
-          await fetch(`${origin}/api/send-receipt`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderId })
-          });
-        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+        const sendReceipt = async () => {
+          try {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+            if (baseUrl) {
+              await fetch(`${baseUrl}/api/send-receipt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: orderId })
+              });
+            }
+          } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+        };
+        sendReceipt();
       }
 
       return NextResponse.json({ success: true, message: 'Payment processed' });
@@ -193,14 +198,19 @@ export async function POST(req: NextRequest) {
         });
 
         // Trigger Automatic Receipt Email (PDF)
-        try {
-          const origin = req.url ? new URL(req.url).origin : '';
-          await fetch(`${origin}/api/send-receipt`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderId })
-          });
-        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+        const sendReceipt = async () => {
+          try {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+            if (baseUrl) {
+              await fetch(`${baseUrl}/api/send-receipt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: orderId })
+              });
+            }
+          } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+        };
+        sendReceipt();
       }
 
       return NextResponse.json({ success: true, message: 'Status pembayaran diperbarui' });

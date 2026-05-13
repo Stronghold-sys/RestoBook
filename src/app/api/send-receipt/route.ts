@@ -12,27 +12,41 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
-    if (!orderId) return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+    const body = await req.json();
+    const { orderId } = body;
+    
+    if (!orderId) {
+      console.error("Missing orderId in request");
+      return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+    }
 
-    // 1. Fetch Order Details with Items and Settings
+    console.log(`Processing receipt for Order: ${orderId}`);
+
+    // 1. Fetch Order Details with Items and Profile
+    // We use a broader select first to ensure we get the data
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('*, profiles!orders_customer_id_fkey(full_name, email, user_id), order_items(*, menu_items(name, price))')
+      .select('*, order_items(*, menu_items(name, price))')
       .eq('id', orderId)
       .single();
 
-    if (orderError || !order) throw new Error('Order not found');
+    if (orderError || !order) {
+      console.error("Order fetch error:", orderError);
+      throw new Error('Order not found');
+    }
 
-    // 2. Always get LATEST email from Profile (incase it changed)
-    const { data: latestProfile } = await supabaseAdmin
+    // 2. Get Profile explicitly to avoid join issues
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('email, full_name')
-      .eq('user_id', order.profiles?.user_id)
+      .select('email, full_name, user_id')
+      .eq('user_id', order.customer_id)
       .single();
     
-    const targetEmail = latestProfile?.email || order.profiles?.email;
-    if (!targetEmail) return NextResponse.json({ success: true, message: 'No email found for this customer' });
+    const targetEmail = profile?.email;
+    if (!targetEmail) {
+      console.warn(`No email found for customer: ${order.customer_id}`);
+      return NextResponse.json({ success: true, message: 'No email found for this customer' });
+    }
 
     // 3. Fetch Restaurant Settings
     const { data: settings } = await supabaseAdmin.from('restaurant_settings').select('*').single();
@@ -62,7 +76,7 @@ export async function POST(req: Request) {
     doc.setFontSize(8);
     doc.text(`ID: #${order.id.substring(0, 8).toUpperCase()}`, 5, 28);
     doc.text(`Tgl: ${new Date(order.created_at).toLocaleString('id-ID')}`, 5, 32);
-    doc.text(`Nama: ${latestProfile?.full_name || 'Pelanggan'}`, 5, 36);
+    doc.text(`Nama: ${profile?.full_name || 'Pelanggan'}`, 5, 36);
     doc.text(`Tipe: ${order.order_type.toUpperCase()}`, 5, 40);
 
     doc.line(5, 44, 75, 44);
@@ -103,8 +117,8 @@ export async function POST(req: Request) {
 
     // 5. Send Email via Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'RestoBook <receipt@restobookid.my.id>',
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
       subject: `Kwitansi Pesanan #${order.id.substring(0, 8).toUpperCase()} - ${settings?.name || 'RestoBook'}`,
       html: `
@@ -116,7 +130,7 @@ export async function POST(req: Request) {
           
           <div style="background-color: #fff; padding: 20px; border-radius: 8px; border: 1px solid #f0f0f0;">
             <h2 style="color: #333; border-bottom: 2px solid #ff5722; padding-bottom: 10px;">Kwitansi Pembayaran Lunas</h2>
-            <p>Halo <strong>${latestProfile?.full_name || 'Pelanggan'}</strong>,</p>
+            <p>Halo <strong>${profile?.full_name || 'Pelanggan'}</strong>,</p>
             <p>Terima kasih telah melakukan pemesanan di <strong>${settings?.name || 'RestoBook'}</strong>. Pembayaran Anda telah kami terima dengan detail sebagai berikut:</p>
             
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -166,10 +180,16 @@ export async function POST(req: Request) {
       ],
     });
 
-    return NextResponse.json({ success: true, message: 'Receipt email sent' });
+    if (emailError) {
+      console.error("Resend Email Error:", emailError);
+      throw emailError;
+    }
+
+    console.log(`Receipt email sent successfully to ${targetEmail}`);
+    return NextResponse.json({ success: true, message: 'Receipt email sent', resendId: emailData?.id });
 
   } catch (error: any) {
-    console.error('Email Receipt Error:', error);
+    console.error('Email Receipt Fatal Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

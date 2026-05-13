@@ -63,14 +63,19 @@ export async function POST(req: Request) {
       console.log("Order successfully marked as PAID:", dbOrderId);
 
       // 2. TRIGGER AUTOMATIC RECEIPT EMAIL (PDF)
-      try {
-        const origin = req.url ? new URL(req.url).origin : '';
-        await fetch(`${origin}/api/send-receipt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: dbOrderId })
-        });
-      } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+      const sendReceipt = async () => {
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (req.url ? new URL(req.url).origin : '');
+          if (baseUrl) {
+            await fetch(`${baseUrl}/api/send-receipt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: dbOrderId })
+            });
+          }
+        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
+      };
+      sendReceipt();
     }
 
     return new NextResponse('OK', { status: 200 });

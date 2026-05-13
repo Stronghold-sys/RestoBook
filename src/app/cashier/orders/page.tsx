@@ -56,7 +56,6 @@ export default function CashierOrders() {
       const { data } = await supabase
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
-        .eq('order_type', 'dine_in') // Hanya tampilkan dine-in di sini (Offline)
         .order("created_at", { ascending: false });
       setOrders(data || []);
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -349,9 +348,20 @@ export default function CashierOrders() {
                       <td className="p-6 text-sm text-muted">{format(new Date(order.created_at), "HH:mm")}</td>
                       <td className="p-6">
                         <p className="text-sm font-bold text-text-light dark:text-text-dark">{getCustomerName(order)}</p>
-                        <p className="text-[10px] text-muted uppercase mt-0.5">{order.order_type}</p>
+                        <p className="text-[10px] text-muted font-black uppercase mt-1 flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-500' : order.order_type === 'takeaway' ? 'bg-orange-500' : 'bg-emerald-500'}`} />
+                          {order.order_type}
+                        </p>
                       </td>
-                      <td className="p-6 text-sm text-muted">{order.order_type === "dine_in" ? `Meja ${order.tables?.table_number || "-"}` : "Takeaway"}</td>
+                      <td className="p-6">
+                         <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                            order.order_type === "dine_in" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                            order.order_type === "delivery" ? "bg-blue-50 text-blue-700 border border-blue-100" :
+                            "bg-orange-50 text-orange-700 border border-orange-100"
+                         }`}>
+                            {order.order_type === "dine_in" ? `Meja ${order.tables?.table_number || "-"}` : order.order_type}
+                         </span>
+                      </td>
                       <td className="p-6 font-black text-text-light dark:text-text-dark">Rp {Number(order.total_amount).toLocaleString("id-ID")}</td>
                       <td className="p-6 text-xs font-bold text-muted uppercase">
                         {order.notes?.includes("[METODE:") 
@@ -400,8 +410,8 @@ export default function CashierOrders() {
 
               <div className="p-8 overflow-y-auto flex-1 space-y-8">
                 <div className="grid grid-cols-2 gap-6 p-6 bg-background-light dark:bg-background-dark rounded-3xl border border-border-light dark:border-border-dark">
-                  <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pelanggan</p><p className="font-black text-lg text-text-light dark:text-text-dark">{customerName || selectedOrder.profiles?.full_name || "Guest"}</p></div>
-                  <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Tipe</p><p className="font-black text-lg text-primary">{selectedOrder.order_type === "dine_in" ? `Meja ${selectedOrder.tables?.table_number}` : "Takeaway"}</p></div>
+                  <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pelanggan</p><p className="font-black text-lg text-text-light dark:text-text-dark">{customerName || getCustomerName(selectedOrder)}</p></div>
+                  <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Tipe</p><p className="font-black text-lg text-primary uppercase">{selectedOrder.order_type === "dine_in" ? `Dine In (Meja ${selectedOrder.tables?.table_number})` : selectedOrder.order_type}</p></div>
                   <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pembayaran</p><p className="font-black flex items-center gap-2 text-text-light dark:text-text-dark">
                     {selectedOrder.notes?.includes("[METODE:") 
                       ? selectedOrder.notes.split("[METODE:")[1].split("]")[0] 

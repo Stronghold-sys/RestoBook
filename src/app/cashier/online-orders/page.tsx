@@ -428,21 +428,39 @@ export default function OnlineOrdersPage() {
                     )}
 
                     {selectedOrder.status === 'confirmed' && (
-                      <button 
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'processing')}
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-sm"
-                      >
-                        <Timer className="w-6 h-6" /> MULAI PROSES MASAK
-                      </button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'processing')}
+                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                          <Timer className="w-5 h-5" /> MULAI PROSES MASAK
+                        </button>
+                        <button 
+                          onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
+                          className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+                          title="Batalkan Pesanan (Stok Habis, dll)"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
                     )}
 
                     {selectedOrder.status === 'processing' && (
-                      <button 
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
-                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-sm"
-                      >
-                        <CheckCircle2 className="w-6 h-6" /> SELESAIKAN PESANAN
-                      </button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                          <CheckCircle2 className="w-5 h-5" /> SELESAIKAN PESANAN
+                        </button>
+                        <button 
+                          onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
+                          className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+                          title="Batalkan Pesanan (Kendala Dapur, dll)"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
                     )}
                     
                     {['completed', 'cancelled'].includes(selectedOrder.status) && (

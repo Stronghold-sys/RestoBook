@@ -61,6 +61,7 @@ export default function OnlineOrdersPage() {
       .from('orders')
       .select('*, profiles(full_name, email, phone), order_items(*, menu_items(*))')
       .in('order_type', ['delivery', 'takeaway'])
+      .or('payment_status.eq.paid,payment_method.eq.cash') // Hanya yang sudah bayar atau tunai
       .order('created_at', { ascending: false });
 
     if (!error) setOrders(data || []);
@@ -236,8 +237,15 @@ export default function OnlineOrdersPage() {
                           </div>
                         </div>
                       </div>
-                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${statusInfo.color}`}>
-                        {statusInfo.label}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </div>
+                        {order.payment_status === 'paid' ? (
+                          <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg text-[9px] font-black uppercase tracking-tighter">Lunas</div>
+                        ) : (
+                          <div className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg text-[9px] font-black uppercase tracking-tighter">Bayar Tunai</div>
+                        )}
                       </div>
                     </div>
 

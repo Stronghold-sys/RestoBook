@@ -45,7 +45,9 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         table: 'orders',
         filter: "order_type=in.(delivery,takeaway)" 
       }, (payload) => {
-        if (payload.new.status === 'pending') {
+        // Hanya notif jika (Lunas) ATAU (Tunai)
+        const isActionable = payload.new.status === 'pending' && (payload.new.payment_status === 'paid' || payload.new.payment_method === 'cash');
+        if (isActionable) {
           playNotifSound();
           toast.success("Ada pesanan online baru masuk!", {
             icon: '🔔',
@@ -81,7 +83,8 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .in('order_type', ['delivery', 'takeaway'])
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .or('payment_status.eq.paid,payment_method.eq.cash');
     
     setOnlineOrderCount(count || 0);
   };

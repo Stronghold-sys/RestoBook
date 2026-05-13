@@ -368,9 +368,12 @@ export default function CashierOrders() {
                       </td>
                       <td className="p-6 font-black text-text-light dark:text-text-dark">Rp {Number(order.total_amount).toLocaleString("id-ID")}</td>
                       <td className="p-6 text-xs font-bold text-muted uppercase">
-                        {order.notes?.includes("[METODE:") 
-                          ? order.notes.split("[METODE:")[1].split("]")[0] 
-                          : order.payment_method}
+                        {(() => {
+                          const m = order.notes?.includes("[METODE:") ? order.notes.split("[METODE:")[1].split("]")[0] : order.payment_method;
+                          if (!m) return "-";
+                          const lower = m.trim().toLowerCase();
+                          return (lower === "cash" || lower === "tunai") ? "TUNAI" : "NON TUNAI";
+                        })()}
                       </td>
                       <td className="p-6">{getPaymentBadge(order)}</td>
                       <td className="p-6">
@@ -417,9 +420,12 @@ export default function CashierOrders() {
                   <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pelanggan</p><p className="font-black text-lg text-text-light dark:text-text-dark">{customerName || getCustomerName(selectedOrder)}</p></div>
                   <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Tipe</p><p className="font-black text-lg text-primary uppercase">{selectedOrder.order_type === "dine_in" ? `Dine In (Meja ${selectedOrder.tables?.table_number})` : selectedOrder.order_type}</p></div>
                   <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pembayaran</p><p className="font-black flex items-center gap-2 text-text-light dark:text-text-dark">
-                    {selectedOrder.notes?.includes("[METODE:") 
-                      ? selectedOrder.notes.split("[METODE:")[1].split("]")[0] 
-                      : selectedOrder.payment_method}
+                    {(() => {
+                      const m = selectedOrder.notes?.includes("[METODE:") ? selectedOrder.notes.split("[METODE:")[1].split("]")[0] : selectedOrder.payment_method;
+                      if (!m) return "-";
+                      const lower = m.trim().toLowerCase();
+                      return (lower === "cash" || lower === "tunai") ? "TUNAI" : "NON TUNAI";
+                    })()}
                   </p></div>
                   <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Status Bayar</p><span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${selectedOrder.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{selectedOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span></div>
                 </div>

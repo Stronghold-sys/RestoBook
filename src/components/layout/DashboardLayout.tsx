@@ -45,14 +45,17 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'orders',
-        filter: "order_type=in.(delivery,takeaway)" 
-      }, (payload) => {
+        table: 'orders'
+      }, (payload: any) => {
+        // Only process online orders (delivery/takeaway)
+        const order = payload.new;
+        if (!order || !['delivery', 'takeaway'].includes(order.order_type)) return;
+
         // ALWAYS fetch the new count on any change (insert, update, delete)
         fetchOnlineOrderCount();
 
         if (payload.eventType === 'INSERT') {
-          const isActionable = payload.new.status === 'pending' && (payload.new.payment_status === 'paid' || payload.new.payment_method === 'cash');
+          const isActionable = order.status === 'pending' && (order.payment_status === 'paid' || order.payment_method === 'cash');
           if (isActionable) {
             if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
               playNotifSound();
@@ -61,11 +64,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           }
         } else if (payload.eventType === 'UPDATE') {
           // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
-          const becamePaid = payload.new.status === 'pending' && payload.new.payment_status === 'paid';
+          const becamePaid = order.status === 'pending' && order.payment_status === 'paid' && payload.old?.payment_status !== 'paid';
           if (becamePaid) {
             if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
               playNotifSound();
-              // Prevent spam by checking if we really need to alert (usually we do if it just paid)
               toast.success("Pesanan Online Baru (Lunas)!", { icon: '💰', duration: 8000, position: 'top-right' });
             }
           }

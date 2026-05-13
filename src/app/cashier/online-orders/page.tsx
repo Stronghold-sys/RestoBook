@@ -44,9 +44,14 @@ export default function OnlineOrdersPage() {
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'orders',
-        filter: "order_type=in.(delivery,takeaway)"
-      }, () => fetchOrders())
+        table: 'orders'
+      }, (payload: any) => {
+        // Only refresh if it's an online order (delivery/takeaway)
+        const order = payload.new || payload.old;
+        if (order && ['delivery', 'takeaway'].includes(order.order_type)) {
+          fetchOrders();
+        }
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -204,7 +209,7 @@ export default function OnlineOrdersPage() {
       {/* Tabs Selector */}
       <div className="flex gap-2 p-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl w-fit shadow-sm">
         {[
-          { id: "pending", label: "Baru", icon: Zap, count: orders.filter(o => o.status === "pending").length },
+          { id: "pending", label: "Baru", icon: Zap, count: orders.filter(o => o.status === "pending" && (o.payment_status === 'paid' || o.payment_method === 'cash')).length },
           { id: "processing", label: "Aktif", icon: Timer, count: orders.filter(o => ["confirmed", "processing"].includes(o.status)).length },
           { id: "history", label: "Riwayat", icon: History, count: orders.filter(o => ["completed", "cancelled"].includes(o.status)).length }
         ].map(tab => (

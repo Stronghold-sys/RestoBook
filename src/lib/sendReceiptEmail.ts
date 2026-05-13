@@ -61,9 +61,6 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     }
 
     if (!targetEmail || !targetEmail.includes('@') || targetEmail === 'customer@restobook.com') {
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id, title: 'DEBUG Email', message: `No valid email found. Target: ${targetEmail}`, type: 'system'
-      });
       console.warn(`[sendReceiptEmail] No valid email for order ${orderId}`);
       return { success: false, error: 'No valid email' };
     }
@@ -107,9 +104,6 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     // 6. Send via Resend
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id, title: 'DEBUG Email', message: `RESEND_API_KEY not set in env.`, type: 'system'
-      });
       console.error('[sendReceiptEmail] RESEND_API_KEY not set');
       return { success: false, error: 'Email service not configured' };
     }
@@ -178,29 +172,14 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     const { data: emailResult, error: emailError } = await resend.emails.send(emailPayload);
 
     if (emailError) {
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id, title: 'DEBUG Email', message: `Resend Error: ${JSON.stringify(emailError)}`, type: 'system'
-      });
       console.error('[sendReceiptEmail] Resend error:', JSON.stringify(emailError));
       return { success: false, error: JSON.stringify(emailError) };
-    }
-
-    if (order.customer_id) {
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id,
-        title: 'Pembayaran Berhasil',
-        message: `Pembayaran pesanan #${orderId8} LUNAS. Kwitansi telah dikirim ke ${targetEmail}.`,
-        type: 'order'
-      });
     }
 
     console.log(`[sendReceiptEmail] SUCCESS → ${targetEmail} (id: ${emailResult?.id})`);
     return { success: true };
 
   } catch (err: any) {
-    await supabaseAdmin.from('notifications').insert({
-      user_id: null, title: 'DEBUG Email FATAL', message: `Fatal Error: ${err?.message || err}`, type: 'system'
-    });
     console.error('[sendReceiptEmail] FATAL:', err?.message || err);
     return { success: false, error: err?.message || 'Unknown error' };
   }

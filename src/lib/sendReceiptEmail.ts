@@ -103,72 +103,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     const orderId8 = order.id.substring(0, 8).toUpperCase();
     const orderDate = new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
 
-    // 5. Generate PDF
+    // 5. Generate PDF (DISABLED - Causes silent isolate crash on Cloudflare Edge)
     let pdfBase64 = '';
-    try {
-      const jsPDFModule = (await import('jspdf')) as any;
-      const JSPDFClass = jsPDFModule.default || jsPDFModule.jsPDF;
-      const doc = new JSPDFClass();
-      doc.setFontSize(20);
-      doc.text(restoName, 105, 20, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(restoAddr, 105, 28, { align: 'center' });
-      if (restoPhone) doc.text(`Tel: ${restoPhone}`, 105, 34, { align: 'center' });
-      
-      doc.setLineWidth(0.5);
-      doc.line(20, 40, 190, 40);
-      
-      doc.setFontSize(14);
-      doc.text('KWITANSI PEMBAYARAN', 105, 50, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`No. Pesanan: #${orderId8}`, 20, 65);
-      doc.text(`Tanggal: ${orderDate}`, 20, 72);
-      doc.text(`Pelanggan: ${targetName}`, 20, 79);
-      doc.text(`Tipe: ${order.order_type?.replace('_', ' ') || '-'}`, 20, 86);
-      doc.text(`Pembayaran: ${order.payment_method || '-'}`, 20, 93);
-      doc.text(`Status: LUNAS`, 20, 100);
-      
-      doc.line(20, 105, 190, 105);
-      
-      doc.text('Item', 20, 112);
-      doc.text('Qty', 100, 112);
-      doc.text('Harga', 130, 112);
-      doc.text('Subtotal', 160, 112);
-      
-      doc.line(20, 115, 190, 115);
-      
-      let y = 122;
-      items.forEach((item: any) => {
-        const name = item.menu_items?.name || 'Item';
-        const qty = item.quantity;
-        const price = Number(item.price || item.menu_items?.price || 0);
-        const subtotal = Number(item.subtotal || price * qty);
-        
-        doc.text(name, 20, y);
-        doc.text(qty.toString(), 100, y);
-        doc.text(`Rp ${price.toLocaleString('id-ID')}`, 130, y);
-        doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, 160, y);
-        y += 7;
-      });
-      
-      doc.line(20, y + 5, 190, y + 5);
-      doc.setFontSize(12);
-      doc.text(`TOTAL: Rp ${totalAmount.toLocaleString('id-ID')}`, 160, y + 15, { align: 'left' });
-      
-      const pdfArrayBuffer = doc.output('arraybuffer');
-      // Convert ArrayBuffer to Base64 manually to ensure edge compatibility
-      let binary = '';
-      const bytes = new Uint8Array(pdfArrayBuffer);
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      pdfBase64 = btoa(binary);
-    } catch (pdfErr) {
-      console.error('[sendReceiptEmail] PDF generation error:', pdfErr);
-      // We will still send the email without PDF if it fails
-    }
-
+    
     // 6. Send via Resend
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
@@ -186,7 +123,7 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     ] : [];
 
     const { data: emailResult, error: emailError } = await resend.emails.send({
-      from: `${restoName} <noreply@restobookid.my.id>`,
+      from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
       subject: `Kwitansi Pembayaran Lunas - ${restoName} - #${orderId8}`,
       html: `

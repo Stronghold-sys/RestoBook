@@ -49,7 +49,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       }, (payload: any) => {
         // Only process online orders (delivery/takeaway)
         const order = payload.new;
-        if (!order || !['delivery', 'takeaway'].includes(order.order_type)) return;
+        if (!order || !['delivery', 'takeaway', 'dine_in'].includes(order.order_type)) return;
 
         // ALWAYS fetch the new count on any change (insert, update, delete)
         fetchOnlineOrderCount();
@@ -130,7 +130,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     const { count } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .in('order_type', ['delivery', 'takeaway'])
+      .in('order_type', ['delivery', 'takeaway', 'dine_in'])
       .eq('status', 'pending')
       .or('payment_status.eq.paid,payment_method.eq.cash');
     

@@ -46,9 +46,9 @@ export default function OnlineOrdersPage() {
         schema: 'public', 
         table: 'orders'
       }, (payload: any) => {
-        // Only refresh if it's an online order (delivery/takeaway)
+        // Only refresh if it's an online order (delivery/takeaway/dine_in)
         const order = payload.new || payload.old;
-        if (order && ['delivery', 'takeaway'].includes(order.order_type)) {
+        if (order && ['delivery', 'takeaway', 'dine_in'].includes(order.order_type)) {
           fetchOrders();
         }
       })
@@ -68,8 +68,8 @@ export default function OnlineOrdersPage() {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, profiles:profiles!orders_customer_id_fkey(full_name, email, phone), order_items(*, menu_items(*))')
-      .in('order_type', ['delivery', 'takeaway'])
+      .select('*, profiles:profiles!orders_customer_id_fkey(full_name, email, phone), order_items(*, menu_items(*)), tables(table_number)')
+      .in('order_type', ['delivery', 'takeaway', 'dine_in'])
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -316,8 +316,10 @@ export default function OnlineOrdersPage() {
                        <div className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase">
                           {order.order_type === 'delivery' ? (
                             <><Globe className="w-3 h-3 text-primary" /> Delivery Order</>
-                          ) : (
+                          ) : order.order_type === 'takeaway' ? (
                             <><Store className="w-3 h-3 text-blue-500" /> Takeaway Order</>
+                          ) : (
+                            <><UtensilsCrossed className="w-3 h-3 text-orange-500" /> Dine In (Meja {order.tables?.table_number || '?'})</>
                           )}
                        </div>
                        <ChevronRight className={`w-5 h-5 text-muted transition-transform ${selectedOrder?.id === order.id ? 'rotate-90 text-primary' : 'group-hover:translate-x-1'}`} />

@@ -39,51 +39,35 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     checkUser();
     fetchOnlineOrderCount();
     
-    // Real-time Listener untuk Pesanan Online Baru
+    // Real-time Listener untuk Pesanan Online Baru & Update Badge
     const channel = supabase
       .channel('sidebar-online-orders')
       .on('postgres_changes', { 
-        event: 'INSERT', 
+        event: '*', 
         schema: 'public', 
         table: 'orders',
         filter: "order_type=in.(delivery,takeaway)" 
       }, (payload) => {
-        // Hanya notif jika (Lunas) ATAU (Tunai)
-        // Hanya notif jika (Lunas) ATAU (Tunai) DAN Role sesuai
-        const isActionable = payload.new.status === 'pending' && (payload.new.payment_status === 'paid' || payload.new.payment_method === 'cash');
-        
-        // PENTING: Cek role agar tidak muncul di pelanggan
-        if (isActionable) {
-          fetchOnlineOrderCount();
-          // Cek path atau state untuk memastikan ini staff
-          if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
-            playNotifSound();
-            toast.success("Ada pesanan online baru masuk!", {
-              icon: '🔔',
-              duration: 8000,
-              position: 'top-right'
-            });
+        // ALWAYS fetch the new count on any change (insert, update, delete)
+        fetchOnlineOrderCount();
+
+        if (payload.eventType === 'INSERT') {
+          const isActionable = payload.new.status === 'pending' && (payload.new.payment_status === 'paid' || payload.new.payment_method === 'cash');
+          if (isActionable) {
+            if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+              playNotifSound();
+              toast.success("Ada pesanan online baru masuk!", { icon: '🔔', duration: 8000, position: 'top-right' });
+            }
           }
-        }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: "order_type=in.(delivery,takeaway)"
-      }, (payload) => {
-        // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
-        // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
-        const becamePaid = payload.new.status === 'pending' && payload.new.payment_status === 'paid';
-        if (becamePaid) {
-          fetchOnlineOrderCount();
-          if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
-            playNotifSound();
-            toast.success("Pesanan Online Baru (Lunas)!", { 
-              icon: '💰',
-              duration: 8000,
-              position: 'top-right'
-            });
+        } else if (payload.eventType === 'UPDATE') {
+          // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
+          const becamePaid = payload.new.status === 'pending' && payload.new.payment_status === 'paid';
+          if (becamePaid) {
+            if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+              playNotifSound();
+              // Prevent spam by checking if we really need to alert (usually we do if it just paid)
+              toast.success("Pesanan Online Baru (Lunas)!", { icon: '💰', duration: 8000, position: 'top-right' });
+            }
           }
         }
       })
@@ -94,22 +78,49 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     };
   }, []);
 
+  const playFallbackBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          gain.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        }, i * 300);
+      }
+    } catch (e) {}
+  };
+
   const playNotifSound = () => {
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.log("Audio blocked"));
+      audioRef.current.play().catch(() => {
+        // Fallback to synthetic beep if audio file is blocked or 404
+        playFallbackBeep();
+      });
       
-      // Ulangi suara selama 8 detik (Shopee style)
+      // Ulangi suara
       let count = 0;
       const interval = setInterval(() => {
-        if (audioRef.current && count < 3) { // Mainkan 4 kali total (~8-10 detik)
+        if (audioRef.current && count < 2) { 
           audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(e => {});
+          audioRef.current.play().catch(() => playFallbackBeep());
           count++;
         } else {
           clearInterval(interval);
         }
       }, 2500);
+    } else {
+      playFallbackBeep();
     }
   };
 

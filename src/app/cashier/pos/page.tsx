@@ -939,17 +939,31 @@ export default function POSPage() {
                     </div>
                   </div>
                   
-                  {foundOrder.payment_status === "unpaid" && foundOrder.payment_method === "cash" && foundOrder.status !== "completed" ? (
-                    <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
-                      <span className="font-bold text-red-500 block mb-0.5">Pesanan Belum Dibayar!</span>
-                      Pesanan ini dikonfigurasi menggunakan metode pembayaran TUNAI. Anda dapat meneruskan pesanan ini ke POS Kasir untuk memproses pembayarannya (Metode pembayaran dapat diubah di POS jika pelanggan berubah pikiran).
-                    </div>
-                  ) : (foundOrder.payment_status === "paid" || foundOrder.payment_method !== "cash") && foundOrder.status !== "completed" ? (
-                    <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
-                      <span className="font-bold text-green-600 block mb-0.5">Pesanan Sudah Dibayar via Online!</span>
-                      Pesanan ini telah dibayar lunas melalui metode pembayaran NON TUNAI (Online). Anda tidak perlu (dan tidak dapat) memuat ulang pesanan ini ke POS Kasir untuk proses pembayaran lagi. Silakan proses pesanan lewat menu Pesanan Online di sidebar.
-                    </div>
-                  ) : null}
+                  {foundOrder.payment_status === "unpaid" ? (
+                    foundOrder.payment_method === "cash" ? (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                        <span className="font-bold text-red-500 block mb-0.5">Pesanan Belum Dibayar!</span>
+                        Pesanan ini dikonfigurasi menggunakan metode pembayaran TUNAI. Anda dapat meneruskan pesanan ini ke POS Kasir untuk memproses pembayarannya (Metode pembayaran dapat diubah di POS jika pelanggan berubah pikiran).
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                        <span className="font-bold text-amber-500 block mb-0.5">Menunggu Pembayaran Online!</span>
+                        Pesanan ini menggunakan metode NON TUNAI. Pelanggan belum menyelesaikan pembayaran melalui aplikasi/gateway Duitku. Mohon tunggu hingga status berubah menjadi LUNAS.
+                      </div>
+                    )
+                  ) : (
+                    foundOrder.payment_method === "cash" ? (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                        <span className="font-bold text-green-600 block mb-0.5">Pesanan Lunas (Tunai Kasir)!</span>
+                        Pesanan ini telah dibayar lunas secara TUNAI melalui Kasir. Anda tidak perlu memuat ulang pesanan ini ke POS lagi. Silakan proses pesanan melalui menu Pesanan Online di sidebar.
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                        <span className="font-bold text-green-600 block mb-0.5">Pesanan Lunas (Online/Non-Tunai)!</span>
+                        Pesanan ini telah dibayar lunas melalui metode pembayaran NON TUNAI (Online). Anda tidak perlu (dan tidak dapat) memuat ulang pesanan ini ke POS Kasir untuk proses pembayaran lagi.
+                      </div>
+                    )
+                  )}
 
                   <div className="flex gap-2 mt-auto">
                     {foundOrder.payment_status === "unpaid" && foundOrder.payment_method === "cash" && foundOrder.status !== "completed" && (

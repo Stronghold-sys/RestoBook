@@ -63,7 +63,7 @@ export default function OnlineOrdersPage() {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, profiles(full_name, email, phone), order_items(*, menu_items(*))')
+      .select('*, profiles:profiles!orders_customer_id_fkey(full_name, email, phone), order_items(*, menu_items(*))')
       .in('order_type', ['delivery', 'takeaway'])
       .order('created_at', { ascending: false });
 

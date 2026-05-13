@@ -117,18 +117,24 @@ export default function OnlineOrdersPage() {
     const win = window.open("", "_blank", "width=450,height=700");
     if (!win) return;
     
-    // Gunakan gaya yang konsisten dengan komponen Receipt
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(s => s.outerHTML)
+      .join('');
+
     win.document.write(`
       <html>
         <head>
           <title>Cetak Kwitansi</title>
+          ${styles}
         </head>
         <body style="margin:0; padding:0;">
           ${el.outerHTML}
           <script>
             window.onload = function() {
-              window.print();
-              window.onafterprint = function() { window.close(); };
+              setTimeout(() => {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+              }, 500);
             };
           </script>
         </body>

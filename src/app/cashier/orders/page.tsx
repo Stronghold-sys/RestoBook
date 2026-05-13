@@ -349,7 +349,7 @@ export default function CashierOrders() {
                           <span title="Pesanan tertunda > 15 menit" className="ml-2 inline-flex items-center justify-center w-5 h-5 bg-red-100 text-red-600 rounded-full animate-pulse">!</span>
                         )}
                       </td>
-                      <td className="p-6 text-sm text-muted">{format(new Date(order.created_at), "HH:mm")}</td>
+                      <td className="p-6 text-sm text-muted">{new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB</td>
                       <td className="p-6">
                         <p className="text-sm font-bold text-text-light dark:text-text-dark">{getCustomerName(order)}</p>
                         <p className="text-[10px] text-muted font-black uppercase mt-1 flex items-center gap-1.5">
@@ -410,7 +410,7 @@ export default function CashierOrders() {
                     <h3 className="font-black text-2xl text-text-light dark:text-text-dark">No. Pesanan {selectedOrder.id.split("-")[0]}</h3>
                     <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase ${selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder.status}</span>
                   </div>
-                  <p className="text-sm text-muted mt-1">{format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm")}</p>
+                  <p className="text-sm text-muted mt-1">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
                 </div>
                 <button onClick={() => setSelectedOrder(null)} title="Tutup" aria-label="Tutup" className="p-3 text-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-all"><X className="w-6 h-6" /></button>
               </div>

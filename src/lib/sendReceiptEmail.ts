@@ -96,7 +96,11 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
 
     const totalAmount = Number(order.total_amount);
     const orderId8 = order.id.substring(0, 8).toUpperCase();
-    const orderDate = new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+    const orderDate = new Date(order.created_at).toLocaleString('id-ID', { 
+      dateStyle: 'long', 
+      timeStyle: 'short',
+      timeZone: 'Asia/Jakarta' 
+    }) + ' WIB';
 
     // 5. Generate PDF (DISABLED - Causes silent isolate crash on Cloudflare Edge)
     let pdfBase64 = '';

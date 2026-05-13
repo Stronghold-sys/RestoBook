@@ -57,7 +57,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         if (payload.eventType === 'INSERT') {
           const isActionable = order.status === 'pending' && (order.payment_status === 'paid' || order.payment_method === 'cash');
           if (isActionable) {
-            if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+            if (window.location.pathname.includes('/cashier')) {
               playNotifSound();
               toast.success("Ada pesanan online baru masuk!", { icon: '🔔', duration: 8000, position: 'top-right' });
             }
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
           const becamePaid = order.status === 'pending' && order.payment_status === 'paid' && payload.old?.payment_status !== 'paid';
           if (becamePaid) {
-            if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+            if (window.location.pathname.includes('/cashier')) {
               playNotifSound();
               toast.success("Pesanan Online Baru (Lunas)!", { icon: '💰', duration: 8000, position: 'top-right' });
             }

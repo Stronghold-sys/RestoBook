@@ -282,7 +282,7 @@ export default function OnlineOrdersPage() {
                           <div className="flex items-center gap-2 mt-1">
                             <Clock className="w-3 h-3 text-muted" />
                             <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
-                              {format(new Date(order.created_at), "HH:mm · dd MMM", { locale: localeId })}
+                              {new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB · {format(new Date(order.created_at), "dd MMM", { locale: localeId })}
                             </p>
                           </div>
                         </div>

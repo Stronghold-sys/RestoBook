@@ -82,7 +82,7 @@ export default function AdminOrdersPage() {
                   <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${statusColors[order.status]}`}>{statusTexts[order.status]}</span>
                   <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
                 </div>
-                <p className="text-sm text-muted">{order.profiles?.full_name || "Guest"} - {format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</p>
+                <p className="text-sm text-muted">{order.profiles?.full_name || "Guest"} - {new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-bold text-primary">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span>

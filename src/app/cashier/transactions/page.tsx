@@ -365,7 +365,7 @@ export default function CashierTransactionsPage() {
                       </span>
                     </td>
                     <td className="py-4 px-6 font-black text-primary text-base whitespace-nowrap">Rp {Number(order.total_amount).toLocaleString("id-ID")}</td>
-                    <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">{format(new Date(order.created_at), "dd MMM yyyy", { locale: localeId })}<br/><span className="text-xs">{format(new Date(order.created_at), "HH:mm")}</span></td>
+                    <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">{format(new Date(order.created_at), "dd MMM yyyy", { locale: localeId })}<br/><span className="text-xs">{new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB</span></td>
                     <td className="py-4 px-6">
                       <button 
                         onClick={() => setSelectedOrder(order)}
@@ -406,7 +406,7 @@ export default function CashierTransactionsPage() {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Waktu Transaksi</span>
-                    <span className="font-bold text-text-light dark:text-text-dark">{format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })}</span>
+                    <span className="font-bold text-text-light dark:text-text-dark">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Tipe</span>

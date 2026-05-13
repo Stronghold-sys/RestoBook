@@ -127,7 +127,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#666' }}>Tanggal:</span>
-          <span>{format(new Date(order.created_at || new Date()), "dd MMM yyyy, HH:mm", { locale: localeId })}</span>
+          <span>{new Date(order.created_at || new Date()).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</span>
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#666' }}>Pelanggan:</span>

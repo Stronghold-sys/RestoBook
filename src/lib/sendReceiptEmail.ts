@@ -122,7 +122,7 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
       },
     ] : [];
 
-    const { data: emailResult, error: emailError } = await resend.emails.send({
+    const emailPayload: any = {
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
       subject: `Kwitansi Pembayaran Lunas - ${restoName} - #${orderId8}`,
@@ -177,13 +177,31 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
             <p style="margin:0; font-size:11px; color:#aaa;">&copy; ${new Date().getFullYear()} ${restoName} &mdash; Powered by RestoBook</p>
           </div>
         </div>
-      `,
-      attachments: attachments,
-    });
+      `
+    };
+
+    if (attachments.length > 0) {
+      emailPayload.attachments = attachments;
+    }
+
+    const { data: emailResult, error: emailError } = await resend.emails.send(emailPayload);
 
     if (emailError) {
       console.error('[sendReceiptEmail] Resend error:', JSON.stringify(emailError));
       return { success: false, error: JSON.stringify(emailError) };
+    }
+
+    if (order.customer_id) {
+      try {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: order.customer_id,
+          title: 'Pembayaran Berhasil',
+          message: `Pembayaran pesanan #${orderId8} LUNAS. Kwitansi telah dikirim ke email Anda.`,
+          type: 'order'
+        });
+      } catch (notifErr) {
+        console.error('Failed to save notification:', notifErr);
+      }
     }
 
     console.log(`[sendReceiptEmail] SUCCESS → ${targetEmail} (id: ${emailResult?.id})`);

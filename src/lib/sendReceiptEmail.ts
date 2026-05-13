@@ -106,8 +106,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     // 5. Generate PDF
     let pdfBase64 = '';
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
+      const jsPDFModule = (await import('jspdf')) as any;
+      const JSPDFClass = jsPDFModule.default || jsPDFModule.jsPDF;
+      const doc = new JSPDFClass();
       doc.setFontSize(20);
       doc.text(restoName, 105, 20, { align: 'center' });
       doc.setFontSize(10);

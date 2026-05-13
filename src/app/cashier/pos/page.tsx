@@ -401,8 +401,9 @@ export default function POSPage() {
     
     setSearchingOrder(true);
     try {
-      const cleanSearchTerm = searchOrderNo.replace(/^#/, '').trim();
+      const cleanSearchTerm = searchOrderNo.replace(/^#/, '').trim().toLowerCase();
       
+      // We fetch multiple just in case of collisions, and pick the first one
       const { data, error } = await supabase.from("orders").select(`
         *, 
         profiles!orders_customer_id_fkey(full_name),
@@ -410,16 +411,17 @@ export default function POSPage() {
         order_items(quantity, price, notes, menu_items(*))
       `)
       .neq("status", "cancelled")
-      .ilike("id", `${cleanSearchTerm}%`)
+      .filter('id', 'ilike', `${cleanSearchTerm}%`)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
       
-      if (error || !data) throw new Error("Pesanan tidak ditemukan");
-      setFoundOrder(data);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Pesanan tidak ditemukan");
+      
+      setFoundOrder(data[0]);
       
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message || "Pesanan tidak ditemukan");
       setFoundOrder(null);
     } finally {
       setSearchingOrder(false);

@@ -31,9 +31,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   useEffect(() => {
     // Inisialisasi Audio Notifikasi
-    // Inisialisasi Audio Notifikasi (Suara Nyaring & Tegas)
-    audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+    // Inisialisasi Audio Notifikasi (Announcement Style)
+    audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
     audioRef.current.volume = 1.0;
+    audioRef.current.loop = false;
     
     checkUser();
     fetchOnlineOrderCount();
@@ -48,15 +49,21 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         filter: "order_type=in.(delivery,takeaway)" 
       }, (payload) => {
         // Hanya notif jika (Lunas) ATAU (Tunai)
+        // Hanya notif jika (Lunas) ATAU (Tunai) DAN Role sesuai
         const isActionable = payload.new.status === 'pending' && (payload.new.payment_status === 'paid' || payload.new.payment_method === 'cash');
+        
+        // PENTING: Cek role agar tidak muncul di pelanggan
         if (isActionable) {
-          playNotifSound();
-          toast.success("Ada pesanan online baru masuk!", {
-            icon: '🔔',
-            duration: 5000,
-            position: 'top-right'
-          });
           fetchOnlineOrderCount();
+          // Cek path atau state untuk memastikan ini staff
+          if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+            playNotifSound();
+            toast.success("Ada pesanan online baru masuk!", {
+              icon: '🔔',
+              duration: 8000,
+              position: 'top-right'
+            });
+          }
         }
       })
       .on('postgres_changes', {
@@ -66,16 +73,19 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         filter: "order_type=in.(delivery,takeaway)"
       }, (payload) => {
         // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
+        // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
         const becamePaid = payload.new.status === 'pending' && payload.new.payment_status === 'paid';
         if (becamePaid) {
-          playNotifSound();
-          toast.success("Pesanan Online Baru (Lunas)!", { 
-            icon: '💰',
-            duration: 5000,
-            position: 'top-right'
-          });
+          fetchOnlineOrderCount();
+          if (window.location.pathname.includes('/cashier') || window.location.pathname.includes('/admin')) {
+            playNotifSound();
+            toast.success("Pesanan Online Baru (Lunas)!", { 
+              icon: '💰',
+              duration: 8000,
+              position: 'top-right'
+            });
+          }
         }
-        fetchOnlineOrderCount();
       })
       .subscribe();
 
@@ -86,16 +96,20 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   const playNotifSound = () => {
     if (audioRef.current) {
-      // Mainkan suara dua kali agar lebih terdengar (Beep Beep)
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.log("Audio play blocked by browser"));
+      audioRef.current.play().catch(e => console.log("Audio blocked"));
       
-      setTimeout(() => {
-        if (audioRef.current) {
+      // Ulangi suara selama 8 detik (Shopee style)
+      let count = 0;
+      const interval = setInterval(() => {
+        if (audioRef.current && count < 3) { // Mainkan 4 kali total (~8-10 detik)
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(e => {});
+          count++;
+        } else {
+          clearInterval(interval);
         }
-      }, 1500);
+      }, 2500);
     }
   };
 

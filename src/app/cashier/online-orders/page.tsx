@@ -65,10 +65,14 @@ export default function OnlineOrdersPage() {
       .from('orders')
       .select('*, profiles(full_name, email, phone), order_items(*, menu_items(*))')
       .in('order_type', ['delivery', 'takeaway'])
-      .or('payment_status.eq.paid,payment_method.eq.cash') // Hanya yang sudah bayar atau tunai
       .order('created_at', { ascending: false });
 
-    if (!error) setOrders(data || []);
+    if (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Gagal mengambil data pesanan");
+    } else {
+      setOrders(data || []);
+    }
     setLoading(false);
   };
 
@@ -138,9 +142,14 @@ export default function OnlineOrdersPage() {
   };
 
   const filteredOrders = orders.filter(order => {
+    // Saring berdasarkan status pembayaran/metode (Sama dengan badge sidebar)
+    const isActionable = order.payment_status === 'paid' || order.payment_method === 'cash';
+    if (!isActionable && order.status === 'pending') return false;
+
+    const searchTerm = search.toLowerCase();
     const matchesSearch = 
-      order.id.toLowerCase().includes(search.toLowerCase()) ||
-      order.profiles?.full_name?.toLowerCase().includes(search.toLowerCase());
+      (order.id?.toLowerCase() || "").includes(searchTerm) ||
+      (order.profiles?.full_name?.toLowerCase() || "").includes(searchTerm);
     
     if (!matchesSearch) return false;
 

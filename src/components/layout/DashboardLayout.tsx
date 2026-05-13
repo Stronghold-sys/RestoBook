@@ -165,6 +165,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Refund", href: "/admin/refunds", icon: RotateCcw },
           { name: "Reviews", href: "/admin/reviews", icon: Star },
           { name: "Settings", href: "/admin/settings", icon: Settings },
+          { name: "Profil", href: "/admin/profile", icon: UserIcon },
         ];
       case "cashier":
         return [
@@ -182,6 +183,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Reservasi", href: "/cashier/reservations", icon: CalendarDays },
           { name: "Transaksi", href: "/cashier/transactions", icon: Receipt },
           { name: "Absensi", href: "/cashier/attendance", icon: ClipboardList },
+          { name: "Profil", href: "/cashier/profile", icon: UserIcon },
         ];
       case "customer":
         return [
@@ -192,6 +194,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
           { name: "Notifikasi", href: "/customer/notifications", icon: Bell },
+          { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];
       default:
         return [];

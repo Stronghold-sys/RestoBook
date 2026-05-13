@@ -56,7 +56,7 @@ export default function AdminRefundsPage() {
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name, phone)")
         .eq("status", "cancelled")
-        .eq("payment_method", "non_cash")
+        .neq("payment_method", "cash") // Menampilkan semua pesanan non-tunai (termasuk non_cash dan duitku)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;

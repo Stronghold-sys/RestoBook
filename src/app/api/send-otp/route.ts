@@ -27,7 +27,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    let { email, phone, type, method = 'email', name = 'Pelanggan' } = body;
+    let { email, phone, type, method = 'email', name } = body;
+
+    const extractNameFromEmail = (mail: string) => {
+      if (!mail || !mail.includes('@')) return 'Pelanggan';
+      return mail.split('@')[0].replace(/[^a-zA-Z]/g, ' ').trim()
+        .replace(/\b\w/g, c => c.toUpperCase()) || 'Pelanggan';
+    };
 
     // 2. Logic khusus forgot_password
     if (type === 'forgot_password') {
@@ -43,7 +49,9 @@ export async function POST(req: Request) {
 
       email = email || profile?.email;
       phone = phone || profile?.phone;
-      name = profile?.full_name || 'User';
+      name = profile?.full_name || extractNameFromEmail(email);
+    } else {
+      name = name || extractNameFromEmail(email);
     }
 
     if (!email && !phone) return NextResponse.json({ error: 'Email atau No. HP tidak ditemukan' }, { status: 400 });

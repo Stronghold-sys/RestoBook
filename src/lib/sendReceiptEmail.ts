@@ -116,6 +116,12 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
 
     const resend = new Resend(apiKey);
 
+    // Format payment method text
+    let displayPayment = 'NON TUNAI';
+    if (order.payment_method?.toLowerCase() === 'cash') {
+      displayPayment = 'TUNAI';
+    }
+
     const emailPayload: any = {
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
@@ -127,22 +133,19 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
             <p style="color:rgba(255,255,255,0.85); margin:5px 0 0; font-size:13px;">${restoAddr}</p>
             ${restoPhone ? `<p style="color:rgba(255,255,255,0.85); margin:3px 0 0; font-size:12px;">Tel: ${restoPhone}</p>` : ''}
           </div>
-
           <div style="padding:25px 20px; border:1px solid #f0f0f0; border-top:none;">
             <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:12px; text-align:center; margin-bottom:20px;">
-              <p style="margin:0; color:#2e7d32; font-weight:bold; font-size:16px;">✅ PEMBAYARAN LUNAS</p>
+              <p style="margin:0; color:#2e7d32; font-weight:bold; font-size:16px;">PEMBAYARAN LUNAS</p>
             </div>
-
             <p style="color:#333; font-size:14px;">Halo <strong>${targetName}</strong>,</p>
             <p style="color:#555; font-size:13px; line-height:1.6;">
               Terima kasih atas pesanan Anda di <strong>${restoName}</strong>. Berikut adalah kwitansi resmi Anda:
             </p>
-
             <table style="width:100%; margin:15px 0; font-size:13px; color:#444;">
               <tr><td style="padding:6px 0; font-weight:bold; width:45%;">No. Pesanan</td><td style="padding:6px 0;">#${orderId8}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tanggal</td><td style="padding:6px 0;">${orderDate}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tipe</td><td style="padding:6px 0; text-transform:capitalize;">${order.order_type?.replace('_', ' ') || '-'}</td></tr>
-              <tr><td style="padding:6px 0; font-weight:bold;">Pembayaran</td><td style="padding:6px 0; text-transform:uppercase;">${order.payment_method || '-'}</td></tr>
+              <tr><td style="padding:6px 0; font-weight:bold;">Pembayaran</td><td style="padding:6px 0; font-weight:bold;">${displayPayment}</td></tr>
             </table>
 
             <table style="width:100%; border-collapse:collapse; margin:15px 0; font-size:13px;">

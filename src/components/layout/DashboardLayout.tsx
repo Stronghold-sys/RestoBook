@@ -31,7 +31,9 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   useEffect(() => {
     // Inisialisasi Audio Notifikasi
+    // Inisialisasi Audio Notifikasi (Suara Nyaring & Tegas)
     audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+    audioRef.current.volume = 1.0;
     
     checkUser();
     fetchOnlineOrderCount();
@@ -61,8 +63,18 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         event: 'UPDATE',
         schema: 'public',
         table: 'orders',
-        filter: "order_type=eq.delivery"
-      }, () => {
+        filter: "order_type=in.(delivery,takeaway)"
+      }, (payload) => {
+        // Jika pesanan baru saja LUNAS (Paid) dan masih Pending
+        const becamePaid = payload.new.status === 'pending' && payload.new.payment_status === 'paid';
+        if (becamePaid) {
+          playNotifSound();
+          toast.success("Pesanan Online Baru (Lunas)!", { 
+            icon: '💰',
+            duration: 5000,
+            position: 'top-right'
+          });
+        }
         fetchOnlineOrderCount();
       })
       .subscribe();
@@ -74,7 +86,16 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   const playNotifSound = () => {
     if (audioRef.current) {
+      // Mainkan suara dua kali agar lebih terdengar (Beep Beep)
+      audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.log("Audio play blocked by browser"));
+      
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(e => {});
+        }
+      }, 1500);
     }
   };
 

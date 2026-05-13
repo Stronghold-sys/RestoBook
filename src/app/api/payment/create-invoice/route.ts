@@ -48,12 +48,12 @@ export async function POST(req: NextRequest) {
     const paymentAmount = Math.floor(order.total_amount);
     const merchantOrderId = order.id;
 
-    // Default Customer Detail Shell
+    // Default Customer Detail Shell (Remove placeholder email)
     let customerDetail = {
       firstName: 'Pelanggan',
       lastName: '',
-      email: 'customer@restobook.com',
-      phoneNumber: '081234567890'
+      email: '',
+      phoneNumber: ''
     };
 
     // 1. Prioritas Profil (Robust handle for array/object response structure)
@@ -217,12 +217,13 @@ export async function POST(req: NextRequest) {
       // KIRIM EMAIL INSTRUKSI PEMBAYARAN (NON-BLOCKING)
       try {
         const resendKey = process.env.RESEND_API_KEY;
-        if (resendKey && customerDetail.email) {
+        if (resendKey && customerDetail.email && customerDetail.email.includes('@')) {
           const resend = new Resend(resendKey);
+          const restoName = (order.restaurant_settings as any)?.name || 'RestoBook';
           await resend.emails.send({
             from: 'RestoBook <noreply@restobookid.my.id>',
             to: customerDetail.email,
-            subject: `💳 Instruksi Pembayaran Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()}`,
+            subject: `Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`,
             html: `
               <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
                 <h2 style="color:#f97316;">Menunggu Pembayaran</h2>

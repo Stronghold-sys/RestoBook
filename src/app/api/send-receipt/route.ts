@@ -35,18 +35,55 @@ export async function POST(req: Request) {
       throw new Error('Order not found');
     }
 
-    // 2. Get Profile explicitly to avoid join issues
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('email, full_name, user_id')
-      .eq('user_id', order.customer_id)
-      .single();
-    
-    const targetEmail = profile?.email;
-    if (!targetEmail) {
-      console.warn(`No email found for customer: ${order.customer_id}`);
-      return NextResponse.json({ success: true, message: 'No email found for this customer' });
+    // 2. SMART EMAIL RETRIEVAL
+    let targetEmail = '';
+    let targetName = 'Pelanggan';
+
+    // Try to get profile by customer_id (PK or UserID)
+    if (order.customer_id) {
+      // First try as Primary Key (id)
+      const { data: profById } = await supabaseAdmin
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', order.customer_id)
+        .maybeSingle();
+      
+      if (profById?.email) {
+        targetEmail = profById.email;
+        targetName = profById.full_name || targetName;
+      } else {
+        // Second try as User ID (auth UUID)
+        const { data: profByUserId } = await supabaseAdmin
+          .from('profiles')
+          .select('email, full_name')
+          .eq('user_id', order.customer_id)
+          .maybeSingle();
+        
+        if (profByUserId?.email) {
+          targetEmail = profByUserId.email;
+          targetName = profByUserId.full_name || targetName;
+        }
+      }
     }
+
+    // Fallback: Check Order Notes for [EMAIL:...] and [NAMA:...]
+    if (!targetEmail && order.notes) {
+      const emailMatch = order.notes.match(/\[EMAIL:\s*(.*?)\]/i);
+      if (emailMatch && emailMatch[1]) {
+        targetEmail = emailMatch[1].trim();
+      }
+      const nameMatch = order.notes.match(/\[NAMA:\s*(.*?)\]/i);
+      if (nameMatch && nameMatch[1]) {
+        targetName = nameMatch[1].trim();
+      }
+    }
+
+    if (!targetEmail || targetEmail === 'customer@restobook.com' || !targetEmail.includes('@')) {
+      console.warn(`No valid target email found for order: ${order.id}. Skipping email.`);
+      return NextResponse.json({ success: true, message: 'No valid email found for this customer' });
+    }
+
+    console.log(`Sending receipt to: ${targetEmail} (${targetName})`);
 
     // 3. Fetch Restaurant Settings
     const { data: settings } = await supabaseAdmin.from('restaurant_settings').select('*').single();
@@ -76,7 +113,7 @@ export async function POST(req: Request) {
     doc.setFontSize(8);
     doc.text(`ID: #${order.id.substring(0, 8).toUpperCase()}`, 5, 28);
     doc.text(`Tgl: ${new Date(order.created_at).toLocaleString('id-ID')}`, 5, 32);
-    doc.text(`Nama: ${profile?.full_name || 'Pelanggan'}`, 5, 36);
+    doc.text(`Nama: ${targetName}`, 5, 36);
     doc.text(`Tipe: ${order.order_type.toUpperCase()}`, 5, 40);
 
     doc.line(5, 44, 75, 44);
@@ -120,7 +157,7 @@ export async function POST(req: Request) {
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
-      subject: `Kwitansi Pesanan #${order.id.substring(0, 8).toUpperCase()} - ${settings?.name || 'RestoBook'}`,
+      subject: `Kwitansi Pembayaran Lunas - ${settings?.name || 'RestoBook'} - #${order.id.substring(0, 8).toUpperCase()}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #fdfdfd;">
           <div style="text-align: center; margin-bottom: 20px;">
@@ -130,7 +167,7 @@ export async function POST(req: Request) {
           
           <div style="background-color: #fff; padding: 20px; border-radius: 8px; border: 1px solid #f0f0f0;">
             <h2 style="color: #333; border-bottom: 2px solid #ff5722; padding-bottom: 10px;">Kwitansi Pembayaran Lunas</h2>
-            <p>Halo <strong>${profile?.full_name || 'Pelanggan'}</strong>,</p>
+            <p>Halo <strong>${targetName}</strong>,</p>
             <p>Terima kasih telah melakukan pemesanan di <strong>${settings?.name || 'RestoBook'}</strong>. Pembayaran Anda telah kami terima dengan detail sebagai berikut:</p>
             
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">

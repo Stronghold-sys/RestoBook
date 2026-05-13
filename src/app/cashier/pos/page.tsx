@@ -397,33 +397,21 @@ export default function POSPage() {
 
   // --- ONLINE ORDER SEARCH LOGIC ---
   const handleSearchOrder = async () => {
-    if (onlineSearchMode === "takeaway" && !searchOrderNo) return toast.error("Masukkan No. Pesanan");
-    if (onlineSearchMode === "dine_in" && !searchOrderNo && !searchTableNo) return toast.error("Masukkan No. Meja atau No. Pesanan");
+    if (!searchOrderNo) return toast.error("Masukkan No. Pesanan");
     
     setSearchingOrder(true);
     try {
-      let query = supabase.from("orders").select(`
+      const { data, error } = await supabase.from("orders").select(`
         *, 
         profiles!orders_customer_id_fkey(full_name),
         tables(table_number),
         order_items(quantity, price, notes, menu_items(*))
-      `).neq("status", "cancelled");
-
-      if (onlineSearchMode === "dine_in") {
-        query = query.eq("order_type", "dine_in");
-        if (searchOrderNo) query = query.ilike("id", `${searchOrderNo}%`);
-        if (searchTableNo) {
-          // Find table id first
-          const { data: table } = await supabase.from("tables").select("id").eq("table_number", searchTableNo).single();
-          if (table) query = query.eq("table_id", table.id);
-          else throw new Error("Meja tidak ditemukan");
-        }
-      } else {
-        query = query.eq("order_type", "takeaway").ilike("id", `${searchOrderNo}%`);
-      }
-
-      // Get latest matching order
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(1).single();
+      `)
+      .neq("status", "cancelled")
+      .ilike("id", `${searchOrderNo}%`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
       
       if (error || !data) throw new Error("Pesanan tidak ditemukan");
       setFoundOrder(data);
@@ -906,17 +894,10 @@ export default function POSPage() {
                   <h3 className="font-bold text-sm text-text-light dark:text-text-dark flex items-center gap-2">
                     <Search className="w-4 h-4 text-primary" /> Cari Pesanan Online
                   </h3>
-                  <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                    <button onClick={() => setOnlineSearchMode("dine_in")} className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${onlineSearchMode === "dine_in" ? "bg-white dark:bg-gray-700 shadow-sm text-text-light dark:text-text-dark" : "text-muted"}`}>Dine In</button>
-                    <button onClick={() => setOnlineSearchMode("takeaway")} className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${onlineSearchMode === "takeaway" ? "bg-white dark:bg-gray-700 shadow-sm text-text-light dark:text-text-dark" : "text-muted"}`}>Take Away</button>
-                  </div>
                 </div>
                 
                 <div className="flex gap-2">
-                  <input type="text" value={searchOrderNo} onChange={e => setSearchOrderNo(e.target.value)} placeholder="No. Pesanan (Opsional)" className="flex-1 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary" />
-                  {onlineSearchMode === "dine_in" && (
-                    <input type="text" value={searchTableNo} onChange={e => setSearchTableNo(e.target.value)} placeholder="No. Meja" className="w-24 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary" />
-                  )}
+                  <input type="text" value={searchOrderNo} onChange={e => setSearchOrderNo(e.target.value)} placeholder="No. Pesanan" className="flex-1 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary" />
                   <button onClick={handleSearchOrder} disabled={searchingOrder} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md shadow-primary/20 disabled:opacity-70">
                     {searchingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Cari
                   </button>
@@ -924,21 +905,38 @@ export default function POSPage() {
               </div>
 
               {foundOrder && (
-                <div className="flex-1 bg-primary/5 border border-primary/20 rounded-xl p-3 flex justify-between items-center">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-sm text-text-light dark:text-text-dark">{foundOrder.profiles?.full_name || "Guest"}</span>
-                      <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{foundOrder.order_type === "dine_in" ? `Meja ${foundOrder.tables?.table_number}` : "Take Away"}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted">
-                      <span>#{foundOrder.id.split("-")[0]}</span>
-                      <span>-</span>
-                      <span className={`font-bold uppercase ${foundOrder.payment_status === "paid" ? "text-green-600" : "text-red-500"}`}>{foundOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span>
-                      <span>-</span>
-                      <span className="font-bold uppercase text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[9px]">{foundOrder.status}</span>
+                <div className="flex-1 bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col justify-center">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-text-light dark:text-text-dark">
+                          {Array.isArray(foundOrder.profiles) ? foundOrder.profiles[0]?.full_name : foundOrder.profiles?.full_name || "Pelanggan"}
+                        </span>
+                        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{foundOrder.order_type === "dine_in" ? `Dine In (Meja ${foundOrder.tables?.table_number})` : foundOrder.order_type === "takeaway" ? "Take Away" : "Delivery"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted">
+                        <span>#{foundOrder.id.split("-")[0]}</span>
+                        <span>-</span>
+                        <span className={`font-bold uppercase ${foundOrder.payment_status === "paid" ? "text-green-600" : "text-red-500"}`}>{foundOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span>
+                        <span>-</span>
+                        <span className="font-bold uppercase text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[9px]">{foundOrder.status}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  
+                  {foundOrder.payment_status === "unpaid" && foundOrder.payment_method === "cash" && foundOrder.status !== "completed" ? (
+                    <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                      <span className="font-bold text-red-500 block mb-0.5">Pesanan Belum Dibayar!</span>
+                      Pesanan ini dikonfigurasi menggunakan metode pembayaran TUNAI. Anda dapat meneruskan pesanan ini ke POS Kasir untuk memproses pembayarannya (Metode pembayaran dapat diubah di POS jika pelanggan berubah pikiran).
+                    </div>
+                  ) : (foundOrder.payment_status === "paid" || foundOrder.payment_method !== "cash") && foundOrder.status !== "completed" ? (
+                    <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
+                      <span className="font-bold text-green-600 block mb-0.5">Pesanan Sudah Dibayar via Online!</span>
+                      Pesanan ini telah dibayar lunas melalui metode pembayaran NON TUNAI (Online). Anda tidak perlu (dan tidak dapat) memuat ulang pesanan ini ke POS Kasir untuk proses pembayaran lagi. Silakan proses pesanan lewat menu Pesanan Online di sidebar.
+                    </div>
+                  ) : null}
+
+                  <div className="flex gap-2 mt-auto">
                     {foundOrder.status === "pending" && (
                       <>
                         <button 
@@ -955,32 +953,35 @@ export default function POSPage() {
                               : "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
                           }`}
                         >
-                          Proses
+                          Terima & Proses
                         </button>
                         <button 
                           onClick={handleCancelOnlineOrder}
                           className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
                         >
-                          Batal
+                          Batal/Tolak
                         </button>
                       </>
                     )}
-                    <button 
-                      onClick={() => {
-                        if (!isRestaurantOpen(openingTime, closingTime)) {
-                          return toast.error("Tidak dapat memuat pesanan online ke kasir! Restoran sedang TUTUP.");
-                        }
-                        loadOrderToCart();
-                      }} 
-                      disabled={!isRestaurantOpen(openingTime, closingTime)}
-                      className={`border px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                        isRestaurantOpen(openingTime, closingTime)
-                          ? "bg-white dark:bg-gray-800 border-border-light dark:border-border-dark text-primary hover:border-primary"
-                          : "bg-gray-300 dark:bg-gray-800 border-transparent text-gray-500 cursor-not-allowed"
-                      }`}
-                    >
-                      Muat
-                    </button>
+                    
+                    {foundOrder.payment_status === "unpaid" && foundOrder.payment_method === "cash" && foundOrder.status !== "completed" && (
+                      <button 
+                        onClick={() => {
+                          if (!isRestaurantOpen(openingTime, closingTime)) {
+                            return toast.error("Tidak dapat memuat pesanan ke kasir! Restoran sedang TUTUP.");
+                          }
+                          loadOrderToCart();
+                        }} 
+                        disabled={!isRestaurantOpen(openingTime, closingTime)}
+                        className={`border px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex-1 ${
+                          isRestaurantOpen(openingTime, closingTime)
+                            ? "bg-white dark:bg-gray-800 border-border-light dark:border-border-dark text-primary hover:border-primary"
+                            : "bg-gray-300 dark:bg-gray-800 border-transparent text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        Teruskan Ke Kasir
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -563,10 +563,13 @@ export default function OrderTrackingPage() {
                 )
               ) : ["confirmed", "processing"].includes(order.status) ? (
                 <button 
-                  disabled
-                  className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 rounded-xl cursor-not-allowed border border-gray-200 dark:border-gray-700 opacity-70"
+                  onClick={() => toast.error("Mohon maaf, pesanan tidak dapat dibatalkan karena Chef kami sudah mulai menyiapkan hidangan Anda di dapur. Silakan hubungi staf jika ada kendala mendesak.", {
+                    icon: "👨‍🍳",
+                    duration: 4000
+                  })}
+                  className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-wider bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 transition-all active:scale-95 shadow-sm"
                 >
-                  <Lock className="w-4 h-4" /> Sedang Diproses (Tidak Bisa Dibatalkan)
+                  <Lock className="w-4 h-4 text-amber-500" /> Sedang Diproses (Tidak Bisa Dibatalkan)
                 </button>
               ) : null}
             </>

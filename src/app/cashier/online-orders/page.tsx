@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
   Globe, Check, X, AlertTriangle, Filter, 
   ArrowRight, MessageSquare, Timer, Zap, History,
-  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed, Mail
+  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed, Mail, RotateCcw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -202,6 +202,22 @@ export default function OnlineOrdersPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="pl-12 pr-4 py-3.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl focus:ring-2 focus:ring-primary outline-none w-full md:w-64 transition-all text-sm font-bold shadow-sm"
             />
+            <button 
+              onClick={async () => {
+                const t = toast.loading("Sinkronisasi Data...");
+                try {
+                  await fetch('/api/fix-rls');
+                  await fetchOrders();
+                  toast.success("Data berhasil disinkronkan!", { id: t });
+                } catch (e) {
+                  toast.error("Gagal sinkronisasi", { id: t });
+                }
+              }}
+              title="Sinkronkan Email & Database"
+              className="p-3.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-2xl transition-all flex items-center justify-center shrink-0"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -368,7 +384,14 @@ export default function OnlineOrdersPage() {
                         <div className="flex items-center gap-1.5 mt-2">
                           <Mail className="w-3.5 h-3.5 text-primary" />
                           <p className="text-[11px] text-muted font-bold tracking-tight">
-                            {selectedOrder.profiles?.email || 'Email tidak disinkron/tersedia'}
+                            {(() => {
+                              if (selectedOrder.profiles?.email) return selectedOrder.profiles.email;
+                              if (selectedOrder.notes) {
+                                const m = selectedOrder.notes.match(/\[EMAIL:\s*(.*?)\]/i);
+                                if (m?.[1]) return m[1].trim();
+                              }
+                              return 'Email tidak tersedia';
+                            })()}
                           </p>
                         </div>
                       </div>

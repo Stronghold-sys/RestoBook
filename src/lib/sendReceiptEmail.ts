@@ -27,15 +27,22 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     let targetName = 'Pelanggan';
 
     if (order.customer_id) {
+      // Prioritas 1: Ambil langsung dari Auth Supabase agar selalu update jika user ganti email
+      const { data: authData } = await supabaseAdmin.auth.admin.getUserById(order.customer_id);
+      if (authData?.user?.email) {
+        targetEmail = authData.user.email;
+      }
+
+      // Prioritas 2: Cek di profiles untuk mendapatkan full_name (dan email fallback)
       const { data: p1 } = await supabaseAdmin
         .from('profiles')
         .select('email, full_name')
         .eq('id', order.customer_id)
         .maybeSingle();
 
-      if (p1?.email) {
-        targetEmail = p1.email;
-        targetName = p1.full_name || targetName;
+      if (p1) {
+        if (!targetEmail && p1.email) targetEmail = p1.email;
+        if (p1.full_name) targetName = p1.full_name;
       } else {
         const { data: p2 } = await supabaseAdmin
           .from('profiles')
@@ -43,9 +50,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
           .eq('user_id', order.customer_id)
           .maybeSingle();
 
-        if (p2?.email) {
-          targetEmail = p2.email;
-          targetName = p2.full_name || targetName;
+        if (p2) {
+          if (!targetEmail && p2.email) targetEmail = p2.email;
+          if (p2.full_name) targetName = p2.full_name;
         }
       }
     }
@@ -96,7 +103,72 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     const orderId8 = order.id.substring(0, 8).toUpperCase();
     const orderDate = new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
 
-    // 5. Send via Resend
+    // 5. Generate PDF
+    let pdfBase64 = '';
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text(restoName, 105, 20, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(restoAddr, 105, 28, { align: 'center' });
+      if (restoPhone) doc.text(`Tel: ${restoPhone}`, 105, 34, { align: 'center' });
+      
+      doc.setLineWidth(0.5);
+      doc.line(20, 40, 190, 40);
+      
+      doc.setFontSize(14);
+      doc.text('KWITANSI PEMBAYARAN', 105, 50, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.text(`No. Pesanan: #${orderId8}`, 20, 65);
+      doc.text(`Tanggal: ${orderDate}`, 20, 72);
+      doc.text(`Pelanggan: ${targetName}`, 20, 79);
+      doc.text(`Tipe: ${order.order_type?.replace('_', ' ') || '-'}`, 20, 86);
+      doc.text(`Pembayaran: ${order.payment_method || '-'}`, 20, 93);
+      doc.text(`Status: LUNAS`, 20, 100);
+      
+      doc.line(20, 105, 190, 105);
+      
+      doc.text('Item', 20, 112);
+      doc.text('Qty', 100, 112);
+      doc.text('Harga', 130, 112);
+      doc.text('Subtotal', 160, 112);
+      
+      doc.line(20, 115, 190, 115);
+      
+      let y = 122;
+      items.forEach((item: any) => {
+        const name = item.menu_items?.name || 'Item';
+        const qty = item.quantity;
+        const price = Number(item.price || item.menu_items?.price || 0);
+        const subtotal = Number(item.subtotal || price * qty);
+        
+        doc.text(name, 20, y);
+        doc.text(qty.toString(), 100, y);
+        doc.text(`Rp ${price.toLocaleString('id-ID')}`, 130, y);
+        doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, 160, y);
+        y += 7;
+      });
+      
+      doc.line(20, y + 5, 190, y + 5);
+      doc.setFontSize(12);
+      doc.text(`TOTAL: Rp ${totalAmount.toLocaleString('id-ID')}`, 160, y + 15, { align: 'left' });
+      
+      const pdfArrayBuffer = doc.output('arraybuffer');
+      // Convert ArrayBuffer to Base64 manually to ensure edge compatibility
+      let binary = '';
+      const bytes = new Uint8Array(pdfArrayBuffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      pdfBase64 = btoa(binary);
+    } catch (pdfErr) {
+      console.error('[sendReceiptEmail] PDF generation error:', pdfErr);
+      // We will still send the email without PDF if it fails
+    }
+
+    // 6. Send via Resend
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error('[sendReceiptEmail] RESEND_API_KEY not set');
@@ -104,6 +176,13 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     }
 
     const resend = new Resend(apiKey);
+
+    const attachments = pdfBase64 ? [
+      {
+        filename: `Kwitansi_${orderId8}.pdf`,
+        content: pdfBase64,
+      },
+    ] : [];
 
     const { data: emailResult, error: emailError } = await resend.emails.send({
       from: `${restoName} <noreply@restobookid.my.id>`,
@@ -161,6 +240,7 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
           </div>
         </div>
       `,
+      attachments: attachments,
     });
 
     if (emailError) {

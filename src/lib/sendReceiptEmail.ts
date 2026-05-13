@@ -66,6 +66,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     }
 
     if (!targetEmail || !targetEmail.includes('@') || targetEmail === 'customer@restobook.com') {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id, title: 'DEBUG Email', message: `No valid email found. Target: ${targetEmail}`, type: 'system'
+      });
       console.warn(`[sendReceiptEmail] No valid email for order ${orderId}`);
       return { success: false, error: 'No valid email' };
     }
@@ -109,18 +112,14 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     // 6. Send via Resend
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id, title: 'DEBUG Email', message: `RESEND_API_KEY not set in env.`, type: 'system'
+      });
       console.error('[sendReceiptEmail] RESEND_API_KEY not set');
       return { success: false, error: 'Email service not configured' };
     }
 
     const resend = new Resend(apiKey);
-
-    const attachments = pdfBase64 ? [
-      {
-        filename: `Kwitansi_${orderId8}.pdf`,
-        content: pdfBase64,
-      },
-    ] : [];
 
     const emailPayload: any = {
       from: 'RestoBook <noreply@restobookid.my.id>',
@@ -167,12 +166,10 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
               <span style="font-size:14px; color:#333;">TOTAL: </span>
               <span style="font-size:22px; font-weight:bold; color:#ff5722;">Rp ${totalAmount.toLocaleString('id-ID')}</span>
             </div>
-
             <p style="font-size:12px; color:#888; margin-top:20px; line-height:1.5;">
               Kwitansi ini dikirim secara otomatis setelah pembayaran dikonfirmasi. Simpan email ini sebagai bukti pembayaran resmi Anda.
             </p>
           </div>
-
           <div style="background:#fafafa; padding:15px 20px; text-align:center; border-radius:0 0 12px 12px; border:1px solid #f0f0f0; border-top:none;">
             <p style="margin:0; font-size:11px; color:#aaa;">&copy; ${new Date().getFullYear()} ${restoName} &mdash; Powered by RestoBook</p>
           </div>
@@ -180,34 +177,32 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
       `
     };
 
-    if (attachments.length > 0) {
-      emailPayload.attachments = attachments;
-    }
-
     const { data: emailResult, error: emailError } = await resend.emails.send(emailPayload);
 
     if (emailError) {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id, title: 'DEBUG Email', message: `Resend Error: ${JSON.stringify(emailError)}`, type: 'system'
+      });
       console.error('[sendReceiptEmail] Resend error:', JSON.stringify(emailError));
       return { success: false, error: JSON.stringify(emailError) };
     }
 
     if (order.customer_id) {
-      try {
-        await supabaseAdmin.from('notifications').insert({
-          user_id: order.customer_id,
-          title: 'Pembayaran Berhasil',
-          message: `Pembayaran pesanan #${orderId8} LUNAS. Kwitansi telah dikirim ke email Anda.`,
-          type: 'order'
-        });
-      } catch (notifErr) {
-        console.error('Failed to save notification:', notifErr);
-      }
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id,
+        title: 'Pembayaran Berhasil',
+        message: `Pembayaran pesanan #${orderId8} LUNAS. Kwitansi telah dikirim ke ${targetEmail}.`,
+        type: 'order'
+      });
     }
 
     console.log(`[sendReceiptEmail] SUCCESS → ${targetEmail} (id: ${emailResult?.id})`);
     return { success: true };
 
   } catch (err: any) {
+    await supabaseAdmin.from('notifications').insert({
+      user_id: null, title: 'DEBUG Email FATAL', message: `Fatal Error: ${err?.message || err}`, type: 'system'
+    });
     console.error('[sendReceiptEmail] FATAL:', err?.message || err);
     return { success: false, error: err?.message || 'Unknown error' };
   }

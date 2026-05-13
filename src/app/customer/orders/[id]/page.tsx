@@ -291,7 +291,8 @@ export default function OrderTrackingPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pending": return "Menunggu";
-      case "confirmed": return "Diproses";
+      case "confirmed":
+      case "processing": return "Diproses";
       case "completed": return "Selesai";
       case "cancelled": return "Dibatalkan";
       default: return status;
@@ -301,7 +302,8 @@ export default function OrderTrackingPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 border-amber-200 dark:border-amber-800";
-      case "confirmed": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-500 border-orange-200 dark:border-orange-800";
+      case "confirmed":
+      case "processing": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-500 border-orange-200 dark:border-orange-800";
       case "completed": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500 border-green-200 dark:border-green-800";
       case "cancelled": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-500 border-red-200 dark:border-red-800";
       default: return "bg-gray-100 text-gray-700 border-gray-200";
@@ -313,7 +315,8 @@ export default function OrderTrackingPage() {
     { id: "confirmed", label: "Diproses", icon: ChefHat },
     { id: "completed", label: "Selesai", icon: PackageCheck },
   ];
-  const currentIdx = steps.findIndex(s => s.id === order.status);
+  const normalizedStatus = order.status === "processing" ? "confirmed" : order.status;
+  const currentIdx = steps.findIndex(s => s.id === normalizedStatus);
   const isPaid = order.payment_status === "paid";
   const isCancelled = order.status === "cancelled";
   const canCancel = order.status === "pending";

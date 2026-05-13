@@ -92,7 +92,12 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         <div className="flex items-center justify-center gap-2 mb-2">
           <Utensils className="w-8 h-8 text-orange-500" />
         </div>
-        <h1 className="text-2xl font-extrabold tracking-wider text-primary receipt-brand-name">{settings?.name || "RestoBook"}</h1>
+        <h1 
+          className="text-2xl font-extrabold tracking-wider receipt-brand-name"
+          style={{ color: '#ff5722' }}
+        >
+          {settings?.name || "RestoBook"}
+        </h1>
         <p className="text-xs text-gray-600 font-bold mt-2">{settings?.address || "Alamat belum diatur"}</p>
         <p className="text-xs text-gray-600 font-bold">Tel: {settings?.phone || "-"}</p>
       </div>

@@ -56,7 +56,6 @@ export async function POST(req: Request) {
     doc.text(settings?.address || 'Restaurant Address', 40, 15, { align: 'center' });
     doc.text(`Tel: ${settings?.phone || '-'}`, 40, 18, { align: 'center' });
     
-    doc.setLineDash([1, 1], 0);
     doc.line(5, 22, 75, 22);
 
     // Info

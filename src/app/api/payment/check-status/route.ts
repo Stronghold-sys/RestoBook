@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
 
 export const runtime = 'edge';
 
@@ -68,7 +69,24 @@ export async function POST(req: Request) {
         await supabaseAdmin.from('orders').update({ payment_status: 'paid' }).eq('id', cleanId);
       }
 
+      // Send receipt email to customer
+      const finalOrderId = orderId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0] || orderId;
+      try {
+        await sendReceiptEmail(finalOrderId);
+      } catch (e) { console.error('Receipt email error (check-status):', e); }
+
       return NextResponse.json({ status: 'paid', reference: result.reference });
+    }
+
+    // Also check our own DB - maybe callback already updated it
+    const { data: dbOrder } = await supabaseAdmin
+      .from('orders')
+      .select('payment_status')
+      .eq('id', orderId)
+      .single();
+
+    if (dbOrder?.payment_status === 'paid') {
+      return NextResponse.json({ status: 'paid' });
     }
 
     return NextResponse.json({ status: result.statusMessage || 'pending', raw: result });

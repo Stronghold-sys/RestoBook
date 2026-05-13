@@ -151,10 +151,20 @@ export async function POST(req: NextRequest) {
           message: `Pembayaran untuk pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
           type: 'order'
         });
-      }
-      
-      if (body.tableId && pStatus === 'paid') {
-        await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
+
+        if (body.tableId) {
+          await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
+        }
+
+        // Trigger Automatic Receipt Email (PDF)
+        try {
+          const origin = req.url ? new URL(req.url).origin : '';
+          await fetch(`${origin}/api/send-receipt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderId })
+          });
+        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
       }
 
       return NextResponse.json({ success: true, message: 'Payment processed' });
@@ -181,6 +191,16 @@ export async function POST(req: NextRequest) {
           message: `Pembayaran untuk pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas.`,
           type: 'order'
         });
+
+        // Trigger Automatic Receipt Email (PDF)
+        try {
+          const origin = req.url ? new URL(req.url).origin : '';
+          await fetch(`${origin}/api/send-receipt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderId })
+          });
+        } catch (e) { console.error("Email Receipt Trigger Error:", e); }
       }
 
       return NextResponse.json({ success: true, message: 'Status pembayaran diperbarui' });

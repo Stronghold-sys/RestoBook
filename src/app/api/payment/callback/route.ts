@@ -62,39 +62,15 @@ export async function POST(req: Request) {
 
       console.log("Order successfully marked as PAID:", dbOrderId);
 
-      // 2. KIRIM EMAIL (Resend)
-      if (order) {
-        const resendKey = process.env.RESEND_API_KEY;
-        if (resendKey) {
-          const resend = new Resend(resendKey);
-          let customerEmail = order.profiles?.email;
-          if (!customerEmail && order.notes?.includes('[EMAIL:')) {
-            customerEmail = order.notes.split('[EMAIL:')[1]?.split(']')[0]?.trim();
-          }
-
-          if (customerEmail) {
-            const shortId = dbOrderId.substring(0, 8).toUpperCase();
-            
-            // Kwitansi PDF Sederhana
-            let pdfBase64 = null;
-            try {
-              const doc = new jsPDF();
-              doc.text(`KWITANSI PESANAN #${shortId}`, 20, 20);
-              doc.text(`Total: Rp ${Number(order.total_amount).toLocaleString('id-ID')}`, 20, 30);
-              const dataUri = doc.output('datauristring');
-              pdfBase64 = dataUri.split(',')[1];
-            } catch (e) {}
-
-            await resend.emails.send({
-              from: 'RestoBook <noreply@restobookid.my.id>',
-              to: customerEmail,
-              subject: `✅ Pembayaran Berhasil - #${shortId}`,
-              html: `<p>Pembayaran Anda untuk pesanan <b>#${shortId}</b> telah kami terima sebesar <b>Rp ${Number(order.total_amount).toLocaleString('id-ID')}</b>. Status Anda kini LUNAS.</p>`,
-              attachments: pdfBase64 ? [{ filename: `Receipt-${shortId}.pdf`, content: pdfBase64 }] : []
-            });
-          }
-        }
-      }
+      // 2. TRIGGER AUTOMATIC RECEIPT EMAIL (PDF)
+      try {
+        const origin = req.url ? new URL(req.url).origin : '';
+        await fetch(`${origin}/api/send-receipt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: dbOrderId })
+        });
+      } catch (e) { console.error("Email Receipt Trigger Error:", e); }
     }
 
     return new NextResponse('OK', { status: 200 });

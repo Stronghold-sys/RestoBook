@@ -53,10 +53,11 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
             size: 80mm auto;
           }
           body {
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
-            -webkit-print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .receipt-container {
             width: 80mm !important;
@@ -67,12 +68,16 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
             font-family: 'Courier New', Courier, monospace !important;
             color: black !important;
             display: block !important;
+            background: white !important;
+          }
+          .receipt-brand-name {
+            color: #ff5722 !important; /* Brand Color for Print */
           }
           .no-print {
             display: none !important;
           }
           * {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
           }
         }
         .receipt-font {
@@ -80,17 +85,17 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         }
       `}} />
       {/* Header */}
-        <div className="text-center mb-6 border-b-2 border-dashed border-gray-300 pb-6 relative">
-          {isKasirCopy && (
-            <div className="absolute top-0 right-0 font-black text-[10px] bg-gray-200 px-2 py-1 rounded">COPY KASIR</div>
-          )}
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Utensils className="w-8 h-8 text-orange-500" />
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-wider text-gray-900">{settings?.name || "RestoBook"}</h1>
-          <p className="text-xs text-gray-600 font-bold mt-2">{settings?.address || "Alamat belum diatur"}</p>
-          <p className="text-xs text-gray-600 font-bold">Tel: {settings?.phone || "-"}</p>
+      <div className="text-center mb-6 border-b-2 border-dashed border-gray-300 pb-6 relative">
+        {isKasirCopy && (
+          <div className="absolute top-0 right-0 font-black text-[10px] bg-gray-200 px-2 py-1 rounded">COPY KASIR</div>
+        )}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Utensils className="w-8 h-8 text-orange-500" />
         </div>
+        <h1 className="text-2xl font-extrabold tracking-wider text-primary receipt-brand-name">{settings?.name || "RestoBook"}</h1>
+        <p className="text-xs text-gray-600 font-bold mt-2">{settings?.address || "Alamat belum diatur"}</p>
+        <p className="text-xs text-gray-600 font-bold">Tel: {settings?.phone || "-"}</p>
+      </div>
 
         {/* Info */}
         <div className="mb-4 text-xs space-y-1.5 border-b border-dashed border-gray-300 pb-4">

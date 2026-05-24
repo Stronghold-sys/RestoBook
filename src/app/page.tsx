@@ -562,32 +562,8 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark py-12">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          <div>
-            <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-              <Utensils className="w-6 h-6 text-primary" />
-              <span className="text-xl font-bold text-text-light dark:text-text-dark">{resName}</span>
-            </div>
-            <p className="text-muted text-sm max-w-xs mx-auto md:mx-0">Sistem Pemesanan Restoran Modern dan Responsif.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-text-light dark:text-text-dark mb-4 text-lg">Kontak</h3>
-            <ul className="space-y-3 text-muted text-sm flex flex-col items-center md:items-start">
-              <li className="flex items-center gap-3"><MapPin className="w-4 h-4 text-primary" /> {resAddr}</li>
-              <li className="flex items-center gap-3"><Phone className="w-4 h-4 text-primary" /> {resPhone}</li>
-              {resEmail && <li className="flex items-center gap-3"><Mail className="w-4 h-4 text-primary" /> {resEmail}</li>}
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-semibold text-text-light dark:text-text-dark mb-4 text-lg">Jam Operasional</h3>
-            <ul className="space-y-3 text-muted text-sm flex flex-col items-center md:items-start">
-              <li className="flex items-center gap-3"><Clock className="w-4 h-4 text-primary" /> Senin - Jumat: 08:00 - 22:00</li>
-              <li className="flex items-center gap-3"><Clock className="w-4 h-4 text-primary" /> Sabtu - Minggu: 09:00 - 23:00</li>
-            </ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-border-light dark:border-border-dark text-center text-sm text-muted">
+      <footer className="bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-muted">
           &copy; {new Date().getFullYear()} RestoBook. All rights reserved.
         </div>
       </footer>

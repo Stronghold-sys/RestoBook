@@ -8,6 +8,9 @@ import { Resend } from 'resend';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+  const protocol = request.headers.get('x-forwarded-proto') || 'https';
+  const originUrl = host ? `${protocol}://${host}` : origin;
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/customer/dashboard';
 
@@ -114,7 +117,7 @@ export async function GET(request: Request) {
               }
             }
             
-            return NextResponse.redirect(`${origin}/customer/dashboard`);
+            return NextResponse.redirect(`${originUrl}/customer/dashboard`);
           } else {
             const role = profile.role || 'customer';
 
@@ -175,7 +178,7 @@ export async function GET(request: Request) {
               }
             }
 
-            return NextResponse.redirect(`${origin}/${role}/dashboard`);
+            return NextResponse.redirect(`${originUrl}/${role}/dashboard`);
           }
         }
       }
@@ -185,5 +188,5 @@ export async function GET(request: Request) {
   }
 
   // Return the user to an error page or home if something goes wrong
-  return NextResponse.redirect(`${origin}/login?error=OAuthCallbackError`);
+  return NextResponse.redirect(`${originUrl}/login?error=OAuthCallbackError`);
 }

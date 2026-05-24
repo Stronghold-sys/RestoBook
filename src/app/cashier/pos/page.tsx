@@ -17,6 +17,23 @@ export default function POSPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Modern Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    type: "danger" | "warning" | "success" | "info";
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Lanjutkan",
+    type: "info",
+    onConfirm: () => {},
+  });
   
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
@@ -511,33 +528,39 @@ export default function POSPage() {
     }
   };
 
-  const handleCancelOnlineOrder = async () => {
+  const handleCancelOnlineOrder = () => {
     if (!foundOrder) return;
-    const confirmCancel = window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?");
-    if (!confirmCancel) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Batalkan Pesanan",
+      message: "Apakah Anda yakin ingin membatalkan pesanan online ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Batalkan",
+      type: "danger",
+      onConfirm: async () => {
+        setSearchingOrder(true);
+        try {
+          const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              orderId: foundOrder.id, 
+              action: 'update_status', 
+              status: 'cancelled',
+              reason: 'Dibatalkan oleh Kasir POS'
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Gagal membatalkan pesanan");
 
-    setSearchingOrder(true);
-    try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          orderId: foundOrder.id, 
-          action: 'update_status', 
-          status: 'cancelled',
-          reason: 'Dibatalkan oleh Kasir POS'
-        }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Gagal membatalkan pesanan");
-
-      toast.success("Pesanan online berhasil dibatalkan.");
-      setFoundOrder(null);
-    } catch (e: any) {
-      toast.error("Gagal: " + e.message);
-    } finally {
-      setSearchingOrder(false);
-    }
+          toast.success("Pesanan online berhasil dibatalkan.");
+          setFoundOrder(null);
+        } catch (e: any) {
+          toast.error("Gagal: " + e.message);
+        } finally {
+          setSearchingOrder(false);
+        }
+      }
+    });
   };
 
   // --- PAYMENT LOGIC ---
@@ -1528,6 +1551,56 @@ export default function POSPage() {
               >
                 Tutup
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* GENERIC MODERN CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
+            >
+              <div className={`w-16 h-16 ${
+                confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : 
+                confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 
+                confirmModal.type === 'success' ? 'bg-green-500/10 text-green-500' :
+                'bg-primary/10 text-primary'
+              } rounded-2xl flex items-center justify-center mx-auto`}>
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))}
+                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={async () => {
+                    await confirmModal.onConfirm();
+                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                  }}
+                  className={`flex-1 py-3.5 ${
+                    confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 
+                    confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 
+                    confirmModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 
+                    'bg-primary hover:bg-primary/90'
+                  } text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

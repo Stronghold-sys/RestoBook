@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Eye, MessageSquare } from "lucide-react";
+import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Eye, MessageSquare, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -15,6 +15,27 @@ export default function AdminReservationsPage() {
 
   // Selected details modal
   const [selectedRes, setSelectedRes] = useState<any>(null);
+
+  // Modern Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    hasInput: boolean;
+    inputPlaceholder?: string;
+    confirmText: string;
+    type: "danger" | "warning" | "success" | "info";
+    onConfirm: (inputValue?: string) => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    hasInput: false,
+    confirmText: "Lanjutkan",
+    type: "info",
+    onConfirm: () => {},
+  });
+  const [confirmInput, setConfirmInput] = useState("");
 
   const supabase = createClient();
 
@@ -78,43 +99,53 @@ export default function AdminReservationsPage() {
     }
   };
 
-  const handleReject = async (res: any) => {
-    const reason = prompt("Masukkan alasan penolakan:");
-    if (reason === null) return; // cancelled
-    if (!reason.trim()) return toast.error("Alasan penolakan wajib diisi.");
+  const handleReject = (res: any) => {
+    setConfirmInput("");
+    setConfirmModal({
+      isOpen: true,
+      title: "Tolak Reservasi",
+      message: `Masukkan alasan penolakan untuk reservasi atas nama ${getParsedNotes(res.notes)?.atas_nama || res.profiles?.full_name || "Guest"}:`,
+      hasInput: true,
+      inputPlaceholder: "Alasan penolakan...",
+      confirmText: "Tolak",
+      type: "danger",
+      onConfirm: async (reason) => {
+        if (!reason || !reason.trim()) return;
+        const toastId = toast.loading("Menolak reservasi...");
+        try {
+          const parsedNotes = getParsedNotes(res.notes);
+          const tableIds = parsedNotes?.meja_ids || [res.table_id];
 
-    try {
-      const parsedNotes = getParsedNotes(res.notes);
-      const tableIds = parsedNotes?.meja_ids || [res.table_id];
+          const updatedNotes = parsedNotes
+            ? JSON.stringify({ ...parsedNotes, catatan_tolak: reason })
+            : `${res.notes || ""} (Ditolak: ${reason})`;
 
-      const updatedNotes = parsedNotes
-        ? JSON.stringify({ ...parsedNotes, catatan_tolak: reason })
-        : `${res.notes || ""} (Ditolak: ${reason})`;
+          // Update reservation status
+          const { error: resError } = await supabase.from("reservations").update({ status: "cancelled", notes: updatedNotes }).eq("id", res.id);
+          if (resError) throw resError;
 
-      // Update reservation status
-      const { error: resError } = await supabase.from("reservations").update({ status: "cancelled", notes: updatedNotes }).eq("id", res.id);
-      if (resError) throw resError;
+          // Set tables to available
+          if (tableIds && tableIds.length > 0) {
+            await supabase.from("tables").update({ status: "available" }).in("id", tableIds);
+          }
 
-      // Set tables to available
-      if (tableIds && tableIds.length > 0) {
-        await supabase.from("tables").update({ status: "available" }).in("id", tableIds);
+          // Add Notification
+          if (res.customer_id) {
+            await supabase.from("notifications").insert({
+              user_id: res.customer_id,
+              title: "Reservasi Ditolak",
+              message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy")} ditolak dengan alasan: ${reason}`,
+              type: "reservation"
+            });
+          }
+
+          toast.success("Reservasi telah ditolak.", { id: toastId });
+          fetchData();
+        } catch (e: any) {
+          toast.error(e.message, { id: toastId });
+        }
       }
-
-      // Add Notification
-      if (res.customer_id) {
-        await supabase.from("notifications").insert({
-          user_id: res.customer_id,
-          title: "Reservasi Ditolak",
-          message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy")} ditolak dengan alasan: ${reason}`,
-          type: "reservation"
-        });
-      }
-
-      toast.success("Reservasi telah ditolak.");
-      fetchData();
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+    });
   };
 
   const statusBadge: Record<string, string> = {
@@ -258,6 +289,65 @@ export default function AdminReservationsPage() {
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* GENERIC MODERN CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
+            >
+              <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+              </div>
+
+              {confirmModal.hasInput && (
+                <div className="mt-4">
+                  <textarea
+                    value={confirmInput}
+                    onChange={(e) => setConfirmInput(e.target.value)}
+                    placeholder={confirmModal.inputPlaceholder || "Masukkan catatan..."}
+                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none h-24"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => {
+                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                    setConfirmInput("");
+                  }}
+                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (confirmModal.hasInput && !confirmInput.trim()) {
+                      toast.error("Alasan penolakan wajib diisi.");
+                      return;
+                    }
+                    await confirmModal.onConfirm(confirmInput);
+                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                    setConfirmInput("");
+                  }}
+                  className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   );

@@ -6,42 +6,41 @@ export async function POST(request: Request) {
     try {
         const { history, systemPrompt, role } = await request.json();
 
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.MISTRAL_API_KEY;
         if (!apiKey) {
-            return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+            return NextResponse.json({ error: 'Mistral API key not configured' }, { status: 500 });
         }
 
-        // Map history roles from 'assistant' to 'model' for Gemini API format
-        const geminiHistory = history.map((msg: any) => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
-        }));
+        const mistralMessages = [
+            { role: 'system', content: systemPrompt },
+            ...history.map((msg: any) => ({
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: msg.content
+            }))
+        ];
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                contents: geminiHistory,
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                generationConfig: {
-                    maxOutputTokens: 1000,
-                    temperature: 0.7
-                }
+                model: 'mistral-tiny',
+                messages: mistralMessages,
+                max_tokens: 1000,
+                temperature: 0.7
             })
         });
 
         if (!response.ok) {
             const errText = await response.text();
-            console.error('Gemini API error:', errText);
+            console.error('Mistral API error:', errText);
             return NextResponse.json({ error: `API error: ${response.status}` }, { status: response.status });
         }
 
         const data = await response.json();
-        let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+        let reply = data.choices?.[0]?.message?.content || 'Maaf, terjadi kesalahan. Silakan coba lagi.';
 
         // Server-side sanitizer: strip all markdown formatting from Gemini response
         reply = reply

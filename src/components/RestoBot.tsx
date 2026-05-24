@@ -5,6 +5,22 @@ import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Bot, Minimize2 } from 'lucide-react';
 import { createClient } from "@/lib/supabase/client";
 
+const formatMessageContent = (content: string) => {
+  if (!content) return '';
+  return content
+    .replace(/\*{3,}/g, '')        // triple+ asterisks
+    .replace(/\*\*(.+?)\*\*/g, '$1') // **bold** → bold (keep inner text)
+    .replace(/\*(.+?)\*/g, '$1')   // *italic* → italic (keep inner text)
+    .replace(/__(.+?)__/g, '$1')   // __bold__ → bold
+    .replace(/_(.+?)_/g, '$1')     // _italic_ → italic
+    .replace(/`{1,3}[^`]*`{1,3}/g, (m) => m.replace(/`/g, '')) // strip backticks but keep text
+    .replace(/#{1,6}\s*/g, '')     // strip markdown headings
+    .replace(/^\s*[\*\-]\s+/gm, '• ') // list bullets → •
+    .replace(/\*/g, '')            // any remaining lone asterisks
+    .replace(/`/g, '')             // any remaining backticks
+    .trim();
+};
+
 const RESTOBOT_SYSTEM_PROMPTS = {
     home: `Kamu adalah RestoBot, asisten virtual RestoBook untuk halaman utama website.
 Tugasmu membantu pengunjung mendapatkan informasi tentang restoran.
@@ -520,10 +536,14 @@ export default function RestoBot() {
     }
 
     // Append strict plain-text formatting instructions
-    prompt += `\n\nATURAN FORMATTING RESPONS UTAMA (WAJIB DIPATUHI):
-1. JANGAN PERNAH gunakan format markdown asterisks ganda (**) untuk menebalkan kata atau teks dalam respons Anda.
-2. JANGAN PERNAH menampilkan tanda bintang ganda (****) atau (**) seperti **Makanan:** atau **Tutup**. Tulis semuanya dalam teks biasa tanpa pembungkus asterisks.
-3. Gunakan huruf kapital atau format teks biasa untuk memberikan penekanan jika diperlukan.`;
+    prompt += `\n\nATURAN FORMATTING RESPONS — WAJIB MUTLAK DIPATUHI TANPA PENGECUALIAN:
+1. DILARANG KERAS menggunakan tanda bintang (*) dalam bentuk apa pun: *, **, ***, baik untuk bold, italic, atau daftar.
+2. DILARANG KERAS menggunakan format markdown apa pun: tidak boleh ada **, *, _, __, #, ##, ###, atau backtick.
+3. Untuk daftar/list, gunakan tanda "- " (strip spasi) atau angka "1. " saja, BUKAN tanda bintang.
+4. Untuk penekanan kata, gunakan HURUF KAPITAL, bukan bold/italic.
+5. Contoh SALAH: "**Nasi Goreng** - Rp 25.000" atau "*Tutup*" atau "## Menu"
+6. Contoh BENAR: "NASI GORENG - Rp 25.000" atau "Tutup" atau "Menu Kami:"
+7. SETIAP tanda bintang (*) yang muncul dalam respons = PELANGGARAN BERAT. Hindari sepenuhnya.`;
 
     const localCtx = loadUserContext();
     const mergedUser = {
@@ -693,7 +713,7 @@ export default function RestoBot() {
                     msg.type === 'danger' ? 'bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 border-red-200/55 dark:border-red-900/30' :
                     'bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-400 border-blue-200/55 dark:border-blue-900/30'
                   }`}>
-                    {msg.content.replace(/\*\*/g, '')}
+                    {formatMessageContent(msg.content)}
                   </div>
                 ) : (
                   <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -702,7 +722,7 @@ export default function RestoBot() {
                         ? 'bg-primary text-white rounded-tr-sm border-primary shadow-primary/10' 
                         : 'bg-white dark:bg-card-dark border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-tl-sm'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content.replace(/\*\*/g, '')}</p>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessageContent(msg.content)}</p>
                     </div>
                   </div>
                 )}

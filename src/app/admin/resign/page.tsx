@@ -962,7 +962,7 @@ export default function AdminResignPage() {
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><ShieldAlert className="w-8 h-8" /></div>
                 <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">Pecat Karyawan?</h3>
-                <p className="text-sm text-muted mt-2">Anda akan memberhentikan secara sepihak akun kasir/karyawan **{selectedEmp.full_name}** dan menangguhkan aktivitasnya.</p>
+                <p className="text-sm text-muted mt-2">Anda akan memberhentikan secara sepihak akun kasir/karyawan <strong className="font-bold text-text-light dark:text-text-dark">{selectedEmp.full_name}</strong> dan menangguhkan aktivitasnya.</p>
               </div>
 
               <div className="space-y-4">

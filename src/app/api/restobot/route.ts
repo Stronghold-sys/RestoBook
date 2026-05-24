@@ -41,7 +41,19 @@ export async function POST(request: Request) {
         }
 
         const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+        let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+
+        // Server-side sanitizer: strip all markdown formatting from Gemini response
+        reply = reply
+            .replace(/\*{3,}/g, '')
+            .replace(/\*\*(.+?)\*\*/g, '$1')
+            .replace(/\*(.+?)\*/g, '$1')
+            .replace(/__(.+?)__/g, '$1')
+            .replace(/_(.+?)_/g, '$1')
+            .replace(/#{1,6}\s*/g, '')
+            .replace(/^\s*[\*]\s+/gm, '- ')
+            .replace(/\*/g, '')
+            .trim();
 
         return NextResponse.json({ reply });
     } catch (error) {

@@ -81,3 +81,46 @@ input[type=number] {
 .skeleton-badge      { height: 24px; width: 80px; border-radius: 20px; }
 .skeleton-table-row  { height: 48px; border-radius: 6px; }
 
+/* ── Penyesuaian Responsif Dinamis (DeviceDimensionManager) ── */
+
+/* Untuk semua perangkat mobile */
+.device-mobile .max-w-7xl,
+.device-mobile .max-w-6xl,
+.device-mobile .max-w-4xl,
+.device-mobile .max-w-3xl {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Membungkus tabel dengan scrolling horizontal agar tidak merusak tata letak di mobile */
+.device-mobile table,
+.device-tablet table {
+  display: block !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hindari teks keluar dari pembungkus kontainer di mobile */
+.device-mobile p, 
+.device-mobile span, 
+.device-mobile h1, 
+.device-mobile h2, 
+.device-mobile h3,
+.device-mobile a,
+.device-mobile button {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Penyesuaian safe area pada notch perangkat (iOS / iPhone) */
+.device-mobile header,
+.device-mobile footer,
+.device-mobile nav,
+.device-mobile .safe-area-inset {
+  padding-left: max(1rem, env(safe-area-inset-left)) !important;
+  padding-right: max(1rem, env(safe-area-inset-right)) !important;
+}
+

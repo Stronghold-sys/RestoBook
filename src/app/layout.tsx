@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -8,12 +8,21 @@ import RestoBot from "@/components/RestoBot";
 import ConnectionDetector from "@/components/ConnectionDetector";
 import SessionStatusListener from "@/components/SessionStatusListener";
 import ScrollToTop from "@/components/ScrollToTop";
+import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "RestoBook - Sistem Pemesanan Restoran",
   description: "Aplikasi pemesanan restoran modern dan responsif",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -29,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={inter.className}>
+        <DeviceDimensionManager />
         <DynamicFavicon />
         <ConnectionDetector />
         <SessionStatusListener />

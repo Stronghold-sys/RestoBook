@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { SkeletonOrderItem } from "@/components/Skeleton";
 
 interface Reservation {
   id: string;
@@ -157,7 +158,24 @@ export default function CustomerReservationsPage() {
     return map[s] || s;
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex justify-between items-center mb-8 animate-pulse">
+          <div className="space-y-2.5 w-64">
+            <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-3/4" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-1/2" />
+          </div>
+          <div className="h-11 bg-gray-250 dark:bg-gray-750 rounded-xl w-32" />
+        </div>
+        <div className="space-y-4">
+          <SkeletonOrderItem />
+          <SkeletonOrderItem />
+          <SkeletonOrderItem />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">

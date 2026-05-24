@@ -39,3 +39,45 @@ input[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ── Animasi shimmer untuk skeleton ── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── Base skeleton element ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+/* Dark mode support */
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 25%,
+    #334155 50%,
+    #1e293b 75%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-text       { height: 14px; border-radius: 4px; }
+.skeleton-text-lg    { height: 20px; border-radius: 4px; }
+.skeleton-title      { height: 28px; border-radius: 6px; }
+.skeleton-circle     { border-radius: 50%; }
+.skeleton-card       { height: 120px; border-radius: 12px; }
+.skeleton-image      { height: 200px; border-radius: 12px; }
+.skeleton-btn        { height: 40px; border-radius: 8px; }
+.skeleton-avatar     { width: 44px; height: 44px; border-radius: 50%; }
+.skeleton-badge      { height: 24px; width: 80px; border-radius: 20px; }
+.skeleton-table-row  { height: 48px; border-radius: 6px; }
+

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/store/useCartStore";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { SkeletonMenuCard } from "@/components/Skeleton";
 
 interface FavoriteItem {
   id: string;
@@ -56,7 +57,22 @@ export default function CustomerFavoritesPage() {
     toast.success(`${item.menu_items.name} ditambahkan ke keranjang`);
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="mb-8 animate-pulse">
+          <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-48 mb-2" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-64" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">

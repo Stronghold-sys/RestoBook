@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { SkeletonOrderItem } from "@/components/Skeleton";
 
 type TabType = "active" | "completed" | "cancelled";
 
@@ -92,7 +93,36 @@ export default function CustomerOrdersPage() {
     { id: "cancelled" as TabType, label: "Dibatalkan", count: cancelledOrders.length, color: "text-red-600", bgActive: "bg-red-500" },
   ];
 
-  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="mb-8 animate-pulse">
+          <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-48 mb-2" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-64" />
+        </div>
+        
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-3 gap-4 mb-8 animate-pulse">
+          <div className="bg-gray-250 dark:bg-gray-750 h-24 rounded-2xl" />
+          <div className="bg-gray-250 dark:bg-gray-750 h-24 rounded-2xl" />
+          <div className="bg-gray-250 dark:bg-gray-750 h-24 rounded-2xl" />
+        </div>
+
+        {/* Tab Buttons Skeleton */}
+        <div className="flex gap-2 mb-6 animate-pulse">
+          <div className="bg-gray-250 dark:bg-gray-750 w-24 h-10 rounded-full" />
+          <div className="bg-gray-250 dark:bg-gray-750 w-24 h-10 rounded-full" />
+          <div className="bg-gray-250 dark:bg-gray-750 w-24 h-10 rounded-full" />
+        </div>
+
+        <div className="space-y-4">
+          <SkeletonOrderItem />
+          <SkeletonOrderItem />
+          <SkeletonOrderItem />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">

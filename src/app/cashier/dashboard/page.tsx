@@ -732,8 +732,14 @@ export default function CashierDashboard() {
         body: JSON.stringify({ action: "mark_out", profileId: profile.id })
       });
       toast.success("Waktu penangguhan habis. Sesi Anda berakhir.", { duration: 5000 });
-      setTimeout(() => {
-         supabase.auth.signOut().then(() => window.location.href = "/login");
+      setTimeout(async () => {
+         try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+         } catch (e) {
+            console.error('API logout failed', e);
+         }
+         await supabase.auth.signOut();
+         window.location.href = "/login";
       }, 2000);
     } catch (e) { console.error(e); }
   };

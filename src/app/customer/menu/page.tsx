@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/store/useCartStore";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { SkeletonMenuCard } from "@/components/Skeleton";
 
 interface Category {
   id: string;
@@ -165,8 +166,25 @@ export default function CustomerMenuPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-pulse">
+          <div className="space-y-2.5 w-48">
+            <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-3/4" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-1/2" />
+          </div>
+          <div className="h-11 bg-gray-250 dark:bg-gray-750 rounded-full w-full md:w-72" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 animate-pulse">
+          <div className="w-28 h-10 bg-gray-250 dark:bg-gray-750 rounded-full flex-shrink-0" />
+          <div className="w-24 h-10 bg-gray-250 dark:bg-gray-750 rounded-full flex-shrink-0" />
+          <div className="w-32 h-10 bg-gray-250 dark:bg-gray-750 rounded-full flex-shrink-0" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+          <SkeletonMenuCard />
+        </div>
       </div>
     );
   }

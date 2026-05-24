@@ -157,8 +157,13 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   };
 
   const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('API logout failed', e);
+    }
     await supabase.auth.signOut();
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const getMenuLinks = () => {

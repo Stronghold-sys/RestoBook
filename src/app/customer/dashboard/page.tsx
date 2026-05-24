@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { SkeletonDashboard } from "@/components/Skeleton";
 
 export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,15 @@ export default function CustomerDashboard() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Dashboard</h1>
+          <p className="text-muted mt-1">Memuat ringkasan aktivitas Anda...</p>
+        </div>
+        <SkeletonDashboard />
+      </div>
+    );
   }
 
   return (

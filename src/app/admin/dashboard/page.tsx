@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { format, subDays, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { SkeletonDashboard } from "@/components/Skeleton";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -78,7 +79,17 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 pb-10">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-64 mb-2" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-96" />
+        </div>
+        <SkeletonDashboard />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-10">

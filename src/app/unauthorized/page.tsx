@@ -46,9 +46,13 @@ export default function UnauthorizedPage() {
           <button
             onClick={async () => {
               const supabase = createClient();
+              try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+              } catch (e) {
+                console.error('API logout failed', e);
+              }
               await supabase.auth.signOut();
-              router.push('/login');
-              router.refresh();
+              window.location.href = '/login';
             }}
             className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-muted py-3 px-4 rounded-xl font-medium transition-colors"
           >

@@ -184,6 +184,11 @@ export default function ProfileContent() {
       if (!response.ok) throw new Error(result.error || "Gagal menghapus akun");
 
       toast.success("Akun Anda berhasil dihapus sepenuhnya!");
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {
+        console.error('API logout failed', e);
+      }
       await supabase.auth.signOut();
       window.location.href = '/';
     } catch (e: any) {

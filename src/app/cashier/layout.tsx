@@ -138,7 +138,15 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
               : `Pengajuan ${lockdown.data.type} Anda telah disetujui Admin. Dashboard dikunci selama masa izin berlangsung.`}
           </p>
           <button 
-            onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+            onClick={async () => {
+              try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+              } catch (e) {
+                console.error('API logout failed', e);
+              }
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}
             className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl ${lockdown.type === 'blocked' ? 'bg-red-600 text-white' : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'}`}
           >
             Keluar dari Akun

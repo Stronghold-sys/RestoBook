@@ -230,6 +230,10 @@ export default function RestoBot() {
   const [settings, setSettings] = useState<any>(null);
   const [allMenuItems, setAllMenuItems] = useState<any[]>([]);
   const [dbTables, setDbTables] = useState<any[]>([]);
+  const [allStaff, setAllStaff] = useState<any[]>([]);
+  const [attendanceToday, setAttendanceToday] = useState<any[]>([]);
+  const [activeShifts, setActiveShifts] = useState<any[]>([]);
+  const [reportsSummary, setReportsSummary] = useState<any>(null);
 
   const loadUserContext = () => {
     try {
@@ -401,6 +405,64 @@ export default function RestoBot() {
               setReservations(todayRes);
               finalRes = todayRes;
             }
+
+            // --- FETCH STAFF FOR ADMIN ---
+            if (userProfile.role === 'admin') {
+              try {
+                const { data: staffData } = await supabase
+                  .from('profiles')
+                  .select('id, full_name, email, phone, role, is_active')
+                  .in('role', ['admin', 'cashier']);
+                if (staffData) setAllStaff(staffData);
+              } catch (e) {
+                console.error("Error fetching staff in RestoBot:", e);
+              }
+            }
+
+            // --- FETCH TODAY'S ATTENDANCE ---
+            try {
+              const { data: attData } = await supabase
+                .from('attendance')
+                .select('*, profiles(full_name)')
+                .gte('created_at', `${todayStr}T00:00:00Z`);
+              if (attData) setAttendanceToday(attData);
+            } catch (e) {
+              console.error("Error fetching attendance in RestoBot:", e);
+            }
+
+            // --- FETCH ACTIVE SHIFTS ---
+            try {
+              const { data: shiftData } = await supabase
+                .from('shifts')
+                .select('*, profiles(full_name)')
+                .eq('status', 'open');
+              if (shiftData) setActiveShifts(shiftData);
+            } catch (e) {
+              console.error("Error fetching shifts in RestoBot:", e);
+            }
+
+            // --- FETCH COMPLETED ORDERS FOR REVENUE SUMMARY ---
+            try {
+              const { data: completedOrders } = await supabase
+                .from('orders')
+                .select('total_amount, status, payment_method')
+                .eq('status', 'completed')
+                .gte('created_at', `${todayStr}T00:00:00Z`);
+              
+              if (completedOrders) {
+                const totalRevenue = completedOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+                const cashRevenue = completedOrders.filter(o => o.payment_method === 'cash').reduce((sum, order) => sum + Number(order.total_amount), 0);
+                const nonCashRevenue = completedOrders.filter(o => o.payment_method === 'non_cash').reduce((sum, order) => sum + Number(order.total_amount), 0);
+                setReportsSummary({
+                  today_completed_orders_count: completedOrders.length,
+                  today_total_revenue: totalRevenue,
+                  today_cash_revenue: cashRevenue,
+                  today_non_cash_revenue: nonCashRevenue
+                });
+              }
+            } catch (e) {
+              console.error("Error fetching completed orders stats in RestoBot:", e);
+            }
           } else {
             const { data: userRes } = await supabase
               .from('reservations')
@@ -428,10 +490,15 @@ export default function RestoBot() {
         setProfile(null);
         setReservations([]);
         setOrders([]);
+        setAllStaff([]);
+        setAttendanceToday([]);
+        setActiveShifts([]);
+        setReportsSummary(null);
       }
 
       // Merge with localStorage fallbacks
       const mergedUser = {
+        id: finalUser?.id || localCtx.user?.id || '',
         name: finalUser?.full_name || localCtx.user?.name || localCtx.user?.full_name || '',
         role: finalUser?.role || localCtx.user?.role || newRole,
         email: finalUser?.email || localCtx.user?.email || '',
@@ -535,6 +602,41 @@ export default function RestoBot() {
       prompt += `\n\nSTATUS MEJA MAKAN RESTORAN AKTUAL DARI DATABASE:\n${tablesText}`;
     }
 
+    // Inject Live Staff Data (for Admin/Cashier)
+    if ((role === 'admin' || role === 'cashier') && allStaff && allStaff.length > 0) {
+      const staffText = allStaff.map(s => `- ${s.full_name} (Email: ${s.email || '-'}, Phone: ${s.phone || '-'}, Role: ${s.role}, Status: ${s.is_active ? 'Aktif' : 'Nonaktif'}`).join('\n');
+      prompt += `\n\nDAFTAR KARYAWAN/STAF AKTUAL DARI DATABASE:\n${staffText}`;
+    }
+
+    // Inject Attendance Today (for Admin/Cashier)
+    if (role === 'admin' || role === 'cashier') {
+      if (attendanceToday && attendanceToday.length > 0) {
+        const attText = attendanceToday.map(a => `- ${a.profiles?.full_name || 'Karyawan'}: Tipe Kehadiran: ${a.type}, Status Approval: ${a.status}, Jam: ${new Date(a.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}${a.notes ? ` (Catatan: ${a.notes})` : ''}`).join('\n');
+        prompt += `\n\nDAFTAR KEHADIRAN KARYAWAN HARI INI DARI DATABASE:\n${attText}`;
+      } else {
+        prompt += `\n\nDAFTAR KEHADIRAN KARYAWAN HARI INI DARI DATABASE: Belum ada karyawan yang melakukan check-in hari ini.`;
+      }
+    }
+
+    // Inject Active Shifts (for Admin/Cashier)
+    if (role === 'admin' || role === 'cashier') {
+      if (activeShifts && activeShifts.length > 0) {
+        const shiftText = activeShifts.map(s => `- Shift ${s.profiles?.full_name || 'Kasir'}: Status: ${s.status}, Uang Awal: Rp ${Number(s.initial_cash).toLocaleString('id-ID')}, Mulai: ${new Date(s.start_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`).join('\n');
+        prompt += `\n\nSHIFT AKTIF SAAT INI DARI DATABASE:\n${shiftText}`;
+      } else {
+        prompt += `\n\nSHIFT AKTIF SAAT INI DARI DATABASE: Tidak ada shift kasir yang aktif saat ini.`;
+      }
+    }
+
+    // Inject Reports/Revenue Summary (for Admin/Cashier)
+    if ((role === 'admin' || role === 'cashier') && reportsSummary) {
+      prompt += `\n\nLAPORAN RINGKASAN PENJUALAN HARI INI DARI DATABASE:
+- Jumlah Transaksi Selesai (Completed): ${reportsSummary.today_completed_orders_count} pesanan
+- Total Pendapatan Hari Ini: Rp ${Number(reportsSummary.today_total_revenue).toLocaleString('id-ID')}
+- Pendapatan Tunai (Cash): Rp ${Number(reportsSummary.today_cash_revenue).toLocaleString('id-ID')}
+- Pendapatan Non-Tunai (Digital/Duitku): Rp ${Number(reportsSummary.today_non_cash_revenue).toLocaleString('id-ID')}`;
+    }
+
     // Append strict plain-text formatting instructions
     prompt += `\n\nATURAN FORMATTING RESPONS — WAJIB MUTLAK DIPATUHI TANPA PENGECUALIAN:
 1. DILARANG KERAS menggunakan tanda bintang (*) dalam bentuk apa pun: *, **, ***, baik untuk bold, italic, atau daftar.
@@ -547,6 +649,7 @@ export default function RestoBot() {
 
     const localCtx = loadUserContext();
     const mergedUser = {
+      id: profile?.id || localCtx.user?.id || '',
       name: profile?.full_name || localCtx.user?.name || localCtx.user?.full_name || '',
       role: profile?.role || localCtx.user?.role || role,
       email: profile?.email || localCtx.user?.email || '',

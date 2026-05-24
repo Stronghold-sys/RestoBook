@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -16,9 +16,68 @@ export default function LoginPage() {
   const [suspendedParam, setSuspendedParam] = useState<string | null>(null);
   const [profileIdParam, setProfileIdParam] = useState<string | null>(null);
   const [isReactivated, setIsReactivated] = useState(false);
+
+  const [suspendData, setSuspendData] = useState<any>(null);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [appealText, setAppealText] = useState("");
+  const [submittingAppeal, setSubmittingAppeal] = useState(false);
+  const [countdown, setCountdown] = useState<any>(null);
   
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (!suspendData || !suspendData.suspend_until) return;
+
+    const timer = setInterval(() => {
+      const until = new Date(suspendData.suspend_until).getTime();
+      const diff = until - Date.now();
+
+      if (diff <= 0) {
+        clearInterval(timer);
+        setCountdown(null);
+        toast.success("Masa penangguhan Anda telah berakhir! Silakan coba masuk kembali.", { duration: 6000 });
+        setShowSuspendModal(false);
+        setSuspendData(null);
+        
+        supabase.from('profiles').update({
+          status: 'active',
+          suspend_reason: null,
+          suspend_message: null,
+          suspended_at: null,
+          suspend_until: null,
+          suspend_type: null,
+          just_restored: true,
+          is_active: true
+        }).eq('id', suspendData.id).then();
+      } else {
+        const detik  = Math.floor(diff / 1000) % 60;
+        const menit  = Math.floor(diff / 60000) % 60;
+        const jam    = Math.floor(diff / 3600000) % 24;
+        const hari   = Math.floor(diff / 86400000) % 7;
+        const minggu = Math.floor(diff / 604800000) % 4;
+        const bulan  = Math.floor(diff / 2592000000) % 12;
+        const tahun  = Math.floor(diff / 31536000000);
+
+        setCountdown({ tahun, bulan, minggu, hari, jam, menit, detik });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [suspendData]);
+
+  const formatCountdown = (cd: any) => {
+    if (!cd) return '';
+    const parts = [];
+    if (cd.tahun > 0) parts.push(`${cd.tahun} tahun`);
+    if (cd.bulan > 0) parts.push(`${cd.bulan} bulan`);
+    if (cd.minggu > 0) parts.push(`${cd.minggu} minggu`);
+    if (cd.hari > 0) parts.push(`${cd.hari} hari`);
+    if (cd.jam > 0) parts.push(`${cd.jam} jam`);
+    if (cd.menit > 0) parts.push(`${cd.menit} menit`);
+    if (cd.detik > 0) parts.push(`${cd.detik} detik`);
+    return parts.join(' ');
+  };
 
   const handleGoogleLogin = async () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "19550365120-jprrkrregfjsi65o8ct1gnakvebln2g2.apps.googleusercontent.com";
@@ -161,29 +220,27 @@ export default function LoginPage() {
         return;
       }
 
-      // Ambil role dari profile
+      // Ambil detail profil lengkap
       if (data.user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, role, status_karyawan')
+          .select('id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at')
           .eq('user_id', data.user.id)
           .single();
 
         if (profileError) throw profileError;
 
-        const status = profile?.status_karyawan || 'aktif';
-
-        if (status === 'resign') {
+        // Pengecekan Karyawan Nonaktif (Resign / Dipecat)
+        const employeeStatus = profile?.status_karyawan || 'aktif';
+        if (employeeStatus === 'resign') {
           await supabase.auth.signOut();
-          // FORCE DYNAMIC REALTIME STATES: Mounts red box & activates live listener!
           setSuspendedParam('resign');
           if (profile?.id) setProfileIdParam(profile.id);
           toast.error("LOGIN DITANGGUHKAN: Status akun Anda tidak aktif di RestoBook.", { duration: 6000 });
           setLoading(false);
           return;
         }
-
-        if (status === 'dipecat') {
+        if (employeeStatus === 'dipecat') {
           await supabase.auth.signOut();
           setSuspendedParam('dipecat');
           if (profile?.id) setProfileIdParam(profile.id);
@@ -192,8 +249,76 @@ export default function LoginPage() {
           return;
         }
 
-        // --- LOGIKA PEMBERITAHUAN UNTUK AKUN YANG SEBELUMNYA DITANGGUHKAN ---
-        if (suspendedParam || profileIdParam || isReactivated) {
+        // Pengecekan Jadwal Suspen Otomatis
+        let userStatus = profile?.status || 'active';
+        if (userStatus === 'active' && profile?.scheduled_suspend_at && new Date() >= new Date(profile.scheduled_suspend_at)) {
+          const isPermanent = profile.suspend_type === 'permanent';
+          userStatus = isPermanent ? 'banned' : 'suspended';
+          
+          await supabase.from('profiles').update({
+            status: userStatus,
+            scheduled_suspend_at: null,
+            is_active: false
+          }).eq('id', profile.id);
+          
+          await supabase.from('suspend_logs').insert({
+            user_id: profile.id,
+            action: isPermanent ? 'banned' : 'suspended',
+            reason: profile.suspend_reason || 'Penangguhan terjadwal dimulai',
+            message: profile.suspend_message || 'Akun Anda telah ditangguhkan sesuai jadwal',
+            duration: isPermanent ? 'Permanen' : 'Terjadwal',
+            suspend_until: isPermanent ? null : profile.suspend_until,
+            acted_by: null
+          });
+
+          if (profile) {
+            profile.status = userStatus;
+            profile.scheduled_suspend_at = null;
+          }
+        }
+
+        // Pengecekan Suspen/Ban untuk Pengguna
+        if (userStatus === 'suspended') {
+          const now = new Date();
+          const suspendUntil = profile.suspend_until ? new Date(profile.suspend_until) : null;
+          const isExpired = suspendUntil && suspendUntil.getTime() <= now.getTime();
+
+          if (isExpired) {
+            // Auto-restore status
+            await supabase.from('profiles').update({
+              status: 'active',
+              suspend_reason: null,
+              suspend_message: null,
+              suspended_at: null,
+              suspend_until: null,
+              suspend_type: null,
+              just_restored: true,
+              is_active: true
+            }).eq('id', profile.id);
+          } else {
+            // Masih tersuspen
+            await supabase.auth.signOut();
+            setSuspendData(profile);
+            setShowSuspendModal(true);
+            setLoading(false);
+            return;
+          }
+        } else if (userStatus === 'banned') {
+          await supabase.auth.signOut();
+          setSuspendData(profile);
+          setShowSuspendModal(true);
+          setLoading(false);
+          return;
+        }
+
+        // --- LOGIKA PEMBERITAHUAN UNTUK AKUN YANG SEBELUMNYA DITANGGUHKAN / DIPULIHKAN ---
+        if (profile?.just_restored) {
+          toast.success("Akun Anda telah resmi diaktifkan kembali oleh manajemen.", { 
+            duration: 5000 
+          });
+          // Reset just_restored flag
+          await supabase.from('profiles').update({ just_restored: false }).eq('id', profile.id);
+        } else if (suspendedParam || profileIdParam || isReactivated) {
           toast.success("Akun Anda telah resmi diaktifkan kembali oleh manajemen.", { 
             duration: 5000 
           });
@@ -367,6 +492,131 @@ export default function LoginPage() {
           </p>
         </form>
       </motion.div>
+
+      {/* Suspend & Ban Modal */}
+      <AnimatePresence>
+        {showSuspendModal && suspendData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark flex flex-col relative overflow-hidden"
+            >
+              <button 
+                onClick={() => {
+                  setShowSuspendModal(false);
+                  setSuspendData(null);
+                }}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Tutup"
+              >
+                <X className="w-5 h-5 text-muted" />
+              </button>
+
+              <div className="text-center space-y-4 mb-6">
+                <div className={`w-16 h-16 ${suspendData.status === 'banned' ? 'bg-red-100 dark:bg-red-950/20 text-red-600' : 'bg-amber-100 dark:bg-amber-950/20 text-amber-600'} rounded-full flex items-center justify-center mx-auto shadow-md`}>
+                  <AlertTriangle className="w-8 h-8 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-black text-text-light dark:text-text-dark tracking-tight uppercase">
+                  {suspendData.status === 'banned' ? 'Akun Diblokir Permanen' : 'Akun Ditangguhkan Sementara'}
+                </h2>
+                <p className="text-muted text-sm font-medium">
+                  {suspendData.status === 'banned' 
+                    ? 'Akses akun Anda telah dinonaktifkan secara permanen karena pelanggaran kebijakan RestoBook.' 
+                    : 'Akses akun Anda dibatasi untuk sementara waktu.'
+                  }
+                </p>
+              </div>
+
+              {suspendData.status === 'suspended' && countdown && (
+                <div className="bg-amber-50 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-5 text-center space-y-2 mb-6">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500 flex items-center justify-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> Sisa Waktu Penangguhan
+                  </span>
+                  <div className="text-lg font-black text-amber-800 dark:text-amber-400 font-mono tracking-wide">
+                    {formatCountdown(countdown)}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4 mb-6 text-left">
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Alasan Penangguhan</p>
+                  <p className="text-sm font-semibold text-text-light dark:text-text-dark">{suspendData.suspend_reason || 'Tidak ada alasan khusus.'}</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Pesan Manajemen</p>
+                  <p className="text-sm font-medium text-text-light dark:text-text-dark italic">"{suspendData.suspend_message || 'Harap hubungi admin RestoBook.'}"</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark text-left flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" /> Ajukan Banding (Appeal Form)
+                </h4>
+                
+                <textarea
+                  placeholder="Tuliskan argumen atau penjelasan Anda di sini untuk mengajukan banding pemulihan akun..."
+                  value={appealText}
+                  onChange={(e) => setAppealText(e.target.value)}
+                  rows={3}
+                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none"
+                />
+
+                <div className="flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowSuspendModal(false);
+                      setSuspendData(null);
+                    }}
+                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
+                  >
+                    Kembali
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      if (!appealText.trim()) return toast.error("Tuliskan alasan banding Anda terlebih dahulu");
+                      setSubmittingAppeal(true);
+                      const toastId = toast.loading("Mengirim banding...");
+                      try {
+                        const res = await fetch('/api/admin/customers/appeal', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ user_id: suspendData.id, reason: appealText })
+                        });
+                        const resData = await res.json();
+                        if (!res.ok) throw new Error(resData.error || "Gagal mengirim banding");
+                        
+                        toast.success("Pengajuan banding Anda telah dikirim. Tim administrator kami akan meninjau secepatnya.", { id: toastId, duration: 6000 });
+                        setAppealText("");
+                        setShowSuspendModal(false);
+                        setSuspendData(null);
+                      } catch (err: any) {
+                        toast.error(err.message, { id: toastId });
+                      } finally {
+                        setSubmittingAppeal(false);
+                      }
+                    }}
+                    disabled={submittingAppeal}
+                    className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {submittingAppeal ? <Loader2 className="w-4 h-4 animate-spin" /> : "Kirim Banding"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

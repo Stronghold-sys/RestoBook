@@ -1,0 +1,124 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import toast from "react-hot-toast";
+
+export default function SessionStatusListener() {
+  const router = useRouter();
+  const supabase = createClient();
+  const channelRef = useRef<any>(null);
+
+  useEffect(() => {
+    let activeUserId: string | null = null;
+
+    const setupListener = async (userId: string) => {
+      if (activeUserId === userId) return;
+      activeUserId = userId;
+
+      // Clean up previous channel if any
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      // Fetch profile to get status and profiles ID
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("id, status")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching profile in listener:", error);
+        return;
+      }
+
+      if (!profile) return;
+
+      // If already suspended/banned on mount, sign out
+      if (profile.status === "suspended" || profile.status === "banned") {
+        await supabase.auth.signOut();
+        toast.error(
+          profile.status === "banned"
+            ? "Akun Anda telah diblokir permanen oleh manajemen."
+            : "Akun Anda telah ditangguhkan sementara oleh manajemen.",
+          { id: "suspend-toast", duration: 8000 }
+        );
+        router.push(`/login?suspended=${profile.status}&pid=${profile.id}`);
+        return;
+      }
+
+      // Subscribe to real-time updates for the current user's profile row
+      const channel = supabase
+        .channel(`realtime-session-${profile.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${profile.id}`,
+          },
+          async (payload) => {
+            const newStatus = payload.new.status;
+            if (newStatus === "suspended" || newStatus === "banned") {
+              // Cleanup subscription first to prevent race condition loop
+              if (channelRef.current) {
+                supabase.removeChannel(channelRef.current);
+                channelRef.current = null;
+              }
+
+              await supabase.auth.signOut();
+              toast.error(
+                newStatus === "banned"
+                  ? "Akun Anda telah diblokir secara permanen oleh manajemen."
+                  : "Akun Anda telah ditangguhkan sementara oleh manajemen.",
+                { id: "suspend-toast", duration: 8000 }
+              );
+              
+              // Direct replace to refresh router states
+              window.location.href = `/login?suspended=${newStatus}&pid=${profile.id}`;
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("SessionStatusListener successfully subscribed to profile updates.");
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    // Listen for auth state change
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user?.id) {
+        setupListener(session.user.id);
+      } else {
+        activeUserId = null;
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        setupListener(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [router, supabase]);
+
+  return null;
+}

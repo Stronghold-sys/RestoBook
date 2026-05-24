@@ -6,6 +6,7 @@ import DynamicFavicon from "@/components/DynamicFavicon";
 import Script from "next/script";
 import RestoBot from "@/components/RestoBot";
 import ConnectionDetector from "@/components/ConnectionDetector";
+import SessionStatusListener from "@/components/SessionStatusListener";
 import ScrollToTop from "@/components/ScrollToTop";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <DynamicFavicon />
         <ConnectionDetector />
+        <SessionStatusListener />
         {children}
         <Toaster position="top-center" />
         <RestoBot />

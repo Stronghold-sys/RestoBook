@@ -553,7 +553,7 @@ export default function LoginPage() {
 
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark">
                   <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Pesan Manajemen</p>
-                  <p className="text-sm font-medium text-text-light dark:text-text-dark italic">"{suspendData.suspend_message || 'Harap hubungi admin RestoBook.'}"</p>
+                  <p className="text-sm font-medium text-text-light dark:text-text-dark italic">&quot;{suspendData.suspend_message || 'Harap hubungi admin RestoBook.'}&quot;</p>
                 </div>
               </div>
 

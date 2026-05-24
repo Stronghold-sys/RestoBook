@@ -493,6 +493,74 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Lokasi / Google Maps Section */}
+      <section className="px-4 py-20 bg-background-light dark:bg-background-dark border-b border-border-light dark:border-border-dark">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Side: Address Info */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              className="space-y-6"
+            >
+              <span className="text-xs font-black uppercase tracking-wider text-primary bg-primary/10 px-3 py-1.5 rounded-full">Lokasi Restoran</span>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-text-light dark:text-text-dark">Kunjungi <span className="text-primary">{resName}</span></h2>
+              <p className="text-muted leading-relaxed">
+                Kami berlokasi di tempat yang strategis dan mudah dijangkau. Datang dan nikmati hidangan lezat kami bersama teman atau keluarga Anda.
+              </p>
+              
+              <div className="space-y-4 pt-4 border-t border-border-light dark:border-border-dark">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0"><MapPin className="w-6 h-6" /></div>
+                  <div>
+                    <h4 className="font-bold text-text-light dark:text-text-dark text-base">Alamat Lengkap</h4>
+                    <p className="text-sm text-muted mt-1 leading-relaxed">{resAddr}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0"><Phone className="w-6 h-6" /></div>
+                  <div>
+                    <h4 className="font-bold text-text-light dark:text-text-dark text-base">Hubungi Kami</h4>
+                    <p className="text-sm text-muted mt-1">{resPhone}</p>
+                  </div>
+                </div>
+                {resEmail && (
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0"><Mail className="w-6 h-6" /></div>
+                    <div>
+                      <h4 className="font-bold text-text-light dark:text-text-dark text-base">Email Dukungan</h4>
+                      <p className="text-sm text-muted mt-1">{resEmail}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Right Side: Google Maps Frame */}
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
+            >
+              {resAddr && (
+                <iframe
+                  title="Google Maps"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(resAddr)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                  className="filter dark:brightness-90 dark:contrast-105"
+                />
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark py-12">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">

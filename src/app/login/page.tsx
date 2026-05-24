@@ -21,14 +21,73 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      toast.error("Google Client ID belum dikonfigurasi");
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`
+      const google = (window as any).google;
+      if (!google?.accounts?.id) {
+        toast.error("Google Sign-In belum siap, silakan refresh halaman");
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          if (!response.credential) {
+            toast.error("Login Google dibatalkan");
+            return;
+          }
+          try {
+            const { data, error } = await supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: response.credential,
+            });
+            if (error) throw error;
+
+            if (data?.user) {
+              // Trigger callback to handle profile provisioning & email notification
+              const callbackRes = await fetch(`/api/auth/callback?idtoken=true&userId=${data.user.id}`, {
+                method: 'GET',
+              });
+              
+              // Get user role from profile
+              const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', data.user.id).maybeSingle();
+              const role = profile?.role || 'customer';
+              
+              toast.success("Berhasil masuk dengan Google!");
+              window.location.href = `/${role}/dashboard`;
+            }
+          } catch (err: any) {
+            toast.error(err.message || "Gagal masuk dengan Google");
+          }
+        },
+      });
+
+      // Show Google One Tap / popup
+      google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback: render a hidden Google Sign-In button and click it
+          const btnDiv = document.createElement('div');
+          btnDiv.id = 'g_id_signin_fallback';
+          btnDiv.style.position = 'fixed';
+          btnDiv.style.top = '-9999px';
+          document.body.appendChild(btnDiv);
+          
+          google.accounts.id.renderButton(btnDiv, {
+            type: 'standard',
+            size: 'large',
+          });
+          
+          const btn = btnDiv.querySelector('div[role="button"]') as HTMLElement;
+          if (btn) btn.click();
+          
+          setTimeout(() => btnDiv.remove(), 1000);
         }
       });
-      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Gagal masuk dengan Google");
     }

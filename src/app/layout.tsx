@@ -39,6 +39,10 @@ export default function RootLayout({
           strategy="lazyOnload"
           data-clearonload="false"
         />
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );

@@ -51,13 +51,26 @@ export default function LoginPage() {
           is_active: true
         }).eq('id', suspendData.id).then();
       } else {
-        const detik  = Math.floor(diff / 1000) % 60;
-        const menit  = Math.floor(diff / 60000) % 60;
-        const jam    = Math.floor(diff / 3600000) % 24;
-        const hari   = Math.floor(diff / 86400000) % 7;
-        const minggu = Math.floor(diff / 604800000) % 4;
-        const bulan  = Math.floor(diff / 2592000000) % 12;
-        const tahun  = Math.floor(diff / 31536000000);
+        let tempDiff = diff;
+        const tahun = Math.floor(tempDiff / 31536000000);
+        tempDiff -= tahun * 31536000000;
+
+        const bulan = Math.floor(tempDiff / 2592000000);
+        tempDiff -= bulan * 2592000000;
+
+        const minggu = Math.floor(tempDiff / 604800000);
+        tempDiff -= minggu * 604800000;
+
+        const hari = Math.floor(tempDiff / 86400000);
+        tempDiff -= hari * 86400000;
+
+        const jam = Math.floor(tempDiff / 3600000);
+        tempDiff -= jam * 3600000;
+
+        const menit = Math.floor(tempDiff / 60000);
+        tempDiff -= menit * 60000;
+
+        const detik = Math.floor(tempDiff / 1000);
 
         setCountdown({ tahun, bulan, minggu, hari, jam, menit, detik });
       }

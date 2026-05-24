@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "19550365120-jprrkrregfjsi6508ct1gnakvebln2g2.apps.googleusercontent.com";
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "19550365120-jprrkrregfjsi65o8ct1gnakvebln2g2.apps.googleusercontent.com";
     if (!clientId) {
       toast.error("Google Client ID belum dikonfigurasi");
       return;

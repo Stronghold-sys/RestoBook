@@ -149,7 +149,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: emailToSend,
-          subject: 'Reservasi Meja RestoBook Berhasil Diajukan! 📅',
+          subject: 'Reservasi Meja RestoBook Berhasil Diajukan! ',
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -157,7 +157,7 @@ async function executeTool(name: string, args: any) {
                 <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Konfirmasi Pengajuan Reservasi</p>
               </div>
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atas_nama}! 👋</h2>
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atas_nama}! </h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
                 Reservasi meja Anda di <strong>RestoBook</strong> berhasil diajukan dan sedang menunggu konfirmasi dari kasir/staf kami.
               </p>
@@ -278,7 +278,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: emailToSend,
-          subject: 'Pembatalan Reservasi RestoBook ❌',
+          subject: 'Pembatalan Reservasi RestoBook ',
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -286,7 +286,7 @@ async function executeTool(name: string, args: any) {
                 <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pembatalan Reservasi</p>
               </div>
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atasNama}! 👋</h2>
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atasNama}! </h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
                 Reservasi meja Anda di <strong>RestoBook</strong> telah **dibatalkan**.
               </p>
@@ -414,7 +414,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: emailToSend,
-          subject: 'Perubahan Detail Reservasi RestoBook 📝',
+          subject: 'Perubahan Detail Reservasi RestoBook ',
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -422,7 +422,7 @@ async function executeTool(name: string, args: any) {
                 <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Perubahan Reservasi</p>
               </div>
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${oldAtasNama}! 👋</h2>
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${oldAtasNama}! </h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
                 Reservasi meja Anda di <strong>RestoBook</strong> telah berhasil **diperbarui**.
               </p>
@@ -538,7 +538,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: target_email,
-          subject: `Detail Rincian Pesanan RestoBook #${order_id.substring(0, 8).toUpperCase()} 🍽️`,
+          subject: `Detail Rincian Pesanan RestoBook #${order_id.substring(0, 8).toUpperCase()} ️`,
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">

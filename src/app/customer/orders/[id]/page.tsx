@@ -120,7 +120,7 @@ export default function OrderTrackingPage() {
             },
             pendingEvent: async function(result: any) {
                console.log("Duitku Pending Event:", result);
-               toast("Menunggu Konfirmasi...", { icon: "⏳" });
+               toast("Menunggu Konfirmasi...", { icon: "" });
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -571,7 +571,7 @@ export default function OrderTrackingPage() {
               ) : ["confirmed", "processing"].includes(order.status) ? (
                 <button 
                   onClick={() => toast.error("Mohon maaf, pesanan tidak dapat dibatalkan karena Chef kami sudah mulai menyiapkan hidangan Anda di dapur. Silakan hubungi staf jika ada kendala mendesak.", {
-                    icon: "👨‍🍳",
+                    icon: "‍",
                     duration: 4000
                   })}
                   className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-wider bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 transition-all active:scale-95 shadow-sm"
@@ -701,7 +701,7 @@ export default function OrderTrackingPage() {
                  </div>
                  <div className="text-center">
                     <span className="px-4 py-1 bg-orange-50 dark:bg-orange-900/20 text-primary font-black text-sm rounded-full border border-orange-100 dark:border-orange-800 uppercase tracking-widest">
-                        {reviewRating === 5 ? "Luar Biasa! ✨" : reviewRating === 4 ? "Sangat Enak! 👍" : reviewRating === 3 ? "Biasa Saja 😐" : reviewRating === 2 ? "Kurang Memuaskan 👎" : "Sangat Buruk 😤"}
+                        {reviewRating === 5 ? "Luar Biasa! " : reviewRating === 4 ? "Sangat Enak! " : reviewRating === 3 ? "Biasa Saja " : reviewRating === 2 ? "Kurang Memuaskan " : "Sangat Buruk "}
                     </span>
                  </div>
                  <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={3} placeholder="Tulis pengalaman bersantap Anda di sini (Rasa, pelayanan, porsi, dll)..." className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-4 text-sm outline-none focus:border-primary text-left font-medium text-text-light dark:text-text-dark" />

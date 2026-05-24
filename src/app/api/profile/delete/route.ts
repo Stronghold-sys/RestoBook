@@ -114,7 +114,7 @@ async function sendFarewellEmail(email: string, fullName: string, loginMethod: s
     await resend.emails.send({
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: email,
-      subject: 'Akun Anda Telah Dihapus — Sampai Jumpa Lagi 🙏',
+      subject: 'Akun Anda Telah Dihapus — Sampai Jumpa Lagi ',
       html: `
         <div style="font-family: 'Segoe UI', sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 0; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff;">
           
@@ -126,7 +126,7 @@ async function sendFarewellEmail(email: string, fullName: string, loginMethod: s
 
           <!-- Body -->
           <div style="padding: 32px 28px;">
-            <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">Sampai Jumpa, ${fullName}! 🙏</h2>
+            <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">Sampai Jumpa, ${fullName}! </h2>
             
             <p style="line-height: 1.7; color: #4b5563; font-size: 15px; margin: 0 0 20px 0;">
               Kami ingin mengkonfirmasi bahwa akun <strong>RestoBook</strong> Anda telah berhasil dihapus secara permanen dari sistem kami sesuai permintaan Anda.

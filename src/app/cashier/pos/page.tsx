@@ -655,14 +655,14 @@ export default function POSPage() {
           } catch(err) {}
         }, 3000);
 
-        // ⚡ VENDOR SDK INTEGRATION: Fire Duitku Pop overlay system
+        //  VENDOR SDK INTEGRATION: Fire Duitku Pop overlay system
         if (typeof (window as any).checkout !== 'undefined') {
            (window as any).checkout.process(data.reference, {
              successEvent: function(result: any) {
                handleFinalSuccess("Duitku Pop SDK");
              },
              pendingEvent: function(result: any) {
-               toast("Status: Menunggu Konfirmasi Pelanggan...", { icon: "⏳" });
+               toast("Status: Menunggu Konfirmasi Pelanggan...", { icon: "" });
              },
              errorEvent: function(result: any) {
                toast.error("Transaksi gagal atau dibatalkan oleh pelanggan.");
@@ -687,7 +687,7 @@ export default function POSPage() {
              }
            });
         } else {
-           // 🚨 ROBUST FAILOVER: Standard secure window pop in case SDK load yields timing race error
+           //  ROBUST FAILOVER: Standard secure window pop in case SDK load yields timing race error
            const wWidth = 520, wHeight = 780;
            const wLeft = (window.screen.width / 2) - (wWidth / 2);
            const wTop = (window.screen.height / 2) - (wHeight / 2);

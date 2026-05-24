@@ -152,7 +152,7 @@ async function sendWelcomeEmail(resendKey: string, userEmail: string, fullName: 
     await resend.emails.send({
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: userEmail,
-      subject: 'Selamat Bergabung di RestoBook! 🎉',
+      subject: 'Selamat Bergabung di RestoBook! ',
       html: `
         <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
@@ -160,7 +160,7 @@ async function sendWelcomeEmail(resendKey: string, userEmail: string, fullName: 
             <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Sistem Pemesanan Restoran Modern</p>
           </div>
           <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Selamat Bergabung, ${fullName}! 🎉</h2>
+          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Selamat Bergabung, ${fullName}! </h2>
           <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
             Terima kasih telah mendaftar di <strong>RestoBook</strong> menggunakan akun Google Anda. Kami sangat senang bisa menjadi bagian dari pengalaman kuliner Anda.
           </p>
@@ -209,7 +209,7 @@ async function sendLoginNotificationEmail(resendKey: string, userEmail: string, 
     await resend.emails.send({
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: userEmail,
-      subject: 'Notifikasi Masuk Akun RestoBook 🔑',
+      subject: 'Notifikasi Masuk Akun RestoBook ',
       html: `
         <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
@@ -217,7 +217,7 @@ async function sendLoginNotificationEmail(resendKey: string, userEmail: string, 
             <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Sistem Pemesanan Restoran Modern</p>
           </div>
           <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${fullName}! 👋</h2>
+          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${fullName}! </h2>
           <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
             Kami mendeteksi aktivitas masuk baru pada akun <strong>RestoBook</strong> Anda menggunakan akun Google.
           </p>

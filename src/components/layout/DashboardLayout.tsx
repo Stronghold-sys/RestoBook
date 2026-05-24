@@ -59,7 +59,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           if (isActionable) {
             if (window.location.pathname.includes('/cashier')) {
               playNotifSound();
-              toast.success("Ada pesanan online baru masuk!", { icon: '🔔', duration: 8000, position: 'top-right' });
+              toast.success("Ada pesanan online baru masuk!", { icon: '', duration: 8000, position: 'top-right' });
             }
           }
         } else if (payload.eventType === 'UPDATE') {
@@ -68,7 +68,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           if (becamePaid) {
             if (window.location.pathname.includes('/cashier')) {
               playNotifSound();
-              toast.success("Pesanan Online Baru (Lunas)!", { icon: '💰', duration: 8000, position: 'top-right' });
+              toast.success("Pesanan Online Baru (Lunas)!", { icon: '', duration: 8000, position: 'top-right' });
             }
           }
         }

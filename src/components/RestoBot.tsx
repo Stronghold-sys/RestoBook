@@ -206,10 +206,10 @@ const QUICK_REPLIES = {
 };
 
 const WELCOME_MESSAGES = {
-    home: 'Halo! Selamat datang di RestoBook 🍽️ Saya RestoBot, siap membantu Anda menemukan informasi menu, cara reservasi, jam buka, dan semua yang ada di website kami. Ada yang bisa saya bantu?',
-    customer: (name: string) => `Halo, ${name || 'Pelanggan'}! 👋 Selamat datang kembali di RestoBook. Saya bisa membantu Anda cek reservasi, pesanan, poin reward, atau hal lainnya. Ada yang bisa saya bantu?`,
-    cashier: (name: string) => `Selamat bertugas, ${name || 'Kasir'}! 💼 Saya RestoBot, siap membantu operasional kasir Anda. Saya bisa bantu cek status meja, transaksi, atau rekap pendapatan shift ini.`,
-    admin: (name: string) => `Selamat datang, ${name || 'Admin'}! 📊 Dashboard RestoBook siap. Saya bisa bantu Anda dengan laporan, manajemen menu, staf, inventaris, atau keluhan pelanggan.`
+    home: 'Halo! Selamat datang di RestoBook ️ Saya RestoBot, siap membantu Anda menemukan informasi menu, cara reservasi, jam buka, dan semua yang ada di website kami. Ada yang bisa saya bantu?',
+    customer: (name: string) => `Halo, ${name || 'Pelanggan'}!  Selamat datang kembali di RestoBook. Saya bisa membantu Anda cek reservasi, pesanan, poin reward, atau hal lainnya. Ada yang bisa saya bantu?`,
+    cashier: (name: string) => `Selamat bertugas, ${name || 'Kasir'}!  Saya RestoBot, siap membantu operasional kasir Anda. Saya bisa bantu cek status meja, transaksi, atau rekap pendapatan shift ini.`,
+    admin: (name: string) => `Selamat datang, ${name || 'Admin'}!  Dashboard RestoBook siap. Saya bisa bantu Anda dengan laporan, manajemen menu, staf, inventaris, atau keluhan pelanggan.`
 };
 
 export default function RestoBot() {
@@ -281,7 +281,7 @@ export default function RestoBot() {
           const timeStr = r.reservation_time ? r.reservation_time.substring(0, 5) : (r.time || '');
           const guestStr = r.guest_count || r.guests || 0;
           showNotificationBubble(
-            `⏰ Pengingat: Reservasi Anda pada ${dateStr} pukul ${timeStr} untuk ${guestStr} orang. Konfirmasi kehadiran?`,
+            ` Pengingat: Reservasi Anda pada ${dateStr} pukul ${timeStr} untuk ${guestStr} orang. Konfirmasi kehadiran?`,
             'warning'
           );
         });
@@ -290,7 +290,7 @@ export default function RestoBot() {
       const readyOrders = contextData.orders?.filter((o: any) => o.status === 'ready');
       if (readyOrders?.length > 0) {
         showNotificationBubble(
-          `🍽️ Pesanan Anda sudah siap! Silakan menuju meja atau kasir.`,
+          `️ Pesanan Anda sudah siap! Silakan menuju meja atau kasir.`,
           'success'
         );
       }
@@ -301,7 +301,7 @@ export default function RestoBot() {
       pendingTables.forEach((table: any) => {
         if (table.waitingMinutes > 10) {
           showNotificationBubble(
-            `🔔 Meja ${table.number} sudah menunggu ${table.waitingMinutes} menit`,
+            ` Meja ${table.number} sudah menunggu ${table.waitingMinutes} menit`,
             'warning'
           );
         }
@@ -311,7 +311,7 @@ export default function RestoBot() {
     if (currentRole === 'admin') {
       const alerts = (window as any).restobookData?.adminAlerts || [];
       alerts.forEach((alert: any) => {
-        showNotificationBubble(`⚠️ ${alert.message}`, alert.type || 'warning');
+        showNotificationBubble(`️ ${alert.message}`, alert.type || 'warning');
       });
     }
   };
@@ -692,20 +692,20 @@ export default function RestoBot() {
     const msg = userMessage.toLowerCase();
     if (role === 'customer') {
       if (msg.includes('batalkan') || msg.includes('cancel') || msg.includes('ubah reservasi')) {
-        showNotificationBubble('📧 Jika pembatalan dikonfirmasi, email konfirmasi akan dikirim ke alamat Anda.', 'info');
+        showNotificationBubble(' Jika pembatalan dikonfirmasi, email konfirmasi akan dikirim ke alamat Anda.', 'info');
       }
       if (msg.includes('poin') || msg.includes('reward')) {
         const localCtx = loadUserContext();
         const points = profile?.points || localCtx?.user?.points || 0;
         if (points > 0) {
-          showNotificationBubble(`🎁 Anda memiliki ${points} poin (setara Rp ${points * 100}) yang bisa digunakan!`, 'success');
+          showNotificationBubble(` Anda memiliki ${points} poin (setara Rp ${points * 100}) yang bisa digunakan!`, 'success');
         }
       }
     }
 
     if (role === 'admin') {
       if (msg.includes('keluhan') || msg.includes('complaint')) {
-        showNotificationBubble('⚠️ Ada keluhan pelanggan yang belum ditangani. Segera respons untuk menjaga rating.', 'danger');
+        showNotificationBubble('️ Ada keluhan pelanggan yang belum ditangani. Segera respons untuk menjaga rating.', 'danger');
       }
     }
   };

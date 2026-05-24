@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
                   <a href="${data.paymentUrl}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Selesaikan Pembayaran Sekarang</a>
                 </div>
                 <div style="background:#fff7ed; padding:15px; border-radius:10px; border:1px solid #ffedd5;">
-                  <p style="margin:0; font-weight:bold; color:#9a3412;">💡 Petunjuk Pembayaran Virtual Account & Retail:</p>
+                  <p style="margin:0; font-weight:bold; color:#9a3412;"> Petunjuk Pembayaran Virtual Account & Retail:</p>
                   <ul style="color:#9a3412; font-size:14px; margin-top:10px;">
                     <li>Buka aplikasi Bank atau m-Banking Anda.</li>
                     <li>Pilih menu Transfer / Virtual Account.</li>

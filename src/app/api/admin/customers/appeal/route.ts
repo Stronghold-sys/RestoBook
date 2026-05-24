@@ -102,7 +102,7 @@ export async function PATCH(req: NextRequest) {
           await resend.emails.send({
             from: 'RestoBook <noreply@restobookid.my.id>',
             to: emailToSend,
-            subject: 'Hasil Banding Akun RestoBook: Banding Disetujui! 🎉',
+            subject: 'Hasil Banding Akun RestoBook: Banding Disetujui',
             html: `
               <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
                 <div style="text-align: center; margin-bottom: 24px;">
@@ -110,9 +110,9 @@ export async function PATCH(req: NextRequest) {
                   <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
                 </div>
                 <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}! 🎉</h2>
+                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
                 <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                  Kami dengan senang hati memberitahukan bahwa permohonan banding Anda telah **disetujui** oleh administrator kami. Akun Anda telah dipulihkan secara penuh.
+                  Kami dengan senang hati memberitahukan bahwa permohonan banding Anda telah <strong>disetujui</strong> oleh administrator kami. Akun Anda telah dipulihkan secara penuh.
                 </p>
                 <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
                   <strong>Pesan Administrator:</strong><br/>
@@ -137,7 +137,7 @@ export async function PATCH(req: NextRequest) {
           await resend.emails.send({
             from: 'RestoBook <noreply@restobookid.my.id>',
             to: emailToSend,
-            subject: 'Hasil Banding Akun RestoBook: Banding Ditolak ❌',
+            subject: 'Hasil Banding Akun RestoBook: Banding Ditolak',
             html: `
               <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
                 <div style="text-align: center; margin-bottom: 24px;">
@@ -147,7 +147,7 @@ export async function PATCH(req: NextRequest) {
                 <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
                 <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
                 <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                  Kami menyesal memberitahukan bahwa permohonan banding untuk pemulihan akun Anda telah **ditolak** setelah ditinjau ulang oleh administrator kami.
+                  Kami menyesal memberitahukan bahwa permohonan banding untuk pemulihan akun Anda telah <strong>ditolak</strong> setelah ditinjau ulang oleh administrator kami.
                 </p>
                 <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #991b1b;">
                   <strong>Pesan Administrator:</strong><br/>

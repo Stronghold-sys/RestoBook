@@ -65,14 +65,14 @@ export async function POST(req: NextRequest) {
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
               <h2 style="color: #b91c1c; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                Kami mengirimkan surat peringatan resmi ke akun Anda. Ini adalah **peringatan ke-${newCount}** yang tercatat dalam sistem kami.
+                Kami mengirimkan surat peringatan resmi ke akun Anda. Ini adalah <strong>peringatan ke-${newCount}</strong> yang tercatat dalam sistem kami.
               </p>
               <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #991b1b;">
                 <strong>Pernyataan Peringatan:</strong><br/>
                 ${warning_message}
               </div>
               <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
-                Pelanggaran ketentuan layanan lebih lanjut dapat mengakibatkan akun Anda **ditangguhkan sementara** atau **diblokir secara permanen** dari sistem RestoBook. Mohon patuhi aturan penggunaan sistem kami.
+                Pelanggaran ketentuan layanan lebih lanjut dapat mengakibatkan akun Anda <strong>ditangguhkan sementara</strong> atau <strong>diblokir secara permanen</strong> dari sistem RestoBook. Mohon patuhi aturan penggunaan sistem kami.
               </p>
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
               <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">

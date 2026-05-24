@@ -84,9 +84,58 @@ export default function AdminCustomersPage() {
   // Action forms states
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
-  const [duration, setDuration] = useState({
-    years: 0, months: 0, weeks: 0, days: 0, hours: 1, minutes: 0, seconds: 0
+  const [duration, setDuration] = useState<Record<string, string>>({
+    years: "", months: "", weeks: "", days: "", hours: "1", minutes: "", seconds: ""
   });
+  const [prevDefaultMsg, setPrevDefaultMsg] = useState("");
+  const [prevDefaultReason, setPrevDefaultReason] = useState("");
+
+  // Helper to build a readable Indonesian duration string
+  const getDurationText = () => {
+    const parts = [];
+    if (duration.years && Number(duration.years) > 0) parts.push(`${duration.years} tahun`);
+    if (duration.months && Number(duration.months) > 0) parts.push(`${duration.months} bulan`);
+    if (duration.weeks && Number(duration.weeks) > 0) parts.push(`${duration.weeks} minggu`);
+    if (duration.days && Number(duration.days) > 0) parts.push(`${duration.days} hari`);
+    if (duration.hours && Number(duration.hours) > 0) parts.push(`${duration.hours} jam`);
+    if (duration.minutes && Number(duration.minutes) > 0) parts.push(`${duration.minutes} menit`);
+    if (duration.seconds && Number(duration.seconds) > 0) parts.push(`${duration.seconds} detik`);
+    return parts.join(" ") || "1 jam";
+  };
+
+  useEffect(() => {
+    if (!activeModal) {
+      setPrevDefaultMsg("");
+      setPrevDefaultReason("");
+      return;
+    }
+
+    let nextReason = "";
+    let nextMessage = "";
+
+    if (activeModal.type === "suspend" || activeModal.type === "bulk_suspend") {
+      nextReason = "Pelanggaran syarat ketentuan penggunaan layanan";
+      const durText = getDurationText();
+      nextMessage = `Akun Anda ditangguhkan sementara selama ${durText} karena alasan penertiban sistem. Akses Anda akan dipulihkan secara otomatis setelah masa penangguhan selesai.`;
+    } else if (activeModal.type === "ban" || activeModal.type === "bulk_ban") {
+      nextReason = "Pelanggaran berat ketentuan layanan";
+      nextMessage = "Akun Anda diblokir secara permanen dari sistem RestoBook karena pelanggaran berat terhadap syarat dan ketentuan penggunaan. Keputusan ini bersifat final.";
+    } else if (activeModal.type === "warning") {
+      nextMessage = "Ini adalah peringatan resmi mengenai aktivitas akun Anda. Harap patuhi kebijakan komunitas dan syarat penggunaan RestoBook agar terhindar dari penangguhan akun.";
+    } else if (activeModal.type === "restore" || activeModal.type === "bulk_restore") {
+      nextMessage = "Selamat, akun Anda telah diaktifkan kembali oleh manajemen. Anda sekarang dapat menikmati kembali seluruh layanan kami.";
+    }
+
+    // Only update if current is empty or matches the previous default
+    if (reason === "" || reason === prevDefaultReason) {
+      setReason(nextReason);
+      setPrevDefaultReason(nextReason);
+    }
+    if (message === "" || message === prevDefaultMsg) {
+      setMessage(nextMessage);
+      setPrevDefaultMsg(nextMessage);
+    }
+  }, [activeModal, duration.years, duration.months, duration.weeks, duration.days, duration.hours, duration.minutes, duration.seconds]);
   
   // Scheduling & Warnings settings
   const [isScheduled, setIsScheduled] = useState(false);
@@ -276,6 +325,16 @@ export default function AdminCustomersPage() {
         .single();
 
       const endpoint = "/api/admin/customers/suspend";
+      const parsedDuration = {
+        years: duration.years ? Number(duration.years) : 0,
+        months: duration.months ? Number(duration.months) : 0,
+        weeks: duration.weeks ? Number(duration.weeks) : 0,
+        days: duration.days ? Number(duration.days) : 0,
+        hours: duration.hours ? Number(duration.hours) : 0,
+        minutes: duration.minutes ? Number(duration.minutes) : 0,
+        seconds: duration.seconds ? Number(duration.seconds) : 0
+      };
+
       const payload = isScheduled ? {
         action: "schedule",
         customer_id: activeModal.customer.id,
@@ -284,14 +343,14 @@ export default function AdminCustomersPage() {
         suspend_type: "temporary",
         reason,
         message,
-        duration
+        duration: parsedDuration
       } : {
         action: "suspend",
         customer_id: activeModal.customer.id,
         admin_id: adminProfile?.id,
         reason,
         message,
-        duration
+        duration: parsedDuration
       };
 
       const res = await fetch(endpoint, {
@@ -475,6 +534,16 @@ export default function AdminCustomersPage() {
         .eq("user_id", adminUser.user?.id || "")
         .single();
 
+      const parsedDuration = {
+        years: duration.years ? Number(duration.years) : 0,
+        months: duration.months ? Number(duration.months) : 0,
+        weeks: duration.weeks ? Number(duration.weeks) : 0,
+        days: duration.days ? Number(duration.days) : 0,
+        hours: duration.hours ? Number(duration.hours) : 0,
+        minutes: duration.minutes ? Number(duration.minutes) : 0,
+        seconds: duration.seconds ? Number(duration.seconds) : 0
+      };
+
       const res = await fetch("/api/admin/customers/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -484,7 +553,7 @@ export default function AdminCustomersPage() {
           admin_id: adminProfile?.id,
           reason: reason || "Tindakan massal administrator",
           message: message || "Akun Anda diubah statusnya oleh manajemen RestoBook",
-          duration
+          duration: parsedDuration
         })
       });
 
@@ -507,7 +576,9 @@ export default function AdminCustomersPage() {
     setScheduledAt("");
     setIsScheduled(false);
     setWarningThreshold("none");
-    setDuration({ years: 0, months: 0, weeks: 0, days: 0, hours: 1, minutes: 0, seconds: 0 });
+    setDuration({ years: "", months: "", weeks: "", days: "", hours: "1", minutes: "", seconds: "" });
+    setPrevDefaultMsg("");
+    setPrevDefaultReason("");
   };
 
   const handleAppealReview = async (appealId: string, status: "approved" | "rejected") => {
@@ -1297,26 +1368,62 @@ export default function AdminCustomersPage() {
 
                     <div className="space-y-2">
                       <label className="block text-xs font-black uppercase text-muted tracking-wider">Konfigurasi Durasi Penangguhan</label>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <div>
-                          <label htmlFor="dur_days" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Hari</label>
+                          <label htmlFor="dur_years" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Tahun</label>
                           <input
-                            id="dur_days"
-                            type="number"
-                            min={0}
-                            value={duration.days}
-                            onChange={(e) => setDuration({ ...duration, days: Number(e.target.value) })}
+                            id="dur_years"
+                            type="text"
+                            placeholder="0"
+                            value={duration.years}
+                            onChange={(e) => setDuration({ ...duration, years: e.target.value.replace(/\D/g, '') })}
                             className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
                           />
                         </div>
                         <div>
+                          <label htmlFor="dur_months" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Bulan</label>
+                          <input
+                            id="dur_months"
+                            type="text"
+                            placeholder="0"
+                            value={duration.months}
+                            onChange={(e) => setDuration({ ...duration, months: e.target.value.replace(/\D/g, '') })}
+                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="dur_weeks" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Minggu</label>
+                          <input
+                            id="dur_weeks"
+                            type="text"
+                            placeholder="0"
+                            value={duration.weeks}
+                            onChange={(e) => setDuration({ ...duration, weeks: e.target.value.replace(/\D/g, '') })}
+                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="dur_days" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Hari</label>
+                          <input
+                            id="dur_days"
+                            type="text"
+                            placeholder="0"
+                            value={duration.days}
+                            onChange={(e) => setDuration({ ...duration, days: e.target.value.replace(/\D/g, '') })}
+                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mt-3">
+                        <div>
                           <label htmlFor="dur_hours" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Jam</label>
                           <input
                             id="dur_hours"
-                            type="number"
-                            min={0}
+                            type="text"
+                            placeholder="0"
                             value={duration.hours}
-                            onChange={(e) => setDuration({ ...duration, hours: Number(e.target.value) })}
+                            onChange={(e) => setDuration({ ...duration, hours: e.target.value.replace(/\D/g, '') })}
                             className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
                           />
                         </div>
@@ -1324,10 +1431,21 @@ export default function AdminCustomersPage() {
                           <label htmlFor="dur_minutes" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Menit</label>
                           <input
                             id="dur_minutes"
-                            type="number"
-                            min={0}
+                            type="text"
+                            placeholder="0"
                             value={duration.minutes}
-                            onChange={(e) => setDuration({ ...duration, minutes: Number(e.target.value) })}
+                            onChange={(e) => setDuration({ ...duration, minutes: e.target.value.replace(/\D/g, '') })}
+                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="dur_seconds" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Detik</label>
+                          <input
+                            id="dur_seconds"
+                            type="text"
+                            placeholder="0"
+                            value={duration.seconds}
+                            onChange={(e) => setDuration({ ...duration, seconds: e.target.value.replace(/\D/g, '') })}
                             className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
                           />
                         </div>

@@ -22,7 +22,10 @@ export default function ConnectionDetector() {
         if (res.ok) {
           setIsOnline(true);
           setShowRestored(true);
-          setTimeout(() => setShowRestored(false), 3000);
+          setTimeout(() => {
+            setShowRestored(false);
+            window.location.reload();
+          }, 1500);
         } else {
           setIsOnline(false);
         }
@@ -47,6 +50,32 @@ export default function ConnectionDetector() {
     };
   }, []);
 
+  // Background polling when offline to detect recovery automatically in real-time
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isOnline) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch('/favicon.ico', { method: 'HEAD', cache: 'no-store' });
+        if (res.ok) {
+          setIsOnline(true);
+          setShowRestored(true);
+          setTimeout(() => {
+            setShowRestored(false);
+            window.location.reload();
+          }, 1500);
+        }
+      } catch (e) {
+        // Still offline
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isOnline]);
+
   const manualCheck = async () => {
     if (checking) return;
     setChecking(true);
@@ -55,7 +84,10 @@ export default function ConnectionDetector() {
       if (res.ok) {
         setIsOnline(true);
         setShowRestored(true);
-        setTimeout(() => setShowRestored(false), 3000);
+        setTimeout(() => {
+          setShowRestored(false);
+          window.location.reload();
+        }, 1500);
       } else {
         setIsOnline(false);
       }

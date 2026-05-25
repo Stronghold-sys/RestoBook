@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 
 const apiKey = 'AIzaSyATN9Xd4gGIy7Q3DiY6n382IcfQuJcovNQ';
 const model = 'gemini-2.5-flash';

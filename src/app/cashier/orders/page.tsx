@@ -53,6 +53,33 @@ export default function CashierOrders() {
 
   const fetchOrders = async () => {
     try {
+      // Clean up expired unpaid non-cash orders
+      const { data: settings } = await supabase.from("restaurant_settings").select("payment_expiry_minutes").single();
+      const expiryMinutes = settings?.payment_expiry_minutes ? Number(settings.payment_expiry_minutes) : 60;
+      const expiryThreshold = new Date(Date.now() - expiryMinutes * 60 * 1000).toISOString();
+
+      const { data: expiredOrders } = await supabase.from("orders")
+        .select("id, table_id")
+        .eq("payment_method", "non_cash")
+        .eq("payment_status", "unpaid")
+        .neq("status", "cancelled")
+        .lt("created_at", expiryThreshold);
+
+      if (expiredOrders && expiredOrders.length > 0) {
+        const expiredIds = expiredOrders.map(o => o.id);
+        const tableIdsToRelease = expiredOrders.filter(o => o.table_id).map(o => o.table_id);
+
+        await supabase.from("orders")
+          .update({ status: "cancelled", cancel_reason: "Batas waktu pembayaran habis (Batal Otomatis)" })
+          .in("id", expiredIds);
+
+        if (tableIdsToRelease.length > 0) {
+          await supabase.from("tables")
+            .update({ status: "available" })
+            .in("id", tableIdsToRelease);
+        }
+      }
+
       const { data } = await supabase
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")

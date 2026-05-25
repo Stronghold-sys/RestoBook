@@ -44,7 +44,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
   const totalAmount = Number(order.total_amount);
   const kembalian = cashReceived ? Math.max(0, cashReceived - totalAmount) : 0;
   const taxPercent = settings?.tax_percent !== undefined && settings?.tax_percent !== null ? Number(settings.tax_percent) : 10.00;
-  const taxAmount = Math.round(totalAmount * taxPercent / (100 + taxPercent));
+  const taxAmount = Math.round(subtotal * taxPercent / (100 + taxPercent));
 
   return (
     <div ref={ref} className="bg-white text-black p-8 w-[380px] mx-auto font-mono text-sm receipt-font receipt-container border border-gray-100 shadow-sm overflow-hidden relative">

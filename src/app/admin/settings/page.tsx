@@ -36,7 +36,8 @@ export default function AdminSettingsPage() {
     minutes_per_working_day: 480,
     payday_date: 28,
     cutoff_date: 27,
-    tax_percent: 10.00
+    tax_percent: 10.00,
+    payment_expiry_minutes: 60
   });
   
   // Merchant QRIS & E-Wallet configuration state
@@ -85,7 +86,8 @@ export default function AdminSettingsPage() {
         minutes_per_working_day: data.minutes_per_working_day !== null && data.minutes_per_working_day !== undefined ? Number(data.minutes_per_working_day) : 480,
         payday_date: data.payday_date !== null && data.payday_date !== undefined ? Number(data.payday_date) : 28,
         cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27,
-        tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00
+        tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00,
+        payment_expiry_minutes: data.payment_expiry_minutes !== null && data.payment_expiry_minutes !== undefined ? Number(data.payment_expiry_minutes) : 60
       });
     } catch (e: any) { console.error(e); } finally { setLoading(false); }
   };
@@ -234,6 +236,7 @@ export default function AdminSettingsPage() {
         payday_date: Number(settings.payday_date || 28),
         cutoff_date: Number(settings.cutoff_date || 27),
         tax_percent: Number(settings.tax_percent !== undefined ? settings.tax_percent : 10.00),
+        payment_expiry_minutes: Number(settings.payment_expiry_minutes || 60),
       }).eq("id", settings.id);
       if (error) throw error;
 
@@ -377,6 +380,28 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <p className="text-[11px] text-muted mt-1">Mengatur kapan banner peringatan penutupan resto muncul di kasir dan pelanggan menjelang jam tutup operasional.</p>
+            </div>
+
+            <div>
+              <label htmlFor="paymentExpiryMinutes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1.5 block">
+                Batas Waktu Pembayaran Online (Menit)
+              </label>
+              <div className="relative">
+                <Clock className="absolute left-3.5 top-3.5 h-5 w-5 text-muted" />
+                <input 
+                  id="paymentExpiryMinutes" 
+                  title="Batas Waktu Pembayaran Online" 
+                  type="number" 
+                  min="1" 
+                  max="1440"
+                  value={settings.payment_expiry_minutes || 60} 
+                  onChange={e => {
+                    setSettings({ ...settings, payment_expiry_minutes: Number(e.target.value) });
+                  }} 
+                  className="w-full pl-11 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark font-medium" 
+                />
+              </div>
+              <p className="text-[11px] text-muted mt-1">Mengatur batas waktu (dalam menit) bagi pelanggan untuk menyelesaikan pembayaran non-tunai sebelum pesanan dibatalkan otomatis.</p>
             </div>
 
             <div className="flex flex-col gap-3 p-4 bg-blue-50/50 dark:bg-blue-950/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">

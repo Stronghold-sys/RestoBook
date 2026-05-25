@@ -39,8 +39,8 @@ if (!url || !key) {
 const supabase = createClient(url, key);
 
 async function run() {
-  console.log("Running tax_percent migration...");
-  const sql = `ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS tax_percent NUMERIC DEFAULT 10.00;`;
+  console.log("Running payment_expiry_minutes update...");
+  const sql = `UPDATE restaurant_settings SET payment_expiry_minutes = 60 WHERE payment_expiry_minutes IS NULL;`;
   let { data, error } = await supabase.rpc('exec_sql', { sql_string: sql });
   if (error) {
     console.log("exec_sql failed, trying exec_sql_block...");
@@ -51,7 +51,7 @@ async function run() {
   if (error) {
     console.error("Migration failed:", error.message);
   } else {
-    console.log("Migration successful! Column tax_percent added/verified.");
+    console.log("Migration successful! Default value populated.");
   }
 }
 

@@ -1369,7 +1369,7 @@ export default function POSPage() {
               )}
               <div className="flex justify-between items-center text-xs font-medium text-muted">
                 <span>Pajak ({taxPercent}%)</span>
-                <span>Rp {Math.round(cartTotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
+                <span>Rp {Math.round(cartSubtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
               </div>
               <div className="flex justify-between items-center pt-2 mt-2 border-t border-border-light dark:border-border-dark">
                 <span className="text-sm font-bold text-muted uppercase tracking-widest">Total Tagihan</span>

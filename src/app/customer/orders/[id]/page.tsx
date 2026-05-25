@@ -46,6 +46,8 @@ export default function OrderTrackingPage() {
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [duitkuMethod, setDuitkuMethod] = useState("");
   const [taxPercent, setTaxPercent] = useState<number>(10.00);
+  const [paymentExpiryMinutes, setPaymentExpiryMinutes] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -61,9 +63,14 @@ export default function OrderTrackingPage() {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data } = await supabase.from("restaurant_settings").select("tax_percent").single();
-      if (data && data.tax_percent !== null && data.tax_percent !== undefined) {
-        setTaxPercent(Number(data.tax_percent));
+      const { data } = await supabase.from("restaurant_settings").select("tax_percent, payment_expiry_minutes").single();
+      if (data) {
+        if (data.tax_percent !== null && data.tax_percent !== undefined) {
+          setTaxPercent(Number(data.tax_percent));
+        }
+        if (data.payment_expiry_minutes !== null && data.payment_expiry_minutes !== undefined) {
+          setPaymentExpiryMinutes(Number(data.payment_expiry_minutes));
+        }
       }
     };
     fetchSettings();
@@ -73,10 +80,6 @@ export default function OrderTrackingPage() {
     try {
       const { data: orderData, error } = await supabase.from("orders").select("*, tables(table_number)").eq("id", id).single();
       if (error) throw error;
-      
-      if (orderData.payment_method === "non_cash" && orderData.payment_status === "unpaid") {
-        throw new Error("Pesanan tidak ditemukan atau belum dibayar");
-      }
       
       setOrder(orderData);
 
@@ -94,6 +97,65 @@ export default function OrderTrackingPage() {
       toast.error("Gagal memuat: " + e.message);
       router.push("/customer/orders");
     } finally { setLoading(false); }
+  };
+
+  const handleAutoCancel = async () => {
+    try {
+      const { error } = await supabase.from("orders").update({
+        status: "cancelled",
+        cancel_reason: "Batas waktu pembayaran habis (Batal Otomatis)"
+      }).eq("id", id);
+      if (error) throw error;
+      
+      if (order?.table_id) {
+        await supabase.from("tables").update({ status: "available" }).eq("id", order.table_id);
+      }
+      
+      fetchOrderDetails();
+      toast.error("Batas waktu pembayaran habis. Pesanan dibatalkan otomatis.");
+    } catch (e: any) {
+      console.error("Auto cancel error:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!order || order.payment_status !== "unpaid" || order.payment_method !== "non_cash" || order.status === "cancelled") {
+      setTimeLeft(null);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const createdAt = new Date(order.created_at).getTime();
+      const expiryTime = createdAt + paymentExpiryMinutes * 60 * 1000;
+      const now = new Date().getTime();
+      return Math.max(0, Math.floor((expiryTime - now) / 1000));
+    };
+
+    const initialDiff = calculateTimeLeft();
+    setTimeLeft(initialDiff);
+
+    if (initialDiff <= 0) {
+      handleAutoCancel();
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      const diff = calculateTimeLeft();
+      setTimeLeft(diff);
+      if (diff <= 0) {
+        clearInterval(interval);
+        await handleAutoCancel();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order, paymentExpiryMinutes]);
+
+  const formatTimeLeft = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
   const [paying, setPaying] = useState(false);
@@ -388,7 +450,13 @@ export default function OrderTrackingPage() {
             <h3 className="text-xl font-black text-red-900 dark:text-red-400 mb-2 uppercase tracking-tight">Pesanan Dibatalkan</h3>
             
             {!refundData ? (
-              <p className="text-red-600/80 mt-1 mb-4 font-medium text-center">{order.cancel_reason || "Dibatalkan oleh sistem/kasir"}</p>
+              order.cancel_reason === "Batas waktu pembayaran habis (Batal Otomatis)" ? (
+                <p className="text-red-600/80 mt-1 mb-4 font-bold text-center uppercase tracking-wide text-xs leading-relaxed max-w-xs">
+                  Batas waktu pembayaran telah habis. Pesanan ini dibatalkan secara otomatis.
+                </p>
+              ) : (
+                <p className="text-red-600/80 mt-1 mb-4 font-medium text-center">{order.cancel_reason || "Dibatalkan oleh sistem/kasir"}</p>
+              )
             ) : (
               <div className="mt-6 w-full space-y-6">
                 <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-red-200 dark:border-red-900 shadow-sm">
@@ -556,7 +624,7 @@ export default function OrderTrackingPage() {
             )}
             <div className="flex justify-between text-muted font-bold">
               <span>Pajak ({taxPercent}%)</span>
-              <span>Rp {Math.round(Number(order.total_amount) * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
+              <span>Rp {Math.round(orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0) * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
             </div>
             {Number(order.discount) > 0 && (
               <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
@@ -590,6 +658,20 @@ export default function OrderTrackingPage() {
                   </motion.div>
                 ) : (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                    {timeLeft !== null && (
+                      <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-2xl flex flex-col items-center gap-1.5 mb-2">
+                        <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                          <Clock className="w-4 h-4 animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Sisa Waktu Pembayaran</span>
+                        </div>
+                        <div className="text-xl font-black font-mono text-orange-700 dark:text-orange-300">
+                          {formatTimeLeft(timeLeft)}
+                        </div>
+                        <p className="text-[10px] text-orange-600 dark:text-orange-400/80 font-bold text-center leading-relaxed mt-1">
+                          Segera selesaikan pembayaran Anda sebelum batas waktu habis!
+                        </p>
+                      </div>
+                    )}
                     <button
                       onClick={handlePayDuitku}
                       disabled={paying}

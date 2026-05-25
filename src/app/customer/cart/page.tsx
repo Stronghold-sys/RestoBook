@@ -661,20 +661,18 @@ export default function CartPage() {
                router.push(`/customer/orders/${orderData.id}?status=pending`);
              },
              errorEvent: async function() {
-               await supabase.from("orders").delete().eq("id", orderData.id);
-               if (orderType === "dine_in" && selectedTable) {
-                 await supabase.from("tables").update({ status: "available" }).eq("id", selectedTable);
-               }
-               toast.error("Gagal memproses pembayaran. Pesanan dibatalkan.");
-               setLoading(false);
+               isOrderCompleted.current = true;
+               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+               clearCart();
+               toast.error("Pembayaran gagal. Pesanan disimpan sebagai Belum Bayar.");
+               router.push(`/customer/orders/${orderData.id}`);
              },
              closeEvent: async function() {
-               await supabase.from("orders").delete().eq("id", orderData.id);
-               if (orderType === "dine_in" && selectedTable) {
-                 await supabase.from("tables").update({ status: "available" }).eq("id", selectedTable);
-               }
-               toast.error("Pembayaran dibatalkan. Pesanan tidak dibuat.");
-               setLoading(false);
+               isOrderCompleted.current = true;
+               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+               clearCart();
+               toast.success("Pesanan disimpan. Silakan selesaikan pembayaran Anda.");
+               router.push(`/customer/orders/${orderData.id}`);
              }
           });
           return;
@@ -765,7 +763,7 @@ export default function CartPage() {
             <div className="flex justify-between text-muted">
               <span>Pajak ({taxPercent}%)</span>
               <span className="font-semibold text-text-light dark:text-text-dark">
-                Rp {Math.round(totalAmount * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)
+                Rp {Math.round(subtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)
               </span>
             </div>
             

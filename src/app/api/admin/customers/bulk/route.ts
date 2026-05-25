@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
                 await resend.emails.send({
                   from: 'RestoBook <noreply@restobookid.my.id>',
                   to: emailToSend,
-                  subject: 'Akun RestoBook Anda Telah Dipulihkan! 🎉',
+                  subject: 'Akun RestoBook Anda Telah Dipulihkan',
                   html: `
                     <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
                       <div style="text-align: center; margin-bottom: 24px;">
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
                         <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemulihan Akun Sukses (Aksi Massal)</p>
                       </div>
                       <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-                      <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Selamat, ${name}! 🎉</h2>
+                      <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Selamat, ${name}!</h2>
                       <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
                         Akun RestoBook Anda telah resmi dipulihkan oleh administrator. Anda sekarang sudah dapat mengakses kembali seluruh fitur kami secara normal.
                       </p>

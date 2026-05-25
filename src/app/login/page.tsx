@@ -774,7 +774,7 @@ export default function LoginPage() {
                           <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">✅ Banding Disetujui!</p>
+                          <p className="text-sm font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Banding Disetujui!</p>
                           <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">
                             Selamat! Permohonan banding Anda telah <strong>disetujui</strong> oleh administrator RestoBook. Akun Anda telah diaktifkan kembali secara penuh dan siap untuk digunakan.
                           </p>
@@ -814,7 +814,7 @@ export default function LoginPage() {
                           <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-red-800 dark:text-red-300 uppercase tracking-wide">❌ Banding Ditolak</p>
+                          <p className="text-sm font-black text-red-800 dark:text-red-300 uppercase tracking-wide">Banding Ditolak</p>
                           <p className="text-xs text-red-700 dark:text-red-400 mt-1 leading-relaxed">
                             Kami menyesal memberitahukan bahwa pengajuan banding Anda telah <strong>ditolak</strong> oleh tim manajemen. Namun, akun Anda masih dalam masa penangguhan <strong>sementara</strong> dan akan otomatis aktif kembali setelah sisa waktu penangguhan habis.
                           </p>
@@ -855,7 +855,7 @@ export default function LoginPage() {
                           <Ban className="w-5 h-5 text-red-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-red-400 uppercase tracking-wide">🚫 Banding Ditolak — Keputusan Final</p>
+                          <p className="text-sm font-black text-red-400 uppercase tracking-wide">Banding Ditolak — Keputusan Final</p>
                           <p className="text-xs text-gray-300 mt-2 leading-relaxed">
                             Dengan penuh penyesalan, kami harus memberitahukan bahwa pengajuan banding Anda untuk pemulihan akun yang <strong className="text-red-400">diblokir secara permanen</strong> telah ditolak oleh tim manajemen kami setelah melalui proses peninjauan yang menyeluruh.
                           </p>
@@ -895,7 +895,7 @@ export default function LoginPage() {
                           <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-blue-800 dark:text-blue-300 uppercase tracking-wide">🕐 Banding Sedang Ditinjau</p>
+                          <p className="text-sm font-black text-blue-800 dark:text-blue-300 uppercase tracking-wide">Banding Sedang Ditinjau</p>
                           <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
                             Pengajuan banding Anda <strong>sedang dalam proses peninjauan</strong> oleh tim manajemen RestoBook. Kami akan memberikan keputusan dalam waktu maksimal <strong>1×24 jam</strong>. Harap bersabar dan periksa email Anda secara berkala.
                           </p>

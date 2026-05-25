@@ -296,7 +296,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full min-w-[900px] text-left">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/50 text-muted text-xs uppercase tracking-widest font-bold border-b border-border-light dark:border-border-dark">
                 <th className="p-6 whitespace-nowrap">Identitas Karyawan</th>

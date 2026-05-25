@@ -533,7 +533,7 @@ function ShiftsTable({ shifts }: { shifts: any[] }) {
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full min-w-[900px] text-left">
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark">
             <tr className="text-[10px] font-black uppercase text-muted tracking-widest">
               <th className="px-6 py-4 whitespace-nowrap">Karyawan</th>

@@ -115,7 +115,7 @@ export default function AdminCategories() {
 
       <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[800px] text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark text-muted text-sm">
                 <th className="p-4 font-medium w-16 text-center whitespace-nowrap">Urutan</th>

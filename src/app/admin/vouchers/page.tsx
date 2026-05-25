@@ -397,7 +397,7 @@ export default function AdminVouchersPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[800px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border-light dark:border-border-dark">
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Kode</th>

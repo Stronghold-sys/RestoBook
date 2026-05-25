@@ -740,6 +740,7 @@ export default function CartPage() {
                         <select
                           required
                           value={deliveryProvince}
+                          title="Provinsi"
                           onChange={e => handleProvinceChange(e.target.value)}
                           className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                         >
@@ -755,6 +756,7 @@ export default function CartPage() {
                           required
                           disabled={!deliveryProvince}
                           value={deliveryRegency}
+                          title="Kabupaten / Kota"
                           onChange={e => handleRegencyChange(e.target.value)}
                           className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
                         >
@@ -773,6 +775,7 @@ export default function CartPage() {
                           required
                           disabled={!deliveryRegency}
                           value={deliveryDistrict}
+                          title="Kecamatan"
                           onChange={e => handleDistrictChange(e.target.value)}
                           className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
                         >
@@ -788,6 +791,7 @@ export default function CartPage() {
                           required
                           disabled={!deliveryDistrict}
                           value={deliveryVillage}
+                          title="Kelurahan / Desa"
                           onChange={e => setDeliveryVillage(e.target.value)}
                           className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
                         >

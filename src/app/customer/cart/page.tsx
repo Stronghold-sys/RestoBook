@@ -76,6 +76,28 @@ export default function CartPage() {
       }
     };
     fetchAvailableVouchers();
+
+    const channel = supabase
+      .channel("cart_vouchers_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vouchers" },
+        () => {
+          fetchAvailableVouchers();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "customer_vouchers" },
+        () => {
+          fetchAvailableVouchers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleApplyVoucher = async () => {

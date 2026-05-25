@@ -9,6 +9,7 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CustomerVouchersPage() {
   const [loading, setLoading] = useState(true);
@@ -16,8 +17,32 @@ export default function CustomerVouchersPage() {
   const [historyVouchers, setHistoryVouchers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
 
+  const supabase = createClient();
+
   useEffect(() => {
     fetchCustomerVouchers();
+
+    const channel = supabase
+      .channel("customer-vouchers-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vouchers" },
+        () => {
+          fetchCustomerVouchers();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "customer_vouchers" },
+        () => {
+          fetchCustomerVouchers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchCustomerVouchers = async () => {

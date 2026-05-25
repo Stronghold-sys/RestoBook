@@ -252,10 +252,18 @@ export default function POSPage() {
       })
       .subscribe();
 
+    // Realtime Vouchers Sync
+    const vouchersChannel = supabase.channel("pos_vouchers")
+      .on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, () => {
+        fetchVouchersOnly();
+      })
+      .subscribe();
+
     // Fast backup sync poll (every 3 seconds) for bulletproof realtime experience
     const backupInterval = setInterval(() => {
       fetchMenuItemsOnly();
       fetchTablesOnly();
+      fetchVouchersOnly();
     }, 3000);
 
     return () => {
@@ -266,6 +274,7 @@ export default function POSPage() {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(broadcastChannel);
+      supabase.removeChannel(vouchersChannel);
     };
   }, []);
 
@@ -284,6 +293,24 @@ export default function POSPage() {
       if (data) setTables(data);
     } catch (e) {
       console.error("POS table poll error:", e);
+    }
+  };
+
+  const fetchVouchersOnly = async () => {
+    try {
+      const res = await fetch("/api/admin/vouchers");
+      const data = await res.json();
+      if (res.ok) {
+        const now = new Date();
+        const activeV = (data.vouchers || []).filter((v: any) => 
+          v.is_active && 
+          new Date(v.expires_at) > now && 
+          v.used_count < v.usage_limit
+        );
+        setAvailableVouchers(activeV);
+      }
+    } catch (e) {
+      console.error("POS voucher poll error:", e);
     }
   };
 

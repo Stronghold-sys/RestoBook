@@ -61,6 +61,21 @@ export default function AdminVouchersPage() {
   useEffect(() => {
     fetchVouchers();
     generateRandomCode(false);
+
+    const channel = supabase
+      .channel("admin-vouchers-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vouchers" },
+        () => {
+          fetchVouchers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchVouchers = async () => {
@@ -98,10 +113,15 @@ export default function AdminVouchersPage() {
 
     setIsSubmitting(true);
     try {
+      const formattedForm = {
+        ...form,
+        expires_at: new Date(form.expires_at).toISOString()
+      };
+
       const response = await fetch("/api/admin/vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify(formattedForm)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal membuat voucher");

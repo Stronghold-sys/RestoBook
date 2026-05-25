@@ -1609,11 +1609,11 @@ export default function CashierDashboard() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border-light dark:border-border-dark text-muted text-sm">
-                <th className="pb-3 font-medium">No. Pesanan</th>
-                <th className="pb-3 font-medium">Waktu</th>
-                <th className="pb-3 font-medium">Tipe</th>
-                <th className="pb-3 font-medium">Total</th>
-                <th className="pb-3 font-medium">Status</th>
+                <th className="pb-3 pr-4 font-medium whitespace-nowrap">No. Pesanan</th>
+                <th className="pb-3 px-4 font-medium whitespace-nowrap">Waktu</th>
+                <th className="pb-3 px-4 font-medium whitespace-nowrap">Tipe</th>
+                <th className="pb-3 px-4 font-medium whitespace-nowrap">Total</th>
+                <th className="pb-3 pl-4 font-medium whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -1624,12 +1624,12 @@ export default function CashierDashboard() {
               ) : (
                 recentOrders.map(order => (
                   <tr key={order.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-4 font-medium text-text-light dark:text-text-dark">#{order.id.split('-')[0]}</td>
-                    <td className="py-4 text-sm text-muted">{format(new Date(order.created_at), 'HH:mm')}</td>
-                    <td className="py-4 text-sm text-text-light dark:text-text-dark capitalize">{order.order_type.replace('_', ' ')}</td>
-                    <td className="py-4 font-bold text-text-light dark:text-text-dark">Rp {order.total_amount.toLocaleString('id-ID')}</td>
-                    <td className="py-4">
-                      <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${
+                    <td className="py-4 pr-4 font-medium text-text-light dark:text-text-dark whitespace-nowrap">#{order.id.split('-')[0]}</td>
+                    <td className="py-4 px-4 text-sm text-muted whitespace-nowrap">{format(new Date(order.created_at), 'HH:mm')}</td>
+                    <td className="py-4 px-4 text-sm text-text-light dark:text-text-dark capitalize whitespace-nowrap">{order.order_type.replace('_', ' ')}</td>
+                    <td className="py-4 px-4 font-bold text-text-light dark:text-text-dark whitespace-nowrap">Rp {order.total_amount.toLocaleString('id-ID')}</td>
+                    <td className="py-4 pl-4 whitespace-nowrap">
+                      <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md whitespace-nowrap inline-block ${
                         order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         order.status === 'completed' ? 'bg-green-100 text-green-800' :
                         'bg-blue-100 text-blue-800'

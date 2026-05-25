@@ -20,6 +20,9 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
   const [resolvedCashierName, setResolvedCashierName] = useState(initialCashierName);
   const supabase = createClient();
 
+  // Cashier name is only relevant for dine_in and takeaway orders (not delivery/online)
+  const isInPersonOrder = order?.order_type === 'dine_in' || order?.order_type === 'takeaway';
+
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase.from("restaurant_settings").select("*").single();
@@ -27,8 +30,9 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
     };
     fetchSettings();
 
-    // If no cashier name provided but it's a cashier/admin copy, try to fetch current user
-    if (!initialCashierName) {
+    // Auto-fetch cashier name only for in-person orders and only for kasir copies
+    // (to avoid showing customer's own name as cashier in their receipt)
+    if (!initialCashierName && isKasirCopy && isInPersonOrder) {
       const fetchCurrentCashier = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -38,7 +42,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
       };
       fetchCurrentCashier();
     }
-  }, [initialCashierName]);
+  }, [initialCashierName, isKasirCopy, isInPersonOrder]);
 
   const subtotal = orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0);
   const totalAmount = Number(order.total_amount);
@@ -137,14 +141,14 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#666' }}>Tipe:</span>
-          <span className="font-bold uppercase">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
+          <span className="font-bold uppercase">
+            {order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}
+          </span>
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#666' }}>Pembayaran:</span>
           <span className="font-bold uppercase">
-            {order.notes?.includes("[METODE:")
-              ? order.notes.split("[METODE:")[1].split("]")[0]
-              : order.payment_method}
+            {order.payment_method === "cash" ? "Tunai" : "Non-Tunai"}
           </span>
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -153,7 +157,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
             {order.payment_status === "paid" ? "LUNAS" : "PENDING"}
           </span>
         </div>
-        {resolvedCashierName && (
+        {isInPersonOrder && resolvedCashierName && (
           <div className="flex justify-between flex-row pt-1.5 mt-1.5 border-t border-gray-100" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#666' }}>Kasir:</span>
             <span className="font-bold uppercase">{resolvedCashierName}</span>

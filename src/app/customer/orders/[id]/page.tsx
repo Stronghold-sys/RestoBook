@@ -22,6 +22,7 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [customerName, setCustomerName] = useState("");
+  const [cashierName, setCashierName] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -79,10 +80,19 @@ export default function OrderTrackingPage() {
 
   const fetchOrderDetails = async () => {
     try {
-      const { data: orderData, error } = await supabase.from("orders").select("*, tables(table_number)").eq("id", id).single();
+      const { data: orderData, error } = await supabase
+        .from("orders")
+        .select("*, tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
+        .eq("id", id)
+        .single();
       if (error) throw error;
       
       setOrder(orderData);
+
+      // Fetch cashier name if this order was processed by a cashier
+      if (orderData.cashier?.full_name) {
+        setCashierName(orderData.cashier.full_name);
+      }
 
       const { data: itemsData } = await supabase.from("order_items").select("*, menu_items(name, image_url)").eq("order_id", id);
       setOrderItems(itemsData || []);
@@ -905,7 +915,7 @@ export default function OrderTrackingPage() {
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
-                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} />
+                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
                 </div>
                 <div className="p-4 border-t border-gray-100 bg-white">
                    <button onClick={handlePrint} className="w-full py-3 bg-blue-600 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700"><Printer className="w-4 h-4" /> Cetak Sekarang</button>

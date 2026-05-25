@@ -327,13 +327,7 @@ export default function LandingPage() {
                   Lihat Menu
                 </motion.button>
               </a>
-              <Link href="/demo-checkout">
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-amber-400/30 transition-all flex items-center justify-center gap-2">
-                  <ChevronRight className="w-5 h-5" /> Coba Demo Pembayaran
-                </motion.button>
-              </Link>
             </div>
-
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2, type: "spring" }} className="relative h-[400px] lg:h-[550px] rounded-[2rem] overflow-hidden shadow-2xl">
             <Image src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1200" alt="Restaurant Interior" fill className="object-cover transition-transform duration-700 hover:scale-105" priority />

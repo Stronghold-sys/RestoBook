@@ -39,6 +39,10 @@ export default function AdminSettingsPage() {
     tax_percent: 10.00,
     payment_expiry_minutes: 60
   });
+
+  const [expiryHoursInput, setExpiryHoursInput] = useState<string>("1");
+  const [expiryMinutesInput, setExpiryMinutesInput] = useState<string>("0");
+  const [expirySecondsInput, setExpirySecondsInput] = useState<string>("0");
   
   // Merchant QRIS & E-Wallet configuration state
   const [merchantSettings, setMerchantSettings] = useState({
@@ -73,22 +77,29 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     try {
       const { data } = await supabase.from("restaurant_settings").select("*").single();
-      if (data) setSettings({
-        ...settings,
-        ...data,
-        is_24_hours: !!data.is_24_hours,
-        close_warning_minutes: data.close_warning_minutes !== null && data.close_warning_minutes !== undefined ? Number(data.close_warning_minutes) : 10,
-        customer_warning_minutes: data.customer_warning_minutes !== null && data.customer_warning_minutes !== undefined ? Number(data.customer_warning_minutes) : 15,
-        shift_closing_buffer_minutes: data.shift_closing_buffer_minutes !== null && data.shift_closing_buffer_minutes !== undefined ? Number(data.shift_closing_buffer_minutes) : 30,
-        is_auto_close_shift_enabled: data.is_auto_close_shift_enabled !== undefined && data.is_auto_close_shift_enabled !== null ? !!data.is_auto_close_shift_enabled : true,
-        late_tolerance_minutes: data.late_tolerance_minutes !== null && data.late_tolerance_minutes !== undefined ? Number(data.late_tolerance_minutes) : 15,
-        auto_deduct_late_salary: !!data.auto_deduct_late_salary,
-        minutes_per_working_day: data.minutes_per_working_day !== null && data.minutes_per_working_day !== undefined ? Number(data.minutes_per_working_day) : 480,
-        payday_date: data.payday_date !== null && data.payday_date !== undefined ? Number(data.payday_date) : 28,
-        cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27,
-        tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00,
-        payment_expiry_minutes: data.payment_expiry_minutes !== null && data.payment_expiry_minutes !== undefined ? Number(data.payment_expiry_minutes) : 60
-      });
+      if (data) {
+        const expiryMin = data.payment_expiry_minutes !== null && data.payment_expiry_minutes !== undefined ? Number(data.payment_expiry_minutes) : 60;
+        setSettings({
+          ...settings,
+          ...data,
+          is_24_hours: !!data.is_24_hours,
+          close_warning_minutes: data.close_warning_minutes !== null && data.close_warning_minutes !== undefined ? Number(data.close_warning_minutes) : 10,
+          customer_warning_minutes: data.customer_warning_minutes !== null && data.customer_warning_minutes !== undefined ? Number(data.customer_warning_minutes) : 15,
+          shift_closing_buffer_minutes: data.shift_closing_buffer_minutes !== null && data.shift_closing_buffer_minutes !== undefined ? Number(data.shift_closing_buffer_minutes) : 30,
+          is_auto_close_shift_enabled: data.is_auto_close_shift_enabled !== undefined && data.is_auto_close_shift_enabled !== null ? !!data.is_auto_close_shift_enabled : true,
+          late_tolerance_minutes: data.late_tolerance_minutes !== null && data.late_tolerance_minutes !== undefined ? Number(data.late_tolerance_minutes) : 15,
+          auto_deduct_late_salary: !!data.auto_deduct_late_salary,
+          minutes_per_working_day: data.minutes_per_working_day !== null && data.minutes_per_working_day !== undefined ? Number(data.minutes_per_working_day) : 480,
+          payday_date: data.payday_date !== null && data.payday_date !== undefined ? Number(data.payday_date) : 28,
+          cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27,
+          tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00,
+          payment_expiry_minutes: expiryMin
+        });
+        const totalSec = Math.round(expiryMin * 60);
+        setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
+        setExpiryMinutesInput(Math.floor((totalSec % 3600) / 60).toString());
+        setExpirySecondsInput((totalSec % 60).toString());
+      }
     } catch (e: any) { console.error(e); } finally { setLoading(false); }
   };
 
@@ -371,7 +382,7 @@ export default function AdminSettingsPage() {
                   type="number" 
                   min="1" 
                   max="120"
-                  value={settings.customer_warning_minutes || 10} 
+                  value={settings.customer_warning_minutes || ""} 
                   onChange={e => {
                     const val = Number(e.target.value);
                     setSettings({ ...settings, close_warning_minutes: val, customer_warning_minutes: val });
@@ -383,25 +394,83 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="paymentExpiryMinutes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1.5 block">
-                Batas Waktu Pembayaran Online (Menit)
+              <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">
+                Batas Waktu Pembayaran Online
               </label>
-              <div className="relative">
-                <Clock className="absolute left-3.5 top-3.5 h-5 w-5 text-muted" />
-                <input 
-                  id="paymentExpiryMinutes" 
-                  title="Batas Waktu Pembayaran Online" 
-                  type="number" 
-                  min="1" 
-                  max="1440"
-                  value={settings.payment_expiry_minutes || 60} 
-                  onChange={e => {
-                    setSettings({ ...settings, payment_expiry_minutes: Number(e.target.value) });
-                  }} 
-                  className="w-full pl-11 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark font-medium" 
-                />
+              
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">Jam</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
+                    <input 
+                      type="number" 
+                      min="0"
+                      title="Jam Batas Waktu Pembayaran"
+                      placeholder="0"
+                      value={expiryHoursInput}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setExpiryHoursInput(val);
+                        const h = val === "" ? 0 : Number(val);
+                        const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput);
+                        const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput);
+                        setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) }));
+                      }}
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-medium"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">Menit</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="59"
+                      title="Menit Batas Waktu Pembayaran"
+                      placeholder="0"
+                      value={expiryMinutesInput}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setExpiryMinutesInput(val);
+                        const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput);
+                        const m = val === "" ? 0 : Number(val);
+                        const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput);
+                        setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) }));
+                      }}
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">Detik</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="59"
+                      title="Detik Batas Waktu Pembayaran"
+                      placeholder="0"
+                      value={expirySecondsInput}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setExpirySecondsInput(val);
+                        const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput);
+                        const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput);
+                        const s = val === "" ? 0 : Number(val);
+                        setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) }));
+                      }}
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-medium"
+                    />
+                  </div>
+                </div>
               </div>
-              <p className="text-[11px] text-muted mt-1">Mengatur batas waktu (dalam menit) bagi pelanggan untuk menyelesaikan pembayaran non-tunai sebelum pesanan dibatalkan otomatis.</p>
+              <p className="text-[11px] text-muted mt-2">Mengatur batas waktu (dalam jam, menit, dan detik) bagi pelanggan untuk menyelesaikan pembayaran non-tunai sebelum pesanan dibatalkan otomatis secara realtime.</p>
             </div>
 
             <div className="flex flex-col gap-3 p-4 bg-blue-50/50 dark:bg-blue-950/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">

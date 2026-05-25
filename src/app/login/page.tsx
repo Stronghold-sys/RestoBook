@@ -157,6 +157,21 @@ export default function LoginPage() {
     }
 
     try {
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+      if (isCapacitor) {
+        // Direct fallback to standard Supabase Google OAuth redirect in Capacitor
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/api/auth/callback`
+          }
+        });
+        if (error) {
+          toast.error("Gagal memulai Login Google: " + error.message);
+        }
+        return;
+      }
+
       const google = (window as any).google;
       if (!google?.accounts?.id) {
         // Fallback to standard Supabase Google OAuth redirect
@@ -300,24 +315,18 @@ export default function LoginPage() {
       });
 
       // Show Google One Tap / popup
-      google.accounts.id.prompt((notification: any) => {
+      google.accounts.id.prompt(async (notification: any) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback: render a hidden Google Sign-In button and click it
-          const btnDiv = document.createElement('div');
-          btnDiv.id = 'g_id_signin_fallback';
-          btnDiv.style.position = 'fixed';
-          btnDiv.style.top = '-9999px';
-          document.body.appendChild(btnDiv);
-          
-          google.accounts.id.renderButton(btnDiv, {
-            type: 'standard',
-            size: 'large',
+          // Fallback to standard Supabase Google OAuth redirect in restricted environments
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/api/auth/callback`
+            }
           });
-          
-          const btn = btnDiv.querySelector('div[role="button"]') as HTMLElement;
-          if (btn) btn.click();
-          
-          setTimeout(() => btnDiv.remove(), 1000);
+          if (error) {
+            toast.error("Gagal memulai Login Google: " + error.message);
+          }
         }
       });
     } catch (err: any) {

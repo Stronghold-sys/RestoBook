@@ -110,13 +110,45 @@ export default function AdminAttendancePage() {
   };
 
   if (selectedEmployee) {
-    return <EmployeeDetail 
-      employeeId={selectedEmployee.id} 
-      onClose={() => setSelectedEmployee(null)} 
-      handleApproveLeave={handleApproveLeave}
-      onUpdate={fetchData}
-      onViewPhoto={setActivePhotoUrl}
-    />;
+    return (
+      <>
+        <EmployeeDetail 
+          employeeId={selectedEmployee.id} 
+          onClose={() => setSelectedEmployee(null)} 
+          handleApproveLeave={handleApproveLeave}
+          onUpdate={fetchData}
+          onViewPhoto={setActivePhotoUrl}
+        />
+        <AnimatePresence>
+          {activePhotoUrl && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative max-w-lg w-full bg-card-light dark:bg-card-dark rounded-3xl p-6 shadow-2xl border border-border-light dark:border-border-dark flex flex-col items-center gap-4"
+              >
+                <button 
+                  onClick={() => setActivePhotoUrl(null)} 
+                  className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-800 text-muted hover:text-red-500 rounded-full transition-colors z-10"
+                  title="Tutup Pratinjau"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark">
+                  <img 
+                    src={activePhotoUrl} 
+                    alt="Bukti Foto Absensi" 
+                    className="w-full h-auto max-h-[70vh] object-contain"
+                  />
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
   }
 
   return (

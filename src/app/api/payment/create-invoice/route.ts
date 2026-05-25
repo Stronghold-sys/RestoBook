@@ -129,6 +129,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // === DUITKU API ITEM DETAILS VALIDATOR ===
+    // Duitku Pop API does not allow items with negative or zero prices (e.g. discounts).
+    // If any item has price <= 0, we must fallback to a single consolidated item matching the final payment amount.
+    const hasInvalidPrice = itemDetails.length === 0 || itemDetails.some((item: any) => item.price <= 0);
+    const finalItemDetails = hasInvalidPrice 
+      ? [{
+          name: `Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()}`,
+          price: paymentAmount,
+          quantity: 1
+        }]
+      : itemDetails;
+
     const protocol = req.headers.get('x-forwarded-proto') || 'https';
     const host = req.headers.get('host');
     const baseUrl = `${protocol}://${host}`;
@@ -161,7 +173,7 @@ export async function POST(req: NextRequest) {
       email: customerDetail.email,
       paymentMethod: paymentMethod || "",
       phoneNumber: customerDetail.phoneNumber,
-      itemDetails: itemDetails,
+      itemDetails: finalItemDetails,
       customerDetail: {
         firstName: customerDetail.firstName,
         lastName: customerDetail.lastName,

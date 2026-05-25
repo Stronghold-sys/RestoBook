@@ -13,9 +13,18 @@ import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://restobookid.my.id'),
   title: "RestoBook - Sistem Pemesanan Restoran",
-  description: "Aplikasi pemesanan restoran modern dan responsif",
+  description: "Aplikasi pemesanan restoran online yang mudah, cepat, dan modern. Pesan meja atau makanan favorit Anda langsung dari RestoBook.",
+  openGraph: {
+    title: "RestoBook - Sistem Pemesanan Restoran",
+    description: "Pesan meja atau makanan favorit Anda langsung dari RestoBook.",
+    url: "https://restobookid.my.id",
+    siteName: "RestoBook",
+    type: "website",
+  },
 };
+
 
 export const viewport: Viewport = {
   width: "device-width",

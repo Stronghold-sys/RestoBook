@@ -381,13 +381,13 @@ export default function CashierOrders() {
                       <td className="p-6 text-sm text-muted">{new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB</td>
                       <td className="p-6">
                         <p className="text-sm font-bold text-text-light dark:text-text-dark">{getCustomerName(order)}</p>
-                        <p className="text-[10px] text-muted font-black uppercase mt-1 flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-500' : order.order_type === 'takeaway' ? 'bg-orange-500' : 'bg-emerald-500'}`} />
+                        <p className="text-[10px] text-muted font-black uppercase mt-1 flex items-center gap-1.5 whitespace-nowrap">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${order.order_type === 'delivery' ? 'bg-blue-500' : order.order_type === 'takeaway' ? 'bg-orange-500' : 'bg-emerald-500'}`} />
                           {order.order_type}
                         </p>
                       </td>
                       <td className="p-6">
-                         <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                         <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap inline-block ${
                             order.order_type === "dine_in" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                             order.order_type === "delivery" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                             "bg-orange-50 text-orange-700 border border-orange-100"

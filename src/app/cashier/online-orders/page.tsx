@@ -225,8 +225,8 @@ export default function OnlineOrdersPage() {
           <p className="text-muted text-sm mt-1 font-medium">Monitoring dan verifikasi pesanan pelanggan secara real-time.</p>
         </div>
         
-        <div className="flex items-center gap-4">
-           <div className="relative group">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative group flex-1 md:flex-none">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
             <input 
               type="text" 
@@ -235,28 +235,28 @@ export default function OnlineOrdersPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="pl-12 pr-4 py-3.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl focus:ring-2 focus:ring-primary outline-none w-full md:w-64 transition-all text-sm font-bold shadow-sm"
             />
-            <button 
-              onClick={async () => {
-                const t = toast.loading("Sinkronisasi Data...");
-                try {
-                  await fetch('/api/fix-rls');
-                  await fetchOrders();
-                  toast.success("Data berhasil disinkronkan!", { id: t });
-                } catch (e) {
-                  toast.error("Gagal sinkronisasi", { id: t });
-                }
-              }}
-              title="Sinkronkan Email & Database"
-              className="p-3.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-2xl transition-all flex items-center justify-center shrink-0"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
           </div>
+          <button 
+            onClick={async () => {
+              const t = toast.loading("Sinkronisasi Data...");
+              try {
+                await fetch('/api/fix-rls');
+                await fetchOrders();
+                toast.success("Data berhasil disinkronkan!", { id: t });
+              } catch (e) {
+                toast.error("Gagal sinkronisasi", { id: t });
+              }
+            }}
+            title="Sinkronkan Email & Database"
+            className="p-3.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-2xl transition-all flex items-center justify-center shrink-0 shadow-sm"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
       {/* Tabs Selector */}
-      <div className="flex gap-2 p-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl w-fit shadow-sm">
+      <div className="flex gap-2 p-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar scrollbar-none shadow-sm">
         {[
           { id: "pending", label: "Baru", icon: Zap, count: orders.filter(o => o.status === "pending" && (o.payment_status === 'paid' || o.payment_method === 'cash')).length },
           { id: "processing", label: "Aktif", icon: Timer, count: orders.filter(o => ["confirmed", "processing", "shipping"].includes(o.status)).length },
@@ -265,7 +265,7 @@ export default function OnlineOrdersPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
+            className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-black transition-all whitespace-nowrap shrink-0 ${
               activeTab === tab.id 
                 ? "bg-primary text-white shadow-lg shadow-primary/20 scale-105" 
                 : "text-muted hover:text-text-light dark:hover:text-text-dark"

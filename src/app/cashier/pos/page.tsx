@@ -979,9 +979,9 @@ export default function POSPage() {
         </motion.div>
       )}
 
-      <div className="flex flex-1 gap-4 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 gap-4 overflow-y-auto lg:overflow-hidden pr-1">
         {/* PANEL KIRI - MENU & SEARCH */}
-        <div className="w-2/3 flex flex-col gap-4 overflow-hidden">
+        <div className="w-full lg:w-2/3 flex flex-col gap-4 shrink-0 lg:shrink lg:overflow-hidden">
           {/* Pencarian Pesanan Online */}
           <div className="bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark p-4 shrink-0">
             <div className="flex flex-col md:flex-row gap-4">
@@ -994,7 +994,7 @@ export default function POSPage() {
                 
                 <div className="flex gap-2">
                   <input type="text" value={searchOrderNo} onChange={e => setSearchOrderNo(e.target.value)} placeholder="No. Pesanan" className="flex-1 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary" />
-                  <button onClick={handleSearchOrder} disabled={searchingOrder} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md shadow-primary/20 disabled:opacity-70">
+                  <button onClick={handleSearchOrder} disabled={searchingOrder} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md shadow-primary/20 disabled:opacity-70 whitespace-nowrap shrink-0">
                     {searchingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Cari
                   </button>
                 </div>
@@ -1188,7 +1188,7 @@ export default function POSPage() {
         </div>
 
         {/* PANEL KANAN - CART */}
-        <div className="w-1/3 bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark flex flex-col overflow-hidden">
+        <div className="w-full lg:w-1/3 bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark flex flex-col shrink-0 lg:shrink lg:overflow-hidden min-h-[400px] lg:min-h-0">
           <div className="p-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20 shrink-0">
             <h2 className="font-black text-lg text-text-light dark:text-text-dark">Keranjang</h2>
             {cart.length > 0 && (
@@ -1356,24 +1356,24 @@ export default function POSPage() {
               )}
             </div>
 
-            <div className="space-y-1 mb-4">
-              <div className="flex justify-between items-center text-xs font-medium text-muted">
-                <span>Subtotal</span>
-                <span>Rp {cartSubtotal.toLocaleString("id-ID")}</span>
+            <div className="space-y-1.5 mb-4">
+              <div className="flex justify-between items-center text-xs font-medium text-muted gap-2">
+                <span className="whitespace-nowrap">Subtotal</span>
+                <span className="font-bold text-text-light dark:text-text-dark whitespace-nowrap">Rp {cartSubtotal.toLocaleString("id-ID")}</span>
               </div>
               {discount && (
-                <div className="flex justify-between items-center text-xs font-bold text-green-600">
-                  <span>Diskon</span>
-                  <span>-Rp {discountAmount.toLocaleString("id-ID")}</span>
+                <div className="flex justify-between items-center text-xs font-bold text-green-600 gap-2">
+                  <span className="whitespace-nowrap">Diskon</span>
+                  <span className="whitespace-nowrap">-Rp {discountAmount.toLocaleString("id-ID")}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center text-xs font-medium text-muted">
-                <span>Pajak ({taxPercent}%)</span>
-                <span>Rp {Math.round(cartSubtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
+              <div className="flex justify-between items-center text-xs font-medium text-muted gap-2">
+                <span className="whitespace-nowrap">Pajak ({taxPercent}%)</span>
+                <span className="text-right whitespace-nowrap">Rp {Math.round(cartSubtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} <span className="text-[9px] opacity-60">(Termasuk)</span></span>
               </div>
-              <div className="flex justify-between items-center pt-2 mt-2 border-t border-border-light dark:border-border-dark">
-                <span className="text-sm font-bold text-muted uppercase tracking-widest">Total Tagihan</span>
-                <span className="text-2xl font-black text-text-light dark:text-text-dark">Rp {cartTotal.toLocaleString("id-ID")}</span>
+              <div className="flex justify-between items-center pt-2 mt-2 border-t border-border-light dark:border-border-dark gap-2">
+                <span className="text-xs sm:text-sm font-bold text-muted uppercase tracking-widest whitespace-nowrap">Total Tagihan</span>
+                <span className="text-xl sm:text-2xl font-black text-text-light dark:text-text-dark whitespace-nowrap">Rp {cartTotal.toLocaleString("id-ID")}</span>
               </div>
             </div>
             

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare, CheckCircle, XCircle, Ban, RefreshCw, ShieldAlert } from "lucide-react";
+import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare, CheckCircle, XCircle, Ban, RefreshCw, ShieldAlert, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -159,7 +159,16 @@ export default function LoginPage() {
     try {
       const google = (window as any).google;
       if (!google?.accounts?.id) {
-        toast.error("Google Sign-In belum siap, silakan refresh halaman");
+        // Fallback to standard Supabase Google OAuth redirect
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/api/auth/callback`
+          }
+        });
+        if (error) {
+          toast.error("Gagal memulai Login Google: " + error.message);
+        }
         return;
       }
 
@@ -524,7 +533,10 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="max-w-md w-full bg-card-light dark:bg-card-dark rounded-2xl shadow-xl overflow-hidden"
       >
-        <div className="bg-primary p-8 text-center">
+        <div className="bg-primary p-8 text-center relative">
+          <Link href="/" className="absolute top-4 left-4 text-white/80 hover:text-white transition-colors" aria-label="Kembali ke Beranda" title="Kembali ke Beranda">
+            <ArrowLeft className="w-6 h-6" />
+          </Link>
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}

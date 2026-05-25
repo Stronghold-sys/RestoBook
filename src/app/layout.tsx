@@ -10,12 +10,20 @@ import SessionStatusListener from "@/components/SessionStatusListener";
 import ScrollToTop from "@/components/ScrollToTop";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 
+import AppSplashScreen from "@/components/AppSplashScreen";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://restobookid.my.id'),
   title: "RestoBook - Sistem Pemesanan Restoran",
   description: "Aplikasi pemesanan restoran online yang mudah, cepat, dan modern. Pesan meja atau makanan favorit Anda langsung dari RestoBook.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RestoBook",
+  },
   openGraph: {
     title: "RestoBook - Sistem Pemesanan Restoran",
     description: "Pesan meja atau makanan favorit Anda langsung dari RestoBook.",
@@ -32,6 +40,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#ea580c",
 };
 
 export default function RootLayout({
@@ -47,14 +56,31 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={inter.className}>
+        <AppSplashScreen />
         <DeviceDimensionManager />
         <DynamicFavicon />
         <ConnectionDetector />
         <SessionStatusListener />
         {children}
-        <Toaster position="top-center" />
+        <Toaster position="top-center" containerStyle={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }} />
         <RestoBot />
         <ScrollToTop />
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  },
+                  function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  }
+                );
+              });
+            }
+          `}
+        </Script>
         <Script
           src={duitkuScript}
           strategy="lazyOnload"

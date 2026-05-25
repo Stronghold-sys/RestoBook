@@ -24,7 +24,16 @@ export default function RegisterPage() {
     try {
       const google = (window as any).google;
       if (!google?.accounts?.id) {
-        toast.error("Google Sign-In belum siap, silakan refresh halaman");
+        // Fallback to standard Supabase Google OAuth redirect
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/api/auth/callback`
+          }
+        });
+        if (error) {
+          toast.error("Gagal memulai Google Auth: " + error.message);
+        }
         return;
       }
 

@@ -124,3 +124,18 @@ input[type=number] {
   padding-right: max(1rem, env(safe-area-inset-right)) !important;
 }
 
+/* Safe Area top support for Capacitor/PWA fullscreen mobile status bar */
+nav.fixed {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  height: calc(4rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+.safe-top-banner {
+  top: calc(4rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+.safe-top-hero {
+  padding-top: calc(10rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+

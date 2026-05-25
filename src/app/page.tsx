@@ -1,13 +1,14 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User } from "lucide-react";
+import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useThemeStore } from "@/store/useThemeStore";
 import { createClient } from "@/lib/supabase/client";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus, getMinutesUntilClose } from "@/utils/operationalHours";
+import toast from "react-hot-toast";
 
 const CATEGORIES = [
   { name: "Makanan Utama", icon: Utensils, color: "from-orange-500 to-red-500", count: 8 },
@@ -77,7 +78,110 @@ export default function LandingPage() {
   const [user, setUser] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // Pull to Refresh State
+  const [pullDistance, setPullDistance] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const supabase = createClient();
+
+  // Fetch functions declared in component scope
+  const fetchMenu = async () => {
+    const { data } = await supabase.from('menu_items').select('*, categories(name)').order('name');
+    if (data) setMenuItems(data.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description || "",
+      price: item.price,
+      image: item.image_url || "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop",
+      cat: item.categories?.name || "Lainnya",
+      is_active: item.is_active
+    })));
+  };
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from("restaurant_settings").select("*").single();
+    if (data) {
+      setOpeningTime(data.opening_time);
+      setClosingTime(data.closing_time);
+      setIsTemporaryClosed(!!data.is_temporary_closed);
+      setIsHoliday(!!data.is_holiday);
+      setHolidayReopenDate(data.holiday_reopen_date || "Besok");
+      setTemporaryClosedReopenTime(data.temporary_closed_reopen_time || "12:00");
+      setIs24Hours(!!data.is_24_hours);
+      setCustomerWarningMinutes(data.customer_warning_minutes !== null && data.customer_warning_minutes !== undefined ? Number(data.customer_warning_minutes) : 15);
+      
+      // Hydrate identity fields
+      if (data.name) setResName(data.name);
+      if (data.address) setResAddr(data.address);
+      if (data.phone) setResPhone(data.phone);
+      if (data.email) setResEmail(data.email);
+    }
+  };
+
+  const fetchPublishedReviews = async () => {
+    try {
+      const res = await fetch(`/api/reviews?t=${Date.now()}`, { cache: 'no-store' });
+      const json = await res.json();
+      const liveReviews = (json.data || []) as any[];
+
+      // Ulasan asli: SELALU percaya database, JANGAN pakai localStorage
+      const publishedLive = liveReviews.filter((r: any) => r.is_published === true);
+
+      // Ulasan dummy: pakai localStorage untuk toggle
+      const storedStates = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("review-publish-states") || "{}") : {};
+      const publishedDummies = DUMMY_REVIEWS
+        .map(d => ({ ...d, is_published: storedStates[d.id] !== undefined ? storedStates[d.id] : d.is_published }))
+        .filter(d => d.is_published);
+
+      setReviews([...publishedLive, ...publishedDummies.filter(d => !publishedLive.some((r: any) => r.id === d.id))]);
+    } catch (e) {
+      console.error("Error fetching reviews:", e);
+    }
+  };
+
+  // Touch event handlers for Pull-to-Refresh
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0 && !isRefreshing) {
+      setTouchStart(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (window.scrollY === 0 && touchStart > 0 && !isRefreshing) {
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - touchStart;
+      if (distance > 0) {
+        // Pulling down - apply resistance
+        const pull = Math.min(80, distance * 0.4);
+        setPullDistance(pull);
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    setTouchStart(0);
+    if (pullDistance >= 50 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(0);
+      try {
+        await Promise.all([
+          fetchMenu(),
+          fetchSettings(),
+          fetchPublishedReviews()
+        ]);
+        // Delay to show the skeleton animation clearly
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      } catch (err) {
+        console.error("Refresh failed:", err);
+      } finally {
+        setIsRefreshing(false);
+        toast.success("Halaman berhasil diperbarui!");
+      }
+    } else {
+      setPullDistance(0);
+    }
+  };
 
   useEffect(() => { 
     initTheme(); 
@@ -93,63 +197,8 @@ export default function LandingPage() {
     };
     checkSession();
     
-    // Fetch initial menu
-    const fetchMenu = async () => {
-      const { data } = await supabase.from('menu_items').select('*, categories(name)').order('name');
-      if (data) setMenuItems(data.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || "",
-        price: item.price,
-        image: item.image_url || "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop",
-        cat: item.categories?.name || "Lainnya",
-        is_active: item.is_active
-      })));
-    };
     fetchMenu();
-
-    // Fetch restaurant settings
-    const fetchSettings = async () => {
-      const { data } = await supabase.from("restaurant_settings").select("*").single();
-      if (data) {
-        setOpeningTime(data.opening_time);
-        setClosingTime(data.closing_time);
-        setIsTemporaryClosed(!!data.is_temporary_closed);
-        setIsHoliday(!!data.is_holiday);
-        setHolidayReopenDate(data.holiday_reopen_date || "Besok");
-        setTemporaryClosedReopenTime(data.temporary_closed_reopen_time || "12:00");
-        setIs24Hours(!!data.is_24_hours);
-        setCustomerWarningMinutes(data.customer_warning_minutes !== null && data.customer_warning_minutes !== undefined ? Number(data.customer_warning_minutes) : 15);
-        
-        // Hydrate identity fields
-        if (data.name) setResName(data.name);
-        if (data.address) setResAddr(data.address);
-        if (data.phone) setResPhone(data.phone);
-        if (data.email) setResEmail(data.email);
-      }
-    };
     fetchSettings();
-
-    const fetchPublishedReviews = async () => {
-      try {
-        const res = await fetch(`/api/reviews?t=${Date.now()}`, { cache: 'no-store' });
-        const json = await res.json();
-        const liveReviews = (json.data || []) as any[];
-
-        // Ulasan asli: SELALU percaya database, JANGAN pakai localStorage
-        const publishedLive = liveReviews.filter((r: any) => r.is_published === true);
-
-        // Ulasan dummy: pakai localStorage untuk toggle
-        const storedStates = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("review-publish-states") || "{}") : {};
-        const publishedDummies = DUMMY_REVIEWS
-          .map(d => ({ ...d, is_published: storedStates[d.id] !== undefined ? storedStates[d.id] : d.is_published }))
-          .filter(d => d.is_published);
-
-        setReviews([...publishedLive, ...publishedDummies.filter(d => !publishedLive.some((r: any) => r.id === d.id))]);
-      } catch (e) {
-        console.error("Error fetching reviews:", e);
-      }
-    };
     fetchPublishedReviews();
 
     // Realtime Sync
@@ -178,7 +227,6 @@ export default function LandingPage() {
           setIs24Hours(!!payload.new.is_24_hours);
           setCustomerWarningMinutes(payload.new.customer_warning_minutes !== null && payload.new.customer_warning_minutes !== undefined ? Number(payload.new.customer_warning_minutes) : 15);
           
-          // Real-time identity reflection
           if (payload.new.name) setResName(payload.new.name);
           if (payload.new.address) setResAddr(payload.new.address);
           if (payload.new.phone) setResPhone(payload.new.phone);
@@ -187,14 +235,12 @@ export default function LandingPage() {
       })
       .subscribe();
 
-    // Broadcast channel: sinyal instan dari admin saat publish/tarik ulasan
     const syncChannel = supabase.channel('reviews-sync-signal')
       .on('broadcast', { event: 'refresh' }, () => {
         fetchPublishedReviews();
       })
       .subscribe();
 
-    // Timer to update status reactively every second
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -216,14 +262,43 @@ export default function LandingPage() {
   const isClosingSoon = isOpen && minsUntilClose <= customerWarningMinutes && minsUntilClose > 0;
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark overflow-hidden transition-colors duration-300">
+    <div 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="min-h-screen bg-background-light dark:bg-background-dark overflow-hidden transition-colors duration-300"
+    >
+      {/* Pull to Refresh Indicator */}
+      {pullDistance > 0 && (
+        <div 
+          style={{ transform: `translateY(${pullDistance}px)` }} 
+          className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none transition-transform duration-75"
+        >
+          <div className="bg-white dark:bg-card-dark p-2.5 rounded-full shadow-lg border border-border-light dark:border-border-dark flex items-center justify-center mt-4">
+            <motion.div
+              animate={{ rotate: pullDistance * 4 }}
+              className="text-primary"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {isRefreshing && (
+        <div className="fixed top-24 left-0 right-0 z-[100] flex justify-center pointer-events-none">
+          <div className="bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold animate-bounce">
+            <RefreshCw className="w-4 h-4 animate-spin" /> Memperbarui...
+          </div>
+        </div>
+      )}
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-card-dark/80 backdrop-blur-md border-b border-border-light dark:border-border-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="p-2 bg-primary/10 rounded-xl"><Utensils className="w-6 h-6 text-primary" /></div>
-              <span className="text-xl font-bold text-text-light dark:text-text-dark">Resto<span className="text-primary">Book</span></span>
+              <span className="text-xl font-bold text-text-light dark:text-text-dark whitespace-nowrap">Resto<span className="text-primary">Book</span></span>
             </div>
             <div className="flex gap-4 items-center">
               {user ? (
@@ -274,12 +349,15 @@ export default function LandingPage() {
                   )}
                 </div>
               ) : (
-                <>
-                  <Link href="/login" className="text-text-light dark:text-text-dark hover:text-primary transition-colors font-medium px-4">Masuk</Link>
+                <div className="flex gap-2 sm:gap-4 items-center shrink-0">
+                  <Link href="/login" className="text-text-light dark:text-text-dark hover:text-primary transition-colors font-semibold text-sm sm:text-base px-2 sm:px-4">Masuk</Link>
                   <Link href="/register">
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-5 py-2.5 rounded-full font-medium shadow-lg hover:shadow-primary/30 transition-all">Daftar Sekarang</motion.button>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-primary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full font-semibold text-xs sm:text-base shadow-lg hover:shadow-primary/30 transition-all">
+                      <span className="hidden sm:inline">Daftar Sekarang</span>
+                      <span className="sm:hidden">Daftar</span>
+                    </motion.button>
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -287,7 +365,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Operational Hours Banner */}
-      <div className={`fixed top-16 w-full z-40 py-2.5 px-4 text-center text-sm font-semibold transition-all duration-300 border-b shadow-sm backdrop-blur-md ${
+      <div className={`fixed safe-top-banner w-full z-40 py-2.5 px-4 text-center text-sm font-semibold transition-all duration-300 border-b shadow-sm backdrop-blur-md ${
         isClosingSoon
           ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20"
           : isOpen 
@@ -306,7 +384,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero */}
-      <section className="relative pt-40 pb-20 lg:pt-48 lg:pb-28 px-4">
+      <section className="relative safe-top-hero pb-20 lg:pt-48 lg:pb-28 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring", bounce: 0.4 }} className="text-center lg:text-left">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
@@ -404,36 +482,51 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div layout initial="hidden" animate="visible" variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((item, i) => (
-              <motion.div key={item.id || item.name} layout custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover={{ y: item.is_active ? -10 : 0, boxShadow: item.is_active ? "0 25px 50px -12px rgba(0,0,0,0.15)" : "none" }} className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group relative flex flex-col ${!item.is_active ? 'opacity-70 grayscale' : ''}`}>
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute top-3 left-3"><span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-white/90 dark:bg-black/60 text-primary backdrop-blur-sm">{item.cat}</span></div>
-                  
-                  {!item.is_active && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-                      <span className="bg-red-600 text-white px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest transform -rotate-12 border-2 border-white shadow-xl">Habis</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className={`font-bold text-lg text-text-light dark:text-text-dark mb-1 ${!item.is_active ? 'line-through text-muted' : ''}`}>{item.name}</h3>
-                  {item.description && (
-                    <p className="text-sm text-muted line-clamp-2 mb-3 leading-relaxed flex-1">{item.description}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-auto pt-3">
-                    <span className="font-extrabold text-xl text-primary">Rp {item.price.toLocaleString("id-ID")}</span>
-                    {item.is_active ? (
-                      <Link href="/login">
-                        <motion.button whileTap={{ scale: 0.9 }} className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-sm font-medium transition-colors">Pesan</motion.button>
-                      </Link>
-                    ) : (
-                      <button disabled className="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed border border-gray-300 dark:border-gray-700">Habis</button>
-                    )}
+            {isRefreshing ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={`menu-skeleton-${idx}`} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark p-5 flex flex-col gap-4">
+                  <div className="skeleton skeleton-image h-48 w-full" />
+                  <div className="skeleton skeleton-title w-3/4 h-6 mt-2" />
+                  <div className="skeleton skeleton-text w-full h-4" />
+                  <div className="skeleton skeleton-text w-5/6 h-4" />
+                  <div className="flex justify-between items-center mt-auto pt-3 border-t border-border-light/50 dark:border-border-dark/50">
+                    <div className="skeleton skeleton-badge w-24 h-6" />
+                    <div className="skeleton skeleton-btn w-16 h-8" />
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              filtered.map((item, i) => (
+                <motion.div key={item.id || item.name} layout custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover={{ y: item.is_active ? -10 : 0, boxShadow: item.is_active ? "0 25px 50px -12px rgba(0,0,0,0.15)" : "none" }} className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group relative flex flex-col ${!item.is_active ? 'opacity-70 grayscale' : ''}`}>
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute top-3 left-3"><span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-white/90 dark:bg-black/60 text-primary backdrop-blur-sm">{item.cat}</span></div>
+                    
+                    {!item.is_active && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                        <span className="bg-red-600 text-white px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest transform -rotate-12 border-2 border-white shadow-xl">Habis</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className={`font-bold text-lg text-text-light dark:text-text-dark mb-1 ${!item.is_active ? 'line-through text-muted' : ''}`}>{item.name}</h3>
+                    {item.description && (
+                      <p className="text-sm text-muted line-clamp-2 mb-3 leading-relaxed flex-1">{item.description}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-auto pt-3">
+                      <span className="font-extrabold text-xl text-primary">Rp {item.price.toLocaleString("id-ID")}</span>
+                      {item.is_active ? (
+                        <Link href="/login">
+                          <motion.button whileTap={{ scale: 0.9 }} className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-sm font-medium transition-colors">Pesan</motion.button>
+                        </Link>
+                      ) : (
+                        <button disabled className="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed border border-gray-300 dark:border-gray-700">Habis</button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mt-12">
@@ -464,35 +557,56 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {reviews.slice(0, 6).map((rev, i) => (
-              <motion.div 
-                key={rev.id} 
-                initial={{ opacity: 0, y: 20 }} 
-                whileInView={{ opacity: 1, y: 0 }} 
-                viewport={{ once: true }} 
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -8 }}
-                className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark p-6 shadow-md flex flex-col justify-between"
-              >
-                <div className="space-y-4">
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star key={star} className={`w-5 h-5 ${star <= rev.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`} />
+            {isRefreshing ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <div key={`rev-skeleton-${idx}`} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark p-6 shadow-md flex flex-col gap-4">
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <div key={s} className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
                     ))}
                   </div>
-                  <p className="text-sm text-text-light dark:text-text-dark leading-relaxed italic font-medium">&quot;{rev.comment}&quot;</p>
-                </div>
-                <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border-light dark:border-border-dark">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                    {rev.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
+                  <div className="skeleton skeleton-text w-full h-4 mt-2" />
+                  <div className="skeleton skeleton-text w-5/6 h-4" />
+                  <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border-light dark:border-border-dark">
+                    <div className="skeleton skeleton-avatar w-10 h-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton skeleton-text w-20 h-4" />
+                      <div className="skeleton skeleton-text w-16 h-3" />
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-sm text-text-light dark:text-text-dark">{rev.profiles?.full_name || "Anonim"}</h4>
-                    <p className="text-xs text-muted">Pelanggan Terverifikasi</p>
-                  </div>
                 </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              reviews.slice(0, 6).map((rev, i) => (
+                <motion.div 
+                  key={rev.id} 
+                  initial={{ opacity: 0, y: 20 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true }} 
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -8 }}
+                  className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark p-6 shadow-md flex flex-col justify-between"
+                >
+                  <div className="space-y-4">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className={`w-5 h-5 ${star <= rev.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`} />
+                      ))}
+                    </div>
+                    <p className="text-sm text-text-light dark:text-text-dark leading-relaxed italic font-medium">&quot;{rev.comment}&quot;</p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border-light dark:border-border-dark">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                      {rev.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-text-light dark:text-text-dark">{rev.profiles?.full_name || "Anonim"}</h4>
+                      <p className="text-xs text-muted">Pelanggan Terverifikasi</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>

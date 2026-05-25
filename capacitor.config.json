@@ -1,0 +1,33 @@
+{
+  "appId": "com.restobook.app",
+  "appName": "RestoBook",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://restobookid.my.id",
+    "cleartext": false,
+    "allowNavigation": [
+      "restobookid.my.id",
+      "*.supabase.co",
+      "*.google.com",
+      "app-prod.duitku.com",
+      "app-sandbox.duitku.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#ffffff",
+    "minWebViewVersion": 60
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#ffffff",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
+}

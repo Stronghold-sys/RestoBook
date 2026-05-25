@@ -157,4 +157,15 @@ aside.fixed.lg\:hidden {
   box-sizing: border-box;
 }
 
+/* Duitku Pop SDK responsive safe area notch spacing for mobile app */
+.device-mobile #payment-inquiry,
+.device-mobile div[id*="payment-inquiry"],
+.device-mobile iframe[src*="duitku.com"],
+.device-mobile iframe[src*="duitku"] {
+  top: env(safe-area-inset-top, 0px) !important;
+  height: calc(100% - env(safe-area-inset-top, 0px)) !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
 

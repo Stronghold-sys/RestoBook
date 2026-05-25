@@ -17,6 +17,23 @@ export default function AdminVouchersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [distributingId, setDistributingId] = useState<string | null>(null);
 
+  // Modern Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    type: "danger" | "warning" | "success" | "info";
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Lanjutkan",
+    type: "info",
+    onConfirm: () => {},
+  });
+
   // Form State
   const [form, setForm] = useState({
     code: "",
@@ -157,20 +174,28 @@ export default function AdminVouchersPage() {
   };
 
   const handleDelete = async (voucherId: string, voucherCode: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus voucher ${voucherCode}?`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Voucher",
+      message: `Apakah Anda yakin ingin menghapus voucher ${voucherCode}? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: "Hapus",
+      type: "danger",
+      onConfirm: async () => {
+        const loadingToast = toast.loading("Menghapus voucher...");
+        try {
+          const response = await fetch(`/api/admin/vouchers?id=${voucherId}`, {
+            method: "DELETE"
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Gagal menghapus voucher");
 
-    try {
-      const response = await fetch(`/api/admin/vouchers?id=${voucherId}`, {
-        method: "DELETE"
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Gagal menghapus voucher");
-
-      toast.success(`Voucher ${voucherCode} dihapus`);
-      setVouchers(prev => prev.filter(v => v.id !== voucherId));
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+          toast.success(`Voucher ${voucherCode} berhasil dihapus!`, { id: loadingToast });
+          setVouchers(prev => prev.filter(v => v.id !== voucherId));
+        } catch (error: any) {
+          toast.error(error.message, { id: loadingToast });
+        }
+      }
+    });
   };
 
   return (
@@ -450,6 +475,47 @@ export default function AdminVouchersPage() {
           </div>
         </div>
       </div>
+      {/* GENERIC MODERN CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
+            >
+              <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => {
+                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                  }}
+                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={async () => {
+                    await confirmModal.onConfirm();
+                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                  }}
+                  className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

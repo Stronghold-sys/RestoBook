@@ -107,16 +107,16 @@ export default function CashierAttendancePage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
             <thead>
               <tr className="border-b border-border-light dark:border-border-dark text-muted text-sm bg-gray-50/30 dark:bg-gray-800/10">
-                <th className="py-4 px-6 font-semibold min-w-[120px]">Tanggal</th>
-                <th className="py-4 px-6 font-semibold min-w-[150px]">Mulai - Selesai</th>
-                <th className="py-4 px-6 font-semibold">Durasi</th>
-                <th className="py-4 px-6 font-semibold">Modal Awal</th>
-                <th className="py-4 px-6 font-semibold">Uang Fisik</th>
-                <th className="py-4 px-6 font-semibold">Selisih</th>
-                <th className="py-4 px-6 font-semibold">Status</th>
+                <th className="py-4 px-6 font-semibold min-w-[120px] whitespace-nowrap">Tanggal</th>
+                <th className="py-4 px-6 font-semibold min-w-[150px] whitespace-nowrap">Mulai - Selesai</th>
+                <th className="py-4 px-6 font-semibold whitespace-nowrap">Durasi</th>
+                <th className="py-4 px-6 font-semibold whitespace-nowrap">Modal Awal</th>
+                <th className="py-4 px-6 font-semibold whitespace-nowrap">Uang Fisik</th>
+                <th className="py-4 px-6 font-semibold whitespace-nowrap">Selisih</th>
+                <th className="py-4 px-6 font-semibold whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -133,26 +133,26 @@ export default function CashierAttendancePage() {
                   
                   return (
                     <tr key={shift.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="py-4 px-6 font-medium text-text-light dark:text-text-dark">{format(new Date(shift.start_time), 'dd MMM yyyy')}</td>
-                      <td className="py-4 px-6 text-sm text-text-light dark:text-text-dark font-bold">
+                      <td className="py-4 px-6 font-medium text-text-light dark:text-text-dark whitespace-nowrap">{format(new Date(shift.start_time), 'dd MMM yyyy')}</td>
+                      <td className="py-4 px-6 text-sm text-text-light dark:text-text-dark font-bold whitespace-nowrap">
                         {format(new Date(shift.start_time), 'HH:mm')} - {shift.end_time ? format(new Date(shift.end_time), 'HH:mm') : 'Sekarang'}
                       </td>
-                      <td className="py-4 px-6 text-sm font-medium text-muted">
+                      <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">
                          {shift.end_time 
                            ? `${Math.floor((new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000)}j ${Math.floor(((new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) % 3600000) / 60000)}m`
                            : '-'}
                       </td>
-                      <td className="py-4 px-6 text-sm font-medium text-muted">Rp {(shift.initial_cash || 0).toLocaleString('id-ID')}</td>
-                      <td className="py-4 px-6 text-sm font-medium text-muted">{shift.final_cash_actual != null ? `Rp ${shift.final_cash_actual.toLocaleString('id-ID')}` : '-'}</td>
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">Rp {(shift.initial_cash || 0).toLocaleString('id-ID')}</td>
+                      <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">{shift.final_cash_actual != null ? `Rp ${shift.final_cash_actual.toLocaleString('id-ID')}` : '-'}</td>
+                      <td className="py-4 px-6 whitespace-nowrap">
                         {shift.difference != null ? (
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${diffColor}`}>
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase whitespace-nowrap ${diffColor}`}>
                             {diffLabel} {Math.abs(shift.difference).toLocaleString('id-ID')}
                           </span>
                         ) : '-'}
                       </td>
-                      <td className="py-4 px-6">
-                        <span className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full ${
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full whitespace-nowrap ${
                           shift.status === 'open' ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-900/50 dark:text-amber-400' : 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/30 dark:border-green-900/50 dark:text-green-400'
                         }`}>
                           {shift.status === 'open' ? 'Berjalan' : 'Selesai'}

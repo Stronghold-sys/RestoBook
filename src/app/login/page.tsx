@@ -682,33 +682,35 @@ export default function LoginPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark flex flex-col relative overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark flex flex-col relative max-h-[90vh] overflow-hidden"
             >
               <button 
                 onClick={() => {
                   setShowSuspendModal(false);
                   setSuspendData(null);
                 }}
-                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors z-10"
                 title="Tutup"
               >
                 <X className="w-5 h-5 text-muted" />
               </button>
 
-              <div className="text-center space-y-4 mb-6">
-                <div className={`w-16 h-16 ${suspendData.status === 'banned' ? 'bg-red-100 dark:bg-red-950/20 text-red-600' : 'bg-amber-100 dark:bg-amber-950/20 text-amber-600'} rounded-full flex items-center justify-center mx-auto shadow-md`}>
-                  <AlertTriangle className="w-8 h-8 animate-pulse" />
+              <div className="flex-1 overflow-y-auto pr-1 text-center scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 space-y-6 hide-scrollbar">
+                
+                <div className="text-center space-y-4">
+                  <div className={`w-16 h-16 ${suspendData.status === 'banned' ? 'bg-red-100 dark:bg-red-950/20 text-red-600' : 'bg-amber-100 dark:bg-amber-950/20 text-amber-600'} rounded-full flex items-center justify-center mx-auto shadow-md`}>
+                    <AlertTriangle className="w-8 h-8 animate-pulse" />
+                  </div>
+                  <h2 className="text-2xl font-black text-text-light dark:text-text-dark tracking-tight uppercase">
+                    {suspendData.status === 'banned' ? 'Akun Diblokir Permanen' : 'Akun Ditangguhkan Sementara'}
+                  </h2>
+                  <p className="text-muted text-sm font-medium">
+                    {suspendData.status === 'banned' 
+                      ? 'Akses akun Anda telah dinonaktifkan secara permanen karena pelanggaran kebijakan RestoBook.' 
+                      : 'Akses akun Anda dibatasi untuk sementara waktu.'
+                    }
+                  </p>
                 </div>
-                <h2 className="text-2xl font-black text-text-light dark:text-text-dark tracking-tight uppercase">
-                  {suspendData.status === 'banned' ? 'Akun Diblokir Permanen' : 'Akun Ditangguhkan Sementara'}
-                </h2>
-                <p className="text-muted text-sm font-medium">
-                  {suspendData.status === 'banned' 
-                    ? 'Akses akun Anda telah dinonaktifkan secara permanen karena pelanggaran kebijakan RestoBook.' 
-                    : 'Akses akun Anda dibatasi untuk sementara waktu.'
-                  }
-                </p>
-              </div>
 
               {suspendData.status === 'suspended' && countdown && (
                 <div className="bg-amber-50 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-5 text-center space-y-2 mb-6">
@@ -833,15 +835,6 @@ export default function LoginPage() {
                         </div>
                       </div>
                     </div>
-                    {countdown && (
-                      <div className="bg-amber-50 dark:bg-amber-950/10 border border-amber-200/50 rounded-xl p-4 text-center">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center justify-center gap-1 mb-1">
-                          <Clock className="w-3.5 h-3.5" /> Akun aktif otomatis dalam
-                        </p>
-                        <p className="text-base font-black text-amber-800 dark:text-amber-400 font-mono">{formatCountdown(countdown)}</p>
-                        <p className="text-[10px] text-amber-600 mt-1">Anda tidak perlu melakukan apa pun. Akun akan aktif dengan sendirinya setelah waktu habis.</p>
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
@@ -995,7 +988,8 @@ export default function LoginPage() {
                 )}
 
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

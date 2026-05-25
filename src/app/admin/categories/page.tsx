@@ -114,45 +114,47 @@ export default function AdminCategories() {
       </div>
 
       <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark text-muted text-sm">
-              <th className="p-4 font-medium w-16 text-center">Urutan</th>
-              <th className="p-4 font-medium">Nama Kategori</th>
-              <th className="p-4 font-medium">Deskripsi</th>
-              <th className="p-4 font-medium">Status</th>
-              <th className="p-4 font-medium text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.length === 0 ? (
-              <tr><td colSpan={5} className="py-8 text-center text-muted">Belum ada kategori.</td></tr>
-            ) : (
-              categories.map(cat => (
-                <tr key={cat.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="p-4 text-center font-bold text-text-light dark:text-text-dark">{cat.sort_order}</td>
-                  <td className="p-4 font-bold text-text-light dark:text-text-dark">{cat.name}</td>
-                  <td className="p-4 text-sm text-muted max-w-xs truncate">{cat.description || '-'}</td>
-                  <td className="p-4">
-                    {cat.is_active ? (
-                      <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-bold flex items-center gap-1 w-max"><Check className="w-3 h-3" /> Aktif</span>
-                    ) : (
-                      <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-bold flex items-center gap-1 w-max"><X className="w-3 h-3" /> Tidak Aktif</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-center space-x-2">
-                    <button onClick={() => handleOpenModal(cat)} aria-label="Edit" title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors inline-block">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(cat.id)} aria-label="Hapus" title="Hapus" className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors inline-block">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark text-muted text-sm">
+                <th className="p-4 font-medium w-16 text-center whitespace-nowrap">Urutan</th>
+                <th className="p-4 font-medium whitespace-nowrap">Nama Kategori</th>
+                <th className="p-4 font-medium whitespace-nowrap">Deskripsi</th>
+                <th className="p-4 font-medium whitespace-nowrap">Status</th>
+                <th className="p-4 font-medium text-center whitespace-nowrap">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.length === 0 ? (
+                <tr><td colSpan={5} className="py-8 text-center text-muted">Belum ada kategori.</td></tr>
+              ) : (
+                categories.map(cat => (
+                  <tr key={cat.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-center font-bold text-text-light dark:text-text-dark whitespace-nowrap">{cat.sort_order}</td>
+                    <td className="p-4 font-bold text-text-light dark:text-text-dark whitespace-nowrap">{cat.name}</td>
+                    <td className="p-4 text-sm text-muted max-w-xs truncate whitespace-nowrap">{cat.description || '-'}</td>
+                    <td className="p-4 whitespace-nowrap">
+                      {cat.is_active ? (
+                        <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-bold flex items-center gap-1 w-max whitespace-nowrap"><Check className="w-3 h-3" /> Aktif</span>
+                      ) : (
+                        <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-bold flex items-center gap-1 w-max whitespace-nowrap"><X className="w-3 h-3" /> Tidak Aktif</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center space-x-2 whitespace-nowrap">
+                      <button onClick={() => handleOpenModal(cat)} aria-label="Edit" title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors inline-block">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(cat.id)} aria-label="Hapus" title="Hapus" className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors inline-block">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AnimatePresence>

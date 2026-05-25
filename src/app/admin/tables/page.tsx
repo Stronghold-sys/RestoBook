@@ -130,41 +130,43 @@ export default function AdminTables() {
       </div>
 
       <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark text-muted text-sm">
-              <th className="p-4 font-medium w-24 text-center">No. Meja</th>
-              <th className="p-4 font-medium text-center">Kapasitas</th>
-              <th className="p-4 font-medium text-center">Status Saat Ini</th>
-              <th className="p-4 font-medium text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tables.length === 0 ? (
-              <tr><td colSpan={4} className="py-8 text-center text-muted">Belum ada meja.</td></tr>
-            ) : (
-              tables.map(table => (
-                <tr key={table.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="p-4 text-center font-bold text-lg text-text-light dark:text-text-dark">{table.table_number}</td>
-                  <td className="p-4 text-center font-medium text-text-light dark:text-text-dark">{table.capacity} Orang</td>
-                  <td className="p-4 text-center">
-                    <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase ${getStatusColor(table.status)}`}>
-                      {table.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center space-x-2">
-                    <button onClick={() => handleOpenModal(table)} aria-label="Edit" title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors inline-block">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(table.id)} aria-label="Hapus" title="Hapus" className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors inline-block">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark text-muted text-sm">
+                <th className="p-4 font-medium w-24 text-center whitespace-nowrap">No. Meja</th>
+                <th className="p-4 font-medium text-center whitespace-nowrap">Kapasitas</th>
+                <th className="p-4 font-medium text-center whitespace-nowrap">Status Saat Ini</th>
+                <th className="p-4 font-medium text-center whitespace-nowrap">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tables.length === 0 ? (
+                <tr><td colSpan={4} className="py-8 text-center text-muted">Belum ada meja.</td></tr>
+              ) : (
+                tables.map(table => (
+                  <tr key={table.id} className="border-b border-border-light dark:border-border-dark last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-center font-bold text-lg text-text-light dark:text-text-dark whitespace-nowrap">{table.table_number}</td>
+                    <td className="p-4 text-center font-medium text-text-light dark:text-text-dark whitespace-nowrap">{table.capacity} Orang</td>
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase whitespace-nowrap inline-block ${getStatusColor(table.status)}`}>
+                        {table.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center space-x-2 whitespace-nowrap">
+                      <button onClick={() => handleOpenModal(table)} aria-label="Edit" title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors inline-block">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(table.id)} aria-label="Hapus" title="Hapus" className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors inline-block">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AnimatePresence>

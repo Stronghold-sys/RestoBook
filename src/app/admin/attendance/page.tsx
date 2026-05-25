@@ -532,51 +532,53 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate }: {
 function ShiftsTable({ shifts }: { shifts: any[] }) {
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark overflow-hidden shadow-xl">
-      <table className="w-full text-left">
-        <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark">
-          <tr className="text-[10px] font-black uppercase text-muted tracking-widest">
-            <th className="px-6 py-4">Karyawan</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4">Durasi</th>
-            <th className="px-6 py-4">Modal</th>
-            <th className="px-6 py-4">Sistem</th>
-            <th className="px-6 py-4">Fisik</th>
-            <th className="px-6 py-4">Selisih</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border-light dark:divide-border-dark text-sm">
-          {shifts.map(s => (
-            <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
-              <td className="px-6 py-4 font-bold">{s.profiles?.full_name}</td>
-              <td className="px-6 py-4">
-                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
-              </td>
-              <td className="px-6 py-4 font-mono text-xs">
-                {s.status === 'closed' && s.end_time ? (
-                  (() => {
-                    const diff = new Date(s.end_time).getTime() - new Date(s.start_time).getTime();
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    return `${h} jam ${m} menit`;
-                  })()
-                ) : (
-                  <span className="text-green-500 animate-pulse font-bold">Sedang Berjalan...</span>
-                )}
-              </td>
-              <td className="px-6 py-4">Rp {s.initial_cash.toLocaleString('id-ID')}</td>
-              <td className="px-6 py-4">Rp {s.final_cash_system?.toLocaleString('id-ID') || '0'}</td>
-              <td className="px-6 py-4 font-black">Rp {s.final_cash_actual?.toLocaleString('id-ID') || '0'}</td>
-              <td className="px-6 py-4">
-                {s.status === 'closed' && (
-                  <span className={`font-black ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                    {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
-                  </span>
-                )}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-border-light dark:border-border-dark">
+            <tr className="text-[10px] font-black uppercase text-muted tracking-widest">
+              <th className="px-6 py-4 whitespace-nowrap">Karyawan</th>
+              <th className="px-6 py-4 whitespace-nowrap">Status</th>
+              <th className="px-6 py-4 whitespace-nowrap">Durasi</th>
+              <th className="px-6 py-4 whitespace-nowrap">Modal</th>
+              <th className="px-6 py-4 whitespace-nowrap">Sistem</th>
+              <th className="px-6 py-4 whitespace-nowrap">Fisik</th>
+              <th className="px-6 py-4 whitespace-nowrap">Selisih</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border-light dark:divide-border-dark text-sm">
+            {shifts.map(s => (
+              <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                <td className="px-6 py-4 font-bold whitespace-nowrap">{s.profiles?.full_name}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
+                </td>
+                <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
+                  {s.status === 'closed' && s.end_time ? (
+                    (() => {
+                      const diff = new Date(s.end_time).getTime() - new Date(s.start_time).getTime();
+                      const h = Math.floor(diff / 3600000);
+                      const m = Math.floor((diff % 3600000) / 60000);
+                      return `${h} jam ${m} menit`;
+                    })()
+                  ) : (
+                    <span className="text-green-500 animate-pulse font-bold whitespace-nowrap">Sedang Berjalan...</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">Rp {s.initial_cash.toLocaleString('id-ID')}</td>
+                <td className="px-6 py-4 whitespace-nowrap">Rp {s.final_cash_system?.toLocaleString('id-ID') || '0'}</td>
+                <td className="px-6 py-4 font-black whitespace-nowrap">Rp {s.final_cash_actual?.toLocaleString('id-ID') || '0'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {s.status === 'closed' && (
+                    <span className={`font-black whitespace-nowrap ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                      {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

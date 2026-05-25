@@ -1452,15 +1452,15 @@ export default function AdvancedPayrollPage() {
       ) : (
          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-xl shadow-black/[0.02] overflow-hidden">
             <div className="overflow-x-auto">
-               <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse">
                   <thead>
                      <tr className="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-black uppercase text-muted tracking-wider">
-                        <th className="p-6">Karyawan</th>
-                        <th className="p-6">Absensi / Jam</th>
-                        <th className="p-6">Tarif Dasar</th>
-                        <th className="p-6">Saldo Kasbon/Denda</th>
-                        <th className="p-6">Total Bersih</th>
-                        <th className="p-6 text-center">Aksi</th>
+                        <th className="p-6 whitespace-nowrap">Karyawan</th>
+                        <th className="p-6 whitespace-nowrap">Absensi / Jam</th>
+                        <th className="p-6 whitespace-nowrap">Tarif Dasar</th>
+                        <th className="p-6 whitespace-nowrap">Saldo Kasbon/Denda</th>
+                        <th className="p-6 whitespace-nowrap">Total Bersih</th>
+                        <th className="p-6 text-center whitespace-nowrap">Aksi</th>
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -1478,54 +1478,54 @@ export default function AdvancedPayrollPage() {
 
                         return (
                            <tr key={emp.id} className="group hover:bg-orange-50/30 dark:hover:bg-orange-950/10 transition-all">
-                              <td className="p-6">
-                                 <div className="flex items-center gap-4">
+                              <td className="p-6 whitespace-nowrap">
+                                 <div className="flex items-center gap-4 whitespace-nowrap">
                                     <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark overflow-hidden shadow-sm flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
                                        {emp.avatar_url ? <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-muted" />}
                                     </div>
-                                    <div>
-                                       <p className="font-black text-sm text-slate-900 dark:text-white">{emp.full_name}</p>
-                                       <p className="text-[10px] font-bold text-muted uppercase mt-0.5">{emp.role || 'Staff'}</p>
+                                    <div className="whitespace-nowrap">
+                                       <p className="font-black text-sm text-slate-900 dark:text-white whitespace-nowrap">{emp.full_name}</p>
+                                       <p className="text-[10px] font-bold text-muted uppercase mt-0.5 whitespace-nowrap">{emp.role || 'Staff'}</p>
                                     </div>
                                  </div>
                               </td>
-                              <td className="p-6">
-                                 <div className="space-y-1">
-                                    <div className="flex gap-1.5">
-                                       <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 text-[9px] font-black rounded-md uppercase">+{emp.daysPresent} H</span>
-                                       <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 text-[9px] font-black rounded-md uppercase">{emp.daysIzin} I</span>
+                              <td className="p-6 whitespace-nowrap">
+                                 <div className="space-y-1 whitespace-nowrap">
+                                    <div className="flex gap-1.5 whitespace-nowrap">
+                                       <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 text-[9px] font-black rounded-md uppercase whitespace-nowrap">+{emp.daysPresent} H</span>
+                                       <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 text-[9px] font-black rounded-md uppercase whitespace-nowrap">{emp.daysIzin} I</span>
                                     </div>
-                                    <p className="text-[10px] font-bold text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> {emp.finalOtHours} Jam Lembur</p>
+                                    <p className="text-[10px] font-bold text-muted flex items-center gap-1 whitespace-nowrap"><Clock className="w-3 h-3" /> {emp.finalOtHours} Jam Lembur</p>
                                  </div>
                               </td>
-                              <td className="p-6">
-                                 <div className="flex items-center gap-2 group/btn">
-                                    <div>
-                                       <p className="text-xs font-black text-slate-800 dark:text-slate-200">Rp {(emp.daily_salary || 0).toLocaleString('id-ID')}</p>
-                                       <p className="text-[9px] font-bold text-muted">/ Hari Kerja</p>
+                              <td className="p-6 whitespace-nowrap">
+                                 <div className="flex items-center gap-2 group/btn whitespace-nowrap">
+                                    <div className="whitespace-nowrap">
+                                       <p className="text-xs font-black text-slate-800 dark:text-slate-200 whitespace-nowrap">Rp {(emp.daily_salary || 0).toLocaleString('id-ID')}</p>
+                                       <p className="text-[9px] font-bold text-muted whitespace-nowrap">/ Hari Kerja</p>
                                     </div>
                                     {!isPaid && (
-                                       <button aria-label="Atur Tarif" onClick={() => openRates(emp)} className="p-2 rounded-xl bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 shadow-sm hover:bg-orange-600 hover:text-white hover:border-orange-600 dark:hover:bg-orange-600 dark:hover:text-white transition-all active:scale-95 flex items-center justify-center ml-2">
+                                       <button aria-label="Atur Tarif" onClick={() => openRates(emp)} className="p-2 rounded-xl bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 shadow-sm hover:bg-orange-600 hover:text-white hover:border-orange-600 dark:hover:bg-orange-600 dark:hover:text-white transition-all active:scale-95 flex items-center justify-center ml-2 whitespace-nowrap">
                                           <Edit3 className="w-4 h-4" />
                                        </button>
                                     )}
                                  </div>
                               </td>
-                              <td className="p-6">
-                                 <div className="space-y-1.5 flex flex-col items-start">
+                              <td className="p-6 whitespace-nowrap">
+                                 <div className="space-y-1.5 flex flex-col items-start whitespace-nowrap">
                                     {emp.sumKasbon > 0 && (
                                        <div className="text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-lg border border-red-200/30 whitespace-nowrap flex items-center">- Rp {emp.sumKasbon.toLocaleString('id-ID')} (Kasbon)</div>
                                     )}
                                     {emp.sumFines > 0 && (
                                        <div className="text-[10px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/30 px-2.5 py-1 rounded-lg border border-orange-200/30 whitespace-nowrap flex items-center">- Rp {emp.sumFines.toLocaleString('id-ID')} (Denda)</div>
                                     )}
-                                    {(emp.sumKasbon === 0 && emp.sumFines === 0) && <span className="text-[10px] text-muted italic">Tidak ada potongan aktif</span>}
+                                    {(emp.sumKasbon === 0 && emp.sumFines === 0) && <span className="text-[10px] text-muted italic whitespace-nowrap">Tidak ada potongan aktif</span>}
                                  </div>
                               </td>
-                              <td className="p-6">
-                                 <p className="text-lg font-black text-slate-900 dark:text-white">Rp {currentNet.toLocaleString('id-ID')}</p>
+                              <td className="p-6 whitespace-nowrap">
+                                 <p className="text-lg font-black text-slate-900 dark:text-white whitespace-nowrap">Rp {currentNet.toLocaleString('id-ID')}</p>
                               </td>
-                              <td className="p-6">
+                              <td className="p-6 whitespace-nowrap">
                                  <div className="flex justify-center items-center gap-2">
                                     {isPaid ? (
                                        <div className="flex items-center gap-2">

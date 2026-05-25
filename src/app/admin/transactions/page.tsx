@@ -359,14 +359,14 @@ export default function AdminTransactions() {
               <table className="w-full">
                 <thead className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-border-light dark:border-border-dark">
                   <tr>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">No. Pesanan</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Pelanggan</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Pesanan</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Tipe</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Pembayaran</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Total</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Tanggal</th>
-                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider">Aksi</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">No. Pesanan</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Pelanggan</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Pesanan</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Tipe</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Pembayaran</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Total</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Tanggal</th>
+                    <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -375,18 +375,18 @@ export default function AdminTransactions() {
                     const truncItems = itemsStr.length > 30 ? itemsStr.substring(0, 30) + "..." : itemsStr;
                     return (
                       <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="py-4 px-6 font-mono text-sm font-bold text-text-light dark:text-text-dark">#{order.id.split("-")[0]}</td>
-                        <td className="py-4 px-6 text-sm font-medium text-text-light dark:text-text-dark">{order.profiles?.full_name || "Guest"}</td>
-                        <td className="py-4 px-6 text-sm text-muted max-w-[200px] truncate" title={itemsStr}>{truncItems}</td>
-                        <td className="py-4 px-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-muted">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span></td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${order.payment_method === "cash" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50"}`}>
+                        <td className="py-4 px-6 font-mono text-sm font-bold text-text-light dark:text-text-dark whitespace-nowrap">#{order.id.split("-")[0]}</td>
+                        <td className="py-4 px-6 text-sm font-medium text-text-light dark:text-text-dark whitespace-nowrap">{order.profiles?.full_name || "Guest"}</td>
+                        <td className="py-4 px-6 text-sm text-muted max-w-[200px] truncate whitespace-nowrap" title={itemsStr}>{truncItems}</td>
+                        <td className="py-4 px-6 whitespace-nowrap"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-muted whitespace-nowrap">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span></td>
+                        <td className="py-4 px-6 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap ${order.payment_method === "cash" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50"}`}>
                             {order.payment_method === "cash" ? <><Banknote className="w-3 h-3" /> Cash</> : <><CreditCard className="w-3 h-3" /> Non-Cash</>}
                           </span>
                         </td>
                         <td className="py-4 px-6 font-black text-primary text-base whitespace-nowrap">Rp {Number(order.total_amount).toLocaleString("id-ID")}</td>
                         <td className="py-4 px-6 text-sm font-medium text-muted whitespace-nowrap">{format(new Date(order.created_at), "dd MMM yyyy", { locale: localeId })}<br/><span className="text-xs">{format(new Date(order.created_at), "HH:mm")}</span></td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-6 whitespace-nowrap">
                           <button 
                             onClick={() => setSelectedOrder(order)}
                             className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors"

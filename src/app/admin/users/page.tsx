@@ -299,11 +299,11 @@ export default function AdminUsersPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/50 text-muted text-xs uppercase tracking-widest font-bold border-b border-border-light dark:border-border-dark">
-                <th className="p-6">Identitas Karyawan</th>
-                <th className="p-6">Role / Jabatan</th>
-                <th className="p-6">Kontak</th>
-                <th className="p-6">Tgl Bergabung</th>
-                <th className="p-6 text-center">Aksi</th>
+                <th className="p-6 whitespace-nowrap">Identitas Karyawan</th>
+                <th className="p-6 whitespace-nowrap">Role / Jabatan</th>
+                <th className="p-6 whitespace-nowrap">Kontak</th>
+                <th className="p-6 whitespace-nowrap">Tgl Bergabung</th>
+                <th className="p-6 text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -313,8 +313,8 @@ export default function AdminUsersPage() {
                 <tr><td colSpan={5} className="p-20 text-center text-muted">Tidak ada data karyawan ditemukan.</td></tr>
               ) : filtered.map((u) => (
                 <tr key={u.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                  <td className="p-6">
-                    <div className="flex items-center gap-4">
+                  <td className="p-6 whitespace-nowrap">
+                    <div className="flex items-center gap-4 whitespace-nowrap">
                       <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex items-center justify-center shadow-sm flex-shrink-0">
                         {u.avatar_url ? (
                           <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -322,14 +322,14 @@ export default function AdminUsersPage() {
                           <span className="text-primary font-black text-lg">{u.full_name?.[0] || "?"}</span>
                         )}
                       </div>
-                      <div>
-                        <p className="font-black text-text-light dark:text-text-dark">{u.full_name}</p>
-                        <p className="font-mono text-[10px] text-primary font-bold">{u.employee_id || "GUEST-USER"}</p>
+                      <div className="whitespace-nowrap">
+                        <p className="font-black text-text-light dark:text-text-dark whitespace-nowrap">{u.full_name}</p>
+                        <p className="font-mono text-[10px] text-primary font-bold whitespace-nowrap">{u.employee_id || "GUEST-USER"}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-6">
-                    <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 w-fit ${
+                  <td className="p-6 whitespace-nowrap">
+                    <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 w-fit whitespace-nowrap ${
                       u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 
                       u.role === 'cashier' ? 'bg-blue-100 text-blue-700' : 
                       'bg-green-100 text-green-700'
@@ -338,16 +338,16 @@ export default function AdminUsersPage() {
                       {u.role}
                     </span>
                   </td>
-                  <td className="p-6">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs flex items-center gap-1.5 text-muted"><Mail className="w-3 h-3" /> {u.email || "-"}</p>
-                      <p className="text-xs text-muted">{u.phone || "-"}</p>
+                  <td className="p-6 whitespace-nowrap">
+                    <div className="flex flex-col gap-1 whitespace-nowrap">
+                      <p className="text-xs flex items-center gap-1.5 text-muted whitespace-nowrap"><Mail className="w-3 h-3" /> {u.email || "-"}</p>
+                      <p className="text-xs text-muted whitespace-nowrap">{u.phone || "-"}</p>
                     </div>
                   </td>
-                  <td className="p-6 text-sm text-muted">
+                  <td className="p-6 text-sm text-muted whitespace-nowrap">
                     {u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
                   </td>
-                  <td className="p-6 text-center">
+                  <td className="p-6 text-center whitespace-nowrap">
                     <div className="flex justify-center gap-2">
                       <button 
                         onClick={() => setShowPassUser(u)}

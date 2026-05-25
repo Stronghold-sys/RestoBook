@@ -400,12 +400,12 @@ export default function AdminVouchersPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border-light dark:border-border-dark">
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Kode</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center">Diskon</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center">Pemakaian</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Berakhir Pada</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center">Status</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-right">Aksi</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Kode</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Diskon</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Pemakaian</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Berakhir Pada</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-right whitespace-nowrap">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -418,36 +418,36 @@ export default function AdminVouchersPage() {
                           key={voucher.id}
                           className="border-b border-border-light/50 dark:border-border-dark/50 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                         >
-                          <td className="py-4">
-                            <span className="font-mono font-black text-text-light dark:text-text-dark bg-primary/10 text-primary px-2.5 py-1 rounded-lg text-sm border border-primary/20">
+                          <td className="py-4 whitespace-nowrap">
+                            <span className="font-mono font-black text-text-light dark:text-text-dark bg-primary/10 text-primary px-2.5 py-1 rounded-lg text-sm border border-primary/20 whitespace-nowrap">
                               {voucher.code}
                             </span>
                           </td>
-                          <td className="py-4 text-center">
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <td className="py-4 text-center whitespace-nowrap">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {voucher.discount_percent}%
                             </span>
                           </td>
-                          <td className="py-4 text-center text-sm">
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold text-text-light dark:text-text-dark">
+                          <td className="py-4 text-center text-sm whitespace-nowrap">
+                            <div className="flex flex-col items-center whitespace-nowrap">
+                              <span className="font-bold text-text-light dark:text-text-dark whitespace-nowrap">
                                 {voucher.used_count} <span className="text-muted font-normal">/ {voucher.usage_limit}</span>
                               </span>
-                              <span className="text-[10px] text-muted">
+                              <span className="text-[10px] text-muted whitespace-nowrap">
                                 Max {voucher.max_usage_per_user}x/user
                               </span>
                             </div>
                           </td>
-                          <td className="py-4 text-sm text-muted">
+                          <td className="py-4 text-sm text-muted whitespace-nowrap">
                             {format(new Date(voucher.expires_at), "dd MMM yyyy, HH:mm", { locale: id })}
                             {isExpired && (
-                              <span className="block text-[10px] text-rose-500 font-bold">Kadaluarsa</span>
+                              <span className="block text-[10px] text-rose-500 font-bold whitespace-nowrap">Kadaluarsa</span>
                             )}
                           </td>
-                          <td className="py-4 text-center">
+                          <td className="py-4 text-center whitespace-nowrap">
                             <button
                               onClick={() => handleToggleActive(voucher.id, voucher.is_active)}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
                                 voucher.is_active && !isExpired && !isLimitReached
                                   ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/30"
                                   : "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/30"
@@ -464,7 +464,7 @@ export default function AdminVouchersPage() {
                               )}
                             </button>
                           </td>
-                          <td className="py-4 text-right space-x-2">
+                          <td className="py-4 text-right space-x-2 whitespace-nowrap">
                             <button
                               onClick={() => handleDistribute(voucher.id, voucher.code)}
                               disabled={distributingId === voucher.id || isExpired || !voucher.is_active}

@@ -941,11 +941,11 @@ export default function AdminCustomersPage() {
                     title="Select all customers on page"
                   />
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Pelanggan</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Kontak</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Status & Peringatan</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Tipe & Sisa Waktu</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right">Aksi</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Pelanggan</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Kontak</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Status & Peringatan</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Tipe & Sisa Waktu</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -976,7 +976,7 @@ export default function AdminCustomersPage() {
                         isSelected ? "bg-primary/5 dark:bg-primary/5" : ""
                       }`}
                     >
-                      <td className="px-6 py-5 text-center">
+                      <td className="px-6 py-5 text-center whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -985,7 +985,7 @@ export default function AdminCustomersPage() {
                           title={`Select ${customer.full_name || 'customer'}`}
                         />
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0 flex items-center justify-center text-primary bg-primary/10">
                             {customer.avatar_url ? (
@@ -995,72 +995,72 @@ export default function AdminCustomersPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight">
+                            <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight whitespace-nowrap">
                               {customer.full_name || "Tanpa Nama"}
                             </p>
-                            <p className="text-[10px] font-mono text-muted tracking-tight mt-0.5">
+                            <p className="text-[10px] font-mono text-muted tracking-tight mt-0.5 whitespace-nowrap">
                               ID: {customer.id.split("-")[0]}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80 whitespace-nowrap">
                             <Mail className="w-3.5 h-3.5 text-muted" /> {customer.email || "-"}
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-muted whitespace-nowrap">
                             <Phone className="w-3.5 h-3.5" /> {customer.phone || "-"}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex flex-col gap-1.5 items-start">
                           {isBanned ? (
-                            <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 text-[10px] font-black uppercase tracking-wider border border-red-200/50 dark:border-red-800/30 flex items-center gap-1">
+                            <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 text-[10px] font-black uppercase tracking-wider border border-red-200/50 dark:border-red-800/30 flex items-center gap-1 whitespace-nowrap">
                               <Ban className="w-3 h-3" /> Ban Permanen
                             </span>
                           ) : isSuspended ? (
-                            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-1">
+                            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-1 whitespace-nowrap">
                               <Clock className="w-3 h-3" /> Suspen
                             </span>
                           ) : (
-                            <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 text-[10px] font-black uppercase tracking-wider border border-green-200/50 dark:border-green-800/30 flex items-center gap-1">
+                            <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 text-[10px] font-black uppercase tracking-wider border border-green-200/50 dark:border-green-800/30 flex items-center gap-1 whitespace-nowrap">
                               <CheckCircle className="w-3 h-3" /> Aktif
                             </span>
                           )}
 
                           {customer.warning_count > 0 && (
-                            <span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark text-[10px] font-bold flex items-center gap-1 border border-border-light dark:border-border-dark">
+                            <span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark text-[10px] font-bold flex items-center gap-1 border border-border-light dark:border-border-dark whitespace-nowrap">
                               <ShieldAlert className="w-3 h-3 text-red-500" /> {customer.warning_count} Peringatan
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-1 items-start text-xs font-semibold text-text-light dark:text-text-dark">
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <div className="flex flex-col gap-1 items-start text-xs font-semibold text-text-light dark:text-text-dark whitespace-nowrap">
                           {isBanned ? (
-                            <span className="text-red-600 dark:text-red-400 font-bold">Permanen</span>
+                            <span className="text-red-600 dark:text-red-400 font-bold whitespace-nowrap">Permanen</span>
                           ) : isSuspended && customer.suspend_until ? (
                             <CountdownTimer
                               suspendUntil={customer.suspend_until}
                               onExpired={fetchCustomers}
                             />
                           ) : isScheduledSuspend && customer.scheduled_suspend_at ? (
-                            <div className="space-y-0.5">
-                              <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">
+                            <div className="space-y-0.5 whitespace-nowrap">
+                              <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase tracking-wider whitespace-nowrap">
                                 Terjadwal
                               </span>
-                              <p className="text-[10px] text-muted">
+                              <p className="text-[10px] text-muted whitespace-nowrap">
                                 {format(new Date(customer.scheduled_suspend_at), "dd MMM yyyy HH:mm", { locale: id })}
                               </p>
                             </div>
                           ) : (
-                            <span className="text-muted">-</span>
+                            <span className="text-muted whitespace-nowrap">-</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-5 text-right">
+                      <td className="px-6 py-5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Quick action: Suspen */}
                           {!isBanned && !isSuspended && (
@@ -1150,11 +1150,11 @@ export default function AdminCustomersPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Pelanggan</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Tanggal Pengajuan</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Alasan Banding</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Status</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right">Aksi</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Pelanggan</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Tanggal Pengajuan</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Alasan Banding</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Status</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -1176,7 +1176,7 @@ export default function AdminCustomersPage() {
                     const profile = appeal.profiles || {};
                     return (
                       <tr key={appeal.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                        <td className="px-6 py-5">
+                        <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0 flex items-center justify-center text-primary bg-primary/10">
                               {profile.avatar_url ? (
@@ -1186,23 +1186,23 @@ export default function AdminCustomersPage() {
                               )}
                             </div>
                             <div>
-                              <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight">
+                              <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight whitespace-nowrap">
                                 {profile.full_name || "Pelanggan"}
                               </p>
-                              <p className="text-[10px] text-muted font-medium">
+                              <p className="text-[10px] text-muted font-medium whitespace-nowrap">
                                 {profile.email}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80">
+                        <td className="px-6 py-5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80 whitespace-nowrap">
                           {format(new Date(appeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
                         </td>
-                        <td className="px-6 py-5 text-xs font-medium text-text-light dark:text-text-dark max-w-xs truncate" title={appeal.reason}>
+                        <td className="px-6 py-5 text-xs font-medium text-text-light dark:text-text-dark max-w-xs truncate whitespace-nowrap" title={appeal.reason}>
                           {appeal.reason}
                         </td>
-                        <td className="px-6 py-5">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${
                             appeal.status === "approved" ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30" :
                             appeal.status === "rejected" ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30" :
                             "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
@@ -1211,14 +1211,14 @@ export default function AdminCustomersPage() {
                              appeal.status === "rejected" ? "Ditolak" : "Pending"}
                           </span>
                         </td>
-                        <td className="px-6 py-5 text-right">
+                        <td className="px-6 py-5 text-right whitespace-nowrap">
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => {
                                 setReviewAppeal(appeal);
                                 setReviewMessage(appeal.admin_message || "");
                               }}
-                              className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors"
+                              className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors whitespace-nowrap"
                             >
                               Tinjau Banding
                             </button>

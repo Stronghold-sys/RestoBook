@@ -563,13 +563,13 @@ export default function AdminResignPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-border-light dark:border-border-dark">
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Karyawan & ID</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Tgl Pengajuan</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Batas Waktu</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Countdown</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Pilihan Karyawan</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Status Akun</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider text-right print:hidden">Aksi</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Karyawan & ID</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Tgl Pengajuan</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Batas Waktu</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Countdown</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Pilihan Karyawan</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Status Akun</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider text-right print:hidden whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -580,7 +580,7 @@ export default function AdminResignPage() {
                 ) : (
                   filteredRequests.map(req => (
                     <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all">
-                      <td className="p-5 flex items-center gap-4">
+                      <td className="p-5 flex items-center gap-4 whitespace-nowrap">
                         <div className="w-11 h-11 rounded-full overflow-hidden border border-border-light dark:border-border-dark bg-gray-100 flex items-center justify-center flex-shrink-0">
                           {req.profiles?.avatar_url ? (
                             <img src={req.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -588,33 +588,33 @@ export default function AdminResignPage() {
                             <User className="w-5 h-5 text-muted" />
                           )}
                         </div>
-                        <div>
-                          <p className="font-bold text-text-light dark:text-text-dark text-sm">{req.full_name}</p>
-                          <p className="text-[10px] text-muted font-black uppercase tracking-widest">{req.employee_id || "NO-ID"} - {req.role}</p>
+                        <div className="whitespace-nowrap">
+                          <p className="font-bold text-text-light dark:text-text-dark text-sm whitespace-nowrap">{req.full_name}</p>
+                          <p className="text-[10px] text-muted font-black uppercase tracking-widest whitespace-nowrap">{req.employee_id || "NO-ID"} - {req.role}</p>
                         </div>
                       </td>
-                      <td className="p-5 text-xs font-bold text-slate-600 dark:text-slate-400">
+                      <td className="p-5 text-xs font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         {new Date(req.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
-                      <td className="p-5 text-xs font-black text-text-light dark:text-text-dark">
-                        {req.suspension_time ? format(new Date(req.suspension_time), "dd MMM, HH:mm", { locale: id }) : <span className="text-muted font-medium italic text-[10px]">Belum Disetujui</span>}
+                      <td className="p-5 text-xs font-black text-text-light dark:text-text-dark whitespace-nowrap">
+                        {req.suspension_time ? format(new Date(req.suspension_time), "dd MMM, HH:mm", { locale: id }) : <span className="text-muted font-medium italic text-[10px] whitespace-nowrap">Belum Disetujui</span>}
                       </td>
-                      <td className="p-5">
+                      <td className="p-5 whitespace-nowrap">
                         <CountdownCell suspensionTime={req.suspension_time} status={req.status} decision={req.employee_decision} />
                       </td>
-                      <td className="p-5">
+                      <td className="p-5 whitespace-nowrap">
                         {!req.employee_decision ? (
                            req.status === 'Disetujui' 
-                             ? <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 text-[9px] font-black uppercase border border-amber-500/20">Menunggu Konfirmasi</span>
-                             : <span className="text-muted italic text-[10px]">-</span>
+                             ? <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 text-[9px] font-black uppercase border border-amber-500/20 whitespace-nowrap">Menunggu Konfirmasi</span>
+                             : <span className="text-muted italic text-[10px] whitespace-nowrap">-</span>
                         ) : req.employee_decision === 'lanjut_bekerja' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-600 text-[9px] font-black uppercase border border-green-500/20">Lanjut Bekerja</span>
+                          <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-600 text-[9px] font-black uppercase border border-green-500/20 whitespace-nowrap">Lanjut Bekerja</span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase border border-red-500/20">Lanjutkan Resign</span>
+                          <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase border border-red-500/20 whitespace-nowrap">Lanjutkan Resign</span>
                         )}
                       </td>
-                      <td className="p-5">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                      <td className="p-5 whitespace-nowrap">
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${
                           req.profiles?.status_karyawan === "aktif" ? "bg-green-100 text-green-600 dark:bg-green-900/30" :
                           req.profiles?.status_karyawan === "resign" ? "bg-red-100 text-red-600 dark:bg-red-900/30" :
                           "bg-gray-100 text-gray-600"
@@ -622,7 +622,7 @@ export default function AdminResignPage() {
                           {req.profiles?.status_karyawan || "aktif"}
                         </span>
                       </td>
-                      <td className="p-5 text-right print:hidden">
+                      <td className="p-5 text-right print:hidden whitespace-nowrap">
                          <div className="flex items-center justify-end gap-2">
                            <button 
                              onClick={() => setSelectedReq(req)}
@@ -645,11 +645,11 @@ export default function AdminResignPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-border-light dark:border-border-dark">
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Karyawan</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">No. ID</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Telepon</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider">Status Karyawan</th>
-                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider text-right print:hidden">Aksi</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Karyawan</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">No. ID</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Telepon</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Status Karyawan</th>
+                  <th className="p-5 text-xs font-black uppercase text-muted tracking-wider text-right print:hidden whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -660,31 +660,31 @@ export default function AdminResignPage() {
                 ) : (
                   filteredEmployees.map(emp => (
                     <tr key={emp.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all">
-                      <td className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-full overflow-hidden border border-border-light dark:border-border-dark bg-gray-100 flex items-center justify-center">
+                      <td className="p-5 flex items-center gap-4 whitespace-nowrap">
+                        <div className="w-11 h-11 rounded-full overflow-hidden border border-border-light dark:border-border-dark bg-gray-100 flex items-center justify-center whitespace-nowrap">
                           {emp.avatar_url ? (
                             <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <User className="w-5 h-5 text-muted" />
                           )}
                         </div>
-                        <div>
-                          <p className="font-bold text-text-light dark:text-text-dark">{emp.full_name}</p>
-                          <p className="text-[10px] text-muted font-bold uppercase">{emp.role}</p>
+                        <div className="whitespace-nowrap">
+                          <p className="font-bold text-text-light dark:text-text-dark whitespace-nowrap">{emp.full_name}</p>
+                          <p className="text-[10px] text-muted font-bold uppercase whitespace-nowrap">{emp.role}</p>
                         </div>
                       </td>
-                      <td className="p-5 font-mono font-bold text-sm">{emp.employee_id || "-"}</td>
-                      <td className="p-5 text-xs font-bold text-muted">{emp.phone || "-"}</td>
-                      <td className="p-5">
-                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase ${
-                          emp.status_karyawan === "aktif" ? "bg-green-100 text-green-600 dark:bg-green-950/30 dark:text-green-400" :
+                      <td className="p-5 font-mono font-bold text-sm whitespace-nowrap">{emp.employee_id || "-"}</td>
+                      <td className="p-5 text-xs font-bold text-muted whitespace-nowrap">{emp.phone || "-"}</td>
+                      <td className="p-5 whitespace-nowrap">
+                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${
+                          emp.status_karyawan === "aktif" ? "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" :
                           emp.status_karyawan === "resign" ? "bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" :
                           "bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         }`}>
                           {emp.status_karyawan || "aktif"}
                         </span>
                       </td>
-                      <td className="p-5 text-right space-x-2 print:hidden">
+                      <td className="p-5 text-right space-x-2 print:hidden whitespace-nowrap">
                         {emp.status_karyawan === "aktif" ? (
                           <button 
                             onClick={() => { setSelectedEmp(emp); setShowPecatModal(true); }}

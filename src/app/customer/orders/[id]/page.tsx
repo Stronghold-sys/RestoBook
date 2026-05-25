@@ -282,6 +282,7 @@ export default function OrderTrackingPage() {
     switch (status) {
       case "pending": return <Clock className="w-6 h-6" />;
       case "confirmed": return <ChefHat className="w-6 h-6" />;
+      case "shipping": return <Globe className="w-6 h-6" />;
       case "completed": return <PackageCheck className="w-6 h-6" />;
       case "cancelled": return <AlertCircle className="w-6 h-6" />;
       default: return <Clock className="w-6 h-6" />;
@@ -293,6 +294,7 @@ export default function OrderTrackingPage() {
       case "pending": return "Menunggu";
       case "confirmed":
       case "processing": return "Diproses";
+      case "shipping": return "Sedang Dikirim";
       case "completed": return "Selesai";
       case "cancelled": return "Dibatalkan";
       default: return status;
@@ -304,13 +306,19 @@ export default function OrderTrackingPage() {
       case "pending": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 border-amber-200 dark:border-amber-800";
       case "confirmed":
       case "processing": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-500 border-orange-200 dark:border-orange-800";
+      case "shipping": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-500 border-blue-200 dark:border-blue-800";
       case "completed": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500 border-green-200 dark:border-green-800";
       case "cancelled": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-500 border-red-200 dark:border-red-800";
       default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
-  const steps = [
+  const steps = order?.order_type === 'delivery' ? [
+    { id: "pending", label: "Menunggu", icon: Clock },
+    { id: "confirmed", label: "Diproses", icon: ChefHat },
+    { id: "shipping", label: "Dikirim", icon: Globe },
+    { id: "completed", label: "Selesai", icon: PackageCheck },
+  ] : [
     { id: "pending", label: "Menunggu", icon: Clock },
     { id: "confirmed", label: "Diproses", icon: ChefHat },
     { id: "completed", label: "Selesai", icon: PackageCheck },
@@ -466,6 +474,37 @@ export default function OrderTrackingPage() {
           </div>
         )}
       </div>
+
+      {order.order_type === 'delivery' && (
+        <div className="bg-card-light dark:bg-card-dark rounded-3xl p-8 md:p-10 shadow-sm border border-border-light dark:border-border-dark mt-8 space-y-4">
+          <h2 className="text-xl font-black text-text-light dark:text-text-dark border-b border-border-light dark:border-border-dark pb-4 uppercase tracking-widest flex items-center gap-3">
+            <Globe className="w-6 h-6 text-primary" /> Informasi Pengiriman (Delivery)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-left">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-light/50 dark:border-border-dark/50 space-y-2">
+              <div>
+                <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Nama Penerima</span>
+                <span className="font-bold text-text-light dark:text-text-dark">{order.delivery_recipient_name || '-'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-muted tracking-widest block">No. HP Penerima</span>
+                <span className="font-bold text-text-light dark:text-text-dark">{order.delivery_phone || '-'}</span>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-light/50 dark:border-border-dark/50 space-y-2">
+              <div>
+                <span className="text-[10px] font-black uppercase text-muted tracking-widest block font-bold mb-1">Alamat Penerima</span>
+                <p className="font-medium text-text-light dark:text-text-dark leading-relaxed">
+                  {order.delivery_address}
+                </p>
+                <p className="font-bold text-primary mt-1 text-[11px] uppercase tracking-wide">
+                  Kel. {order.delivery_village}, Kec. {order.delivery_district}, {order.delivery_regency}, Prov. {order.delivery_province} ({order.delivery_postal_code})
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-card-light dark:bg-card-dark rounded-3xl p-8 md:p-10 shadow-sm border border-border-light dark:border-border-dark mt-8">
         <h2 className="text-xl font-black text-text-light dark:text-text-dark mb-8 border-b border-border-light dark:border-border-dark pb-4 uppercase tracking-widest flex items-center gap-3">

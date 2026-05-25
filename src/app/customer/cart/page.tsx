@@ -105,6 +105,89 @@ export default function CartPage() {
 
   // Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Delivery Form States
+  const [deliveryName, setDeliveryName] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryProvince, setDeliveryProvince] = useState("");
+  const [deliveryRegency, setDeliveryRegency] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
+  const [deliveryVillage, setDeliveryVillage] = useState("");
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
+
+  // Administrative regions select state
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [regencies, setRegencies] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [villages, setVillages] = useState<any[]>([]);
+
+  // Load provinces
+  useEffect(() => {
+    if (orderType === "delivery" && provinces.length === 0) {
+      fetch("https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json")
+        .then(res => res.json())
+        .then(data => setProvinces(data))
+        .catch(err => console.error("Error fetching provinces:", err));
+    }
+  }, [orderType, provinces.length]);
+
+  const handleProvinceChange = async (provName: string) => {
+    setDeliveryProvince(provName);
+    setDeliveryRegency("");
+    setDeliveryDistrict("");
+    setDeliveryVillage("");
+    setRegencies([]);
+    setDistricts([]);
+    setVillages([]);
+
+    const foundProv = provinces.find(p => p.name === provName);
+    if (foundProv) {
+      try {
+        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${foundProv.id}.json`);
+        const data = await res.json();
+        setRegencies(data);
+      } catch (err) {
+        console.error("Error fetching regencies:", err);
+      }
+    }
+  };
+
+  const handleRegencyChange = async (regName: string) => {
+    setDeliveryRegency(regName);
+    setDeliveryDistrict("");
+    setDeliveryVillage("");
+    setDistricts([]);
+    setVillages([]);
+
+    const foundReg = regencies.find(r => r.name === regName);
+    if (foundReg) {
+      try {
+        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${foundReg.id}.json`);
+        const data = await res.json();
+        setDistricts(data);
+      } catch (err) {
+        console.error("Error fetching districts:", err);
+      }
+    }
+  };
+
+  const handleDistrictChange = async (distName: string) => {
+    setDeliveryDistrict(distName);
+    setDeliveryVillage("");
+    setVillages([]);
+
+    const foundDist = districts.find(d => d.name === distName);
+    if (foundDist) {
+      try {
+        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${foundDist.id}.json`);
+        const data = await res.json();
+        setVillages(data);
+      } catch (err) {
+        console.error("Error fetching villages:", err);
+      }
+    }
+  };
   
   // Dynamic Merchant & Transaction state
   const [merchant, setMerchant] = useState({
@@ -335,6 +418,11 @@ export default function CartPage() {
       return;
     }
     if (orderType === "dine_in" && !selectedTable) return toast.error("Silakan pilih meja");
+    if (orderType === "delivery") {
+      if (!deliveryName || !deliveryPhone || !deliveryAddress || !deliveryProvince || !deliveryRegency || !deliveryDistrict || !deliveryVillage || !deliveryPostalCode) {
+        return toast.error("Silakan lengkapi informasi pengiriman");
+      }
+    }
     
     setLoading(true);
     const loadingToast = toast.loading("Memproses pesanan...");
@@ -359,7 +447,15 @@ export default function CartPage() {
         payment_method: dbPaymentMethod, 
         payment_status: 'unpaid',
         voucher_id: appliedVoucher ? appliedVoucher.id : null,
-        discount: discountAmount
+        discount: discountAmount,
+        delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
+        delivery_phone: orderType === "delivery" ? deliveryPhone : null,
+        delivery_address: orderType === "delivery" ? deliveryAddress : null,
+        delivery_province: orderType === "delivery" ? deliveryProvince : null,
+        delivery_regency: orderType === "delivery" ? deliveryRegency : null,
+        delivery_district: orderType === "delivery" ? deliveryDistrict : null,
+        delivery_village: orderType === "delivery" ? deliveryVillage : null,
+        delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
       }).select().single();
 
       if (orderError) throw orderError;
@@ -608,6 +704,125 @@ export default function CartPage() {
                         </option>
                       ))}
                     </select>
+                  </motion.div>
+                )}
+                {orderType === "delivery" && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 overflow-hidden text-left">
+                    <h4 className="text-[11px] font-black text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Nama Penerima</label>
+                        <input
+                          type="text"
+                          required
+                          value={deliveryName}
+                          onChange={e => setDeliveryName(e.target.value)}
+                          placeholder="Nama Lengkap"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">No. HP Penerima</label>
+                        <input
+                          type="tel"
+                          required
+                          value={deliveryPhone}
+                          onChange={e => setDeliveryPhone(e.target.value)}
+                          placeholder="Contoh: 08123456789"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Provinsi</label>
+                        <select
+                          required
+                          value={deliveryProvince}
+                          onChange={e => handleProvinceChange(e.target.value)}
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                        >
+                          <option value="">-- Pilih Provinsi --</option>
+                          {provinces.map(p => (
+                            <option key={p.id} value={p.name}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kabupaten / Kota</label>
+                        <select
+                          required
+                          disabled={!deliveryProvince}
+                          value={deliveryRegency}
+                          onChange={e => handleRegencyChange(e.target.value)}
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                        >
+                          <option value="">-- Pilih Kabupaten --</option>
+                          {regencies.map(r => (
+                            <option key={r.id} value={r.name}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kecamatan</label>
+                        <select
+                          required
+                          disabled={!deliveryRegency}
+                          value={deliveryDistrict}
+                          onChange={e => handleDistrictChange(e.target.value)}
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                        >
+                          <option value="">-- Pilih Kecamatan --</option>
+                          {districts.map(d => (
+                            <option key={d.id} value={d.name}>{d.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kelurahan / Desa</label>
+                        <select
+                          required
+                          disabled={!deliveryDistrict}
+                          value={deliveryVillage}
+                          onChange={e => setDeliveryVillage(e.target.value)}
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                        >
+                          <option value="">-- Pilih Kelurahan --</option>
+                          {villages.map(v => (
+                            <option key={v.id} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Alamat Lengkap</label>
+                        <input
+                          type="text"
+                          required
+                          value={deliveryAddress}
+                          onChange={e => setDeliveryAddress(e.target.value)}
+                          placeholder="Nama Jalan, Blok, RT/RW, No. Rumah"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kode Pos</label>
+                        <input
+                          type="text"
+                          required
+                          value={deliveryPostalCode}
+                          onChange={e => setDeliveryPostalCode(e.target.value)}
+                          placeholder="Kode Pos"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                        />
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

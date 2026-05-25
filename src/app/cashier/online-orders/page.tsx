@@ -161,7 +161,7 @@ export default function OnlineOrdersPage() {
     if (!matchesSearch) return false;
 
     if (activeTab === "pending") return order.status === "pending";
-    if (activeTab === "processing") return order.status === "confirmed" || order.status === "processing";
+    if (activeTab === "processing") return ["confirmed", "processing", "shipping"].includes(order.status);
     if (activeTab === "history") return order.status === "completed" || order.status === "cancelled";
     
     return true;
@@ -172,6 +172,7 @@ export default function OnlineOrdersPage() {
       case "pending": return { label: "Baru", color: "bg-rose-100 text-rose-700 border-rose-200", icon: Zap };
       case "confirmed": return { label: "Diterima", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 };
       case "processing": return { label: "Diproses", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Timer };
+      case "shipping": return { label: "Dikirim", color: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: Globe };
       case "completed": return { label: "Selesai", color: "bg-gray-100 text-gray-700 border-gray-200", icon: History };
       case "cancelled": return { label: "Ditolak", color: "bg-rose-100 text-rose-700 border-rose-200", icon: XCircle };
       default: return { label: status, color: "bg-gray-100 text-gray-700 border-gray-200", icon: Clock };
@@ -226,7 +227,7 @@ export default function OnlineOrdersPage() {
       <div className="flex gap-2 p-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl w-fit shadow-sm">
         {[
           { id: "pending", label: "Baru", icon: Zap, count: orders.filter(o => o.status === "pending" && (o.payment_status === 'paid' || o.payment_method === 'cash')).length },
-          { id: "processing", label: "Aktif", icon: Timer, count: orders.filter(o => ["confirmed", "processing"].includes(o.status)).length },
+          { id: "processing", label: "Aktif", icon: Timer, count: orders.filter(o => ["confirmed", "processing", "shipping"].includes(o.status)).length },
           { id: "history", label: "Riwayat", icon: History, count: orders.filter(o => ["completed", "cancelled"].includes(o.status)).length }
         ].map(tab => (
           <button
@@ -403,6 +404,34 @@ export default function OnlineOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Delivery Address Card */}
+                  {selectedOrder.order_type === 'delivery' && (
+                    <div className="p-5 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-950/20 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-sm space-y-3">
+                      <h4 className="text-[11px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                        <Globe className="w-4 h-4" /> Informasi Pengiriman (Delivery)
+                      </h4>
+                      <div className="space-y-1.5 text-xs text-left">
+                        <div className="flex justify-between">
+                          <span className="text-muted font-bold">Nama Penerima:</span>
+                          <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_recipient_name || '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted font-bold">No. HP Penerima:</span>
+                          <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_phone || '-'}</span>
+                        </div>
+                        <div className="pt-2 border-t border-blue-200 dark:border-blue-800/40">
+                          <span className="text-muted font-bold block mb-1">Alamat Penerima:</span>
+                          <p className="font-medium text-text-light dark:text-text-dark leading-relaxed">
+                            {selectedOrder.delivery_address}
+                          </p>
+                          <p className="font-bold text-blue-800 dark:text-blue-400 mt-1 text-[11px]">
+                            Kel. {selectedOrder.delivery_village}, Kec. {selectedOrder.delivery_district}, {selectedOrder.delivery_regency}, Prov. {selectedOrder.delivery_province} ({selectedOrder.delivery_postal_code})
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Items List */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -484,16 +513,43 @@ export default function OnlineOrdersPage() {
 
                     {selectedOrder.status === 'processing' && (
                       <div className="flex gap-4">
-                        <button 
-                          onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
-                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
-                        >
-                          <CheckCircle2 className="w-5 h-5" /> SELESAIKAN PESANAN
-                        </button>
+                        {selectedOrder.order_type === 'delivery' ? (
+                          <button 
+                            onClick={() => updateOrderStatus(selectedOrder.id, 'shipping')}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                          >
+                            <Globe className="w-5 h-5" /> KIRIM PESANAN (DELIVERY)
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                          >
+                            <CheckCircle2 className="w-5 h-5" /> SELESAIKAN PESANAN
+                          </button>
+                        )}
                         <button 
                           onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
                           className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-rose-500/20"
                           title="Batalkan Pesanan (Kendala Dapur, dll)"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedOrder.status === 'shipping' && (
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                          <CheckCircle2 className="w-5 h-5" /> KONFIRMASI TERKIRIM (SELESAI)
+                        </button>
+                        <button 
+                          onClick={() => { setOrderToReject(selectedOrder); setShowRejectModal(true); }}
+                          className="w-16 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+                          title="Batalkan Pesanan"
                         >
                           <X className="w-6 h-6" />
                         </button>
@@ -508,7 +564,7 @@ export default function OnlineOrdersPage() {
                           {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
                           <div>
                              <p className="text-sm font-black uppercase tracking-widest">Transaksi Selesai</p>
-                             <p className="text-[10px] font-bold opacity-80">{selectedOrder.status === 'completed' ? 'Pesanan telah diantar dan sukses.' : 'Pesanan ini telah ditolak/dibatalkan.'}</p>
+                             <p className="text-[10px] font-bold opacity-80">{selectedOrder.status === 'completed' ? 'Pesanan telah selesai/terkirim dan sukses.' : 'Pesanan ini telah ditolak/dibatalkan.'}</p>
                           </div>
                         </div>
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Bot, Minimize2 } from 'lucide-react';
 import { createClient } from "@/lib/supabase/client";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const formatMessageContent = (content: string) => {
   if (!content) return '';
@@ -212,6 +213,46 @@ const WELCOME_MESSAGES = {
     admin: (name: string) => `Selamat datang, ${name || 'Admin'}!  Dashboard RestoBook siap. Saya bisa bantu Anda dengan laporan, manajemen menu, staf, inventaris, atau keluhan pelanggan.`
 };
 
+const ROTATING_BUBBLE_TEXTS = [
+  "Ada yang bisa dibantu?",
+  "Butuh bantuan tentang pesanan Anda?",
+  "Mau rekomendasi menu lezat hari ini?",
+  "Cek promo menarik hari ini, yuk!",
+  "Tanya RestoBot apa saja di sini!"
+];
+
+const playPingSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    const playTone = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.15, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+
+    const now = ctx.currentTime;
+    playTone(659.25, now, 0.4); // E5
+    playTone(880.00, now + 0.12, 0.5); // A5
+  } catch (err) {
+    console.warn("AudioContext failed:", err);
+  }
+};
+
 export default function RestoBot() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -220,6 +261,9 @@ export default function RestoBot() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bubbleTextIndex, setBubbleTextIndex] = useState(0);
+  const [showBubble, setShowBubble] = useState(false);
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Supabase dynamic user context states
@@ -541,6 +585,32 @@ export default function RestoBot() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  // Speech bubble notification logic
+  useEffect(() => {
+    // Only show on customer dashboard, when chatbot is closed, and not manually dismissed
+    const isCustomerDashboard = role === 'customer' && (pathname === '/customer/dashboard' || pathname === '/customer/dashboard/');
+    if (!isCustomerDashboard || isOpen || bubbleDismissed) {
+      setShowBubble(false);
+      return;
+    }
+
+    // Organic delay before showing the bubble
+    const showTimeout = setTimeout(() => {
+      setShowBubble(true);
+      playPingSound();
+    }, 3500);
+
+    // Automatically rotate text every 6 seconds
+    const interval = setInterval(() => {
+      setBubbleTextIndex((prev) => (prev + 1) % ROTATING_BUBBLE_TEXTS.length);
+    }, 6000);
+
+    return () => {
+      clearTimeout(showTimeout);
+      clearInterval(interval);
+    };
+  }, [role, pathname, isOpen, bubbleDismissed]);
 
   const extractPageContext = () => {
     const contexts = [];
@@ -889,6 +959,46 @@ export default function RestoBot() {
         </div>
       )}
 
+      {/* Speech Bubble Popup */}
+      <AnimatePresence>
+        {showBubble && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 15 }}
+            className="mb-3 mr-1 bg-white dark:bg-card-dark text-text-light dark:text-text-dark px-4 py-3 rounded-2xl shadow-xl border border-primary/20 dark:border-border-dark flex items-start gap-2 max-w-[260px] relative cursor-pointer hover:shadow-2xl transition-all group"
+            onClick={() => {
+              setIsOpen(true);
+              setShowBubble(false);
+            }}
+          >
+            <div className="flex-1 pr-3">
+              <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-0.5">RestoBot Asisten</p>
+              <p className="text-xs font-semibold leading-relaxed text-text-light dark:text-text-dark group-hover:text-primary transition-colors">
+                {ROTATING_BUBBLE_TEXTS[bubbleTextIndex]}
+              </p>
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowBubble(false);
+                setBubbleDismissed(true);
+              }}
+              className="text-muted hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 -mr-1 -mt-1 shrink-0"
+              aria-label="Tutup saran"
+              title="Tutup"
+            >
+              <X size={12} className="stroke-[3]" />
+            </button>
+            
+            {/* Triangle tail pointing to the toggle button */}
+            <div className="absolute bottom-[-6px] right-5 w-3 h-3 bg-white dark:bg-card-dark border-r border-b border-primary/20 dark:border-border-dark transform rotate-45"></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Toggle Button */}
       <button
         onClick={() => {
@@ -896,6 +1006,7 @@ export default function RestoBot() {
           setIsOpen(nextOpen);
           if (nextOpen) {
             setUnreadCount(0);
+            setShowBubble(false);
           }
         }}
         className="w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-primary-hover transition-transform hover:scale-105 active:scale-95 relative"

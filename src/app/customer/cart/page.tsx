@@ -13,6 +13,47 @@ import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/
 
 interface Table { id: string; table_number: number; capacity: number; status: string; }
 
+const INDONESIAN_PROVINCES = [
+  { id: "11", name: "ACEH" },
+  { id: "12", name: "SUMATERA UTARA" },
+  { id: "13", name: "SUMATERA BARAT" },
+  { id: "14", name: "RIAU" },
+  { id: "15", name: "JAMBI" },
+  { id: "16", name: "SUMATERA SELATAN" },
+  { id: "17", name: "BENGKULU" },
+  { id: "18", name: "LAMPUNG" },
+  { id: "19", name: "KEPULAUAN BANGKA BELITUNG" },
+  { id: "21", name: "KEPULAUAN RIAU" },
+  { id: "31", name: "DKI JAKARTA" },
+  { id: "32", name: "JAWA BARAT" },
+  { id: "33", name: "JAWA TENGAH" },
+  { id: "34", name: "DI YOGYAKARTA" },
+  { id: "35", name: "JAWA TIMUR" },
+  { id: "36", name: "BANTEN" },
+  { id: "51", name: "BALI" },
+  { id: "52", name: "NUSA TENGGARA BARAT" },
+  { id: "53", name: "NUSA TENGGARA TIMUR" },
+  { id: "61", name: "KALIMANTAN BARAT" },
+  { id: "62", name: "KALIMANTAN TENGAH" },
+  { id: "63", name: "KALIMANTAN SELATAN" },
+  { id: "64", name: "KALIMANTAN TIMUR" },
+  { id: "65", name: "KALIMANTAN UTARA" },
+  { id: "71", name: "SULAWESI UTARA" },
+  { id: "72", name: "SULAWESI TENGAH" },
+  { id: "73", name: "SULAWESI SELATAN" },
+  { id: "74", name: "SULAWESI TENGGARA" },
+  { id: "75", name: "GORONTALO" },
+  { id: "76", name: "SULAWESI BARAT" },
+  { id: "81", name: "MALUKU" },
+  { id: "82", name: "MALUKU UTARA" },
+  { id: "91", name: "PAPUA" },
+  { id: "92", name: "PAPUA BARAT" },
+  { id: "93", name: "PAPUA SELATAN" },
+  { id: "94", name: "PAPUA TENGAH" },
+  { id: "95", name: "PAPUA PEGUNUNGAN" },
+  { id: "96", name: "PAPUA BARAT DAYA" }
+];
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
   
@@ -117,20 +158,13 @@ export default function CartPage() {
   const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
 
   // Administrative regions select state
-  const [provinces, setProvinces] = useState<any[]>([]);
   const [regencies, setRegencies] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [villages, setVillages] = useState<any[]>([]);
 
-  // Load provinces
-  useEffect(() => {
-    if (orderType === "delivery" && provinces.length === 0) {
-      fetch("https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json")
-        .then(res => res.json())
-        .then(data => setProvinces(data))
-        .catch(err => console.error("Error fetching provinces:", err));
-    }
-  }, [orderType, provinces.length]);
+  const [regencyMode, setRegencyMode] = useState<"select" | "manual">("select");
+  const [districtMode, setDistrictMode] = useState<"select" | "manual">("select");
+  const [villageMode, setVillageMode] = useState<"select" | "manual">("select");
 
   const handleProvinceChange = async (provName: string) => {
     setDeliveryProvince(provName);
@@ -140,52 +174,104 @@ export default function CartPage() {
     setRegencies([]);
     setDistricts([]);
     setVillages([]);
+    setRegencyMode("select");
+    setDistrictMode("select");
+    setVillageMode("select");
 
-    const foundProv = provinces.find(p => p.name === provName);
+    if (!provName) return;
+
+    const foundProv = INDONESIAN_PROVINCES.find(p => p.name === provName);
     if (foundProv) {
       try {
         const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${foundProv.id}.json`);
+        if (!res.ok) throw new Error("Gagal mengambil data kabupaten/kota");
         const data = await res.json();
-        setRegencies(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setRegencies(data);
+          setRegencyMode("select");
+        } else {
+          setRegencyMode("manual");
+        }
       } catch (err) {
-        console.error("Error fetching regencies:", err);
+        console.error("Error fetching regencies, switching to manual input:", err);
+        setRegencyMode("manual");
       }
+    } else {
+      setRegencyMode("manual");
     }
   };
 
   const handleRegencyChange = async (regName: string) => {
     setDeliveryRegency(regName);
+
+    if (regencyMode === "manual") {
+      setDistrictMode("manual");
+      setVillageMode("manual");
+      return;
+    }
+
     setDeliveryDistrict("");
     setDeliveryVillage("");
     setDistricts([]);
     setVillages([]);
+    setDistrictMode("select");
+    setVillageMode("select");
+
+    if (!regName) return;
 
     const foundReg = regencies.find(r => r.name === regName);
     if (foundReg) {
       try {
         const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${foundReg.id}.json`);
+        if (!res.ok) throw new Error("Gagal mengambil data kecamatan");
         const data = await res.json();
-        setDistricts(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setDistricts(data);
+          setDistrictMode("select");
+        } else {
+          setDistrictMode("manual");
+        }
       } catch (err) {
-        console.error("Error fetching districts:", err);
+        console.error("Error fetching districts, switching to manual input:", err);
+        setDistrictMode("manual");
       }
+    } else {
+      setDistrictMode("manual");
     }
   };
 
   const handleDistrictChange = async (distName: string) => {
     setDeliveryDistrict(distName);
+
+    if (districtMode === "manual") {
+      setVillageMode("manual");
+      return;
+    }
+
     setDeliveryVillage("");
     setVillages([]);
+    setVillageMode("select");
+
+    if (!distName) return;
 
     const foundDist = districts.find(d => d.name === distName);
     if (foundDist) {
       try {
         const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${foundDist.id}.json`);
+        if (!res.ok) throw new Error("Gagal mengambil data kelurahan");
         const data = await res.json();
-        setVillages(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setVillages(data);
+          setVillageMode("select");
+        } else {
+          setVillageMode("manual");
+        }
       } catch (err) {
-        console.error("Error fetching villages:", err);
+        console.error("Error fetching villages, switching to manual input:", err);
+        setVillageMode("manual");
       }
+    } else {
+      setVillageMode("manual");
     }
   };
   
@@ -745,61 +831,94 @@ export default function CartPage() {
                           className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                         >
                           <option value="">-- Pilih Provinsi --</option>
-                          {provinces.map(p => (
+                          {INDONESIAN_PROVINCES.map(p => (
                             <option key={p.id} value={p.name}>{p.name}</option>
                           ))}
                         </select>
                       </div>
                       <div>
                         <label className="text-[9px] font-black text-muted uppercase block mb-1">Kabupaten / Kota</label>
-                        <select
-                          required
-                          disabled={!deliveryProvince}
-                          value={deliveryRegency}
-                          title="Kabupaten / Kota"
-                          onChange={e => handleRegencyChange(e.target.value)}
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                        >
-                          <option value="">-- Pilih Kabupaten --</option>
-                          {regencies.map(r => (
-                            <option key={r.id} value={r.name}>{r.name}</option>
-                          ))}
-                        </select>
+                        {regencyMode === "select" ? (
+                          <select
+                            required
+                            disabled={!deliveryProvince}
+                            value={deliveryRegency}
+                            title="Kabupaten / Kota"
+                            onChange={e => handleRegencyChange(e.target.value)}
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                          >
+                            <option value="">-- Pilih Kabupaten --</option>
+                            {regencies.map(r => (
+                              <option key={r.id} value={r.name}>{r.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            value={deliveryRegency}
+                            onChange={e => handleRegencyChange(e.target.value)}
+                            placeholder="Ketik Kabupaten/Kota..."
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          />
+                        )}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[9px] font-black text-muted uppercase block mb-1">Kecamatan</label>
-                        <select
-                          required
-                          disabled={!deliveryRegency}
-                          value={deliveryDistrict}
-                          title="Kecamatan"
-                          onChange={e => handleDistrictChange(e.target.value)}
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                        >
-                          <option value="">-- Pilih Kecamatan --</option>
-                          {districts.map(d => (
-                            <option key={d.id} value={d.name}>{d.name}</option>
-                          ))}
-                        </select>
+                        {districtMode === "select" ? (
+                          <select
+                            required
+                            disabled={!deliveryRegency}
+                            value={deliveryDistrict}
+                            title="Kecamatan"
+                            onChange={e => handleDistrictChange(e.target.value)}
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                          >
+                            <option value="">-- Pilih Kecamatan --</option>
+                            {districts.map(d => (
+                              <option key={d.id} value={d.name}>{d.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            value={deliveryDistrict}
+                            onChange={e => handleDistrictChange(e.target.value)}
+                            placeholder="Ketik Kecamatan..."
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="text-[9px] font-black text-muted uppercase block mb-1">Kelurahan / Desa</label>
-                        <select
-                          required
-                          disabled={!deliveryDistrict}
-                          value={deliveryVillage}
-                          title="Kelurahan / Desa"
-                          onChange={e => setDeliveryVillage(e.target.value)}
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                        >
-                          <option value="">-- Pilih Kelurahan --</option>
-                          {villages.map(v => (
-                            <option key={v.id} value={v.name}>{v.name}</option>
-                          ))}
-                        </select>
+                        {villageMode === "select" ? (
+                          <select
+                            required
+                            disabled={!deliveryDistrict}
+                            value={deliveryVillage}
+                            title="Kelurahan / Desa"
+                            onChange={e => setDeliveryVillage(e.target.value)}
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
+                          >
+                            <option value="">-- Pilih Kelurahan --</option>
+                            {villages.map(v => (
+                              <option key={v.id} value={v.name}>{v.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            value={deliveryVillage}
+                            onChange={e => setDeliveryVillage(e.target.value)}
+                            placeholder="Ketik Kelurahan/Desa..."
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          />
+                        )}
                       </div>
                     </div>
 

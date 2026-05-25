@@ -1452,7 +1452,7 @@ export default function AdvancedPayrollPage() {
       ) : (
          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-xl shadow-black/[0.02] overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px] text-left border-collapse">
+                <table className="w-full text-left border-collapse" style={{ minWidth: '1000px' }}>
                   <thead>
                      <tr className="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-black uppercase text-muted tracking-wider">
                         <th className="p-6 whitespace-nowrap">Karyawan</th>

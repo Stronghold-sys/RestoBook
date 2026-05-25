@@ -929,7 +929,7 @@ export default function AdminCustomersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-left border-collapse">
+          <table className="w-full text-left border-collapse" style={{ minWidth: '1000px' }}>
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-900/50">
                 <th className="px-6 py-5 text-center w-12">
@@ -1147,7 +1147,7 @@ export default function AdminCustomersPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left border-collapse">
+            <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Pelanggan</th>

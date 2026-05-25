@@ -356,7 +356,7 @@ export default function AdminTransactions() {
 
           <div className="bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px]">
+              <table className="w-full" style={{ minWidth: '1100px' }}>
                 <thead className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-border-light dark:border-border-dark">
                   <tr>
                     <th className="text-left py-5 px-6 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">No. Pesanan</th>

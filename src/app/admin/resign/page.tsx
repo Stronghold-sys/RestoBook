@@ -560,7 +560,7 @@ export default function AdminResignPage() {
         {activeTab === "resign" ? (
           /* RESIGN TABLE */
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] text-left border-collapse">
+            <table className="w-full text-left border-collapse" style={{ minWidth: '1000px' }}>
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-border-light dark:border-border-dark">
                   <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Karyawan & ID</th>
@@ -642,7 +642,7 @@ export default function AdminResignPage() {
         ) : (
           /* PECAT / KELUARKAN KARYAWAN */
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left border-collapse">
+            <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-border-light dark:border-border-dark">
                   <th className="p-5 text-xs font-black uppercase text-muted tracking-wider whitespace-nowrap">Karyawan</th>

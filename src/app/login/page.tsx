@@ -29,12 +29,14 @@ export default function LoginPage() {
   useEffect(() => {
     if (!suspendData || !suspendData.suspend_until) return;
 
-    const timer = setInterval(() => {
+    let timer: any;
+
+    const calculateCountdown = () => {
       const until = new Date(suspendData.suspend_until).getTime();
       const diff = until - Date.now();
 
       if (diff <= 0) {
-        clearInterval(timer);
+        if (timer) clearInterval(timer);
         setCountdown(null);
         toast.success("Masa penangguhan Anda telah berakhir! Silakan coba masuk kembali.", { duration: 6000 });
         setShowSuspendModal(false);
@@ -74,9 +76,14 @@ export default function LoginPage() {
 
         setCountdown({ tahun, bulan, minggu, hari, jam, menit, detik });
       }
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
+    calculateCountdown();
+    timer = setInterval(calculateCountdown, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [suspendData]);
 
   const formatCountdown = (cd: any) => {
@@ -168,8 +175,24 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      setSuspendedParam(params.get("suspended"));
-      setProfileIdParam(params.get("pid"));
+      const suspended = params.get("suspended");
+      const pid = params.get("pid");
+      setSuspendedParam(suspended);
+      setProfileIdParam(pid);
+
+      if ((suspended === "suspended" || suspended === "banned") && pid) {
+        supabase
+          .from("profiles")
+          .select("id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at")
+          .eq("id", pid)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setSuspendData(data);
+              setShowSuspendModal(true);
+            }
+          });
+      }
     }
   }, []);
 

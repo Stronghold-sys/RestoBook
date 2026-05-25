@@ -23,11 +23,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    const { data: profile } = await supabase.from('profiles').select('id, role, status_karyawan').eq('user_id', user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('id, role, status_karyawan, status').eq('user_id', user.id).single()
     const role = profile?.role
-    const status = profile?.status_karyawan
+    const statusKaryawan = profile?.status_karyawan
+    const status = profile?.status
 
-    if (status && status !== 'aktif') {
+    if (statusKaryawan && statusKaryawan !== 'aktif') {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL(`/login?suspended=${statusKaryawan}&pid=${profile?.id || ''}`, request.url))
+    }
+
+    if (status && status !== 'active') {
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL(`/login?suspended=${status}&pid=${profile?.id || ''}`, request.url))
     }

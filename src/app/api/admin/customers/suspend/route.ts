@@ -6,7 +6,19 @@ import { Resend } from 'resend';
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, customer_id, admin_id, reason, message, duration, target_email } = await req.json();
+    const body = await req.json();
+    const {
+      action,
+      customer_id,
+      admin_id,
+      reason,
+      message,
+      duration,
+      target_email,
+      scheduled_at,
+      suspend_type,
+      restored_message
+    } = body;
 
     if (!action || !customer_id) {
       return NextResponse.json({ error: 'Action and Customer ID are required' }, { status: 400 });
@@ -29,7 +41,6 @@ export async function POST(req: NextRequest) {
     const name = customer.full_name || 'Pelanggan';
 
     if (action === 'schedule') {
-      const { scheduled_at, suspend_type, reason, message, duration } = await req.json();
       if (!scheduled_at || !reason || !message || !suspend_type) {
         return NextResponse.json({ error: 'Scheduled time, type, reason and message are required' }, { status: 400 });
       }
@@ -285,8 +296,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'restore') {
-      const { restored_message } = await req.json();
-
       // Reset all suspend/ban fields in DB
       const { error: updateErr } = await supabaseAdmin
         .from('profiles')

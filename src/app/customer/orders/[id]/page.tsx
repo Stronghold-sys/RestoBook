@@ -13,6 +13,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
+import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -290,6 +291,27 @@ export default function OrderTrackingPage() {
       </html>
     `);
     win.document.close();
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const formattedItems = orderItems.map(i => ({
+        name: i.menu_items?.name || i.name || "Item",
+        price: Number(i.price || i.menu_items?.price || 0),
+        quantity: Number(i.quantity),
+        subtotal: Number(i.subtotal)
+      }));
+      
+      await downloadReceiptPDF({
+        order,
+        orderItems: formattedItems,
+        customerName: customerName || "Pelanggan",
+        cashierName: cashierName || undefined
+      });
+      toast.success("Kwitansi PDF berhasil diunduh!");
+    } catch (error) {
+      toast.error("Gagal mengunduh PDF");
+    }
   };
 
   const handleCancelOrder = async () => {
@@ -917,8 +939,19 @@ export default function OrderTrackingPage() {
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
                    <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
                 </div>
-                <div className="p-4 border-t border-gray-100 bg-white">
-                   <button onClick={handlePrint} className="w-full py-3 bg-blue-600 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700"><Printer className="w-4 h-4" /> Cetak Sekarang</button>
+                <div className="p-4 border-t border-gray-100 bg-white space-y-2">
+                   <button 
+                     onClick={handleDownloadPDF} 
+                     className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                   >
+                     <ReceiptIcon className="w-4 h-4" /> Unduh PDF Kwitansi
+                   </button>
+                   <button 
+                     onClick={handlePrint} 
+                     className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs"
+                   >
+                     <Printer className="w-3.5 h-3.5" /> Cetak Kwitansi
+                   </button>
                 </div>
             </motion.div>
           </div>

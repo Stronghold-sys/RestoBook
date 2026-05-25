@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import Receipt from "@/components/Receipt";
+import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 export default function CashierOrders() {
   const [loading, setLoading] = useState(true);
@@ -299,6 +300,27 @@ export default function CashierOrders() {
     win.document.close();
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const formattedItems = orderItems.map(i => ({
+        name: i.menu_items?.name || i.name || "Item",
+        price: Number(i.price || i.menu_items?.price || 0),
+        quantity: Number(i.quantity),
+        subtotal: Number(i.subtotal)
+      }));
+      
+      await downloadReceiptPDF({
+        order: selectedOrder,
+        orderItems: formattedItems,
+        customerName: customerName || selectedOrder.profiles?.full_name || "Guest",
+        cashierName: cashierName || undefined
+      });
+      toast.success("Kwitansi PDF berhasil diunduh!");
+    } catch (error) {
+      toast.error("Gagal mengunduh PDF");
+    }
+  };
+
   const filtered = orders.filter(o => {
     const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || getCustomerName(o).toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
@@ -435,9 +457,9 @@ export default function CashierOrders() {
             <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.95 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               <div className="p-8 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-2xl text-text-light dark:text-text-dark">No. Pesanan {selectedOrder.id.split("-")[0]}</h3>
-                    <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase ${selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder.status}</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-2xl text-text-light dark:text-text-dark whitespace-nowrap">No. Pesanan {selectedOrder.id.split("-")[0]}</h3>
+                    <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase whitespace-nowrap ${selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder.status}</span>
                   </div>
                   <p className="text-sm text-muted mt-1">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
                 </div>
@@ -495,11 +517,11 @@ export default function CashierOrders() {
                   {selectedOrder.status !== "cancelled" && selectedOrder.status !== "completed" && (
                     <>
                       {selectedOrder.status === "pending" && (
-                        <div className="flex flex-1 gap-3">
+                        <div className="flex gap-3 w-full flex-col sm:flex-row">
                           <motion.button 
                             whileTap={{ scale: 0.98 }} 
                             onClick={() => updateOrderStatus(selectedOrder.id, "confirmed")} 
-                            className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 transition-all uppercase text-sm tracking-wider"
+                            className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 transition-all uppercase text-sm tracking-wider whitespace-nowrap"
                           >
                             <CheckCircle className="w-6 h-6" /> Terima Pesanan
                           </motion.button>
@@ -507,7 +529,7 @@ export default function CashierOrders() {
                           <motion.button 
                             whileTap={{ scale: 0.98 }} 
                             onClick={() => setShowCancelModal(true)} 
-                            className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs"
+                            className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap flex items-center justify-center gap-2"
                           >
                             <X className="w-5 h-5" /> Tolak Pesanan
                           </motion.button>
@@ -521,14 +543,14 @@ export default function CashierOrders() {
                       )}
                       
                       {(selectedOrder.status === "confirmed" || selectedOrder.status === "processing") && (
-                        <div className="flex flex-1 gap-3">
-                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider">
+                        <div className="flex flex-1 gap-3 flex-col sm:flex-row">
+                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider whitespace-nowrap">
                             <CheckCircle className="w-6 h-6" /> Pesanan Selesai
                           </motion.button>
                           <motion.button 
                             whileTap={{ scale: 0.98 }} 
                             onClick={() => setShowCancelModal(true)} 
-                            className="py-4 px-6 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs"
+                            className="py-4 px-6 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap"
                           >
                             Batalkan
                           </motion.button>
@@ -582,10 +604,13 @@ export default function CashierOrders() {
       <AnimatePresence>
         {showReceipt && selectedOrder?.payment_status === "paid" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowReceipt(false)}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={e => e.stopPropagation()} className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-[420px] w-full my-8">
-              <div className="p-6 bg-gray-50 flex justify-between items-center border-b border-gray-100">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={e => e.stopPropagation()} className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-[420px] w-full my-8">
+              <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
                 <button onClick={() => setShowReceipt(false)} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"><ArrowLeft className="w-3 h-3" /> Kembali</button>
-                <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all uppercase"><Printer className="w-4 h-4" /> Cetak Kwitansi</button>
+                <div className="flex gap-2">
+                  <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"><ReceiptIcon className="w-4 h-4" /> PDF</button>
+                  <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-hover shadow-md transition-all uppercase"><Printer className="w-4 h-4" /> Cetak</button>
+                </div>
               </div>
               <Receipt ref={receiptRef} order={selectedOrder} orderItems={orderItems} customerName={customerName || selectedOrder.profiles?.full_name || "Guest"} cashierName={cashierName} />
             </motion.div>

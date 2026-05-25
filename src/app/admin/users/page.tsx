@@ -6,6 +6,7 @@ import { Users, UserPlus, Search, Mail, Shield, Trash2, Loader2, X, Check, Key, 
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
+import { downloadFile } from "@/utils/downloadHelper";
 
 export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
@@ -152,7 +153,7 @@ export default function AdminUsersPage() {
 
 
 
-  const generateCredentialPDF = (emp: any) => {
+  const generateCredentialPDF = async (emp: any) => {
     const doc = new jsPDF();
     
     // Design
@@ -188,7 +189,17 @@ export default function AdminUsersPage() {
     doc.text("*Harap segera ganti password Anda di menu profil setelah login.", 14, 130);
     doc.text("*Gunakan No. ID Karyawan atau Email Anda untuk masuk ke sistem.", 14, 136);
 
-    doc.save(`Akun_${emp.employee_id}.pdf`);
+    try {
+      const pdfBase64 = doc.output('datauristring');
+      await downloadFile({
+        dataBase64: pdfBase64,
+        filename: `Akun_${emp.employee_id}.pdf`,
+        mimeType: 'application/pdf'
+      });
+    } catch (e) {
+      toast.error("Gagal mengunduh PDF");
+      console.error(e);
+    }
   };
 
   const deleteEmployee = async (id: string) => {

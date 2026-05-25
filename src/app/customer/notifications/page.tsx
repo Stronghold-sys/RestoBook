@@ -101,7 +101,7 @@ export default function CustomerNotificationsPage() {
         <div className="space-y-3">
           {notifications.map((notif, i) => (
             <motion.div key={notif.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} className={`p-5 rounded-2xl border transition-colors ${!notif.is_read ? "bg-primary/5 border-primary/20 dark:bg-primary/10 dark:border-primary/30" : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"}`}>
-              <div className="flex gap-4">
+              <div className="flex gap-4 items-start">
                 <div className={`p-2.5 rounded-xl shrink-0 ${!notif.is_read ? "bg-primary/10" : "bg-gray-100 dark:bg-gray-800"}`}>
                   {getIcon(notif.type)}
                 </div>

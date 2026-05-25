@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { downloadFile } from '@/utils/downloadHelper';
 
 export default function AdminTransactions() {
   const [loading, setLoading] = useState(true);
@@ -127,7 +128,7 @@ export default function AdminTransactions() {
     return true;
   });
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
     
     const reportData = [];
@@ -167,12 +168,23 @@ export default function AdminTransactions() {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
-    XLSX.writeFile(workbook, `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
-    toast.success("Berhasil mengekspor ke Excel!");
+    
+    try {
+      const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+      await downloadFile({
+        dataBase64: excelBase64,
+        filename: `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.xlsx`,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      toast.success("Berhasil mengekspor ke Excel!");
+    } catch (e) {
+      toast.error("Gagal mengekspor ke Excel");
+      console.error(e);
+    }
   };
 
   // Export PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
     const doc = new jsPDF('landscape'); 
     
@@ -238,8 +250,18 @@ export default function AdminTransactions() {
       doc.line(14, y - 6, 283, y - 6);
     });
     
-    doc.save(`Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`);
-    toast.success("Berhasil mengekspor ke PDF!");
+    try {
+      const pdfBase64 = doc.output('datauristring');
+      await downloadFile({
+        dataBase64: pdfBase64,
+        filename: `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,
+        mimeType: 'application/pdf'
+      });
+      toast.success("Berhasil mengekspor ke PDF!");
+    } catch (e) {
+      toast.error("Gagal mengekspor ke PDF");
+      console.error(e);
+    }
   };
 
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;

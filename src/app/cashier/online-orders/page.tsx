@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { ShoppingBag, Search, Clock, CheckCircle2, XCircle, 
   Globe, Check, X, AlertTriangle, Filter, 
   ArrowRight, MessageSquare, Timer, Zap, History,
-  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed, Mail, RotateCcw
+  Volume2, VolumeX, ChevronRight, MapPin, Store, Printer, ArrowLeft, UtensilsCrossed, Mail, RotateCcw,
+  Receipt as ReceiptIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -15,6 +16,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
+import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 export default function OnlineOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -178,6 +180,28 @@ export default function OnlineOrdersPage() {
       </html>
     `);
     win.document.close();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!selectedOrder) return;
+    try {
+      const formattedItems = selectedOrder.order_items.map((i: any) => ({
+        name: i.menu_items?.name || i.name || "Item",
+        price: Number(i.price || i.menu_items?.price || 0),
+        quantity: Number(i.quantity),
+        subtotal: Number(i.subtotal)
+      }));
+      
+      await downloadReceiptPDF({
+        order: selectedOrder,
+        orderItems: formattedItems,
+        customerName: selectedOrder.profiles?.full_name || "Guest",
+        cashierName: cashierName || undefined
+      });
+      toast.success("Kwitansi PDF berhasil diunduh!");
+    } catch (error) {
+      toast.error("Gagal mengunduh PDF");
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -690,19 +714,27 @@ export default function OnlineOrdersPage() {
               onClick={e => e.stopPropagation()}
               className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-[420px] w-full my-8"
             >
-              <div className="p-6 bg-gray-50 flex justify-between items-center border-b border-gray-100">
+              <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
                 <button 
                   onClick={() => setShowReceipt(false)}
                   className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"
                 >
                   <ArrowLeft className="w-3 h-3" /> Kembali
                 </button>
-                <button 
-                  onClick={handlePrint}
-                  className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 shadow-lg shadow-primary/30 transition-all uppercase"
-                >
-                  <Printer className="w-4 h-4" /> Cetak Sekarang
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleDownloadPDF} 
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"
+                  >
+                    <ReceiptIcon className="w-4 h-4" /> PDF
+                  </button>
+                  <button 
+                    onClick={handlePrint}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 shadow-md transition-all uppercase"
+                  >
+                    <Printer className="w-4 h-4" /> Cetak
+                  </button>
+                </div>
               </div>
               <div className="p-4 bg-gray-100">
                 <Receipt 

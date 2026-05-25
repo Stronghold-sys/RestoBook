@@ -15,6 +15,7 @@ import { id } from "date-fns/locale";
 import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import { downloadFile } from "@/utils/downloadHelper";
 
 const BANK_BUMN = ["Bank BRI", "Bank BNI", "Bank Mandiri", "Bank BTN", "Bank BSI"];
 const BANK_SWASTA = ["BCA", "CIMB Niaga", "Danamon", "Permata Bank", "Panin Bank", "OCBC NISP", "Maybank", "Bank Mega", "Bank Bukopin", "Bank Sinarmas", "Bank BTPN", "Bank Commonwealth", "Bank Jago", "SeaBank", "Allo Bank", "Blu BCA"];
@@ -988,7 +989,12 @@ export default function AdvancedPayrollPage() {
     const handleDownloadSlip = async (emp: any) => {
        try {
           const doc = await generatePayslipDoc(emp);
-          doc.save(`Slip_Gaji_${emp.full_name.replace(/\s+/g, '_')}_Format_Resmi.pdf`);
+          const pdfBase64 = doc.output('datauristring');
+          await downloadFile({
+            dataBase64: pdfBase64,
+            filename: `Slip_Gaji_${emp.full_name.replace(/\s+/g, '_')}_Format_Resmi.pdf`,
+            mimeType: 'application/pdf'
+          });
           toast.success("Slip Gaji Format Resmi berhasil diunduh!");
        } catch (err) {
           toast.error("Gagal membuat Slip Gaji PDF");

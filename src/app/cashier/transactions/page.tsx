@@ -248,7 +248,7 @@ export default function CashierTransactionsPage() {
     });
     
     try {
-      const pdfBase64 = doc.output('base64' as any) as any;
+      const pdfBase64 = doc.output('datauristring');
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Laporan_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,

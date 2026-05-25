@@ -171,7 +171,7 @@ export async function downloadReceiptPDF({
   doc.text("RestoBook POS System", 40, y, { align: "center" });
   
   // Get base64 string
-  const base64Data = doc.output("base64" as any) as any;
+  const base64Data = doc.output("datauristring");
   
   // Download it
   const filename = `Kwitansi_${order.id?.substring(0, 8).toUpperCase()}.pdf`;

@@ -73,6 +73,12 @@ function CountdownTimer({ suspendUntil, onExpired }: { suspendUntil: string; onE
 export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"customers" | "appeals">("customers");
+  const [appeals, setAppeals] = useState<any[]>([]);
+  const [loadingAppeals, setLoadingAppeals] = useState(false);
+  const [reviewAppeal, setReviewAppeal] = useState<any | null>(null);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [processingReview, setProcessingReview] = useState(false);
   
   // Selection & Bulk Actions
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -188,7 +194,24 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
+    fetchAppeals();
   }, []);
+
+  const fetchAppeals = async () => {
+    setLoadingAppeals(true);
+    try {
+      const { data, error } = await supabase
+        .from("appeals")
+        .select("*, profiles(*)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAppeals(data || []);
+    } catch (err: any) {
+      toast.error("Gagal memuat daftar banding: " + err.message);
+    } finally {
+      setLoadingAppeals(false);
+    }
+  };
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -652,9 +675,10 @@ export default function AdminCustomersPage() {
           if (!res.ok) throw new Error(resData.error || "Gagal memproses banding");
 
           toast.success(status === "approved" ? "Banding berhasil disetujui, akun aktif" : "Banding ditolak", { id: toastId });
+          fetchAppeals();
+          fetchCustomers();
           if (selectedCustomer) {
             fetchCustomerDetails(selectedCustomer);
-            fetchCustomers();
           }
         } catch (err: any) {
           toast.error(err.message, { id: toastId });
@@ -775,7 +799,42 @@ export default function AdminCustomersPage() {
         ))}
       </div>
 
-      {/* Bulk Action Panel - Float at top table if elements selected */}
+      {/* Tab Navigation */}
+      <div className="flex gap-4 border-b border-border-light dark:border-border-dark pb-1">
+        <button
+          onClick={() => setActiveTab("customers")}
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "customers"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+          }`}
+        >
+          <Users className="w-4 h-4" /> Daftar Pelanggan
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-gray-700 text-muted font-bold">
+            {totalCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("appeals")}
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "appeals"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" /> Pengajuan Banding
+          {appeals.filter(a => a.status === 'pending').length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-bold animate-pulse">
+              {appeals.filter(a => a.status === 'pending').length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "customers" ? (
+        <>
+          {/* Bulk Action Panel - Float at top table if elements selected */}
       <AnimatePresence>
         {selectedIds.length > 0 && (
           <motion.div
@@ -1076,6 +1135,104 @@ export default function AdminCustomersPage() {
           </table>
         </div>
       </div>
+        </>
+      ) : (
+        /* Appeals Table Section */
+        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-border-light dark:border-border-dark flex flex-col lg:flex-row gap-4 justify-between items-center">
+            <div>
+              <h3 className="text-lg font-black text-text-light dark:text-text-dark">Semua Pengajuan Banding</h3>
+              <p className="text-xs text-muted font-medium mt-0.5">Daftar permohonan pemulihan akun yang diajukan oleh pelanggan</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-900/50">
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Pelanggan</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Tanggal Pengajuan</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Alasan Banding</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Status</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                {loadingAppeals ? (
+                  <tr>
+                    <td colSpan={5} className="py-20 text-center">
+                      <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+                      <p className="text-muted font-bold">Sedang memuat data banding...</p>
+                    </td>
+                  </tr>
+                ) : appeals.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-20 text-center text-muted font-medium italic">
+                      Tidak ada pengajuan banding.
+                    </td>
+                  </tr>
+                ) : (
+                  appeals.map((appeal) => {
+                    const profile = appeal.profiles || {};
+                    return (
+                      <tr key={appeal.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0 flex items-center justify-center text-primary bg-primary/10">
+                              {profile.avatar_url ? (
+                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight">
+                                {profile.full_name || "Pelanggan"}
+                              </p>
+                              <p className="text-[10px] text-muted font-medium">
+                                {profile.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80">
+                          {format(new Date(appeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
+                        </td>
+                        <td className="px-6 py-5 text-xs font-medium text-text-light dark:text-text-dark max-w-xs truncate" title={appeal.reason}>
+                          {appeal.reason}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                            appeal.status === "approved" ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30" :
+                            appeal.status === "rejected" ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30" :
+                            "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
+                          }`}>
+                            {appeal.status === "approved" ? "Disetujui" :
+                             appeal.status === "rejected" ? "Ditolak" : "Pending"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setReviewAppeal(appeal);
+                                setReviewMessage(appeal.admin_message || "");
+                              }}
+                              className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors"
+                            >
+                              Tinjau Banding
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Slideover Detail Panel */}
       <AnimatePresence>
@@ -1618,6 +1775,211 @@ export default function AdminCustomersPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tinjau Banding Modal */}
+      <AnimatePresence>
+        {reviewAppeal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setReviewAppeal(null);
+              setReviewMessage("");
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark relative max-h-[90vh] overflow-y-auto flex flex-col"
+            >
+              <button 
+                onClick={() => {
+                  setReviewAppeal(null);
+                  setReviewMessage("");
+                }}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Tutup"
+              >
+                <X className="w-5 h-5 text-muted" />
+              </button>
+
+              <div className="mb-6 text-center space-y-2">
+                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">
+                  Tinjau Pengajuan Banding
+                </h3>
+                <p className="text-muted text-xs font-medium">
+                  Harap periksa detail akun di bawah sebelum mengambil keputusan.
+                </p>
+              </div>
+
+              {/* Account Details Block */}
+              <div className="bg-gray-50 dark:bg-gray-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark mb-6 space-y-3 text-left">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted">Detail Akun</p>
+                <div className="grid grid-cols-2 gap-y-2 text-xs font-semibold">
+                  <span className="text-muted font-medium">Nama Lengkap:</span>
+                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.full_name || 'Pelanggan'}</span>
+
+                  <span className="text-muted font-medium">Email:</span>
+                  <span className="text-text-light dark:text-text-dark text-right truncate" title={reviewAppeal.profiles?.email}>{reviewAppeal.profiles?.email || '-'}</span>
+
+                  <span className="text-muted font-medium">No. Telepon:</span>
+                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.phone || '-'}</span>
+
+                  <span className="text-muted font-medium">Status Akun Saat Ini:</span>
+                  <span className={`text-right font-black uppercase text-[10px] ${
+                    reviewAppeal.profiles?.status === 'banned' ? 'text-red-650' : 
+                    reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600' : 'text-green-600'
+                  }`}>
+                    {reviewAppeal.profiles?.status || 'active'}
+                  </span>
+
+                  <span className="text-muted font-medium">Jumlah Peringatan:</span>
+                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.warning_count || 0} Kali</span>
+
+                  <span className="text-muted font-medium">Alasan Hukuman:</span>
+                  <span className="text-text-light dark:text-text-dark text-right italic font-medium">
+                    &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
+                  </span>
+                </div>
+              </div>
+
+              {/* User's Appeal Details Block */}
+              <div className="bg-amber-50/50 dark:bg-amber-950/10 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30 mb-6 space-y-2 text-left">
+                <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500">Argumen Banding Pengguna</p>
+                <p className="text-xs text-text-light dark:text-text-dark font-medium leading-relaxed italic">
+                  &quot;{reviewAppeal.reason}&quot;
+                </p>
+                <p className="text-[10px] text-muted text-right mt-1">
+                  Dikirim pada: {format(new Date(reviewAppeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
+                </p>
+              </div>
+
+              {/* Form Input for Tanggapan Admin */}
+              <div className="space-y-3 mb-6 text-left">
+                <label className="block text-xs font-bold text-muted uppercase tracking-wider">
+                  Tanggapan Admin / Catatan Manajemen
+                </label>
+                <textarea
+                  placeholder="Masukkan pesan atau tanggapan manajemen. Pesan ini akan dikirimkan langsung ke email pengguna..."
+                  value={reviewMessage}
+                  onChange={(e) => setReviewMessage(e.target.value)}
+                  rows={3}
+                  disabled={reviewAppeal.status !== 'pending' || processingReview}
+                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none disabled:opacity-75"
+                />
+              </div>
+
+              {/* Review Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewAppeal(null);
+                    setReviewMessage("");
+                  }}
+                  className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
+                >
+                  Kembali
+                </button>
+                {reviewAppeal.status === 'pending' && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={processingReview}
+                      onClick={async () => {
+                        setProcessingReview(true);
+                        const toastId = toast.loading("Menyetujui banding & mengaktifkan akun...");
+                        try {
+                          const { data: adminUser } = await supabase.auth.getUser();
+                          const { data: adminProfile } = await supabase
+                            .from("profiles")
+                            .select("id")
+                            .eq("user_id", adminUser.user?.id || "")
+                            .single();
+
+                          const res = await fetch("/api/admin/customers/appeal", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              appeal_id: reviewAppeal.id,
+                              status: "approved",
+                              admin_message: reviewMessage || "Banding Anda disetujui. Akun Anda telah diaktifkan kembali.",
+                              admin_id: adminProfile?.id
+                            })
+                          });
+
+                          const resData = await res.json();
+                          if (!res.ok) throw new Error(resData.error || "Gagal menyetujui banding");
+
+                          toast.success("Banding disetujui! Email pemberitahuan telah dikirim.", { id: toastId });
+                          setReviewAppeal(null);
+                          setReviewMessage("");
+                          fetchAppeals();
+                          fetchCustomers();
+                        } catch (err: any) {
+                          toast.error(err.message, { id: toastId });
+                        } finally {
+                          setProcessingReview(false);
+                        }
+                      }}
+                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                    >
+                      Setujui (ACC)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={processingReview}
+                      onClick={async () => {
+                        setProcessingReview(true);
+                        const toastId = toast.loading("Menolak pengajuan banding...");
+                        try {
+                          const { data: adminUser } = await supabase.auth.getUser();
+                          const { data: adminProfile } = await supabase
+                            .from("profiles")
+                            .select("id")
+                            .eq("user_id", adminUser.user?.id || "")
+                            .single();
+
+                          const res = await fetch("/api/admin/customers/appeal", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              appeal_id: reviewAppeal.id,
+                              status: "rejected",
+                              admin_message: reviewMessage || "Banding ditolak karena alasan keamanan atau pelanggaran berat.",
+                              admin_id: adminProfile?.id
+                            })
+                          });
+
+                          const resData = await res.json();
+                          if (!res.ok) throw new Error(resData.error || "Gagal menolak banding");
+
+                          toast.success("Banding ditolak! Email pemberitahuan telah dikirim.", { id: toastId });
+                          setReviewAppeal(null);
+                          setReviewMessage("");
+                          fetchAppeals();
+                          fetchCustomers();
+                        } catch (err: any) {
+                          toast.error(err.message, { id: toastId });
+                        } finally {
+                          setProcessingReview(false);
+                        }
+                      }}
+                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                    >
+                      Tolak
+                    </button>
+                  </>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

@@ -140,7 +140,7 @@ export default function CashierTransactionsPage() {
       reportData.push([
         `#${order.id.split("-")[0]}`,
         getCustomerName(order),
-        order.order_type === "dine_in" ? "Dine In" : "Takeaway",
+        order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway",
         formatOrderItems(order.order_items),
         order.payment_method === "cash" ? "Cash" : "Non-Cash",
         Number(order.total_amount),
@@ -237,7 +237,7 @@ export default function CashierTransactionsPage() {
       doc.text(`#${order.id.split("-")[0]}`, 16, y);
       doc.text(getCustomerName(order).substring(0, 15), 35, y);
       doc.text(truncItems, 72, y);
-      doc.text(order.order_type === "dine_in" ? "Dine In" : "Takeaway", 172, y);
+      doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
       doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
       doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
       doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
@@ -248,7 +248,7 @@ export default function CashierTransactionsPage() {
     });
     
     try {
-      const pdfBase64 = doc.output('datauristring');
+      const pdfBase64 = doc.output('base64' as any) as any;
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Laporan_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,
@@ -432,7 +432,7 @@ export default function CashierTransactionsPage() {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Tipe</span>
-                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
+                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : selectedOrder.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Pembayaran</span>

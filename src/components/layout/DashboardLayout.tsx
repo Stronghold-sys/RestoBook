@@ -180,6 +180,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Voucher", href: "/admin/vouchers", icon: Ticket },
           { name: "Absensi", href: "/admin/attendance", icon: ClipboardList },
           { name: "Payroll", href: "/admin/payroll", icon: Receipt },
+          { name: "Transaksi", href: "/admin/transactions", icon: Receipt },
           { name: "Resign", href: "/admin/resign", icon: Power },
           { name: "Refund", href: "/admin/refunds", icon: RotateCcw },
           { name: "Reviews", href: "/admin/reviews", icon: Star },

@@ -989,7 +989,7 @@ export default function AdvancedPayrollPage() {
     const handleDownloadSlip = async (emp: any) => {
        try {
           const doc = await generatePayslipDoc(emp);
-          const pdfBase64 = doc.output('datauristring');
+          const pdfBase64 = doc.output('base64' as any) as any;
           await downloadFile({
             dataBase64: pdfBase64,
             filename: `Slip_Gaji_${emp.full_name.replace(/\s+/g, '_')}_Format_Resmi.pdf`,
@@ -1009,7 +1009,7 @@ export default function AdvancedPayrollPage() {
        const tId = showToast ? toast.loading(`Mengirim slip gaji ke ${emp.email}...`) : null;
        try {
           const doc = await generatePayslipDoc(emp);
-          const pdfBase64 = doc.output('datauristring');
+          const pdfBase64 = doc.output('base64' as any) as any;
           const monthStr = format(new Date(selectedYear, selectedMonth - 1, 1), "MMMM yyyy", {locale: id});
 
           const res = await fetch('/api/admin/send-payslip', {

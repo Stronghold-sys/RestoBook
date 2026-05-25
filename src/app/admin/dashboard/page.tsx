@@ -67,9 +67,11 @@ export default function AdminDashboard() {
       // Order Type Stats
       const dineIn = allOrders.filter(o => o.order_type === 'dine_in').length;
       const takeaway = allOrders.filter(o => o.order_type === 'takeaway').length;
+      const delivery = allOrders.filter(o => o.order_type === 'delivery').length;
       setOrderTypes([
         { name: 'Dine In', value: dineIn, color: '#e85d04' },
-        { name: 'Takeaway', value: takeaway, color: '#3b82f6' }
+        { name: 'Takeaway', value: takeaway, color: '#3b82f6' },
+        { name: 'Delivery', value: delivery, color: '#10b981' }
       ]);
 
     } catch (error) {
@@ -171,7 +173,7 @@ export default function AdminDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-3 gap-3 mt-6">
             {orderTypes.map((type, idx) => (
               <div key={idx} className="p-4 rounded-2xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-center">
                 <p className="text-[10px] font-bold text-muted uppercase mb-1">{type.name}</p>

@@ -107,7 +107,7 @@ export default function AdminUsersPage() {
     doc.setFont("helvetica", "normal");
     doc.text("*Harap segera ganti password Anda di menu profil setelah login.", 14, 130);
     doc.text("*Gunakan No. ID Karyawan atau Email Anda untuk masuk ke sistem.", 14, 136);
-    return doc.output('datauristring').split(',')[1];
+    return doc.output('base64' as any) as any;
   };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
     doc.text("*Gunakan No. ID Karyawan atau Email Anda untuk masuk ke sistem.", 14, 136);
 
     try {
-      const pdfBase64 = doc.output('datauristring');
+      const pdfBase64 = doc.output('base64' as any) as any;
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Akun_${emp.employee_id}.pdf`,

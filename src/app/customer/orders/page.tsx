@@ -218,7 +218,7 @@ export default function CustomerOrdersPage() {
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
                           <span>{format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</span>
                           <span>-</span>
-                          <span>{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
+                          <span>{order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
                           {order.payment_method && (
                             <>
                               <span>-</span>

@@ -81,7 +81,7 @@ export default function AdminOrdersPage() {
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-mono text-sm font-bold text-text-light dark:text-text-dark">#{order.id.split("-")[0]}</span>
                   <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${statusColors[order.status]}`}>{statusTexts[order.status]}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted">{order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
                 </div>
                 <p className="text-sm text-muted">{order.profiles?.full_name || "Guest"} - {new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
               </div>

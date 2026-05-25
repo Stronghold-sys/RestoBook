@@ -21,6 +21,7 @@ export default function CashierDashboard() {
     topPaymentMethod: "-",
     dineInPercent: 0,
     takeawayPercent: 0,
+    deliveryPercent: 0,
     activeTable: "-",
     topItem: "-"
   });
@@ -585,6 +586,7 @@ export default function CashierDashboard() {
         const itemCounts: any = {};
         let dineIn = 0;
         let takeaway = 0;
+        let delivery = 0;
 
         allOrders.forEach(o => {
           // Payment method count
@@ -593,6 +595,7 @@ export default function CashierDashboard() {
           
           // Order type
           if (o.order_type === 'dine_in') dineIn++;
+          else if (o.order_type === 'delivery') delivery++;
           else takeaway++;
 
           // Table active
@@ -616,12 +619,13 @@ export default function CashierDashboard() {
           topPaymentMethod: topMethod,
           dineInPercent: Math.round((dineIn / allOrders.length) * 100) || 0,
           takeawayPercent: Math.round((takeaway / allOrders.length) * 100) || 0,
+          deliveryPercent: Math.round((delivery / allOrders.length) * 100) || 0,
           activeTable: topTable !== "-" ? `Meja ${topTable}` : "-",
           topItem: topMenu
         });
       } else {
         setAdvancedStats({
-          topPaymentMethod: "-", dineInPercent: 0, takeawayPercent: 0, activeTable: "-", topItem: "-"
+          topPaymentMethod: "-", dineInPercent: 0, takeawayPercent: 0, deliveryPercent: 0, activeTable: "-", topItem: "-"
         });
       }
 
@@ -1548,10 +1552,12 @@ export default function CashierDashboard() {
           </div>
           <div>
             <p className="text-xs text-white/80 mb-1 uppercase font-bold tracking-wider">Rasio Pesanan</p>
-            <div className="flex items-center gap-2 text-sm font-bold">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold flex-wrap">
               <span>{advancedStats.dineInPercent}% Dine In</span>
               <span className="opacity-50">|</span>
               <span>{advancedStats.takeawayPercent}% Takeaway</span>
+              <span className="opacity-50">|</span>
+              <span>{advancedStats.deliveryPercent}% Delivery</span>
             </div>
           </div>
         </motion.div>

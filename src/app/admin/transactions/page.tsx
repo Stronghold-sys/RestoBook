@@ -144,7 +144,7 @@ export default function AdminTransactions() {
       reportData.push([
         `#${order.id.split("-")[0]}`,
         order.profiles?.full_name || "Guest",
-        order.order_type === "dine_in" ? "Dine In" : "Takeaway",
+        order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway",
         formatOrderItems(order.order_items),
         order.payment_method === "cash" ? "Cash" : "Non-Cash",
         Number(order.total_amount),
@@ -240,7 +240,7 @@ export default function AdminTransactions() {
       doc.text(`#${order.id.split("-")[0]}`, 16, y);
       doc.text(order.profiles?.full_name?.substring(0, 15) || "Guest", 35, y);
       doc.text(truncItems, 72, y);
-      doc.text(order.order_type === "dine_in" ? "Dine In" : "Takeaway", 172, y);
+      doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
       doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
       doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
       doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
@@ -251,7 +251,7 @@ export default function AdminTransactions() {
     });
     
     try {
-      const pdfBase64 = doc.output('datauristring');
+      const pdfBase64 = doc.output('base64' as any) as any;
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,
@@ -400,7 +400,7 @@ export default function AdminTransactions() {
                         <td className="py-4 px-6 font-mono text-sm font-bold text-text-light dark:text-text-dark whitespace-nowrap">#{order.id.split("-")[0]}</td>
                         <td className="py-4 px-6 text-sm font-medium text-text-light dark:text-text-dark whitespace-nowrap">{order.profiles?.full_name || "Guest"}</td>
                         <td className="py-4 px-6 text-sm text-muted max-w-[200px] truncate whitespace-nowrap" title={itemsStr}>{truncItems}</td>
-                        <td className="py-4 px-6 whitespace-nowrap"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-muted whitespace-nowrap">{order.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span></td>
+                        <td className="py-4 px-6 whitespace-nowrap"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-muted whitespace-nowrap">{order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</span></td>
                         <td className="py-4 px-6 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap ${order.payment_method === "cash" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50"}`}>
                             {order.payment_method === "cash" ? <><Banknote className="w-3 h-3" /> Cash</> : <><CreditCard className="w-3 h-3" /> Non-Cash</>}
@@ -454,7 +454,7 @@ export default function AdminTransactions() {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Tipe</span>
-                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : "Takeaway"}</span>
+                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : selectedOrder.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
                     <span className="text-muted font-medium">Pembayaran</span>

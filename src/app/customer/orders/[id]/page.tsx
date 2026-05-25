@@ -48,6 +48,7 @@ export default function OrderTrackingPage() {
   const [taxPercent, setTaxPercent] = useState<number>(10.00);
   const [paymentExpiryMinutes, setPaymentExpiryMinutes] = useState<number>(60);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -124,6 +125,10 @@ export default function OrderTrackingPage() {
       return;
     }
 
+    if (isDuitkuOpen) {
+      return;
+    }
+
     const calculateTimeLeft = () => {
       const createdAt = new Date(order.created_at).getTime();
       const expiryTime = createdAt + paymentExpiryMinutes * 60 * 1000;
@@ -149,7 +154,7 @@ export default function OrderTrackingPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [order, paymentExpiryMinutes]);
+  }, [order, paymentExpiryMinutes, isDuitkuOpen]);
 
   const formatTimeLeft = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -182,38 +187,48 @@ export default function OrderTrackingPage() {
       if (data.reference && typeof (window as any).checkout !== 'undefined') {
          toast.dismiss(pToast);
          setPaying(false);
+         setIsDuitkuOpen(true);
          (window as any).checkout.process(data.reference, {
             successEvent: async function(result: any) {
                console.log("Duitku Success Event:", result);
+               setIsDuitkuOpen(false);
                toast.success("Pembayaran Berhasil!");
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    orderId: id,
-                    duitkuOrderId: result?.merchantOrderId || id 
+                     orderId: id,
+                     duitkuOrderId: result?.merchantOrderId || id 
                   })
                });
                setTimeout(() => fetchOrderDetails(), 500);
             },
             pendingEvent: async function(result: any) {
                console.log("Duitku Pending Event:", result);
+               setIsDuitkuOpen(false);
                toast("Menunggu Konfirmasi...", { icon: "" });
                await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    orderId: id,
-                    duitkuOrderId: result?.merchantOrderId || id 
+                     orderId: id,
+                     duitkuOrderId: result?.merchantOrderId || id 
                   })
                });
                setTimeout(() => fetchOrderDetails(), 500);
             },
-            errorEvent: function(result: any) {
+            errorEvent: async function(result: any) {
+               setIsDuitkuOpen(false);
                toast.error("Transaksi dibatalkan.");
+               // Reset created_at to current timestamp in DB to reset countdown
+               await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
+               setTimeout(() => fetchOrderDetails(), 500);
             },
             closeEvent: async function() {
                console.log("Duitku Pop Closed. Syncing status...");
+               setIsDuitkuOpen(false);
+               // Reset created_at to current timestamp in DB to reset countdown
+               await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
                // Proaktif cek status ke Duitku saat popup ditutup
                await fetch('/api/payment/check-status', {
                   method: 'POST',

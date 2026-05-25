@@ -1,16 +1,30 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
 export default function SessionStatusListener() {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
+    if (
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname === "/forgot-password" ||
+      pathname === "/"
+    ) {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      return;
+    }
+
     let activeUserId: string | null = null;
 
     const setupListener = async (userId: string) => {
@@ -118,7 +132,7 @@ export default function SessionStatusListener() {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [router, supabase]);
+  }, [router, supabase, pathname]);
 
   return null;
 }

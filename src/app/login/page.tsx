@@ -183,7 +183,7 @@ export default function LoginPage() {
       if ((suspended === "suspended" || suspended === "banned") && pid) {
         supabase
           .from("profiles")
-          .select("id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at")
+          .select("id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at, email, full_name, employee_id")
           .eq("id", pid)
           .single()
           .then(({ data, error }) => {
@@ -260,7 +260,7 @@ export default function LoginPage() {
       if (data.user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at')
+          .select('id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at, email, full_name, employee_id')
           .eq('user_id', data.user.id)
           .single();
 
@@ -582,8 +582,36 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-4 mb-6 text-left">
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-2">Detail Akun</p>
+                  <div className="grid grid-cols-2 gap-y-1.5 text-xs">
+                    <span className="text-muted font-medium">Nama Lengkap:</span>
+                    <span className="text-text-light dark:text-text-dark font-bold text-right">{suspendData.full_name || 'Pelanggan'}</span>
+                    
+                    <span className="text-muted font-medium">Email:</span>
+                    <span className="text-text-light dark:text-text-dark font-bold text-right truncate" title={suspendData.email}>{suspendData.email || '-'}</span>
+                    
+                    {suspendData.employee_id && (
+                      <>
+                        <span className="text-muted font-medium">ID Karyawan:</span>
+                        <span className="text-text-light dark:text-text-dark font-bold text-right">{suspendData.employee_id}</span>
+                      </>
+                    )}
+                    
+                    <span className="text-muted font-medium">Peran (Role):</span>
+                    <span className="text-text-light dark:text-text-dark font-bold text-right uppercase tracking-wider text-[10px]">
+                      {suspendData.role === 'customer' ? 'Pelanggan' : suspendData.role === 'kitchen' ? 'Dapur' : suspendData.role === 'cashier' ? 'Kasir' : suspendData.role}
+                    </span>
+
+                    <span className="text-muted font-medium">Status Akun:</span>
+                    <span className={`font-black text-right uppercase tracking-wider text-[10px] ${suspendData.status === 'banned' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-500'}`}>
+                      {suspendData.status === 'banned' ? 'Blokir Permanen' : 'Ditangguhkan'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Alasan Penangguhan</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">Alasan Penangguhan / Pemblokiran</p>
                   <p className="text-sm font-semibold text-text-light dark:text-text-dark">{suspendData.suspend_reason || 'Tidak ada alasan khusus.'}</p>
                 </div>
 

@@ -20,6 +20,22 @@ export default function CartPage() {
   const [voucherCodeInput, setVoucherCodeInput] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+  const [availableVouchers, setAvailableVouchers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAvailableVouchers = async () => {
+      try {
+        const response = await fetch("/api/customer/vouchers");
+        const data = await response.json();
+        if (response.ok) {
+          setAvailableVouchers(data.active || []);
+        }
+      } catch (e) {
+        console.error("Error loading available vouchers:", e);
+      }
+    };
+    fetchAvailableVouchers();
+  }, []);
 
   const handleApplyVoucher = async () => {
     if (!voucherCodeInput) return toast.error("Masukkan kode voucher terlebih dahulu");
@@ -497,22 +513,44 @@ export default function CartPage() {
             <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3">
               <label className="text-xs font-bold text-muted uppercase tracking-wider block">Kupon / Voucher Promo</label>
               {!appliedVoucher ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Masukkan kode voucher..."
-                    value={voucherCodeInput}
-                    onChange={e => setVoucherCodeInput(e.target.value)}
-                    className="flex-1 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark uppercase font-mono"
-                  />
-                  <button
-                    onClick={handleApplyVoucher}
-                    disabled={isApplyingVoucher}
-                    className="bg-primary hover:bg-primary/95 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center transition-all disabled:opacity-50"
-                  >
-                    {isApplyingVoucher ? "..." : "Gunakan"}
-                  </button>
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Masukkan kode voucher..."
+                      value={voucherCodeInput}
+                      onChange={e => setVoucherCodeInput(e.target.value)}
+                      className="flex-1 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark uppercase font-mono"
+                    />
+                    <button
+                      onClick={handleApplyVoucher}
+                      disabled={isApplyingVoucher}
+                      className="bg-primary hover:bg-primary/95 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center transition-all disabled:opacity-50"
+                    >
+                      {isApplyingVoucher ? "..." : "Gunakan"}
+                    </button>
+                  </div>
+                  {availableVouchers.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] text-muted font-bold block uppercase tracking-wider">Voucher Anda (Klik untuk gunakan):</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableVouchers.map((v: any) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => {
+                              setVoucherCodeInput(v.code);
+                              toast.success(`Kode ${v.code} dipilih! Klik Gunakan.`);
+                            }}
+                            className="text-[10px] font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all uppercase"
+                          >
+                            {v.code} ({v.discount_percent}%)
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/30 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2">

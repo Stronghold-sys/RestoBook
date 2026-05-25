@@ -48,6 +48,41 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
+    // Auto-distribute if the voucher is created active
+    if (voucher.is_active) {
+      try {
+        const { data: customers, error: customersError } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('role', 'customer');
+
+        if (!customersError && customers && customers.length > 0) {
+          const inserts = customers.map((c: any) => ({
+            customer_id: c.id,
+            voucher_id: voucher.id,
+            used_count: 0
+          }));
+
+          await supabaseAdmin
+            .from('customer_vouchers')
+            .upsert(inserts, { onConflict: 'customer_id,voucher_id' });
+
+          const notifications = customers.map((c: any) => ({
+            user_id: c.id,
+            title: 'Voucher Baru Dikirim!',
+            message: `Voucher diskon ${voucher.code} sebesar ${voucher.discount_percent}% telah dikirim ke akun Anda. Gunakan saat checkout!`,
+            type: 'voucher',
+            reference_id: voucher.id
+          }));
+
+          await supabaseAdmin.from('notifications').insert(notifications);
+        }
+      } catch (distError) {
+        console.error('Auto-distribution error:', distError);
+        // Do not fail the whole voucher creation if distribution notifications fail
+      }
+    }
+
     return NextResponse.json({ success: true, voucher });
   } catch (error: any) {
     console.error('Create voucher error:', error);

@@ -27,10 +27,23 @@ export default function AdminVouchersPage() {
     is_active: true
   });
 
+  const generateRandomCode = (showToast = true) => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "RSTB-";
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setForm(prev => ({ ...prev, code: result }));
+    if (showToast) {
+      toast.success(`Kode voucher otomatis dibuat: ${result}`);
+    }
+  };
+
   const supabase = createClient();
 
   useEffect(() => {
     fetchVouchers();
+    generateRandomCode(false);
   }, []);
 
   const fetchVouchers = async () => {
@@ -89,6 +102,7 @@ export default function AdminVouchersPage() {
       });
       
       fetchVouchers();
+      generateRandomCode(false);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -189,7 +203,16 @@ export default function AdminVouchersPage() {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="code" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Kode Voucher</label>
+                <label htmlFor="code" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 flex justify-between items-center">
+                  <span>Kode Voucher</span>
+                  <button
+                    type="button"
+                    onClick={() => generateRandomCode(true)}
+                    className="text-primary hover:text-primary/80 font-black text-[10px] uppercase tracking-wider bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 transition-all hover:scale-105"
+                  >
+                    Buat Otomatis
+                  </button>
+                </label>
                 <input
                   type="text"
                   id="code"

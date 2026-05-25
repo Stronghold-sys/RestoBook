@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare } from "lucide-react";
+import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare, CheckCircle, XCircle, Ban, RefreshCw, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -22,6 +22,8 @@ export default function LoginPage() {
   const [appealText, setAppealText] = useState("");
   const [submittingAppeal, setSubmittingAppeal] = useState(false);
   const [countdown, setCountdown] = useState<any>(null);
+  const [appealData, setAppealData] = useState<any>(null);
+  const [loadingAppeal, setLoadingAppeal] = useState(false);
   
   const router = useRouter();
   const supabase = createClient();
@@ -85,6 +87,48 @@ export default function LoginPage() {
       if (timer) clearInterval(timer);
     };
   }, [suspendData]);
+
+  // Fetch latest appeal & realtime listener when suspendData is set
+  useEffect(() => {
+    if (!suspendData?.id) return;
+
+    const fetchLatestAppeal = async () => {
+      setLoadingAppeal(true);
+      const { data } = await supabase
+        .from('appeals')
+        .select('*')
+        .eq('user_id', suspendData.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setAppealData(data || null);
+      setLoadingAppeal(false);
+    };
+
+    fetchLatestAppeal();
+
+    // Realtime: listen for changes to appeals for this user
+    const appealChannel = supabase
+      .channel(`appeal-status-${suspendData.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appeals',
+        filter: `user_id=eq.${suspendData.id}`
+      }, (payload: any) => {
+        if (payload.new) {
+          setAppealData(payload.new);
+          if (payload.new.status === 'approved') {
+            toast.success('Selamat! Banding Anda telah disetujui. Akun Anda sudah aktif kembali.', { duration: 8000 });
+          } else if (payload.new.status === 'rejected') {
+            toast.error('Banding Anda ditolak oleh administrator.', { duration: 6000 });
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(appealChannel); };
+  }, [suspendData?.id]);
 
   const formatCountdown = (cd: any) => {
     if (!cd) return '';
@@ -711,61 +755,227 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* ======== APPEAL SECTION ======== */}
               <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark text-left flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-primary" /> Ajukan Banding (Appeal Form)
-                </h4>
-                
-                <textarea
-                  placeholder="Tuliskan argumen atau penjelasan Anda di sini untuk mengajukan banding pemulihan akun..."
-                  value={appealText}
-                  onChange={(e) => setAppealText(e.target.value)}
-                  rows={3}
-                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none"
-                />
 
-                <div className="flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setShowSuspendModal(false);
-                      setSuspendData(null);
-                    }}
-                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
-                  >
-                    Kembali
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={async () => {
-                      if (!appealText.trim()) return toast.error("Tuliskan alasan banding Anda terlebih dahulu");
-                      setSubmittingAppeal(true);
-                      const toastId = toast.loading("Mengirim banding...");
-                      try {
-                        const res = await fetch('/api/admin/customers/appeal', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ user_id: suspendData.id, reason: appealText })
-                        });
-                        const resData = await res.json();
-                        if (!res.ok) throw new Error(resData.error || "Gagal mengirim banding");
-                        
-                        toast.success("Pengajuan banding Anda telah dikirim. Tim administrator kami akan meninjau secepatnya.", { id: toastId, duration: 6000 });
-                        setAppealText("");
-                        setShowSuspendModal(false);
-                        setSuspendData(null);
-                      } catch (err: any) {
-                        toast.error(err.message, { id: toastId });
-                      } finally {
-                        setSubmittingAppeal(false);
-                      }
-                    }}
-                    disabled={submittingAppeal}
-                    className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
-                  >
-                    {submittingAppeal ? <Loader2 className="w-4 h-4 animate-spin" /> : "Kirim Banding"}
-                  </button>
-                </div>
+                {/* Loading appeal data */}
+                {loadingAppeal && (
+                  <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Memuat status banding...
+                  </div>
+                )}
+
+                {/* === CASE: BANDING DISETUJUI === */}
+                {!loadingAppeal && appealData?.status === 'approved' && (
+                  <div className="space-y-4">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">✅ Banding Disetujui!</p>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">
+                            Selamat! Permohonan banding Anda telah <strong>disetujui</strong> oleh administrator RestoBook. Akun Anda telah diaktifkan kembali secara penuh dan siap untuk digunakan.
+                          </p>
+                          {appealData?.admin_message && (
+                            <div className="mt-2 bg-white/70 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200/50">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600 mb-1">Pesan Administrator</p>
+                              <p className="text-xs text-emerald-800 dark:text-emerald-300 italic">&quot;{appealData.admin_message}&quot;</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSuspendModal(false);
+                          setSuspendData(null);
+                          setAppealData(null);
+                          // Redirect to login to try again
+                          window.location.href = '/login';
+                        }}
+                        className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-all flex justify-center items-center gap-2 text-sm uppercase tracking-wider"
+                      >
+                        <LogIn className="w-4 h-4" /> Login Sekarang
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* === CASE: BANDING DITOLAK + SUSPENDED (bisa tunggu sampai habis) === */}
+                {!loadingAppeal && appealData?.status === 'rejected' && suspendData?.status === 'suspended' && (
+                  <div className="space-y-4">
+                    <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-red-800 dark:text-red-300 uppercase tracking-wide">❌ Banding Ditolak</p>
+                          <p className="text-xs text-red-700 dark:text-red-400 mt-1 leading-relaxed">
+                            Kami menyesal memberitahukan bahwa pengajuan banding Anda telah <strong>ditolak</strong> oleh tim manajemen. Namun, akun Anda masih dalam masa penangguhan <strong>sementara</strong> dan akan otomatis aktif kembali setelah sisa waktu penangguhan habis.
+                          </p>
+                          {appealData?.admin_message && (
+                            <div className="mt-2 bg-white/70 dark:bg-red-900/20 p-3 rounded-xl border border-red-200/50">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-red-600 mb-1">Alasan Penolakan</p>
+                              <p className="text-xs text-red-800 dark:text-red-300 italic">&quot;{appealData.admin_message}&quot;</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {countdown && (
+                      <div className="bg-amber-50 dark:bg-amber-950/10 border border-amber-200/50 rounded-xl p-4 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center justify-center gap-1 mb-1">
+                          <Clock className="w-3.5 h-3.5" /> Akun aktif otomatis dalam
+                        </p>
+                        <p className="text-base font-black text-amber-800 dark:text-amber-400 font-mono">{formatCountdown(countdown)}</p>
+                        <p className="text-[10px] text-amber-600 mt-1">Anda tidak perlu melakukan apa pun. Akun akan aktif dengan sendirinya setelah waktu habis.</p>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
+                      className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 transition-colors text-xs uppercase tracking-wider"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                )}
+
+                {/* === CASE: BANDING DITOLAK + BANNED PERMANEN === */}
+                {!loadingAppeal && appealData?.status === 'rejected' && suspendData?.status === 'banned' && (
+                  <div className="space-y-4">
+                    <div className="bg-gray-900 dark:bg-gray-950 border border-gray-700 rounded-2xl p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-red-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Ban className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-red-400 uppercase tracking-wide">🚫 Banding Ditolak — Keputusan Final</p>
+                          <p className="text-xs text-gray-300 mt-2 leading-relaxed">
+                            Dengan penuh penyesalan, kami harus memberitahukan bahwa pengajuan banding Anda untuk pemulihan akun yang <strong className="text-red-400">diblokir secara permanen</strong> telah ditolak oleh tim manajemen kami setelah melalui proses peninjauan yang menyeluruh.
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                            Keputusan ini bersifat <strong className="text-red-400">final dan tidak dapat diganggu gugat</strong>. Akun Anda tidak dapat diaktifkan kembali karena telah melanggar ketentuan penggunaan layanan RestoBook secara serius.
+                          </p>
+                          {appealData?.admin_message && (
+                            <div className="mt-3 bg-gray-800 p-3 rounded-xl border border-gray-700">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-red-400 mb-1">Pesan Resmi Administrator</p>
+                              <p className="text-xs text-gray-300 italic">&quot;{appealData.admin_message}&quot;</p>
+                            </div>
+                          )}
+                          <div className="mt-3 bg-gray-800/50 p-3 rounded-xl border border-gray-700/50">
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              Kami memohon maaf atas ketidaknyamanan yang ditimbulkan. Jika Anda merasa ada kekeliruan atau ingin mengklarifikasi lebih lanjut, silakan hubungi tim dukungan RestoBook melalui email resmi kami.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
+                      className="w-full py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-300 transition-colors text-xs uppercase tracking-wider"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                )}
+
+                {/* === CASE: BANDING SEDANG DITINJAU (PENDING) === */}
+                {!loadingAppeal && appealData?.status === 'pending' && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-blue-800 dark:text-blue-300 uppercase tracking-wide">🕐 Banding Sedang Ditinjau</p>
+                          <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                            Pengajuan banding Anda <strong>sedang dalam proses peninjauan</strong> oleh tim manajemen RestoBook. Kami akan memberikan keputusan dalam waktu maksimal <strong>1×24 jam</strong>. Harap bersabar dan periksa email Anda secara berkala.
+                          </p>
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0ms'}}></div>
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'150ms'}}></div>
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'300ms'}}></div>
+                            <span className="text-[10px] text-blue-500 ml-1">Menunggu keputusan administrator...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
+                      className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 transition-colors text-xs uppercase tracking-wider"
+                    >
+                      Tutup (Banding Sedang Diproses)
+                    </button>
+                  </div>
+                )}
+
+                {/* === CASE: BELUM ADA BANDING — Tampilkan Form === */}
+                {!loadingAppeal && !appealData && (
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark text-left flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary" /> Ajukan Banding (Appeal Form)
+                    </h4>
+                    <p className="text-[11px] text-muted leading-relaxed">
+                      Jika Anda merasa penangguhan ini tidak adil atau ada kekeliruan, Anda dapat mengajukan banding. Tuliskan argumen atau penjelasan Anda dengan jelas dan jujur.
+                    </p>
+                    <textarea
+                      placeholder="Tuliskan argumen atau penjelasan Anda di sini untuk mengajukan banding pemulihan akun..."
+                      value={appealText}
+                      onChange={(e) => setAppealText(e.target.value)}
+                      rows={3}
+                      className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none"
+                    />
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
+                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
+                      >
+                        Kembali
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!appealText.trim()) return toast.error("Tuliskan alasan banding Anda terlebih dahulu");
+                          setSubmittingAppeal(true);
+                          const toastId = toast.loading("Mengirim banding...");
+                          try {
+                            const res = await fetch('/api/admin/customers/appeal', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ user_id: suspendData.id, reason: appealText })
+                            });
+                            const resData = await res.json();
+                            if (!res.ok) throw new Error(resData.error || "Gagal mengirim banding");
+                            toast.success("Pengajuan banding Anda telah dikirim. Tim administrator kami akan meninjau secepatnya.", { id: toastId, duration: 6000 });
+                            setAppealText("");
+                            // Refresh appeal data to show pending status
+                            const { data } = await supabase.from('appeals').select('*').eq('user_id', suspendData.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+                            setAppealData(data || null);
+                          } catch (err: any) {
+                            toast.error(err.message, { id: toastId });
+                          } finally {
+                            setSubmittingAppeal(false);
+                          }
+                        }}
+                        disabled={submittingAppeal}
+                        className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
+                      >
+                        {submittingAppeal ? <Loader2 className="w-4 h-4 animate-spin" /> : "Kirim Banding"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </motion.div>
           </motion.div>

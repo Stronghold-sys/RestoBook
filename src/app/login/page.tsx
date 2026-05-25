@@ -129,16 +129,110 @@ export default function LoginPage() {
 
             if (data?.user) {
               // Trigger callback to handle profile provisioning & email notification
-              const callbackRes = await fetch(`/api/auth/callback?idtoken=true&userId=${data.user.id}`, {
+              await fetch(`/api/auth/callback?idtoken=true&userId=${data.user.id}`, {
                 method: 'GET',
               });
               
-              // Get user role from profile
-              const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', data.user.id).maybeSingle();
+              // Get full profile details
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at, email, full_name, employee_id')
+                .eq('user_id', data.user.id)
+                .single();
+
+              if (profileError) throw profileError;
+
+              // Pengecekan Karyawan Nonaktif (Resign / Dipecat)
+              const employeeStatus = profile?.status_karyawan || 'aktif';
+              if (employeeStatus === 'resign') {
+                await supabase.auth.signOut();
+                setSuspendedParam('resign');
+                if (profile?.id) setProfileIdParam(profile.id);
+                toast.error("LOGIN DITANGGUHKAN: Status akun Anda tidak aktif di RestoBook.", { duration: 6000 });
+                return;
+              }
+              if (employeeStatus === 'dipecat') {
+                await supabase.auth.signOut();
+                setSuspendedParam('dipecat');
+                if (profile?.id) setProfileIdParam(profile.id);
+                toast.error("LOGIN DITOLAK: Akun dinonaktifkan oleh manajemen.", { duration: 6000 });
+                return;
+              }
+
+              // Pengecekan Jadwal Suspen Otomatis
+              let userStatus = profile?.status || 'active';
+              if (userStatus === 'active' && profile?.scheduled_suspend_at && new Date() >= new Date(profile.scheduled_suspend_at)) {
+                const isPermanent = profile.suspend_type === 'permanent';
+                userStatus = isPermanent ? 'banned' : 'suspended';
+                
+                await supabase.from('profiles').update({
+                  status: userStatus,
+                  scheduled_suspend_at: null,
+                  is_active: false
+                }).eq('id', profile.id);
+                
+                await supabase.from('suspend_logs').insert({
+                  user_id: profile.id,
+                  action: isPermanent ? 'banned' : 'suspended',
+                  reason: profile.suspend_reason || 'Penangguhan terjadwal dimulai',
+                  message: profile.suspend_message || 'Akun Anda telah ditangguhkan sesuai jadwal',
+                  duration: isPermanent ? 'Permanen' : 'Terjadwal',
+                  suspend_until: isPermanent ? null : profile.suspend_until,
+                  acted_by: null
+                });
+
+                if (profile) {
+                  profile.status = userStatus;
+                  profile.scheduled_suspend_at = null;
+                }
+              }
+
+              // Pengecekan Suspen/Ban untuk Pengguna
+              if (userStatus === 'suspended') {
+                const now = new Date();
+                const suspendUntil = profile.suspend_until ? new Date(profile.suspend_until) : null;
+                const isExpired = suspendUntil && suspendUntil.getTime() <= now.getTime();
+
+                if (isExpired) {
+                  // Auto-restore status
+                  await supabase.from('profiles').update({
+                    status: 'active',
+                    suspend_reason: null,
+                    suspend_message: null,
+                    suspended_at: null,
+                    suspend_until: null,
+                    suspend_type: null,
+                    just_restored: true,
+                    is_active: true
+                  }).eq('id', profile.id);
+                } else {
+                  // Masih tersuspen
+                  await supabase.auth.signOut();
+                  setSuspendData(profile);
+                  setShowSuspendModal(true);
+                  return;
+                }
+              } else if (userStatus === 'banned') {
+                await supabase.auth.signOut();
+                setSuspendData(profile);
+                setShowSuspendModal(true);
+                return;
+              }
+
+              // Jika akun normal/pulih
+              if (profile?.just_restored) {
+                toast.success("Akun Anda telah resmi diaktifkan kembali oleh manajemen.", { 
+                  duration: 5000 
+                });
+                await supabase.from('profiles').update({ just_restored: false }).eq('id', profile.id);
+              } else {
+                toast.success("Berhasil masuk dengan Google!");
+              }
+
               const role = profile?.role || 'customer';
-              
-              toast.success("Berhasil masuk dengan Google!");
-              window.location.href = `/${role}/dashboard`;
+              setTimeout(() => {
+                window.location.href = `/${role}/dashboard`;
+              }, 1500);
             }
           } catch (err: any) {
             toast.error(err.message || "Gagal masuk dengan Google");
@@ -206,7 +300,7 @@ export default function LoginPage() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profileIdParam}` },
         (payload) => {
-          if (payload.new.status_karyawan === 'aktif') {
+          if (payload.new.status === 'active' || payload.new.status_karyawan === 'aktif') {
              setIsReactivated(true);
              toast.success("Akun Anda berhasil diaktifkan kembali.", { duration: 5000 });
           }
@@ -354,10 +448,6 @@ export default function LoginPage() {
           });
           // Reset just_restored flag
           await supabase.from('profiles').update({ just_restored: false }).eq('id', profile.id);
-        } else if (suspendedParam || profileIdParam || isReactivated) {
-          toast.success("Akun Anda telah resmi diaktifkan kembali oleh manajemen.", { 
-            duration: 5000 
-          });
         } else {
           toast.success("Login berhasil diproses.");
         }

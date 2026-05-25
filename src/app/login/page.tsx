@@ -88,24 +88,30 @@ export default function LoginPage() {
     };
   }, [suspendData]);
 
+  const fetchLatestAppeal = async (userId: string, silent = false) => {
+    if (!userId) return;
+    if (!silent) setLoadingAppeal(true);
+    try {
+      const res = await fetch(`/api/admin/customers/appeal?user_id=${userId}`);
+      const resData = await res.json();
+      if (res.ok) {
+        setAppealData(resData.appeal || null);
+      } else {
+        setAppealData(null);
+      }
+    } catch (err) {
+      console.error("Gagal memuat data banding:", err);
+      setAppealData(null);
+    } finally {
+      if (!silent) setLoadingAppeal(false);
+    }
+  };
+
   // Fetch latest appeal & realtime listener when suspendData is set
   useEffect(() => {
     if (!suspendData?.id) return;
 
-    const fetchLatestAppeal = async () => {
-      setLoadingAppeal(true);
-      const { data } = await supabase
-        .from('appeals')
-        .select('*')
-        .eq('user_id', suspendData.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setAppealData(data || null);
-      setLoadingAppeal(false);
-    };
-
-    fetchLatestAppeal();
+    fetchLatestAppeal(suspendData.id);
 
     // Realtime: listen for changes to appeals for this user
     const appealChannel = supabase
@@ -908,13 +914,26 @@ export default function LoginPage() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
-                      className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 transition-colors text-xs uppercase tracking-wider"
-                    >
-                      Tutup (Banding Sedang Diproses)
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const toastId = toast.loading("Memperbarui status banding...");
+                          await fetchLatestAppeal(suspendData.id, true);
+                          toast.success("Status banding berhasil diperbarui", { id: toastId });
+                        }}
+                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider flex justify-center items-center gap-2 shadow-lg shadow-blue-500/20"
+                      >
+                        <RefreshCw className="w-4 h-4 animate-spin-slow" /> Perbarui Status
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowSuspendModal(false); setSuspendData(null); setAppealData(null); }}
+                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 transition-colors text-xs uppercase tracking-wider"
+                      >
+                        Tutup
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -958,9 +977,8 @@ export default function LoginPage() {
                             if (!res.ok) throw new Error(resData.error || "Gagal mengirim banding");
                             toast.success("Pengajuan banding Anda telah dikirim. Tim administrator kami akan meninjau secepatnya.", { id: toastId, duration: 6000 });
                             setAppealText("");
-                            // Refresh appeal data to show pending status
-                            const { data } = await supabase.from('appeals').select('*').eq('user_id', suspendData.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-                            setAppealData(data || null);
+                             // Refresh appeal data to show pending status
+                             await fetchLatestAppeal(suspendData.id);
                           } catch (err: any) {
                             toast.error(err.message, { id: toastId });
                           } finally {

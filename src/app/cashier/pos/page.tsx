@@ -40,7 +40,7 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState("");
   const [cashierName, setCashierName] = useState("");
   const [cashierId, setCashierId] = useState("");
-  const [discount, setDiscount] = useState<{ type: "percent" | "nominal", value: number, code: string } | null>(null);
+  const [discount, setDiscount] = useState<{ type: "percent" | "nominal", value: number, code: string, id?: string } | null>(null);
   const [discountInput, setDiscountInput] = useState("");
   
   // Session State
@@ -597,7 +597,9 @@ export default function POSPage() {
           payment_method: "non_cash",
           total_amount: cartTotal,
           cashier_id: cashierId,
-          notes: walkinNotes
+          notes: walkinNotes,
+          voucher_id: discount?.id || null,
+          discount: discountAmount
         };
 
         const itemsData = cart.map(item => ({
@@ -774,7 +776,9 @@ export default function POSPage() {
             cashierId: cashierId,
             totalAmount: cartTotal,
             notes: finalNotes,
-            tableId: foundOrder.table_id
+            tableId: foundOrder.table_id,
+            voucherId: discount?.id || null,
+            discount: discountAmount
           })
         });
 
@@ -813,7 +817,9 @@ export default function POSPage() {
           payment_method: paymentMethod,
           total_amount: cartTotal,
           cashier_id: cashierId,
-          notes: walkinNotes
+          notes: walkinNotes,
+          voucher_id: discount?.id || null,
+          discount: discountAmount
         };
 
         const itemsData = cart.map(item => ({
@@ -1204,14 +1210,38 @@ export default function POSPage() {
                 <button 
                   onClick={() => {
                     if (!discountInput) return;
-                    if (discountInput.toUpperCase() === "MEMBER10") {
-                      setDiscount({ type: "percent", value: 10, code: "MEMBER10" });
-                      toast.success("Diskon 10% Member Diterapkan!");
-                    } else if (!isNaN(Number(discountInput))) {
+                    if (!isNaN(Number(discountInput))) {
                       setDiscount({ type: "nominal", value: Number(discountInput), code: "NOMINAL" });
                       toast.success(`Diskon Rp ${Number(discountInput).toLocaleString("id-ID")} Diterapkan!`);
                     } else {
-                      toast.error("Kode diskon tidak valid");
+                      const loadingToast = toast.loading("Memvalidasi voucher...");
+                      fetch("/api/customer/vouchers/apply", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          code: discountInput,
+                          customerId: foundOrder?.customer_id || null
+                        })
+                      })
+                      .then(res => res.json().then(data => {
+                        toast.dismiss(loadingToast);
+                        if (!res.ok) {
+                          toast.error(data.error || "Gagal menerapkan voucher");
+                        } else {
+                          setDiscount({
+                            type: "percent",
+                            value: data.voucher.discount_percent,
+                            code: data.voucher.code,
+                            id: data.voucher.id
+                          });
+                          toast.success(`${data.message} Potongan ${data.voucher.discount_percent}% diterapkan.`);
+                          setDiscountInput("");
+                        }
+                      }))
+                      .catch(err => {
+                        toast.dismiss(loadingToast);
+                        toast.error("Terjadi kesalahan koneksi saat validasi voucher");
+                      });
                     }
                   }}
                   className="px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs font-bold rounded-xl"

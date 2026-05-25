@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,45 @@ interface Table { id: string; table_number: number; capacity: number; status: st
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
+  
+  // Voucher States
+  const [voucherCodeInput, setVoucherCodeInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCodeInput) return toast.error("Masukkan kode voucher terlebih dahulu");
+    setIsApplyingVoucher(true);
+    try {
+      const response = await fetch("/api/customer/vouchers/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: voucherCodeInput })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menerapkan voucher");
+      }
+      
+      setAppliedVoucher(data.voucher);
+      toast.success(data.message || "Voucher berhasil diterapkan!");
+      setVoucherCodeInput("");
+    } catch (error: any) {
+      toast.error(error.message || "Voucher tidak valid!");
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    toast.success("Voucher berhasil dihapus");
+  };
+
+  const subtotal = getTotal();
+  const discountAmount = appliedVoucher ? Math.round(subtotal * appliedVoucher.discount_percent / 100) : 0;
+  const totalAmount = Math.max(0, subtotal - discountAmount);
+
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash">("non_cash");
   const [duitkuMethod, setDuitkuMethod] = useState("");
@@ -289,7 +328,6 @@ export default function CartPage() {
       const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
 
-      const totalAmount = getTotal();
       const dbPaymentMethod = paymentMethod === "cash" ? "cash" : "non_cash";
       
       const detailedPaymentNotes = paymentMethod === "non_cash" ? "[Pembayaran Online]" : "[Tunai di Kasir]";
@@ -304,6 +342,8 @@ export default function CartPage() {
         status: "pending", 
         payment_method: dbPaymentMethod, 
         payment_status: 'unpaid',
+        voucher_id: appliedVoucher ? appliedVoucher.id : null,
+        discount: discountAmount
       }).select().single();
 
       if (orderError) throw orderError;
@@ -444,11 +484,64 @@ export default function CartPage() {
           <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-6">Ringkasan</h2>
           
           <div className="space-y-4 mb-8">
-            <div className="flex justify-between text-muted"><span>Subtotal</span><span className="font-semibold text-text-light dark:text-text-dark">Rp {getTotal().toLocaleString("id-ID")}</span></div>
+            <div className="flex justify-between text-muted"><span>Subtotal</span><span className="font-semibold text-text-light dark:text-text-dark">Rp {subtotal.toLocaleString("id-ID")}</span></div>
+            {appliedVoucher && (
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                <span>Diskon ({appliedVoucher.discount_percent}%)</span>
+                <span className="font-bold">-Rp {discountAmount.toLocaleString("id-ID")}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted"><span>Pajak (10%)</span><span className="font-semibold text-text-light dark:text-text-dark">Termasuk</span></div>
+            
+            {/* Input Kode Voucher */}
+            <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3">
+              <label className="text-xs font-bold text-muted uppercase tracking-wider block">Kupon / Voucher Promo</label>
+              {!appliedVoucher ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Masukkan kode voucher..."
+                    value={voucherCodeInput}
+                    onChange={e => setVoucherCodeInput(e.target.value)}
+                    className="flex-1 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark uppercase font-mono"
+                  />
+                  <button
+                    onClick={handleApplyVoucher}
+                    disabled={isApplyingVoucher}
+                    className="bg-primary hover:bg-primary/95 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center transition-all disabled:opacity-50"
+                  >
+                    {isApplyingVoucher ? "..." : "Gunakan"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/30 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <span className="font-mono font-black text-xs text-emerald-700 dark:text-emerald-300 uppercase">{appliedVoucher.code}</span>
+                      <span className="block text-[10px] text-emerald-600 dark:text-emerald-400">Hemat {appliedVoucher.discount_percent}%</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveVoucher}
+                    className="text-red-500 hover:text-red-700 text-xs font-bold p-1"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {appliedVoucher && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
+                <span>Total Anda Hemat</span>
+                <span>Rp {discountAmount.toLocaleString("id-ID")}</span>
+              </div>
+            )}
+
             <div className="pt-4 border-t border-border-light dark:border-border-dark flex justify-between items-center">
               <span className="font-bold text-lg text-text-light dark:text-text-dark">Total Tagihan</span>
-              <span className="text-2xl font-black text-primary">Rp {getTotal().toLocaleString("id-ID")}</span>
+              <span className="text-2xl font-black text-primary">Rp {totalAmount.toLocaleString("id-ID")}</span>
             </div>
           </div>
 
@@ -525,7 +618,7 @@ export default function CartPage() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
                 <div className="relative">
                   <h2 className="text-2xl font-black uppercase tracking-tight">Selesaikan Pembayaran</h2>
-                  <p className="text-white/80 text-sm mt-1">Total Tagihan: <span className="font-extrabold text-white text-base">Rp {getTotal().toLocaleString("id-ID")}</span></p>
+                  <p className="text-white/80 text-sm mt-1">Total Tagihan: <span className="font-extrabold text-white text-base">Rp {totalAmount.toLocaleString("id-ID")}</span></p>
                 </div>
                 <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-6 h-6" /></button>
               </div>

@@ -489,8 +489,23 @@ export default function OrderTrackingPage() {
 
         <div className="mt-10 pt-8 border-t border-border-light dark:border-border-dark">
           <div className="space-y-4 max-w-sm ml-auto">
-            <div className="flex justify-between text-muted font-bold"><span>Subtotal</span><span>Rp {Number(order.total_amount).toLocaleString("id-ID")}</span></div>
+            <div className="flex justify-between text-muted font-bold">
+              <span>Subtotal</span>
+              <span>Rp {orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0).toLocaleString("id-ID")}</span>
+            </div>
+            {Number(order.discount) > 0 && (
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                <span>Potongan Voucher</span>
+                <span>-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted font-bold"><span>Pajak & Layanan</span><span>Termasuk</span></div>
+            {Number(order.discount) > 0 && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
+                <span>Total Anda Hemat</span>
+                <span>Rp {Number(order.discount).toLocaleString("id-ID")}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-4 border-t border-border-light dark:border-border-dark">
               <span className="font-black text-text-light dark:text-text-dark uppercase tracking-wider">Total Akhir</span>
               <span className="text-3xl font-black text-primary">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span>

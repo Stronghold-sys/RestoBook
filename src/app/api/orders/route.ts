@@ -130,16 +130,25 @@ export async function POST(req: NextRequest) {
       const oStatus = status || 'completed';
       const pMethod = body.paymentMethod || 'cash';
       
+      const updateData: any = { 
+        payment_status: pStatus,
+        status: oStatus,
+        cashier_id: body.cashierId || null,
+        total_amount: body.totalAmount,
+        notes: body.notes,
+        payment_method: pMethod
+      };
+
+      if (body.voucherId !== undefined) {
+        updateData.voucher_id = body.voucherId;
+      }
+      if (body.discount !== undefined) {
+        updateData.discount = body.discount;
+      }
+
       const { error } = await supabaseAdmin
         .from('orders')
-        .update({ 
-          payment_status: pStatus,
-          status: oStatus,
-          cashier_id: body.cashierId || null,
-          total_amount: body.totalAmount,
-          notes: body.notes,
-          payment_method: pMethod
-        })
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;

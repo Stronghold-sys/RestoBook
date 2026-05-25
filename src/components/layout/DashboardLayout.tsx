@@ -5,7 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -166,7 +166,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     window.location.href = "/login";
   };
 
-  const getMenuLinks = () => {
+  const getMenuLinks = (): any[] => {
     switch (role) {
       case "admin":
         return [
@@ -177,6 +177,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Meja", href: "/admin/tables", icon: Armchair },
           { name: "Pelanggan", href: "/admin/customers", icon: Users },
           { name: "Karyawan", href: "/admin/users", icon: UserIcon },
+          { name: "Voucher", href: "/admin/vouchers", icon: Ticket },
           { name: "Absensi", href: "/admin/attendance", icon: ClipboardList },
           { name: "Payroll", href: "/admin/payroll", icon: Receipt },
           { name: "Resign", href: "/admin/resign", icon: Power },
@@ -208,6 +209,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Home", href: "/customer/dashboard", icon: LayoutDashboard },
           { name: "Menu", href: "/customer/menu", icon: UtensilsCrossed },
           { name: "Keranjang", href: "/customer/cart", icon: ShoppingBag },
+          { name: "Voucher Saya", href: "/customer/vouchers", icon: Ticket },
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },

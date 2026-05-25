@@ -190,10 +190,16 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
           <span className="font-bold">Rp {subtotal.toLocaleString("id-ID")}</span>
         </div>
         {order.discount > 0 && (
-          <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#059669' }}>
-            <span>Diskon:</span>
-            <span className="font-bold">-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
-          </div>
+          <>
+            <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#059669' }}>
+              <span>Potongan Voucher:</span>
+              <span className="font-bold">-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
+            </div>
+            <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#059669' }}>
+              <span>Total Dihemat:</span>
+              <span className="font-bold">Rp {Number(order.discount).toLocaleString("id-ID")}</span>
+            </div>
+          </>
         )}
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
           <span>Pajak & Layanan:</span>

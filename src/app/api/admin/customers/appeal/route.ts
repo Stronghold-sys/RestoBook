@@ -12,7 +12,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User ID and reason are required' }, { status: 400 });
     }
 
-    // Insert appeal
+    // 1. Get profile details to include in email
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .select('email, full_name, phone, role, is_blocked, is_active, suspend_reason, suspend_message, suspend_type, suspend_until')
+      .eq('id', user_id)
+      .single();
+
+    if (profileErr) {
+      console.error('Failed to fetch profile for appeal email:', profileErr);
+    }
+
+    // 2. Insert appeal
     const { data: appeal, error } = await supabaseAdmin
       .from('appeals')
       .insert({
@@ -24,6 +35,91 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // 3. Send email confirmation to user (and cc admin)
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey && profile?.email) {
+      try {
+        const resend = new Resend(resendKey);
+        
+        // Get admin email from settings to CC
+        const { data: settings } = await supabaseAdmin
+          .from('restaurant_settings')
+          .select('email')
+          .maybeSingle();
+
+        const ccEmail = settings?.email || 'admin@restobook.com';
+
+        await resend.emails.send({
+          from: 'RestoBook <noreply@restobookid.my.id>',
+          to: [profile.email],
+          cc: ccEmail ? [ccEmail] : undefined,
+          subject: 'Tanda Terima Pengajuan Banding Akun RestoBook',
+          html: `
+            <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Tanda Terima Pengajuan Banding</p>
+              </div>
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+              
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${profile.full_name || 'Pelanggan'}!</h2>
+              <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                Kami mengonfirmasi bahwa pengajuan banding Anda untuk pemulihan akun RestoBook telah berhasil kami terima. Permohonan Anda sedang dalam antrean peninjauan oleh tim manajemen kami.
+              </p>
+              
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">Detail Akun & Pembatasan</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5;">
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280; width: 40%;">Nama Lengkap</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${profile.full_name || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Email Terdaftar</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${profile.email || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Nomor Telepon</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${profile.phone || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Tipe Pembatasan</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${profile.suspend_type === 'permanent' || profile.is_blocked ? 'Blokir Permanen (Banned)' : 'Penangguhan Sementara (Suspended)'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Alasan Pelanggaran</td>
+                    <td style="padding: 6px 0; color: #dc2626; font-weight: bold;">${profile.suspend_reason || 'Pelanggaran Ketentuan Layanan'}</td>
+                  </tr>
+                  ${profile.suspend_until ? `
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Masa Penangguhan</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">Hingga ${new Date(profile.suspend_until).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })} WIB</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+
+              <div style="background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #7c2d12;">
+                <strong style="color: #c2410c;">Alasan Banding yang Anda Ajukan:</strong><br/>
+                <p style="margin: 8px 0 0 0; font-style: italic;">"${reason}"</p>
+              </div>
+
+              <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
+                Proses peninjauan banding memerlukan waktu maksimal <strong>1x24 jam</strong>. Keputusan resmi (apakah banding disetujui atau ditolak) akan otomatis dikirimkan ke alamat email ini setelah proses peninjauan selesai.
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+              <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                Email ini dikirim secara otomatis oleh sistem RestoBook Keamanan. Harap jangan membalas langsung ke email ini.
+              </p>
+            </div>
+          `
+        });
+      } catch (err) {
+        console.error('Failed to send appeal confirmation email:', err);
+      }
+    }
 
     return NextResponse.json({ success: true, message: 'Banding berhasil diajukan', appeal });
   } catch (error: any) {

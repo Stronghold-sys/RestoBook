@@ -1,104 +1,57 @@
-/* eslint-disable */
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const supabaseUrl = "https://dazsblmccvxtewtmaljf.supabase.co";
-const serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhenNibG1jY3Z4dGV3dG1hbGpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTY0MDAzMiwiZXhwIjoyMDc3MjE2MDMyfQ.BJGL1qaJqpsnqr28NT3--sQD_WEJ__SU0sKkJhHwyOQ";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+// Load env vars manually
+const envPath = path.join(__dirname, '..', '.env.local');
+let envContent = '';
+try {
+  envContent = fs.readFileSync(envPath, 'utf8');
+} catch (e) {
+  try {
+    envContent = fs.readFileSync(path.join(__dirname, '..', '.env'), 'utf8');
+  } catch (err) {}
+}
 
-const sqlBlock = `
-    -- Phase 1.1: profiles table additions (banking & salary components)
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS daily_salary DECIMAL(12,2) DEFAULT 75000;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS overtime_pay_per_hour DECIMAL(12,2) DEFAULT 10000;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS fixed_allowance DECIMAL(12,2) DEFAULT 0;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS payment_method_preference TEXT DEFAULT 'tunai';
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS bank_name TEXT;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS bank_account_number TEXT;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS bank_account_holder TEXT;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS bank_branch TEXT;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS e_wallet_name TEXT;
-    ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS e_wallet_number TEXT;
+const env = {};
+envContent.split('\n').forEach(line => {
+  const match = line.match(/^\s*([^#=]+)\s*=\s*(.*)\s*$/);
+  if (match) {
+    let val = match[2].trim();
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+    if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+    env[match[1].trim()] = val;
+  }
+});
 
-    -- Phase 1.2: resign_requests table additions
-    ALTER TABLE IF EXISTS resign_requests ADD COLUMN IF NOT EXISTS suspension_time TIMESTAMPTZ;
-    ALTER TABLE IF EXISTS resign_requests ADD COLUMN IF NOT EXISTS employee_decision TEXT DEFAULT 'menunggu';
-    ALTER TABLE IF EXISTS resign_requests ADD COLUMN IF NOT EXISTS decision_recorded_at TIMESTAMPTZ;
-    ALTER TABLE IF EXISTS resign_requests ADD COLUMN IF NOT EXISTS is_finalized BOOLEAN DEFAULT FALSE;
-    ALTER TABLE IF EXISTS resign_requests ADD COLUMN IF NOT EXISTS wa_suspended_sent BOOLEAN DEFAULT FALSE;
+const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+const key = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    -- Create salary_components table (Transactions like bon and denda)
-    CREATE TABLE IF NOT EXISTS salary_components (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-      type TEXT CHECK (type IN ('bon', 'denda', 'bonus', 'tunjangan')) NOT NULL,
-      amount DECIMAL(12,2) NOT NULL,
-      notes TEXT,
-      status TEXT CHECK (status IN ('active', 'processed')) DEFAULT 'active',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-    ALTER TABLE IF EXISTS salary_components ENABLE ROW LEVEL SECURITY;
-    DROP POLICY IF EXISTS "auth_salary_components_all" ON salary_components;
-    CREATE POLICY "auth_salary_components_all" ON salary_components FOR ALL TO authenticated USING (true) WITH CHECK (true);
+if (!url || !key) {
+  console.error("Missing Supabase URL or Service Role Key in env files.");
+  process.exit(1);
+}
 
-    -- Create salary_history table (Finalized monthly slips)
-    CREATE TABLE IF NOT EXISTS salary_history (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-      month INT NOT NULL,
-      year INT NOT NULL,
-      total_days_worked INT DEFAULT 0,
-      total_days_leave INT DEFAULT 0,
-      total_days_alpha INT DEFAULT 0,
-      total_hours_overtime DECIMAL(12,2) DEFAULT 0,
-      daily_salary_rate DECIMAL(12,2) DEFAULT 75000,
-      base_salary DECIMAL(12,2) DEFAULT 0,
-      total_bon DECIMAL(12,2) DEFAULT 0,
-      total_denda DECIMAL(12,2) DEFAULT 0,
-      total_bonus DECIMAL(12,2) DEFAULT 0,
-      total_allowance DECIMAL(12,2) DEFAULT 0,
-      net_salary DECIMAL(12,2) DEFAULT 0,
-      is_transferred BOOLEAN DEFAULT FALSE,
-      transfer_date TIMESTAMP WITH TIME ZONE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-    ALTER TABLE IF EXISTS salary_history ENABLE ROW LEVEL SECURITY;
-    DROP POLICY IF EXISTS "auth_salary_history_all" ON salary_history;
-    CREATE POLICY "auth_salary_history_all" ON salary_history FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
-    -- Ensure realtime is enabled on new tables
-    DO $$ 
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'salary_components') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE salary_components;
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'salary_history') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE salary_history;
-      END IF;
-    END $$;
-
-    NOTIFY pgrst, 'reload schema';
-`;
+const supabase = createClient(url, key);
 
 async function run() {
-  console.log("🚀 Executing Enterprise Schema Upgrade Migration...");
-  try {
-    const { data, error } = await supabaseAdmin.rpc('exec_sql', { sql_string: sqlBlock });
-    if (error) {
-      console.error("❌ RPC Failed:", error.message);
-    } else {
-      console.log("✅ SQL Block executed successfully!");
-      console.log("📊 Verifying profiles columns...");
-      const { data: cols } = await supabaseAdmin.rpc('exec_sql', {
-        sql_string: "SELECT column_name FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'daily_salary';"
-      });
-      if (cols && cols.length > 0) {
-        console.log("🎉 SUCCESS! Schema modification detected and applied.");
-      } else {
-        console.log("⚠️ Executed successfully but could not verify new columns.");
-      }
-    }
-  } catch (e) {
-    console.error("🔥 CATCH ERROR:", e.message);
+  console.log("Running tax_percent migration...");
+  const sql = `ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS tax_percent NUMERIC DEFAULT 10.00;`;
+  let { data, error } = await supabase.rpc('exec_sql', { sql_string: sql });
+  if (error) {
+    console.log("exec_sql failed, trying exec_sql_block...");
+    const { error: err2 } = await supabase.rpc('exec_sql_block', { sql_string: sql });
+    error = err2;
+  }
+
+  if (error) {
+    console.error("Migration failed:", error.message);
+  } else {
+    console.log("Migration successful! Column tax_percent added/verified.");
   }
 }
 

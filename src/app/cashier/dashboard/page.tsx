@@ -1307,48 +1307,48 @@ export default function CashierDashboard() {
         </motion.div>
       )}
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Dashboard Kasir</h1>
           <p className="text-muted mt-1">Ringkasan aktivitas dan transaksi hari ini.</p>
         </div>
         {openShiftData ? (
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs font-black flex items-center gap-3 border border-green-500/20">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-mono text-sm tracking-wider">{shiftTimer}</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs font-black flex items-center gap-3 border border-green-500/20 whitespace-nowrap shrink-0">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
+              <span className="font-mono text-sm tracking-wider whitespace-nowrap shrink-0">{shiftTimer}</span>
               <span className="opacity-50">|</span>
-              SHIFT AKTIF
+              <span className="whitespace-nowrap">SHIFT AKTIF</span>
             </div>
 
             <button 
               onClick={() => setShowCloseModal(true)}
-              className="px-4 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full text-xs font-bold transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <LogOut className="w-4 h-4" /> Tutup Shift
+              <LogOut className="w-4 h-4 shrink-0" /> <span className="whitespace-nowrap">Tutup Shift</span>
             </button>
           </div>
         ) : profile?.role === "admin" ? (
-          <div className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black flex items-center gap-3 border border-indigo-500/20">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-            <span className="font-mono text-sm tracking-wider">{shiftTimer}</span>
+          <div className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black flex items-center gap-3 border border-indigo-500/20 whitespace-nowrap shrink-0">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse shrink-0" />
+            <span className="font-mono text-sm tracking-wider whitespace-nowrap shrink-0">{shiftTimer}</span>
             <span className="opacity-50">|</span>
-            MODE ADMIN
+            <span className="whitespace-nowrap">MODE ADMIN</span>
           </div>
         ) : hasOpenShift ? (
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-xs font-black flex items-center gap-3 border border-emerald-500/20">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="font-mono text-sm tracking-wider">{shiftTimer}</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-xs font-black flex items-center gap-3 border border-emerald-500/20 whitespace-nowrap shrink-0">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+              <span className="font-mono text-sm tracking-wider whitespace-nowrap shrink-0">{shiftTimer}</span>
               <span className="opacity-50">|</span>
-              SHIFT AKTIF
+              <span className="whitespace-nowrap">SHIFT AKTIF</span>
             </div>
             <button 
               onClick={() => setShowCloseModal(true)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full text-xs font-bold transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0"
               title="Tutup sesi ini secara manual melalui layar perhitungan"
             >
-              <LogOut className="w-4 h-4" /> Tutup Shift
+              <LogOut className="w-4 h-4 shrink-0" /> <span className="whitespace-nowrap">Tutup Shift</span>
             </button>
           </div>
         ) : null}

@@ -138,4 +138,23 @@ nav.fixed {
   padding-top: calc(10rem + env(safe-area-inset-top, 0px)) !important;
 }
 
+/* Dashboard header safe-area support */
+header.sticky {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  height: calc(5rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+/* Mobile sidebar safe-area padding top override */
+aside.fixed.lg\:hidden {
+  padding-top: calc(1.5rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+/* Auth pages safe area container */
+.safe-auth-container {
+  padding-top: calc(1.5rem + env(safe-area-inset-top, 0px)) !important;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box;
+}
+
 

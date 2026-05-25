@@ -57,7 +57,9 @@ export default function CashierOrders() {
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
         .order("created_at", { ascending: false });
-      setOrders(data || []);
+      
+      const filtered = (data || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));
+      setOrders(filtered);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 

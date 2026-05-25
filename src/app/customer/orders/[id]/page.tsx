@@ -73,6 +73,11 @@ export default function OrderTrackingPage() {
     try {
       const { data: orderData, error } = await supabase.from("orders").select("*, tables(table_number)").eq("id", id).single();
       if (error) throw error;
+      
+      if (orderData.payment_method === "non_cash" && orderData.payment_status === "unpaid") {
+        throw new Error("Pesanan tidak ditemukan atau belum dibayar");
+      }
+      
       setOrder(orderData);
 
       const { data: itemsData } = await supabase.from("order_items").select("*, menu_items(name, image_url)").eq("order_id", id);

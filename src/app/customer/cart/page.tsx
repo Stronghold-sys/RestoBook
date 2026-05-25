@@ -591,16 +591,22 @@ export default function CartPage() {
         await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
       }
 
-      // Trigger Notification
-      await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-      });
+      if (paymentMethod === "cash") {
+        isOrderCompleted.current = true;
+        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+        clearCart();
 
-      isOrderCompleted.current = true;
-      if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-      clearCart();
+        // Trigger Notification
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+        });
+
+        toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
+        router.push(`/customer/orders/${orderData.id}`);
+        return;
+      }
 
       if (paymentMethod === "non_cash") {
         toast.loading("Membangun portal pembayaran aman...", { id: loadingToast });
@@ -625,23 +631,64 @@ export default function CartPage() {
           
           // INJECT DUITKU POP SDK OVERLAY
           (window as any).checkout.process(duitkuData.reference, {
-             successEvent: function() {
+             successEvent: async function() {
+               isOrderCompleted.current = true;
+               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+               clearCart();
+               
+               // Trigger Notification
+               await fetch('/api/orders', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+               });
+
                toast.success("Pembayaran Berhasil!");
                router.push(`/customer/orders/${orderData.id}`);
              },
-             pendingEvent: function() {
+             pendingEvent: async function() {
+               isOrderCompleted.current = true;
+               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+               clearCart();
+               
+               // Trigger Notification
+               await fetch('/api/orders', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+               });
+
                router.push(`/customer/orders/${orderData.id}?status=pending`);
              },
-             errorEvent: function() {
-               router.push(`/customer/orders/${orderData.id}`);
+             errorEvent: async function() {
+               await supabase.from("orders").delete().eq("id", orderData.id);
+               if (orderType === "dine_in" && selectedTable) {
+                 await supabase.from("tables").update({ status: "available" }).eq("id", selectedTable);
+               }
+               toast.error("Gagal memproses pembayaran. Pesanan dibatalkan.");
+               setLoading(false);
              },
-             closeEvent: function() {
-               // Forward always to destination order status view for post-payment clarity
-               router.push(`/customer/orders/${orderData.id}`);
+             closeEvent: async function() {
+               await supabase.from("orders").delete().eq("id", orderData.id);
+               if (orderType === "dine_in" && selectedTable) {
+                 await supabase.from("tables").update({ status: "available" }).eq("id", selectedTable);
+               }
+               toast.error("Pembayaran dibatalkan. Pesanan tidak dibuat.");
+               setLoading(false);
              }
           });
           return;
         } else if (duitkuData.paymentUrl) {
+          isOrderCompleted.current = true;
+          if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+          clearCart();
+          
+          await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+          });
+
           toast.success("Mengalihkan ke halaman pembayaran...", { id: loadingToast });
           window.location.href = duitkuData.paymentUrl;
           return;
@@ -649,9 +696,6 @@ export default function CartPage() {
           throw new Error("Parameter pembayaran ditolak gateway.");
         }
       }
-
-      toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
-      router.push(`/customer/orders/${orderData.id}`);
     } catch (error: any) {
       toast.error(error.message || "Gagal membuat pesanan", { id: loadingToast });
       setLoading(false);

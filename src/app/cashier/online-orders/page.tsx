@@ -76,7 +76,8 @@ export default function OnlineOrdersPage() {
       console.error("Error fetching orders:", error);
       toast.error("Gagal mengambil data pesanan");
     } else {
-      setOrders(data || []);
+      const filtered = (data || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));
+      setOrders(filtered);
     }
     setLoading(false);
   };

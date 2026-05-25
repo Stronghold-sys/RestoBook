@@ -36,7 +36,8 @@ export default function CustomerDashboard() {
         .not('status', 'in', '("completed","cancelled")')
         .order('created_at', { ascending: false });
       
-      setActiveOrders(orders || []);
+      const filteredOrders = (orders || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));
+      setActiveOrders(filteredOrders);
 
       // Fetch upcoming reservations
       const { data: reservations } = await supabase

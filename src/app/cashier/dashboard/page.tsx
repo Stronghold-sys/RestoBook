@@ -566,8 +566,8 @@ export default function CashierDashboard() {
           .order('created_at', { ascending: false })
       ]);
 
-      const orders = ordersRes.data || [];
-      const allOrders = allOrdersRes.data || [];
+      const orders = (ordersRes.data || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));
+      const allOrders = (allOrdersRes.data || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));
 
       // Today's Stats
       setStats({

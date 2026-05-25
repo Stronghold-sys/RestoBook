@@ -44,7 +44,8 @@ export default function CustomerOrdersPage() {
         .eq("customer_id", profile.id)
         .order("created_at", { ascending: false });
 
-      setOrders(data || []);
+      const filtered = (data || []).filter(o => !(o.payment_method === "non_cash" && o.payment_status === "unpaid"));
+      setOrders(filtered);
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 

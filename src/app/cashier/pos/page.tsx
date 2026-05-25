@@ -494,6 +494,10 @@ export default function POSPage() {
       
       if (error || !data) throw new Error("Pesanan tidak ditemukan");
       
+      if (data.payment_method === 'non_cash' && data.payment_status === 'unpaid') {
+        throw new Error("Pesanan belum menyelesaikan proses pembayaran");
+      }
+      
       setFoundOrder(data);
       
     } catch (e: any) {

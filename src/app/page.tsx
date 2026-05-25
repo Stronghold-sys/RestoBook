@@ -99,6 +99,7 @@ export default function LandingPage() {
       if (data) setMenuItems(data.map(item => ({
         id: item.id,
         name: item.name,
+        description: item.description || "",
         price: item.price,
         image: item.image_url || "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop",
         cat: item.categories?.name || "Lainnya",
@@ -326,7 +327,13 @@ export default function LandingPage() {
                   Lihat Menu
                 </motion.button>
               </a>
+              <Link href="/demo-checkout">
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-amber-400/30 transition-all flex items-center justify-center gap-2">
+                  <ChevronRight className="w-5 h-5" /> Coba Demo Pembayaran
+                </motion.button>
+              </Link>
             </div>
+
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2, type: "spring" }} className="relative h-[400px] lg:h-[550px] rounded-[2rem] overflow-hidden shadow-2xl">
             <Image src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1200" alt="Restaurant Interior" fill className="object-cover transition-transform duration-700 hover:scale-105" priority />
@@ -404,7 +411,7 @@ export default function LandingPage() {
 
           <motion.div layout initial="hidden" animate="visible" variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((item, i) => (
-              <motion.div key={item.id || item.name} layout custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover={{ y: item.is_active ? -10 : 0, boxShadow: item.is_active ? "0 25px 50px -12px rgba(0,0,0,0.15)" : "none" }} className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group relative ${!item.is_active ? 'opacity-70 grayscale' : ''}`}>
+              <motion.div key={item.id || item.name} layout custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover={{ y: item.is_active ? -10 : 0, boxShadow: item.is_active ? "0 25px 50px -12px rgba(0,0,0,0.15)" : "none" }} className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group relative flex flex-col ${!item.is_active ? 'opacity-70 grayscale' : ''}`}>
                 <div className="relative h-48 w-full overflow-hidden">
                   <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute top-3 left-3"><span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-white/90 dark:bg-black/60 text-primary backdrop-blur-sm">{item.cat}</span></div>
@@ -415,9 +422,12 @@ export default function LandingPage() {
                     </div>
                   )}
                 </div>
-                <div className="p-5">
+                <div className="p-5 flex-1 flex flex-col">
                   <h3 className={`font-bold text-lg text-text-light dark:text-text-dark mb-1 ${!item.is_active ? 'line-through text-muted' : ''}`}>{item.name}</h3>
-                  <div className="flex items-center justify-between mt-3">
+                  {item.description && (
+                    <p className="text-sm text-muted line-clamp-2 mb-3 leading-relaxed flex-1">{item.description}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-auto pt-3">
                     <span className="font-extrabold text-xl text-primary">Rp {item.price.toLocaleString("id-ID")}</span>
                     {item.is_active ? (
                       <Link href="/login">

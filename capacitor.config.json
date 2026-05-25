@@ -18,7 +18,7 @@
     "allowMixedContent": false,
     "backgroundColor": "#ffffff",
     "minWebViewVersion": 60,
-    "overrideUserAgent": "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
+    "overrideUserAgent": "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
   },
   "ios": {
     "contentInset": "automatic"

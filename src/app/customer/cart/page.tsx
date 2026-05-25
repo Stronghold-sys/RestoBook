@@ -156,6 +156,7 @@ export default function CartPage() {
   const [deliveryDistrict, setDeliveryDistrict] = useState("");
   const [deliveryVillage, setDeliveryVillage] = useState("");
   const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
+  const [taxPercent, setTaxPercent] = useState<number>(10.00);
 
   // Administrative regions select state
   const [regencies, setRegencies] = useState<any[]>([]);
@@ -394,6 +395,9 @@ export default function CartPage() {
         setHolidayReopenDate(data.holiday_reopen_date || "Besok");
         setTemporaryClosedReopenTime(data.temporary_closed_reopen_time || "12:00");
         setIs24Hours(!!data.is_24_hours);
+        if (data.tax_percent !== undefined && data.tax_percent !== null) {
+          setTaxPercent(Number(data.tax_percent));
+        }
       }
     };
     fetchSettings();
@@ -408,6 +412,9 @@ export default function CartPage() {
           setHolidayReopenDate(payload.new.holiday_reopen_date || "Besok");
           setTemporaryClosedReopenTime(payload.new.temporary_closed_reopen_time || "12:00");
           setIs24Hours(!!payload.new.is_24_hours);
+          if (payload.new.tax_percent !== undefined && payload.new.tax_percent !== null) {
+            setTaxPercent(Number(payload.new.tax_percent));
+          }
         }
       })
       .subscribe();
@@ -689,7 +696,12 @@ export default function CartPage() {
                 <span className="font-bold">-Rp {discountAmount.toLocaleString("id-ID")}</span>
               </div>
             )}
-            <div className="flex justify-between text-muted"><span>Pajak (10%)</span><span className="font-semibold text-text-light dark:text-text-dark">Termasuk</span></div>
+            <div className="flex justify-between text-muted">
+              <span>Pajak ({taxPercent}%)</span>
+              <span className="font-semibold text-text-light dark:text-text-dark">
+                Rp {Math.round(totalAmount * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)
+              </span>
+            </div>
             
             {/* Input Kode Voucher */}
             <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3">

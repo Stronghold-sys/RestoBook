@@ -178,6 +178,7 @@ export default function POSPage() {
   const [openingTime, setOpeningTime] = useState<string | null>(null);
   const [closingTime, setClosingTime] = useState<string | null>(null);
   const [is24Hours, setIs24Hours] = useState<boolean>(false);
+  const [taxPercent, setTaxPercent] = useState<number>(10.00);
 
   const isRestaurantOpen = (openTime?: string | null, closeTime?: string | null) => {
     return is24Hours || originalIsRestaurantOpen(openTime, closeTime);
@@ -196,6 +197,9 @@ export default function POSPage() {
           setOpeningTime(payload.new.opening_time);
           setClosingTime(payload.new.closing_time);
           setIs24Hours(!!payload.new.is_24_hours);
+          if (payload.new.tax_percent !== undefined && payload.new.tax_percent !== null) {
+            setTaxPercent(Number(payload.new.tax_percent));
+          }
         }
       })
       .subscribe();
@@ -207,6 +211,9 @@ export default function POSPage() {
           setOpeningTime(data.opening_time);
           setClosingTime(data.closing_time);
           setIs24Hours(!!data.is_24_hours);
+          if (data.tax_percent !== undefined && data.tax_percent !== null) {
+            setTaxPercent(Number(data.tax_percent));
+          }
         }
       })
       .subscribe();
@@ -308,6 +315,9 @@ export default function POSPage() {
         setOpeningTime(settingsRes.data.opening_time);
         setClosingTime(settingsRes.data.closing_time);
         setIs24Hours(!!settingsRes.data.is_24_hours);
+        if (settingsRes.data.tax_percent !== undefined && settingsRes.data.tax_percent !== null) {
+          setTaxPercent(Number(settingsRes.data.tax_percent));
+        }
       }
 
       // Filter active and non-expired vouchers
@@ -1326,6 +1336,10 @@ export default function POSPage() {
                   <span>-Rp {discountAmount.toLocaleString("id-ID")}</span>
                 </div>
               )}
+              <div className="flex justify-between items-center text-xs font-medium text-muted">
+                <span>Pajak ({taxPercent}%)</span>
+                <span>Rp {Math.round(cartTotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
+              </div>
               <div className="flex justify-between items-center pt-2 mt-2 border-t border-border-light dark:border-border-dark">
                 <span className="text-sm font-bold text-muted uppercase tracking-widest">Total Tagihan</span>
                 <span className="text-2xl font-black text-text-light dark:text-text-dark">Rp {cartTotal.toLocaleString("id-ID")}</span>

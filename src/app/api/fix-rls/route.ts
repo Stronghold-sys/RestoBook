@@ -98,6 +98,7 @@ export async function GET() {
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS payday_date INT DEFAULT 28;
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS cutoff_date INT DEFAULT 27;
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS is_auto_close_shift_enabled BOOLEAN DEFAULT TRUE;
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS tax_percent NUMERIC DEFAULT 10.00;
 
     -- Create Notifications Table if not exists
     CREATE TABLE IF NOT EXISTS notifications (

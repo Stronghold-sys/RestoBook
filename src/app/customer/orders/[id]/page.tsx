@@ -45,6 +45,7 @@ export default function OrderTrackingPage() {
   // Payment Selection States
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [duitkuMethod, setDuitkuMethod] = useState("");
+  const [taxPercent, setTaxPercent] = useState<number>(10.00);
   const supabase = createClient();
 
   useEffect(() => {
@@ -57,6 +58,16 @@ export default function OrderTrackingPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase.from("restaurant_settings").select("tax_percent").single();
+      if (data && data.tax_percent !== null && data.tax_percent !== undefined) {
+        setTaxPercent(Number(data.tax_percent));
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const fetchOrderDetails = async () => {
     try {
@@ -538,7 +549,10 @@ export default function OrderTrackingPage() {
                 <span>-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
               </div>
             )}
-            <div className="flex justify-between text-muted font-bold"><span>Pajak & Layanan</span><span>Termasuk</span></div>
+            <div className="flex justify-between text-muted font-bold">
+              <span>Pajak ({taxPercent}%)</span>
+              <span>Rp {Math.round(Number(order.total_amount) * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
+            </div>
             {Number(order.discount) > 0 && (
               <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
                 <span>Total Anda Hemat</span>

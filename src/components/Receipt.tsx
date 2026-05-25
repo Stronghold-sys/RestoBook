@@ -43,6 +43,8 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
   const subtotal = orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0);
   const totalAmount = Number(order.total_amount);
   const kembalian = cashReceived ? Math.max(0, cashReceived - totalAmount) : 0;
+  const taxPercent = settings?.tax_percent !== undefined && settings?.tax_percent !== null ? Number(settings.tax_percent) : 10.00;
+  const taxAmount = Math.round(totalAmount * taxPercent / (100 + taxPercent));
 
   return (
     <div ref={ref} className="bg-white text-black p-8 w-[380px] mx-auto font-mono text-sm receipt-font receipt-container border border-gray-100 shadow-sm overflow-hidden relative">
@@ -202,8 +204,8 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
           </>
         )}
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span>Pajak & Layanan:</span>
-          <span>Termasuk</span>
+          <span>Pajak ({taxPercent}%):</span>
+          <span className="font-bold">Rp {taxAmount.toLocaleString("id-ID")} (Termasuk)</span>
         </div>
         
         <div className="h-[2px] bg-black my-2" style={{ height: '2px', backgroundColor: '#000', margin: '8px 0' }} />

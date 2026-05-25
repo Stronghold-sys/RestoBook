@@ -35,7 +35,8 @@ export default function AdminSettingsPage() {
     auto_deduct_late_salary: false,
     minutes_per_working_day: 480,
     payday_date: 28,
-    cutoff_date: 27
+    cutoff_date: 27,
+    tax_percent: 10.00
   });
   
   // Merchant QRIS & E-Wallet configuration state
@@ -83,7 +84,8 @@ export default function AdminSettingsPage() {
         auto_deduct_late_salary: !!data.auto_deduct_late_salary,
         minutes_per_working_day: data.minutes_per_working_day !== null && data.minutes_per_working_day !== undefined ? Number(data.minutes_per_working_day) : 480,
         payday_date: data.payday_date !== null && data.payday_date !== undefined ? Number(data.payday_date) : 28,
-        cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27
+        cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27,
+        tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00
       });
     } catch (e: any) { console.error(e); } finally { setLoading(false); }
   };
@@ -231,6 +233,7 @@ export default function AdminSettingsPage() {
         minutes_per_working_day: Number(settings.minutes_per_working_day || 480),
         payday_date: Number(settings.payday_date || 28),
         cutoff_date: Number(settings.cutoff_date || 27),
+        tax_percent: Number(settings.tax_percent !== undefined ? settings.tax_percent : 10.00),
       }).eq("id", settings.id);
       if (error) throw error;
 
@@ -260,6 +263,7 @@ export default function AdminSettingsPage() {
     { id: "setAddr", label: "Alamat", icon: MapPin, value: settings.address, key: "address", type: "text" },
     { id: "setPhone", label: "No Telepon", icon: Phone, value: settings.phone, key: "phone", type: "tel" },
     { id: "setEmail", label: "Email", icon: Mail, value: settings.email, key: "email", type: "email" },
+    { id: "setTax", label: "Pajak Restoran (%)", icon: DollarSign, value: settings.tax_percent, key: "tax_percent", type: "number" },
   ];
 
   return (

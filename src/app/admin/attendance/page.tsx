@@ -21,6 +21,7 @@ export default function AdminAttendancePage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [search, setSearch] = useState("");
+  const [activePhotoUrl, setActivePhotoUrl] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -114,6 +115,7 @@ export default function AdminAttendancePage() {
       onClose={() => setSelectedEmployee(null)} 
       handleApproveLeave={handleApproveLeave}
       onUpdate={fetchData}
+      onViewPhoto={setActivePhotoUrl}
     />;
   }
 
@@ -221,9 +223,13 @@ export default function AdminAttendancePage() {
 
                 <div className="flex items-center gap-3">
                   {req.attachment_url && (
-                    <a href={req.attachment_url} target="_blank" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-muted hover:text-primary transition-all" title="Lihat Bukti">
+                    <button 
+                      onClick={() => setActivePhotoUrl(req.attachment_url)} 
+                      className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-muted hover:text-primary transition-all" 
+                      title="Lihat Bukti"
+                    >
                       <Camera className="w-5 h-5" />
-                    </a>
+                    </button>
                   )}
                   <button 
                     onClick={() => handleApproveLeave(req.id, 'approved')} 
@@ -253,15 +259,46 @@ export default function AdminAttendancePage() {
 
       {/* MODUL BARU: MANAJER SHIFT KERJA */}
       {activeTab === "work_shifts" && <WorkShiftsManager />}
+
+      {/* Modal Pratinjau Foto */}
+      <AnimatePresence>
+        {activePhotoUrl && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative max-w-lg w-full bg-card-light dark:bg-card-dark rounded-3xl p-6 shadow-2xl border border-border-light dark:border-border-dark flex flex-col items-center gap-4"
+            >
+              <button 
+                onClick={() => setActivePhotoUrl(null)} 
+                className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-800 text-muted hover:text-red-500 rounded-full transition-colors z-10"
+                title="Tutup Pratinjau"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark">
+                <img 
+                  src={activePhotoUrl} 
+                  alt="Bukti Foto Absensi" 
+                  className="w-full h-auto max-h-[70vh] object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate }: { 
+function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate, onViewPhoto }: { 
   employeeId: string, 
   onClose: () => void,
   handleApproveLeave: (id: string, status: 'approved' | 'rejected' | 'completed', onSuccess?: () => void) => Promise<void>,
-  onUpdate: () => void
+  onUpdate: () => void,
+  onViewPhoto?: (url: string) => void
 }) {
   const [employee, setEmployee] = useState<any>(null);
   const [stats, setStats] = useState<any[]>([]);
@@ -451,24 +488,24 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate }: {
              </div>
              <div className="divide-y divide-border-light dark:divide-border-dark">
                 {stats.map(s => (
-                  <div key={s.id} className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-all">
+                  <div key={s.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-all">
                     <div>
                       <p className="text-sm font-black">{format(new Date(s.created_at), 'eeee, d MMMM yyyy', { locale: id })}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[10px] text-muted font-bold uppercase">{format(new Date(s.created_at), 'HH:mm')} - {s.type}</p>
+                        <p className="text-[10px] text-muted font-bold uppercase whitespace-nowrap">{format(new Date(s.created_at), 'HH:mm')} - {s.type}</p>
                         {s.type === 'check_in' && s.late_minutes > 0 && (
-                          <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-widest animate-pulse border border-red-200 dark:border-red-900">
+                          <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-widest animate-pulse border border-red-200 dark:border-red-900 whitespace-nowrap">
                             Terlambat {s.late_minutes} Menit
                           </span>
                         )}
                         {s.type === 'check_in' && (!s.late_minutes || s.late_minutes === 0) && (
-                          <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[8px] font-black uppercase tracking-widest border border-green-200 dark:border-green-900">
+                          <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[8px] font-black uppercase tracking-widest border border-green-200 dark:border-green-900 whitespace-nowrap">
                             Tepat Waktu
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 justify-start sm:justify-end w-full sm:w-auto flex-wrap">
                       {(s.type === 'izin' || s.type === 'sakit') && (
                         <div className="flex gap-2 items-center mr-4">
                           <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
@@ -498,7 +535,7 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate }: {
                       
                       {s.photo_url && (
                         <button 
-                          onClick={() => window.open(s.photo_url)} 
+                          onClick={() => onViewPhoto ? onViewPhoto(s.photo_url) : window.open(s.photo_url)} 
                           className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary hover:text-white transition-all"
                           title="Lihat Bukti Foto"
                         >

@@ -14,6 +14,7 @@ export default function DeviceDimensionManager() {
         "device-mobile",
         "device-tablet",
         "device-desktop",
+        "device-apple-desktop",
         "screen-xs",
         "screen-sm",
         "screen-md",
@@ -33,6 +34,15 @@ export default function DeviceDimensionManager() {
         doc.classList.add("device-tablet");
       } else {
         doc.classList.add("device-desktop");
+
+        // Deteksi Apple Desktop (macOS Desktop)
+        const isMac = (navigator.userAgent.includes('Macintosh') || 
+                       navigator.userAgent.includes('MacIntel') || 
+                       (navigator.platform && navigator.platform.toUpperCase().indexOf('MAC') >= 0));
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (isMac && !isTouch) {
+          doc.classList.add("device-apple-desktop");
+        }
       }
 
       // Tambahkan detail kelas ukuran layar untuk penyesuaian media query di CSS

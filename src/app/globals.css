@@ -168,4 +168,50 @@ aside.fixed.lg\:hidden {
   padding-top: 0 !important;
 }
 
+/* ── Penyesuaian khusus untuk Apple Desktop (iMac 24", 27", dll.) ── */
+.device-apple-desktop {
+  /* Skala ukuran font dasar sedikit lebih besar agar proporsional di layar Retina beresolusi tinggi */
+  font-size: 16.5px !important;
+}
+
+/* Membatasi lebar konten utama agar tidak melar secara berlebihan di layar lebar iMac */
+.device-apple-desktop main {
+  max-width: 1440px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+/* Membatasi lebar konten header dashboard agar sejajar dengan konten utama */
+.device-apple-desktop header {
+  max-width: 1440px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+/* Memastikan pembungkusan kata yang baik agar kalimat tidak berantakan, menumpuk, atau pecah per karakter */
+.device-apple-desktop p,
+.device-apple-desktop span,
+.device-apple-desktop h1,
+.device-apple-desktop h2,
+.device-apple-desktop h3,
+.device-apple-desktop a,
+.device-apple-desktop td,
+.device-apple-desktop th,
+.device-apple-desktop button {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: normal !important;
+}
+
+/* Peningkatan rendering font khusus untuk browser macOS (Safari/Chrome) */
+.device-apple-desktop body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 

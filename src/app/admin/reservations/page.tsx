@@ -284,6 +284,12 @@ export default function AdminReservationsPage() {
                       <p className="text-sm">{parsed.catatan_tolak}</p>
                     </div>
                   )}
+                  {parsed?.catatan_batal && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
+                      <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
+                      <p className="text-sm">{parsed.catatan_batal}</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             </motion.div>

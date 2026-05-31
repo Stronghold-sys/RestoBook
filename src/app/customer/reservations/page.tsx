@@ -44,6 +44,9 @@ export default function CustomerReservationsPage() {
   });
   const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
   const supabase = createClient();
 
   useEffect(() => { 
@@ -126,11 +129,57 @@ export default function CustomerReservationsPage() {
     } catch (e: any) { toast.error(e.message); } finally { setSubmitting(false); }
   };
 
-  const cancelReservation = async (id: string) => {
-    const { error } = await supabase.from("reservations").update({ status: "cancelled" }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Reservasi dibatalkan");
-    fetchData();
+  const handleCancelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cancellingId) return;
+    if (!cancelReason.trim()) return toast.error("Masukkan alasan pembatalan");
+
+    setCancelling(true);
+    try {
+      const res = reservations.find(r => r.id === cancellingId);
+      if (!res) throw new Error("Reservasi tidak ditemukan");
+
+      const parsedNotes = getParsedNotes(res.notes);
+      const tableIds = parsedNotes?.meja_ids || [res.table_id];
+
+      // Update reservation status and notes with cancellation reason
+      const updatedNotes = parsedNotes
+        ? JSON.stringify({ ...parsedNotes, catatan_batal: cancelReason })
+        : JSON.stringify({ catatan_batal: cancelReason });
+
+      const { error: resError } = await supabase
+        .from("reservations")
+        .update({ status: "cancelled", notes: updatedNotes })
+        .eq("id", cancellingId);
+      
+      if (resError) throw resError;
+
+      // Set tables back to 'available'
+      if (tableIds && tableIds.length > 0) {
+        const { error: tableError } = await supabase
+          .from("tables")
+          .update({ status: "available" })
+          .in("id", tableIds);
+        if (tableError) console.error("Gagal mengembalikan status meja:", tableError.message);
+      }
+
+      // Add Notification
+      await supabase.from("notifications").insert({
+        user_id: profileId,
+        title: "Reservasi Dibatalkan",
+        message: `Reservasi atas nama ${parsedNotes?.atas_nama || "Pelanggan"} pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah dibatalkan oleh pelanggan. Alasan: ${cancelReason}`,
+        type: "reservation"
+      });
+
+      toast.success("Reservasi berhasil dibatalkan");
+      setCancellingId(null);
+      setCancelReason("");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Gagal membatalkan: " + err.message);
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const getParsedNotes = (notesStr: string) => {
@@ -222,13 +271,23 @@ export default function CustomerReservationsPage() {
                   <div className="flex items-center gap-3">
                     <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
                     {res.status === "pending" && (
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => cancelReservation(res.id)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
                         <X className="w-5 h-5" />
                       </motion.button>
                     )}
                   </div>
                 </div>
                 {displayNotes && <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg"><span className="font-bold">Catatan:</span> {displayNotes}</p>}
+                {parsedNotes?.catatan_batal && (
+                  <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                    <span className="font-bold">Alasan Pembatalan:</span> {parsedNotes.catatan_batal}
+                  </p>
+                )}
+                {parsedNotes?.catatan_tolak && (
+                  <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                    <span className="font-bold">Alasan Penolakan:</span> {parsedNotes.catatan_tolak}
+                  </p>
+                )}
                 {parsedNotes?.telepon && <p className="mt-2 text-xs text-muted">No. Telepon: {parsedNotes.telepon}</p>}
               </motion.div>
             );
@@ -323,6 +382,42 @@ export default function CustomerReservationsPage() {
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Batal</button>
                   <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={submitting} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                     {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Ajukan Sekarang</>}
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Pembatalan */}
+      <AnimatePresence>
+        {cancellingId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCancellingId(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark">
+              <div className="bg-red-650 dark:bg-red-900/40 p-6 text-white dark:text-red-100 flex justify-between items-center border-b border-border-light dark:border-border-dark">
+                <div>
+                  <h2 className="text-xl font-bold">Batalkan Reservasi</h2>
+                  <p className="text-white/80 dark:text-red-200/80 text-sm mt-1">Konfirmasi pembatalan reservasi meja Anda</p>
+                </div>
+                <button onClick={() => setCancellingId(null)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+              </div>
+              <form onSubmit={handleCancelSubmit} className="p-6 space-y-4">
+                <div>
+                  <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Alasan Pembatalan</label>
+                  <textarea
+                    id="cancelReason"
+                    value={cancelReason}
+                    onChange={e => setCancelReason(e.target.value)}
+                    placeholder="Tuliskan alasan pembatalan Anda di sini..."
+                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
+                    required
+                  />
+                </div>
+                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Kembali</button>
+                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim()} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
+                    {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Batalkan"}
                   </motion.button>
                 </div>
               </form>

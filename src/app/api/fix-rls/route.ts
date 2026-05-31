@@ -157,6 +157,18 @@ export async function GET() {
     DROP POLICY IF EXISTS "auth_resign_requests_all" ON resign_requests;
     CREATE POLICY "auth_resign_requests_all" ON resign_requests FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+    -- Policy for Customer to update (cancel) their own reservations
+    DROP POLICY IF EXISTS "Customer update own reservations" ON reservations;
+    CREATE POLICY "Customer update own reservations" ON reservations FOR UPDATE TO authenticated 
+      USING (customer_id IN (SELECT id FROM profiles WHERE user_id = auth.uid())) 
+      WITH CHECK (customer_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
+      
+    -- Policy for Admin to manage all reservations
+    DROP POLICY IF EXISTS "Admin manage reservations" ON reservations;
+    CREATE POLICY "Admin manage reservations" ON reservations FOR ALL TO authenticated 
+      USING (EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid() AND role = 'admin')) 
+      WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid() AND role = 'admin'));
+
     -- Drop and recreate menu_items and categories policies
     DROP POLICY IF EXISTS "Anyone can view active menu" ON menu_items;
     DROP POLICY IF EXISTS "Anyone can view all menu" ON menu_items;

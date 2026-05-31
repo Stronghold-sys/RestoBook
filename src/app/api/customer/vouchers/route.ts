@@ -67,17 +67,20 @@ export async function GET(req: NextRequest) {
           status = 'inactive';
         }
 
-        history.push({
-          id: v.id,
-          voucher_id: v.id,
-          code: v.code,
-          discount_percent: v.discount_percent,
-          expires_at: v.expires_at,
-          used_count: userUsedCount,
-          max_usage_per_user: v.max_usage_per_user,
-          status, // 'used', 'expired', 'exhausted', 'inactive'
-          created_at: v.created_at
-        });
+        // Hanya masukkan ke riwayat jika pengguna pernah menggunakan voucher tersebut (used_count > 0)
+        if (userUsedCount > 0) {
+          history.push({
+            id: v.id,
+            voucher_id: v.id,
+            code: v.code,
+            discount_percent: v.discount_percent,
+            expires_at: v.expires_at,
+            used_count: userUsedCount,
+            max_usage_per_user: v.max_usage_per_user,
+            status, // 'used', 'expired', 'exhausted', 'inactive'
+            created_at: v.created_at
+          });
+        }
       } else {
         active.push({
           id: v.id,

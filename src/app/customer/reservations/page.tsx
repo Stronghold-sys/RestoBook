@@ -395,12 +395,14 @@ export default function CustomerReservationsPage() {
         {cancellingId && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCancellingId(null)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark">
-              <div className="bg-red-650 dark:bg-red-900/40 p-6 text-white dark:text-red-100 flex justify-between items-center border-b border-border-light dark:border-border-dark">
-                <div>
-                  <h2 className="text-xl font-bold">Batalkan Reservasi</h2>
-                  <p className="text-white/80 dark:text-red-200/80 text-sm mt-1">Konfirmasi pembatalan reservasi meja Anda</p>
+              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <X className="w-6 h-6" />
                 </div>
-                <button onClick={() => setCancellingId(null)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+                <div>
+                  <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
+                  <p className="text-white/80 text-sm">Berikan alasan pembatalan Anda</p>
+                </div>
               </div>
               <form onSubmit={handleCancelSubmit} className="p-6 space-y-4">
                 <div>
@@ -409,15 +411,15 @@ export default function CustomerReservationsPage() {
                     id="cancelReason"
                     value={cancelReason}
                     onChange={e => setCancelReason(e.target.value)}
-                    placeholder="Tuliskan alasan pembatalan Anda di sini..."
-                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
+                    placeholder="Tuliskan alasan Anda..."
+                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
                     required
                   />
                 </div>
-                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Kembali</button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Kembali</button>
                   <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim()} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
-                    {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Batalkan"}
+                    {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
                   </motion.button>
                 </div>
               </form>

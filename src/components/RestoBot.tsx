@@ -278,6 +278,8 @@ export default function RestoBot() {
   const [attendanceToday, setAttendanceToday] = useState<any[]>([]);
   const [activeShifts, setActiveShifts] = useState<any[]>([]);
   const [reportsSummary, setReportsSummary] = useState<any>(null);
+  const [customerRewards, setCustomerRewards] = useState<any[]>([]);  // reward catalog for customer
+  const [customerRedemptions, setCustomerRedemptions] = useState<any[]>([]);  // customer's redemption history
 
   const loadUserContext = () => {
     try {
@@ -508,6 +510,7 @@ export default function RestoBot() {
               console.error("Error fetching completed orders stats in RestoBot:", e);
             }
           } else {
+            // Customer branch: fetch reservations, orders, AND rewards/points
             const { data: userRes } = await supabase
               .from('reservations')
               .select('*, tables(table_number)')
@@ -526,6 +529,31 @@ export default function RestoBot() {
             if (userOrders) {
               setOrders(userOrders);
               finalOrders = userOrders;
+            }
+
+            // Fetch reward catalog (active rewards)
+            try {
+              const { data: rewardData } = await supabase
+                .from('rewards')
+                .select('*')
+                .eq('is_active', true)
+                .order('min_points', { ascending: true });
+              if (rewardData) setCustomerRewards(rewardData);
+            } catch (e) {
+              console.error('Error fetching rewards in RestoBot:', e);
+            }
+
+            // Fetch customer redemption history
+            try {
+              const { data: redemptionData } = await supabase
+                .from('reward_redemptions')
+                .select('*, rewards(title, category)')
+                .eq('customer_id', userProfile.id)
+                .order('created_at', { ascending: false })
+                .limit(10);
+              if (redemptionData) setCustomerRedemptions(redemptionData);
+            } catch (e) {
+              console.error('Error fetching redemptions in RestoBot:', e);
             }
           }
         }
@@ -547,7 +575,10 @@ export default function RestoBot() {
         role: finalUser?.role || localCtx.user?.role || newRole,
         email: finalUser?.email || localCtx.user?.email || '',
         phone: finalUser?.phone || localCtx.user?.phone || '',
-        points: localCtx.user?.points || 0
+        // Use points from Supabase profile (most reliable), fallback to localStorage
+        points: finalUser?.points ?? localCtx.user?.points ?? 0,
+        wallet_balance: finalUser?.wallet_balance ?? 0,
+        pending_points: finalUser?.pending_points ?? 0
       };
       
       const mergedReservations = finalRes.length > 0 ? finalRes : localCtx.reservations || [];
@@ -707,6 +738,29 @@ export default function RestoBot() {
 - Pendapatan Non-Tunai (Digital/Duitku): Rp ${Number(reportsSummary.today_non_cash_revenue).toLocaleString('id-ID')}`;
     }
 
+    // Inject Customer Rewards Data (only for customer role)
+    if (role === 'customer' && customerRewards && customerRewards.length > 0) {
+      const rewardLines = customerRewards.map(r => {
+        let detail = `- ${r.title} (${r.category}): Butuh ${r.min_points} poin`;
+        if (r.discount_percent) detail += `, Diskon ${r.discount_percent}%`;
+        if (r.cashback_amount && r.cashback_amount > 0) detail += `, Cashback Rp ${Number(r.cashback_amount).toLocaleString('id-ID')}`;
+        if (r.stock !== null) detail += `, Stok: ${r.stock} item`;
+        else detail += `, Stok: Tidak terbatas`;
+        if (r.description) detail += ` - ${r.description}`;
+        return detail;
+      }).join('\n');
+      prompt += `\n\nKATALOG REWARD YANG BISA DITUKAR PELANGGAN:\n${rewardLines}`;
+    }
+
+    // Inject Customer Redemption History (only for customer role)
+    if (role === 'customer' && customerRedemptions && customerRedemptions.length > 0) {
+      const redemptionLines = customerRedemptions.map(rd => {
+        const dateStr = rd.created_at ? new Date(rd.created_at).toLocaleDateString('id-ID') : '-';
+        return `- ${rd.rewards?.title || 'Reward'} (${rd.rewards?.category || ''}): Status ${rd.status}, Tanggal ${dateStr}, Poin digunakan: ${rd.points_used || rd.points_spent || 0}`;
+      }).join('\n');
+      prompt += `\n\nRIWAYAT PENUKARAN REWARD PELANGGAN (10 TERAKHIR):\n${redemptionLines}`;
+    }
+
     // Append strict plain-text formatting instructions
     prompt += `\n\nATURAN FORMATTING RESPONS — WAJIB MUTLAK DIPATUHI TANPA PENGECUALIAN:
 1. DILARANG KERAS menggunakan tanda bintang (*) dalam bentuk apa pun: *, **, ***, baik untuk bold, italic, atau daftar.
@@ -724,7 +778,10 @@ export default function RestoBot() {
       role: profile?.role || localCtx.user?.role || role,
       email: profile?.email || localCtx.user?.email || '',
       phone: profile?.phone || localCtx.user?.phone || '',
-      points: localCtx.user?.points || 0
+      // Use Supabase profile points (most accurate), fallback to localStorage
+      points: profile?.points ?? localCtx.user?.points ?? 0,
+      wallet_balance: profile?.wallet_balance ?? 0,
+      pending_points: profile?.pending_points ?? 0
     };
     const mergedReservations = reservations.length > 0 ? reservations : localCtx.reservations || [];
     const mergedOrders = orders.length > 0 ? orders : localCtx.orders || [];
@@ -765,10 +822,10 @@ export default function RestoBot() {
         showNotificationBubble(' Jika pembatalan dikonfirmasi, email konfirmasi akan dikirim ke alamat Anda.', 'info');
       }
       if (msg.includes('poin') || msg.includes('reward')) {
-        const localCtx = loadUserContext();
-        const points = profile?.points || localCtx?.user?.points || 0;
+        // Use profile state (loaded from Supabase) for accurate points
+        const points = profile?.points ?? 0;
         if (points > 0) {
-          showNotificationBubble(` Anda memiliki ${points} poin (setara Rp ${points * 100}) yang bisa digunakan!`, 'success');
+          showNotificationBubble(` Anda memiliki ${points} poin (setara Rp ${Number(points * 100).toLocaleString('id-ID')}) yang bisa digunakan!`, 'success');
         }
       }
     }

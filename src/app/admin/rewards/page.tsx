@@ -41,7 +41,13 @@ export default function AdminRewardsPage() {
     bonusEventName: "",
     bonusEventPoints: 0,
     bonusDayOfWeek: -1,
-    bonusDayMultiplier: 1
+    bonusDayMultiplier: 1,
+    minTopup: 10000,
+    maxTopup: 2000000,
+    isDuitkuEnabled: true,
+    isCashbackEnabled: true,
+    walletAdminFee: 0,
+    isAutoRefundEnabled: true
   });
 
   const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "settings">("catalog");
@@ -65,12 +71,19 @@ export default function AdminRewardsPage() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [adjustForm, setAdjustForm] = useState({
-    action: "adjust", // adjust or reset
+    action: "adjust", // adjust, reset, adjust_wallet, reset_wallet, toggle_wallet_block
     amount: "",
     reason: ""
   });
   const [customerTxLogs, setCustomerTxLogs] = useState<any[]>([]);
+  const [customerWalletTxLogs, setCustomerWalletTxLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [activeLogsTab, setActiveLogsTab] = useState<"points" | "wallet">("points");
+
+  // Custom delete confirmation modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const supabase = createClient();
 
@@ -117,13 +130,20 @@ export default function AdminRewardsPage() {
           bonusEventName: data.bonus_event_name || "",
           bonusEventPoints: data.bonus_event_points !== undefined && data.bonus_event_points !== null ? data.bonus_event_points : 0,
           bonusDayOfWeek: data.bonus_day_of_week !== undefined && data.bonus_day_of_week !== null ? data.bonus_day_of_week : -1,
-          bonusDayMultiplier: data.bonus_day_multiplier !== undefined && data.bonus_day_multiplier !== null ? data.bonus_day_multiplier : 1
+          bonusDayMultiplier: data.bonus_day_multiplier !== undefined && data.bonus_day_multiplier !== null ? data.bonus_day_multiplier : 1,
+          minTopup: data.min_topup !== undefined && data.min_topup !== null ? data.min_topup : 10000,
+          maxTopup: data.max_topup !== undefined && data.max_topup !== null ? data.max_topup : 2000000,
+          isDuitkuEnabled: data.is_duitku_enabled !== undefined && data.is_duitku_enabled !== null ? !!data.is_duitku_enabled : true,
+          isCashbackEnabled: data.is_cashback_enabled !== undefined && data.is_cashback_enabled !== null ? !!data.is_cashback_enabled : true,
+          walletAdminFee: data.wallet_admin_fee !== undefined && data.wallet_admin_fee !== null ? data.wallet_admin_fee : 0,
+          isAutoRefundEnabled: data.is_auto_refund_enabled !== undefined && data.is_auto_refund_enabled !== null ? !!data.is_auto_refund_enabled : true
         });
       }
     } catch (err) {
       console.error("Error loading point settings:", err);
     }
   };
+
 
   const handleOpenRewardModal = (reward: any = null) => {
     if (reward) {
@@ -190,20 +210,30 @@ export default function AdminRewardsPage() {
     }
   };
 
-  const handleDeleteReward = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus reward ini secara permanen?")) return;
+  const handleDeleteReward = (id: string) => {
+    setDeleteTargetId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteReward = async () => {
+    if (!deleteTargetId) return;
+    setDeleting(true);
     const loadingToast = toast.loading("Menghapus reward...");
     try {
-      const res = await fetch(`/api/admin/rewards?id=${id}`, {
+      const res = await fetch(`/api/admin/rewards?id=${deleteTargetId}`, {
         method: "DELETE"
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menghapus reward");
 
       toast.success("Reward berhasil dihapus!", { id: loadingToast });
+      setShowDeleteConfirm(false);
+      setDeleteTargetId(null);
       fetchAdminData();
     } catch (err: any) {
       toast.error(err.message, { id: loadingToast });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -266,6 +296,7 @@ export default function AdminRewardsPage() {
       reason: ""
     });
     setCustomerTxLogs([]);
+    setCustomerWalletTxLogs([]);
     setShowAdjustModal(true);
 
     // Fetch customer logs
@@ -275,6 +306,7 @@ export default function AdminRewardsPage() {
       const data = await res.json();
       if (res.ok) {
         setCustomerTxLogs(data.transactions || []);
+        setCustomerWalletTxLogs(data.walletTransactions || []);
       }
     } catch (e) {
       console.error(e);
@@ -287,7 +319,7 @@ export default function AdminRewardsPage() {
     e.preventDefault();
     if (!selectedCustomer || saving) return;
     setSaving(true);
-    const loadingToast = toast.loading("Memproses penyesuaian poin...");
+    const loadingToast = toast.loading("Memproses penyesuaian...");
     try {
       const res = await fetch("/api/admin/customers/points", {
         method: "POST",
@@ -295,14 +327,14 @@ export default function AdminRewardsPage() {
         body: JSON.stringify({
           customerId: selectedCustomer.id,
           action: adjustForm.action,
-          amount: adjustForm.action === "reset" ? 0 : Number(adjustForm.amount),
+          amount: ["reset", "reset_wallet", "toggle_wallet_block"].includes(adjustForm.action) ? 0 : Number(adjustForm.amount),
           reason: adjustForm.reason
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyesuaikan poin");
+      if (!res.ok) throw new Error(data.error || "Gagal memproses penyesuaian");
 
-      toast.success("Poin pelanggan berhasil disesuaikan!", { id: loadingToast });
+      toast.success("Penyesuaian berhasil diproses!", { id: loadingToast });
       setShowAdjustModal(false);
       fetchAdminData();
     } catch (err: any) {
@@ -311,6 +343,7 @@ export default function AdminRewardsPage() {
       setSaving(false);
     }
   };
+
 
   const handleToggleBlockRedeem = async (cust: any) => {
     const loadingToast = toast.loading("Mengubah status blokir pelanggan...");
@@ -618,11 +651,18 @@ export default function AdminRewardsPage() {
                             Rp {Number(cust.wallet_balance || 0).toLocaleString("id-ID")}
                           </td>
                           <td className="px-6 py-4 text-center">
-                            {cust.is_redeem_blocked ? (
-                              <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-red-50 text-red-600 border border-red-200">Blocked</span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
-                            )}
+                            <div className="flex flex-col items-center gap-1.5 justify-center">
+                              {cust.is_redeem_blocked ? (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-20 text-center">Poin Blok</span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-20 text-center">Poin Aktif</span>
+                              )}
+                              {cust.is_wallet_blocked ? (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-20 text-center">Wlt Blok</span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-20 text-center">Wlt Aktif</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 flex items-center justify-center gap-2">
                             <button
@@ -780,6 +820,111 @@ export default function AdminRewardsPage() {
                   </div>
                 </div>
 
+                <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight border-b border-border-light dark:border-border-dark pb-3 pt-6 flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-primary" /> Pengaturan E-Wallet (Dompetku)
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                    <div>
+                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Metode Pembayaran Online Duitku</label>
+                      <span className="text-[10px] text-muted font-bold">Aktifkan integrasi isi saldo wallet via payment gateway Duitku.</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.isDuitkuEnabled} 
+                        onChange={e => setSettings({ ...settings, isDuitkuEnabled: e.target.checked })}
+                        className="sr-only peer" 
+                        title="Status Duitku"
+                        aria-label="Status Duitku"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                    <div>
+                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Status Cashback Dompetku</label>
+                      <span className="text-[10px] text-muted font-bold">Aktifkan pemberian cashback otomatis ke dompet saat pelanggan menukarkan reward cashback.</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.isCashbackEnabled} 
+                        onChange={e => setSettings({ ...settings, isCashbackEnabled: e.target.checked })}
+                        className="sr-only peer" 
+                        title="Status Cashback"
+                        aria-label="Status Cashback"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                    <div>
+                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Auto Refund ke Dompetku</label>
+                      <span className="text-[10px] text-muted font-bold">Dana pesanan dibatalkan otomatis refund ke wallet Dompetku pelanggan.</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.isAutoRefundEnabled} 
+                        onChange={e => setSettings({ ...settings, isAutoRefundEnabled: e.target.checked })}
+                        className="sr-only peer" 
+                        title="Auto Refund"
+                        aria-label="Auto Refund"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label htmlFor="minTopup" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Top Up (Rp)</label>
+                    <input 
+                      id="minTopup"
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.minTopup} 
+                      onChange={e => setSettings({ ...settings, minTopup: e.target.value })}
+                      placeholder="10000"
+                      title="Minimal Top Up"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="maxTopup" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Top Up (Rp)</label>
+                    <input 
+                      id="maxTopup"
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.maxTopup} 
+                      onChange={e => setSettings({ ...settings, maxTopup: e.target.value })}
+                      placeholder="2000000"
+                      title="Maksimal Top Up"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label htmlFor="walletAdminFee" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Biaya Admin per Top Up (Rp)</label>
+                    <input 
+                      id="walletAdminFee"
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.walletAdminFee} 
+                      onChange={e => setSettings({ ...settings, walletAdminFee: e.target.value })}
+                      placeholder="0"
+                      title="Biaya Admin per Top Up"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                </div>
+
                 <div className="pt-4 border-t border-border-light dark:border-border-dark flex justify-end">
                   <button
                     type="submit"
@@ -794,6 +939,55 @@ export default function AdminRewardsPage() {
           </div>
         </>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowDeleteConfirm(false); setDeleteTargetId(null); }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.85, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.85, y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              className="relative bg-white dark:bg-card-dark rounded-2xl shadow-2xl overflow-hidden max-w-sm w-full border border-gray-200 dark:border-gray-800"
+            >
+              <div className="p-6 flex flex-col items-center text-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center">
+                  <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white mb-1">Hapus Reward?</h3>
+                  <p className="text-sm text-muted">Apakah Anda yakin ingin menghapus reward ini secara permanen? Tindakan ini tidak dapat dibatalkan.</p>
+                </div>
+                <div className="flex gap-3 w-full mt-2">
+                  <button
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteTargetId(null); }}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-60"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={confirmDeleteReward}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {deleting ? "Menghapus..." : "Hapus Permanen"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 1. Add / Edit Reward Dialog Modal */}
       <AnimatePresence>
@@ -849,14 +1043,14 @@ export default function AdminRewardsPage() {
                       min={1} 
                       max={100}
                       value={rewardForm.discountPercent} 
-                      onChange={e => setRewardForm({ ...rewardForm, discountPercent: e.target.value === "" ? "" : Number(e.target.value) })} 
+                      onChange={e => setRewardForm({ ...rewardForm, discountPercent: e.target.value })} 
                       placeholder="10"
                       title="Diskon (%)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
                 )}
-
+ 
                 {rewardForm.category === "cashback" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -873,7 +1067,7 @@ export default function AdminRewardsPage() {
                         title="Pemberian Saldo Otomatis"
                       />
                     </div>
-
+ 
                     {!rewardForm.isAutoCashback ? (
                       <div>
                         <label htmlFor="rewardCashbackAmount" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
@@ -882,7 +1076,7 @@ export default function AdminRewardsPage() {
                           type="number" 
                           min={0}
                           value={rewardForm.cashbackAmount} 
-                          onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: e.target.value === "" ? "" : Number(e.target.value) })} 
+                          onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: e.target.value })} 
                           placeholder="5000"
                           title="Nominal Saldo Cashback (Rp)"
                           className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -896,7 +1090,7 @@ export default function AdminRewardsPage() {
                     )}
                   </div>
                 )}
-
+ 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="rewardMinPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin</label>
@@ -906,7 +1100,7 @@ export default function AdminRewardsPage() {
                       required 
                       min={0}
                       value={rewardForm.minPoints} 
-                      onChange={e => setRewardForm({ ...rewardForm, minPoints: e.target.value === "" ? "" : Number(e.target.value) })} 
+                      onChange={e => setRewardForm({ ...rewardForm, minPoints: e.target.value })} 
                       placeholder="50"
                       title="Minimal Poin"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -1013,18 +1207,23 @@ export default function AdminRewardsPage() {
                       >
                         <option value="adjust">Tambah / Kurangi Poin</option>
                         <option value="reset">Reset Poin ke 0</option>
+                        <option value="adjust_wallet">Tambah / Kurangi Saldo Dompet (Rp)</option>
+                        <option value="reset_wallet">Reset Saldo Dompet ke Rp 0</option>
+                        <option value="toggle_wallet_block">Blokir / Buka Blokir Dompet</option>
                       </select>
                     </div>
 
-                    {adjustForm.action === "adjust" && (
+                    {["adjust", "adjust_wallet"].includes(adjustForm.action) && (
                       <div>
-                        <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Jumlah Poin (Negatif untuk kurangi)</label>
+                        <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                          {adjustForm.action === "adjust" ? "Jumlah Poin (Negatif untuk kurangi)" : "Jumlah Saldo Rp (Negatif untuk kurangi)"}
+                        </label>
                         <input 
                           id="adjustAmount"
                           type="number" 
                           required 
-                          placeholder="Misal: 50 atau -25"
-                          title="Jumlah Poin"
+                          placeholder={adjustForm.action === "adjust" ? "Misal: 50 atau -25" : "Misal: 50000 atau -20000"}
+                          title="Jumlah"
                           value={adjustForm.amount} 
                           onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
                           className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -1032,19 +1231,21 @@ export default function AdminRewardsPage() {
                       </div>
                     )}
 
-                    <div>
-                      <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
-                      <textarea 
-                        id="adjustReason"
-                        rows={2} 
-                        required
-                        placeholder="Masukkan alasan manipulasi poin..."
-                        title="Alasan Penyesuaian"
-                        value={adjustForm.reason} 
-                        onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                      />
-                    </div>
+                    {adjustForm.action !== "toggle_wallet_block" && (
+                      <div>
+                        <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
+                        <textarea 
+                          id="adjustReason"
+                          rows={2} 
+                          required
+                          placeholder={adjustForm.action.includes("wallet") ? "Masukkan alasan manipulasi saldo..." : "Masukkan alasan manipulasi poin..."}
+                          title="Alasan Penyesuaian"
+                          value={adjustForm.reason} 
+                          onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
+                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                        />
+                      </div>
+                    )}
 
                     <button 
                       type="submit" 
@@ -1057,26 +1258,76 @@ export default function AdminRewardsPage() {
 
                   {/* Customer Transaction Logs */}
                   <div className="space-y-4">
-                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat Poin</h4>
+                    <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-2">
+                      <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat</h4>
+                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setActiveLogsTab("points")}
+                          className={`px-2 py-1 rounded font-bold transition-all ${
+                            activeLogsTab === "points" ? "bg-primary text-white" : "text-muted"
+                          }`}
+                        >
+                          Poin ({customerTxLogs.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveLogsTab("wallet")}
+                          className={`px-2 py-1 rounded font-bold transition-all ${
+                            activeLogsTab === "wallet" ? "bg-primary text-white" : "text-muted"
+                          }`}
+                        >
+                          Dompet ({customerWalletTxLogs.length})
+                        </button>
+                      </div>
+                    </div>
                     
                     {loadingLogs ? (
                       <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-                    ) : customerTxLogs.length === 0 ? (
-                      <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas poin</div>
-                    ) : (
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                        {customerTxLogs.map((tx) => (
-                          <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
-                            <div>
-                              <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
-                              <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                    ) : activeLogsTab === "points" ? (
+                      customerTxLogs.length === 0 ? (
+                        <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas poin</div>
+                      ) : (
+                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                          {customerTxLogs.map((tx) => (
+                            <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
+                              <div>
+                                <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
+                                <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                              </div>
+                              <span className={`font-mono font-black text-xs shrink-0 ${tx.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                {tx.points > 0 ? `+${tx.points}` : tx.points}
+                              </span>
                             </div>
-                            <span className={`font-mono font-black text-xs shrink-0 ${tx.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                              {tx.points > 0 ? `+${tx.points}` : tx.points}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )
+                    ) : (
+                      customerWalletTxLogs.length === 0 ? (
+                        <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas dompet</div>
+                      ) : (
+                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                          {customerWalletTxLogs.map((tx) => {
+                            const isPositive = ["topup", "refund", "cashback", "adjust"].includes(tx.type) && tx.status === "success" ? tx.amount > 0 : false;
+                            return (
+                              <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
+                                <div>
+                                  <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[8px] px-1 py-0.2 bg-gray-200 dark:bg-gray-800 text-muted uppercase font-black tracking-wide rounded">
+                                      {tx.type}
+                                    </span>
+                                    <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                                  </div>
+                                </div>
+                                <span className={`font-mono font-black text-xs shrink-0 ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                  {isPositive ? "+" : "-"}Rp {Math.abs(Number(tx.amount)).toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
                     )}
                   </div>
                 </div>

@@ -49,7 +49,7 @@ export default function AdminRewardsPage() {
   // Modal states
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [currentReward, setCurrentReward] = useState<any>(null); // null = add, otherwise edit
-  const [rewardForm, setRewardForm] = useState({
+  const [rewardForm, setRewardForm] = useState<any>({
     title: "",
     description: "",
     category: "voucher",
@@ -160,7 +160,13 @@ export default function AdminRewardsPage() {
     try {
       const url = "/api/admin/rewards";
       const method = currentReward ? "PUT" : "POST";
-      const bodyPayload = currentReward ? { id: currentReward.id, ...rewardForm } : rewardForm;
+      const cleanedForm = {
+        ...rewardForm,
+        minPoints: !rewardForm.minPoints ? 0 : Number(rewardForm.minPoints),
+        discountPercent: !rewardForm.discountPercent ? 0 : Number(rewardForm.discountPercent),
+        cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount)
+      };
+      const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
 
       const res = await fetch(url, {
         method,
@@ -839,7 +845,7 @@ export default function AdminRewardsPage() {
                       min={1} 
                       max={100}
                       value={rewardForm.discountPercent} 
-                      onChange={e => setRewardForm({ ...rewardForm, discountPercent: Number(e.target.value) })} 
+                      onChange={e => setRewardForm({ ...rewardForm, discountPercent: e.target.value === "" ? "" : Number(e.target.value) })} 
                       placeholder="10"
                       title="Diskon (%)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -855,7 +861,7 @@ export default function AdminRewardsPage() {
                       type="number" 
                       min={0}
                       value={rewardForm.cashbackAmount} 
-                      onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: Number(e.target.value) })} 
+                      onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: e.target.value === "" ? "" : Number(e.target.value) })} 
                       placeholder="5000"
                       title="Nominal Saldo Cashback (Rp)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -872,7 +878,7 @@ export default function AdminRewardsPage() {
                       required 
                       min={0}
                       value={rewardForm.minPoints} 
-                      onChange={e => setRewardForm({ ...rewardForm, minPoints: Number(e.target.value) })} 
+                      onChange={e => setRewardForm({ ...rewardForm, minPoints: e.target.value === "" ? "" : Number(e.target.value) })} 
                       placeholder="50"
                       title="Minimal Poin"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 

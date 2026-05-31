@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, CheckCheck, Loader2, ShoppingBag, CalendarDays, Info } from "lucide-react";
+import { Bell, CheckCheck, Loader2, ShoppingBag, CalendarDays, Info, Award, Gift } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -10,7 +10,15 @@ import { id as localeId } from "date-fns/locale";
 import { SkeletonOrderItem } from "@/components/Skeleton";
 
 interface Notification {
-  id: string; title: string; message: string; is_read: boolean; type: string; created_at: string;
+  id: string; 
+  title: string; 
+  message: string; 
+  is_read: boolean; 
+  type: string; 
+  created_at: string;
+  points?: number;
+  order_id?: string;
+  status_badge?: string;
 }
 
 export default function CustomerNotificationsPage() {
@@ -55,7 +63,30 @@ export default function CustomerNotificationsPage() {
     switch (type) {
       case "order": return <ShoppingBag className="w-5 h-5 text-primary" />;
       case "reservation": return <CalendarDays className="w-5 h-5 text-blue-500" />;
+      case "point": return <Award className="w-5 h-5 text-orange-500" />;
+      case "new_reward": return <Gift className="w-5 h-5 text-emerald-500" />;
       default: return <Info className="w-5 h-5 text-muted" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+      case "pending reward":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/50 uppercase">Pending</span>;
+      case "berhasil":
+      case "reward masuk":
+      case "redeem berhasil":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50 uppercase">Berhasil</span>;
+      case "dibatalkan":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700/50 uppercase">Batal</span>;
+      case "gagal":
+      case "gagal redeem":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50 uppercase">Gagal</span>;
+      case "baru":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50 uppercase">Baru</span>;
+      default:
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-gray-50 text-gray-500 border border-gray-150 uppercase">{status}</span>;
     }
   };
 
@@ -95,7 +126,7 @@ export default function CustomerNotificationsPage() {
         <div className="text-center py-20">
           <Bell className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
           <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Belum Ada Notifikasi</h3>
-          <p className="text-muted mt-2">Notifikasi pesanan dan reservasi akan muncul di sini.</p>
+          <p className="text-muted mt-2">Notifikasi pesanan, reservasi, dan reward point loyalitas akan muncul di sini.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -107,11 +138,35 @@ export default function CustomerNotificationsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className={`font-semibold ${!notif.is_read ? "text-text-light dark:text-text-dark" : "text-muted"}`}>{notif.title}</h3>
-                    {!notif.is_read && <div className="w-2.5 h-2.5 bg-primary rounded-full shrink-0 mt-1.5" />}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className={`font-semibold ${!notif.is_read ? "text-text-light dark:text-text-dark" : "text-muted"}`}>{notif.title}</h3>
+                      {notif.status_badge && getStatusBadge(notif.status_badge)}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {notif.points !== undefined && notif.points !== null && (
+                        <span className={`font-mono font-black text-xs px-2 py-0.5 rounded-md ${
+                          notif.points > 0 
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" 
+                            : notif.points < 0 
+                            ? "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400"
+                            : "bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-405"
+                        }`}>
+                          {notif.points > 0 ? `+${notif.points}` : notif.points} Point
+                        </span>
+                      )}
+                      {!notif.is_read && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
+                    </div>
                   </div>
                   <p className="text-sm text-muted mt-1 leading-relaxed">{notif.message}</p>
-                  <p className="text-xs text-muted/70 mt-2">{format(new Date(notif.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</p>
+                  
+                  <div className="flex flex-wrap justify-between items-center gap-2 mt-2 pt-2 border-t border-gray-100/50 dark:border-gray-800/30 text-[10px] text-muted/70">
+                    <span>{format(new Date(notif.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })} WIB</span>
+                    {notif.order_id && (
+                      <span className="font-mono font-bold bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded text-muted">
+                        Order ID: #{notif.order_id.substring(0, 8).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

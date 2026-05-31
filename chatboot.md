@@ -1,256 +1,141 @@
-Tambahkan fitur **Sistem Reward Point Pelanggan** yang lengkap untuk aplikasi.
+Tambahkan fitur notifikasi khusus untuk sistem reward point pelanggan dan tampilkan langsung di halaman Notifikasi yang sudah ada.
 
-## 1. Sistem Point Pelanggan
+Tujuan:
+Setiap aktivitas terkait point harus otomatis muncul sebagai notifikasi pelanggan, sejajar dengan notifikasi pesanan, reservasi, pembayaran, dan sistem lainnya.
 
-Buat fitur reward point untuk pelanggan dengan aturan berikut:
+Gunakan format notifikasi yang sama dengan daftar notifikasi existing agar tampilan tetap konsisten.
 
-### Penambahan Point
+Jenis notifikasi point yang wajib ditambahkan:
 
-* Setiap pelanggan yang berhasil melakukan pesanan akan mendapatkan reward point.
-* Besaran point **ditentukan secara acak** oleh sistem.
-* Rentang point acak dapat diatur admin (contoh: minimal 10 point sampai maksimal 100 point).
-* Point **tidak langsung masuk saat order dibuat**.
-* Point masuk **hanya ketika status pesanan = selesai / completed**.
-* Saat pesanan masih diproses, point disimpan sementara dengan status **Ditahan / Pending Reward**.
-* Jika pesanan dibatalkan:
+1. Point Ditahan
+   Muncul ketika pelanggan membuat pesanan dan sistem sudah menghitung reward point, tetapi pesanan belum selesai.
 
-  * point pending otomatis dibatalkan
-  * tidak ditambahkan ke akun pelanggan
+Judul:
+Reward Point Ditahan
 
-### Status Point yang wajib ada
-
-Tambahkan status point lengkap:
-
-* Pending / Ditahan
-* Berhasil Ditambahkan
-* Digunakan untuk Redeem
-* Dibatalkan
-* Kadaluarsa (opsional jika admin aktifkan masa berlaku point)
-* Dikurangi manual oleh admin
-* Ditambahkan manual oleh admin
-
-### Riwayat Point Pelanggan
-
-Di halaman pelanggan tampilkan:
-
-* Total point aktif
-* Point pending
-* Point yang pernah digunakan
-* Riwayat lengkap:
-
-  * tanggal
-  * order terkait
-  * jumlah point
-  * status
-  * keterangan
+Isi:
+Point sejumlah +[jumlah point acak] sedang ditahan sementara dan akan masuk ke akun setelah pesanan selesai.
 
 Contoh:
-+35 point — Order selesai
-+20 point — Pending
--100 point — Redeem voucher
-0 point — Dibatalkan
+Point sejumlah +35 sedang ditahan sementara dan akan masuk ke akun setelah pesanan selesai.
 
----
+Tambahkan informasi:
 
-## 2. Halaman Reward / Redeem untuk Pelanggan
+* nomor pesanan
+* tanggal dan jam
+* status: Pending Reward
 
-Tambahkan menu:
-**Reward Saya / Tukar Point**
+Warna/status visual:
 
-Tampilkan daftar reward yang bisa ditukar:
+* pending
+* belum masuk ke total point
 
-* Voucher diskon
-* Gratis makanan/minuman
-* Produk promo
-* Merchandise
-* Cashback
-* Reward custom lainnya
+1. Point Berhasil Ditambahkan
+   Muncul ketika status pesanan berubah menjadi selesai.
 
-Setiap reward tampil:
+Judul:
+Reward Point Berhasil Ditambahkan
 
-* gambar/icon
-* nama reward
-* deskripsi
-* jumlah stock (jika ada)
-* minimal point yang dibutuhkan
-* status aktif/nonaktif
-* tombol Redeem
+Isi:
+Point sejumlah +[jumlah point acak] berhasil ditambahkan ke akun kamu dari pesanan [nomor pesanan].
 
-Jika point pelanggan kurang:
+Tambahkan informasi:
 
-* tombol disable
-* tampil pesan:
-  “Point kamu belum cukup untuk menukar reward ini”
-* tampil juga:
-  “Kurang XX point lagi”
+* total point terbaru pelanggan
+* tanggal dan jam
+* status: Reward Masuk
 
-Jika point cukup:
+Contoh:
+Point sejumlah +42 berhasil ditambahkan ke akun kamu dari pesanan #2C312C. Total point kamu sekarang: 280.
 
-* tombol aktif
-* saat redeem:
+1. Point Dibatalkan
+   Muncul ketika pesanan dibatalkan sebelum selesai.
 
-  * tampil popup konfirmasi
-  * kurangi point otomatis
-  * simpan ke akun pelanggan
+Judul:
+Reward Point Dibatalkan
 
-Hasil redeem masuk ke akun pelanggan:
+Isi:
+Point dari pesanan [nomor pesanan] dibatalkan karena pesanan tidak selesai.
 
-* voucher masuk ke daftar voucher
-* makanan/minuman masuk ke reward milik pelanggan
-* cashback masuk ke wallet/saldo
-* reward lain masuk ke inventory pelanggan
+Tambahkan informasi:
 
-Tambahkan status redeem:
+* jumlah point yang sebelumnya ditahan
+* tanggal dan jam
+* status: Dibatalkan
 
-* Menunggu Verifikasi
-* Berhasil
-* Dipakai
-* Kadaluarsa
-* Dibatalkan
+Contoh:
+Point dari pesanan #2C312C dibatalkan karena pesanan tidak selesai.
 
----
+1. Point Dipakai untuk Redeem
+   Muncul ketika pelanggan berhasil menukar point dengan reward.
 
-## 3. Dashboard Admin – Manajemen Reward Point
+Judul:
+Reward Berhasil Ditukar
 
-Buat panel admin lengkap.
+Isi:
+Kamu berhasil menukar [jumlah point] point untuk [nama reward].
 
-### Pengaturan Point
+Contoh:
+Kamu berhasil menukar 100 point untuk Voucher Diskon 10%.
 
-Admin dapat mengatur:
+Tambahkan informasi:
 
-* minimal point random
-* maksimal point random
-* point aktif / nonaktif
-* point berlaku berapa hari
-* point per transaksi maksimal
-* bonus point event tertentu
-* bonus point hari tertentu
-* bonus point pelanggan baru
-* bonus ulang tahun
-* multiplier x2 x3
+* jumlah point yang dipotong
+* reward yang didapat
+* tanggal dan jam
+* status: Redeem Berhasil
 
-### Manajemen Redeem
+1. Point Tidak Cukup
+   Muncul ketika pelanggan mencoba redeem tetapi point belum memenuhi syarat.
 
-Admin bisa:
+Judul:
+Point Tidak Cukup
 
-* tambah reward baru
-* edit reward
-* hapus reward
-* aktif/nonaktif reward
-* atur stock reward
-* atur minimal point redeem
-* atur reward kategori:
+Isi:
+Point kamu belum cukup untuk menukar [nama reward]. Kurang [selisih point] point lagi.
 
-  * voucher
-  * makanan
-  * cashback
-  * produk
-  * custom
+Contoh:
+Point kamu belum cukup untuk menukar Voucher Diskon 10%. Kurang 15 point lagi.
 
-### Manajemen Pelanggan
+Tambahkan informasi:
 
-Admin bisa:
+* minimal point redeem
+* status: Gagal Redeem
 
-* lihat total point tiap pelanggan
-* lihat pending point
-* tambah point manual
-* kurangi point manual
-* reset point
-* blok redeem pelanggan tertentu
-* lihat histori point pelanggan
-* filter berdasarkan tanggal/status
+1. Reward Baru Tersedia
+   Muncul ketika admin menambahkan reward baru ke sistem.
 
-### Statistik Reward
+Judul:
+Reward Baru Tersedia
 
-Dashboard statistik:
+Isi:
+Reward baru [nama reward] sekarang tersedia dan bisa ditukar dengan [jumlah point].
 
-* total point dibagikan
-* total point pending
-* total point digunakan
-* reward paling sering ditukar
-* pelanggan point tertinggi
-* grafik reward harian / mingguan / bulanan
+Contoh:
+Reward baru Voucher Gratis Dessert sekarang tersedia dan bisa ditukar dengan 120 point.
 
----
+Tambahkan informasi:
 
-## 4. Integrasi Order
+* kategori reward
+* status: Baru
 
-Saat order dibuat:
+Integrasi sistem:
 
-* sistem hitung estimasi point acak
-* simpan status pending
+* Saat pesanan dibuat, buat notifikasi point ditahan.
+* Saat pesanan selesai, ubah point pending menjadi point berhasil ditambahkan dan tampilkan notifikasi baru.
+* Saat pesanan dibatalkan, batalkan point pending dan tampilkan notifikasi point dibatalkan.
+* Saat redeem berhasil, kurangi point dan tampilkan notifikasi penukaran berhasil.
+* Saat redeem gagal karena point tidak cukup, tampilkan notifikasi gagal.
+* Saat admin menambah reward baru, kirim notifikasi ke pelanggan jika fitur notifikasi promo/reward aktif.
 
-Saat order selesai:
+Tampilan notifikasi:
 
-* pending -> berhasil ditambahkan
+* urutkan dari terbaru
+* tampilkan judul, isi, tanggal, jam, dan status
+* tampilkan nomor pesanan jika ada
+* tampilkan jumlah point dengan jelas
+* tampilkan badge status seperti Pending, Berhasil, Dibatalkan, Gagal, Baru
+* dukung unread dan read
+* notifikasi point harus menyatu dengan daftar notifikasi utama tanpa membuat halaman baru
 
-Saat order dibatalkan:
-
-* pending -> dibatalkan
-
-Saat pelanggan redeem:
-
-* cek saldo point
-* jika cukup:
-
-  * kurangi point
-  * simpan reward
-* jika tidak cukup:
-
-  * tampil alert
-
-Pastikan semua transaksi point:
-
-* tersimpan database
-* aman dari double redeem
-* realtime update di pelanggan
-* realtime update di admin
-* support notifikasi
-
----
-
-## 5. Notifikasi
-
-Pelanggan menerima notifikasi:
-
-* point pending
-* point berhasil masuk
-* point dibatalkan
-* berhasil redeem
-* gagal redeem
-* reward tersedia baru
-
-Admin menerima notifikasi:
-
-* ada redeem baru
-* stok reward habis
-* pelanggan point tinggi
-* ada transaksi point gagal
-
----
-
-## 6. UI/UX
-
-Buat tampilan modern premium:
-
-* card point pelanggan
-* progress menuju reward
-* badge status
-* animasi saat point bertambah
-* confetti saat redeem berhasil
-* warna berbeda tiap status
-* responsive mobile
-* loading & skeleton
-* empty state jika belum ada reward
-
-Pastikan semua fitur berjalan penuh end-to-end:
-
-* database
-* validasi
-* UI pelanggan
-* UI admin
-* history
-* notifikasi
-* keamanan transaksi
-* anti double redeem
-* realtime sync
+Pastikan semua notifikasi point tersimpan di database notification pelanggan dan bisa diupdate secara realtime.

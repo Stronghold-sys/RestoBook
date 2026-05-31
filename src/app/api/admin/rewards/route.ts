@@ -136,10 +136,12 @@ export async function POST(req: NextRequest) {
       for (const c of customers) {
         await supabaseAdmin.from('notifications').insert({
           user_id: c.id,
-          title: 'Reward Baru Tersedia!',
-          message: `Dapatkan reward "${title}" hanya dengan menukar ${minPoints || 0} poin!`,
-          type: 'new_reward',
-          reference_id: newReward.id
+          title: 'Reward Baru Tersedia',
+          message: `Reward baru ${title} sekarang tersedia dan bisa ditukar dengan ${minPoints || 0} point.`,
+          type: 'point',
+          reference_id: newReward.id,
+          points: minPoints || 0,
+          status_badge: 'Baru'
         });
       }
     }

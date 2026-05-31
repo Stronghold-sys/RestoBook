@@ -657,86 +657,107 @@ export default function AdminRewardsPage() {
                         checked={settings.isPointsEnabled} 
                         onChange={e => setSettings({ ...settings, isPointsEnabled: e.target.checked })}
                         className="sr-only peer" 
+                        title="Status Modul Point"
+                        aria-label="Status Modul Point"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
                     </label>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin Random</label>
+                    <label htmlFor="minRandomPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin Random</label>
                     <input 
+                      id="minRandomPoints"
                       type="number" 
                       required
                       min={0}
                       value={settings.minRandomPoints} 
                       onChange={e => setSettings({ ...settings, minRandomPoints: e.target.value })}
+                      placeholder="0"
+                      title="Minimal Poin Random"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Random</label>
+                    <label htmlFor="maxRandomPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Random</label>
                     <input 
+                      id="maxRandomPoints"
                       type="number" 
                       required
                       min={1}
                       value={settings.maxRandomPoints} 
                       onChange={e => setSettings({ ...settings, maxRandomPoints: e.target.value })}
+                      placeholder="100"
+                      title="Maksimal Poin Random"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Masa Aktif Poin (Hari)</label>
+                    <label htmlFor="pointsExpiryDays" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Masa Aktif Poin (Hari)</label>
                     <input 
+                      id="pointsExpiryDays"
                       type="number" 
                       required
                       min={1}
                       value={settings.pointsExpiryDays} 
                       onChange={e => setSettings({ ...settings, pointsExpiryDays: e.target.value })}
+                      placeholder="365"
+                      title="Masa Aktif Poin (Hari)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Per Transaksi</label>
+                    <label htmlFor="maxPointsPerTransaction" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Per Transaksi</label>
                     <input 
+                      id="maxPointsPerTransaction"
                       type="number" 
                       required
                       min={1}
                       value={settings.maxPointsPerTransaction} 
                       onChange={e => setSettings({ ...settings, maxPointsPerTransaction: e.target.value })}
+                      placeholder="1000"
+                      title="Maksimal Poin Per Transaksi"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Pelanggan Baru</label>
+                    <label htmlFor="bonusNewCustomer" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Pelanggan Baru</label>
                     <input 
+                      id="bonusNewCustomer"
                       type="number" 
                       required
                       min={0}
                       value={settings.bonusNewCustomer} 
                       onChange={e => setSettings({ ...settings, bonusNewCustomer: e.target.value })}
+                      placeholder="25"
+                      title="Bonus Pelanggan Baru"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Ulang Tahun Pelanggan</label>
+                    <label htmlFor="bonusBirthday" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Ulang Tahun Pelanggan</label>
                     <input 
+                      id="bonusBirthday"
                       type="number" 
                       required
                       min={0}
                       value={settings.bonusBirthday} 
                       onChange={e => setSettings({ ...settings, bonusBirthday: e.target.value })}
+                      placeholder="50"
+                      title="Bonus Ulang Tahun Pelanggan"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Poin Multiplier Global (x1, x2, x3)</label>
+                    <label htmlFor="multiplier" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Poin Multiplier Global (x1, x2, x3)</label>
                     <select 
+                      id="multiplier"
                       value={settings.multiplier} 
                       onChange={e => setSettings({ ...settings, multiplier: Number(e.target.value) })}
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
@@ -779,24 +800,27 @@ export default function AdminRewardsPage() {
 
               <form onSubmit={handleSaveReward} className="overflow-y-auto p-6 space-y-5 flex-1 custom-scrollbar">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nama / Judul Reward</label>
+                  <label htmlFor="rewardTitle" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nama / Judul Reward</label>
                   <input 
+                    id="rewardTitle"
                     type="text" 
                     required 
                     value={rewardForm.title} 
                     onChange={e => setRewardForm({ ...rewardForm, title: e.target.value })} 
                     placeholder="Contoh: Voucher Diskon 20%" 
+                    title="Nama / Judul Reward"
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Kategori Reward</label>
+                  <label htmlFor="rewardCategory" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Kategori Reward</label>
                   <select 
+                    id="rewardCategory"
                     value={rewardForm.category} 
                     onChange={e => setRewardForm({ ...rewardForm, category: e.target.value })} 
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                    title="Kategori"
+                    title="Kategori Reward"
                   >
                     <option value="voucher">Voucher Diskon</option>
                     <option value="food">Makanan / Minuman</option>
@@ -808,13 +832,16 @@ export default function AdminRewardsPage() {
 
                 {rewardForm.category === "voucher" && (
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Diskon (%)</label>
+                    <label htmlFor="rewardDiscountPercent" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Diskon (%)</label>
                     <input 
+                      id="rewardDiscountPercent"
                       type="number" 
                       min={1} 
                       max={100}
                       value={rewardForm.discountPercent} 
                       onChange={e => setRewardForm({ ...rewardForm, discountPercent: Number(e.target.value) })} 
+                      placeholder="10"
+                      title="Diskon (%)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
@@ -822,12 +849,15 @@ export default function AdminRewardsPage() {
 
                 {rewardForm.category === "cashback" && (
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
+                    <label htmlFor="rewardCashbackAmount" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
                     <input 
+                      id="rewardCashbackAmount"
                       type="number" 
                       min={0}
                       value={rewardForm.cashbackAmount} 
                       onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: Number(e.target.value) })} 
+                      placeholder="5000"
+                      title="Nominal Saldo Cashback (Rp)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
@@ -835,47 +865,56 @@ export default function AdminRewardsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin</label>
+                    <label htmlFor="rewardMinPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin</label>
                     <input 
+                      id="rewardMinPoints"
                       type="number" 
                       required 
                       min={0}
                       value={rewardForm.minPoints} 
                       onChange={e => setRewardForm({ ...rewardForm, minPoints: Number(e.target.value) })} 
+                      placeholder="50"
+                      title="Minimal Poin"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Stok Ketersediaan</label>
+                    <label htmlFor="rewardStock" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Stok Ketersediaan</label>
                     <input 
+                      id="rewardStock"
                       type="number" 
                       value={rewardForm.stock} 
                       onChange={e => setRewardForm({ ...rewardForm, stock: e.target.value })} 
                       placeholder="Kosongkan jika tak terbatas"
+                      title="Stok Ketersediaan"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Deskripsi Reward</label>
+                  <label htmlFor="rewardDescription" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Deskripsi Reward</label>
                   <textarea 
+                    id="rewardDescription"
                     rows={3} 
                     value={rewardForm.description} 
                     onChange={e => setRewardForm({ ...rewardForm, description: e.target.value })} 
                     placeholder="Contoh: Voucher diskon ini berlaku 30 hari untuk makan di tempat."
+                    title="Deskripsi Reward"
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                   />
                 </div>
 
                 <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800 rounded-2xl">
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Image URL / Link Foto Reward</label>
+                  <label htmlFor="rewardImageUrl" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Image URL / Link Foto Reward</label>
                   <input 
+                    id="rewardImageUrl"
                     type="url" 
                     value={rewardForm.imageUrl} 
                     onChange={e => setRewardForm({ ...rewardForm, imageUrl: e.target.value })} 
                     placeholder="https://..." 
+                    title="Image URL / Link Foto Reward"
                     className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" 
                   />
                 </div>
@@ -930,12 +969,13 @@ export default function AdminRewardsPage() {
                     <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Penyesuaian Manual</h4>
                     
                     <div>
-                      <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Pilih Aksi</label>
+                      <label htmlFor="adjustAction" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Pilih Aksi</label>
                       <select 
+                        id="adjustAction"
                         value={adjustForm.action} 
                         onChange={e => setAdjustForm({ ...adjustForm, action: e.target.value })} 
                         className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                        title="Aksi"
+                        title="Pilih Aksi"
                       >
                         <option value="adjust">Tambah / Kurangi Poin</option>
                         <option value="reset">Reset Poin ke 0</option>
@@ -944,11 +984,13 @@ export default function AdminRewardsPage() {
 
                     {adjustForm.action === "adjust" && (
                       <div>
-                        <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Jumlah Poin (Negatif untuk kurangi)</label>
+                        <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Jumlah Poin (Negatif untuk kurangi)</label>
                         <input 
+                          id="adjustAmount"
                           type="number" 
                           required 
                           placeholder="Misal: 50 atau -25"
+                          title="Jumlah Poin"
                           value={adjustForm.amount} 
                           onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
                           className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
@@ -957,11 +999,13 @@ export default function AdminRewardsPage() {
                     )}
 
                     <div>
-                      <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
+                      <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
                       <textarea 
+                        id="adjustReason"
                         rows={2} 
                         required
                         placeholder="Masukkan alasan manipulasi poin..."
+                        title="Alasan Penyesuaian"
                         value={adjustForm.reason} 
                         onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
                         className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 

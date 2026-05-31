@@ -38,7 +38,10 @@ export default function CustomerMenuPage() {
   const [clickCount, setClickCount] = useState(0);
 
   const supabase = createClient();
+  const items = useCartStore(state => state.items);
   const addItem = useCartStore(state => state.addItem);
+  const removeItem = useCartStore(state => state.removeItem);
+  const updateQuantity = useCartStore(state => state.updateQuantity);
 
   useEffect(() => {
     fetchData();
@@ -236,68 +239,108 @@ export default function CustomerMenuPage() {
 
       <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <AnimatePresence>
-          {filteredMenu.map(item => (
-            <motion.div
-              layout
-              key={item.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onClick={() => !item.is_active && handleOutOfStockClick(item)}
-              whileHover={{ y: item.is_active ? -8 : 0, boxShadow: item.is_active ? "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" : "none" }}
-              transition={{ type: "spring", bounce: 0.4 }}
-              className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col transition-all duration-300 ${
-                item.is_active ? "" : "opacity-60 grayscale cursor-pointer"
-              }`}
-            >
-              <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800">
-                <Image
-                  src={item.image_url || "https://placehold.co/400x300?text=Menu"}
-                  alt={item.name}
-                  fill
-                  className="object-cover"
-                />
-                {!item.is_active && (
-                  <div className="absolute top-3 left-3 z-10 bg-red-600 text-white font-black px-3.5 py-1.5 rounded-xl text-[10px] uppercase tracking-widest border border-white shadow-lg">
-                    HABIS
-                  </div>
-                )}
-                <button 
-                  onClick={(e) => toggleFavorite(item.id, e)}
-                  aria-label={favorites.includes(item.id) ? "Hapus dari Favorit" : "Tambah ke Favorit"}
-                  title={favorites.includes(item.id) ? "Hapus dari Favorit" : "Tambah ke Favorit"}
-                  className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-full hover:scale-110 transition-transform z-10"
-                >
-                  <Heart className={`w-5 h-5 ${favorites.includes(item.id) ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-200"}`} />
-                </button>
-              </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-text-light dark:text-text-dark leading-tight">{item.name}</h3>
-                </div>
-                <p className="text-muted text-sm mb-4 line-clamp-2 flex-1">{item.description}</p>
-                
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="font-bold text-lg text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
-                  {item.is_active ? (
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
-                      aria-label="Tambah ke Keranjang"
-                      title="Tambah ke Keranjang"
-                      className="p-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </motion.button>
-                  ) : (
-                    <span className="text-xs font-black uppercase text-red-500 tracking-wider">
-                      Tidak Tersedia
-                    </span>
+          {filteredMenu.map(item => {
+            const cartItem = items.find(i => i.id === item.id);
+            const quantityInCart = cartItem ? cartItem.quantity : 0;
+
+            return (
+              <motion.div
+                layout
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={() => !item.is_active && handleOutOfStockClick(item)}
+                whileHover={{ y: item.is_active ? -8 : 0, boxShadow: item.is_active ? "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" : "none" }}
+                transition={{ type: "spring", bounce: 0.4 }}
+                className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col transition-all duration-300 ${
+                  item.is_active ? "" : "opacity-60 grayscale cursor-pointer"
+                }`}
+              >
+                <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800">
+                  <Image
+                    src={item.image_url || "https://placehold.co/400x300?text=Menu"}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                  />
+                  {!item.is_active && (
+                    <div className="absolute top-3 left-3 z-10 bg-red-600 text-white font-black px-3.5 py-1.5 rounded-xl text-[10px] uppercase tracking-widest border border-white shadow-lg">
+                      HABIS
+                    </div>
                   )}
+                  <button 
+                    onClick={(e) => toggleFavorite(item.id, e)}
+                    aria-label={favorites.includes(item.id) ? "Hapus dari Favorit" : "Tambah ke Favorit"}
+                    title={favorites.includes(item.id) ? "Hapus dari Favorit" : "Tambah ke Favorit"}
+                    className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-full hover:scale-110 transition-transform z-10"
+                  >
+                    <Heart className={`w-5 h-5 ${favorites.includes(item.id) ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-200"}`} />
+                  </button>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg text-text-light dark:text-text-dark leading-tight">{item.name}</h3>
+                  </div>
+                  <p className="text-muted text-sm mb-4 line-clamp-2 flex-1">{item.description}</p>
+                  
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="font-bold text-lg text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
+                    {item.is_active ? (
+                      quantityInCart > 0 ? (
+                        <div className="flex items-center bg-gray-100/80 dark:bg-gray-800/80 border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-1 select-none">
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (quantityInCart === 1) {
+                                removeItem(item.id);
+                                toast.success(`${item.name} dihapus dari keranjang`);
+                              } else {
+                                updateQuantity(item.id, quantityInCart - 1);
+                              }
+                            }}
+                            className="w-7 h-7 rounded-xl bg-gray-200/70 dark:bg-gray-700/70 text-gray-800 dark:text-gray-200 flex items-center justify-center font-extrabold text-sm hover:bg-gray-300/80 dark:hover:bg-gray-600/80 transition-colors"
+                            aria-label="Kurangi Jumlah"
+                            title="Kurangi"
+                          >
+                            -
+                          </motion.button>
+                          <span className="font-extrabold text-text-light dark:text-text-dark text-sm px-4 min-w-[32px] text-center">{quantityInCart}</span>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, quantityInCart + 1);
+                            }}
+                            className="w-7 h-7 text-gray-800 dark:text-gray-200 flex items-center justify-center font-extrabold text-sm hover:text-primary transition-colors"
+                            aria-label="Tambah Jumlah"
+                            title="Tambah"
+                          >
+                            +
+                          </motion.button>
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
+                          aria-label="Tambah ke Keranjang"
+                          title="Tambah ke Keranjang"
+                          className="p-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-colors"
+                        >
+                          <Plus className="w-5 h-5" />
+                        </motion.button>
+                      )
+                    ) : (
+                      <span className="text-xs font-black uppercase text-red-500 tracking-wider">
+                        Tidak Tersedia
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </motion.div>
 

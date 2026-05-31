@@ -148,7 +148,9 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#666' }}>Pembayaran:</span>
           <span className="font-bold uppercase">
-            {order.payment_method === "cash" ? "Tunai" : "Non-Tunai"}
+            {(order.order_type === "dine_in" || order.order_type === "takeaway")
+              ? "Non-Tunai"
+              : (order.payment_method === "cash" ? "Tunai" : "Non-Tunai")}
           </span>
         </div>
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -89,7 +89,9 @@ export async function downloadReceiptPDF({
   doc.text(`Tipe: ${typeStr}`, 5, y);
   
   y += 4;
-  const payStr = order.payment_method === "cash" ? "Tunai" : "Non-Tunai";
+  const payStr = (order.order_type === "dine_in" || order.order_type === "takeaway")
+    ? "Non-Tunai"
+    : (order.payment_method === "cash" ? "Tunai" : "Non-Tunai");
   doc.text(`Pembayaran: ${payStr}`, 5, y);
   
   y += 4;

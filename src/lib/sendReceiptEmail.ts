@@ -116,7 +116,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
 
     // Format payment method text
     let displayPayment = 'NON TUNAI';
-    if (order.payment_method?.toLowerCase() === 'cash') {
+    if (order.order_type === 'dine_in' || order.order_type === 'takeaway') {
+      displayPayment = 'NON TUNAI';
+    } else if (order.payment_method?.toLowerCase() === 'cash') {
       displayPayment = 'TUNAI';
     }
 

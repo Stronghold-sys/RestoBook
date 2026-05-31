@@ -364,6 +364,12 @@ export default function CartPage() {
   }, [orderType]);
 
   useEffect(() => {
+    if (orderType === "dine_in" || orderType === "takeaway") {
+      setPaymentMethod("non_cash");
+    }
+  }, [orderType]);
+
+  useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isOrderCompleted.current && selectedTableRef.current) {
         supabase.from("tables").update({ status: "available" }).eq("id", selectedTableRef.current);
@@ -1029,14 +1035,22 @@ export default function CartPage() {
 
             <div>
               <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Metode Pembayaran</h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button onClick={() => setPaymentMethod("cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                  <Banknote className="w-6 h-6" /><span className="font-bold text-xs uppercase">Tunai</span>
-                </button>
-                <button onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                  <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
-                </button>
-              </div>
+              {orderType === "delivery" ? (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button onClick={() => setPaymentMethod("cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Banknote className="w-6 h-6" /><span className="font-bold text-xs uppercase">Tunai</span>
+                  </button>
+                  <button onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 mb-4">
+                  <div className="py-4 rounded-2xl flex flex-col items-center gap-2 border-2 border-primary bg-primary/5 text-primary">
+                    <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

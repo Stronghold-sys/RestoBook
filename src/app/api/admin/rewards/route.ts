@@ -105,11 +105,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount } = body;
+    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback } = body;
 
     if (!title || !category) {
       return NextResponse.json({ error: 'Judul dan Kategori harus diisi' }, { status: 400 });
     }
+
+    const finalCashback = isAutoCashback ? (Number(minPoints || 0) * 100) : (Number(cashbackAmount || 0));
 
     const { data: newReward, error: insertError } = await supabaseAdmin
       .from('rewards')
@@ -121,7 +123,8 @@ export async function POST(req: NextRequest) {
         stock: stock === '' ? null : Number(stock),
         image_url: imageUrl || '',
         discount_percent: discountPercent || 10,
-        cashback_amount: cashbackAmount || 0,
+        cashback_amount: finalCashback,
+        is_auto_cashback: !!isAutoCashback,
         is_active: true
       })
       .select()
@@ -162,11 +165,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isActive } = body;
+    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID Reward tidak disertakan' }, { status: 400 });
     }
+
+    const finalCashback = isAutoCashback ? (Number(minPoints || 0) * 100) : (Number(cashbackAmount || 0));
 
     const { data: updatedReward, error: updateError } = await supabaseAdmin
       .from('rewards')
@@ -178,7 +183,8 @@ export async function PUT(req: NextRequest) {
         stock: stock === '' ? null : Number(stock),
         image_url: imageUrl,
         discount_percent: discountPercent,
-        cashback_amount: cashbackAmount,
+        cashback_amount: finalCashback,
+        is_auto_cashback: !!isAutoCashback,
         is_active: isActive,
         updated_at: new Date().toISOString()
       })

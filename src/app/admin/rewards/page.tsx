@@ -57,7 +57,8 @@ export default function AdminRewardsPage() {
     stock: "",
     imageUrl: "",
     discountPercent: 10,
-    cashbackAmount: 0
+    cashbackAmount: 0,
+    isAutoCashback: false
   });
 
   // Customer manual adjustment modal
@@ -135,7 +136,8 @@ export default function AdminRewardsPage() {
         stock: reward.stock !== null ? String(reward.stock) : "",
         imageUrl: reward.image_url || "",
         discountPercent: reward.discount_percent || 10,
-        cashbackAmount: reward.cashback_amount || 0
+        cashbackAmount: reward.cashback_amount || 0,
+        isAutoCashback: !!reward.is_auto_cashback
       });
     } else {
       setCurrentReward(null);
@@ -147,7 +149,8 @@ export default function AdminRewardsPage() {
         stock: "",
         imageUrl: "",
         discountPercent: 10,
-        cashbackAmount: 0
+        cashbackAmount: 0,
+        isAutoCashback: false
       });
     }
     setShowRewardModal(true);
@@ -164,7 +167,8 @@ export default function AdminRewardsPage() {
         ...rewardForm,
         minPoints: !rewardForm.minPoints ? 0 : Number(rewardForm.minPoints),
         discountPercent: !rewardForm.discountPercent ? 0 : Number(rewardForm.discountPercent),
-        cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount)
+        cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount),
+        isAutoCashback: !!rewardForm.isAutoCashback
       };
       const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
 
@@ -537,7 +541,7 @@ export default function AdminRewardsPage() {
 
                           {reward.category === "cashback" && (
                             <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3 rounded-xl text-xs text-emerald-700 dark:text-emerald-400 font-bold">
-                              Jumlah Saldo: Rp {Number(reward.cashback_amount || 0).toLocaleString("id-ID")}
+                              Jumlah Saldo: Rp {Number(reward.cashback_amount || 0).toLocaleString("id-ID")} {reward.is_auto_cashback ? "(Otomatis)" : ""}
                             </div>
                           )}
                         </div>
@@ -854,18 +858,42 @@ export default function AdminRewardsPage() {
                 )}
 
                 {rewardForm.category === "cashback" && (
-                  <div>
-                    <label htmlFor="rewardCashbackAmount" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
-                    <input 
-                      id="rewardCashbackAmount"
-                      type="number" 
-                      min={0}
-                      value={rewardForm.cashbackAmount} 
-                      onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: e.target.value === "" ? "" : Number(e.target.value) })} 
-                      placeholder="5000"
-                      title="Nominal Saldo Cashback (Rp)"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                    />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <div>
+                        <label htmlFor="isAutoCashbackSwitch" className="text-xs font-bold text-text-light dark:text-text-dark cursor-pointer">Pemberian Saldo Otomatis</label>
+                        <p className="text-[10px] text-muted font-medium mt-0.5">Cashback otomatis bernilai Rp 100 per Poin penukaran</p>
+                      </div>
+                      <input 
+                        id="isAutoCashbackSwitch"
+                        type="checkbox" 
+                        checked={rewardForm.isAutoCashback}
+                        onChange={e => setRewardForm({ ...rewardForm, isAutoCashback: e.target.checked })}
+                        className="w-4 h-4 text-primary rounded outline-none cursor-pointer"
+                        title="Pemberian Saldo Otomatis"
+                      />
+                    </div>
+
+                    {!rewardForm.isAutoCashback ? (
+                      <div>
+                        <label htmlFor="rewardCashbackAmount" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
+                        <input 
+                          id="rewardCashbackAmount"
+                          type="number" 
+                          min={0}
+                          value={rewardForm.cashbackAmount} 
+                          onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: e.target.value === "" ? "" : Number(e.target.value) })} 
+                          placeholder="5000"
+                          title="Nominal Saldo Cashback (Rp)"
+                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-primary/5 rounded-xl border border-primary/10 text-primary text-xs font-bold flex items-center gap-2">
+                        <Wallet className="w-4 h-4 shrink-0" />
+                        <span>Estimasi Cashback: Rp {(Number(rewardForm.minPoints || 0) * 100).toLocaleString("id-ID")} (Otomatis)</span>
+                      </div>
+                    )}
                   </div>
                 )}
 

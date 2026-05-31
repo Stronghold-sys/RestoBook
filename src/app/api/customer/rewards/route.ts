@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     // Get user's redemption logs
     const { data: redemptions, error: redemptionsError } = await supabaseAdmin
       .from('reward_redemptions')
-      .select('*, rewards(title, category)')
+      .select('*, rewards(title, category, cashback_amount, is_auto_cashback)')
       .eq('customer_id', profile.id)
       .order('created_at', { ascending: false });
 

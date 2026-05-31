@@ -54,6 +54,131 @@ export default function OrderTrackingPage() {
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
   const supabase = createClient();
 
+  const [profileData, setProfileData] = useState<any>(null);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [submittingTopUp, setSubmittingTopUp] = useState(false);
+  const [selectedPaymentOption, setSelectedPaymentOption] = useState<"duitku" | "wallet">("duitku");
+  const [payingViaWallet, setPayingViaWallet] = useState(false);
+
+  const fetchProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, wallet_balance, is_wallet_blocked")
+        .eq("user_id", session.user.id)
+        .single();
+      if (data) {
+        setProfileData(data);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    const channel = supabase.channel("order_profile_realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
+        fetchProfile();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleTopUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(topUpAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Nominal top up tidak valid");
+      return;
+    }
+
+    if (amount < 10000) {
+      toast.error("Minimal top up adalah Rp 10.000");
+      return;
+    }
+
+    setSubmittingTopUp(true);
+    const topupToast = toast.loading("Memproses request top up...");
+    try {
+      const res = await fetch("/api/customer/wallet/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Gagal membuat invoice top up");
+
+      toast.dismiss(topupToast);
+      setShowTopUpModal(false);
+      setTopUpAmount("");
+
+      // Use Duitku Pop if available
+      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+        (window as any).checkout.process(data.reference, {
+          successEvent: function(result: any) {
+            console.log("Duitku Wallet Topup Success:", result);
+            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
+            fetchProfile();
+          },
+          pendingEvent: function(result: any) {
+            console.log("Duitku Wallet Topup Pending:", result);
+            toast("Menunggu pembayaran...", { icon: "⏳" });
+            fetchProfile();
+          },
+          errorEvent: function(result: any) {
+            console.error("Duitku Wallet Topup Error:", result);
+            toast.error("Pembayaran dibatalkan.");
+            fetchProfile();
+          },
+          closeEvent: function() {
+            console.log("Duitku Pop Closed.");
+            fetchProfile();
+          }
+        });
+      } else if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error("Gagal mengunduh tautan pembayaran.");
+      }
+    } catch (err: any) {
+      toast.error(err.message, { id: topupToast });
+    } finally {
+      setSubmittingTopUp(false);
+    }
+  };
+
+  const handlePayViaWallet = async () => {
+    if (payingViaWallet) return;
+    setPayingViaWallet(true);
+    const pToast = toast.loading("Memproses pembayaran via Saldo Dompet...");
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'pay_order_via_wallet',
+          orderId: id
+        })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal memproses pembayaran");
+
+      toast.success("Pembayaran Berhasil via Saldo Dompet!", { id: pToast });
+      fetchOrderDetails();
+      fetchProfile();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal melakukan pembayaran", { id: pToast });
+    } finally {
+      setPayingViaWallet(false);
+    }
+  };
+
+
   useEffect(() => {
     if (id) fetchOrderDetails();
     const channel = supabase.channel(`order-${id}`)
@@ -712,7 +837,7 @@ export default function OrderTrackingPage() {
             </div>
 
             {!isPaid && !isCancelled && (
-              <div className="mt-6 pt-6 border-t border-border-light dark:border-border-dark">
+              <div className="mt-6 pt-6 border-t border-border-light dark:border-border-dark space-y-6">
                 {order.payment_method === "cash" ? (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
                     <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -721,32 +846,114 @@ export default function OrderTrackingPage() {
                     </p>
                   </motion.div>
                 ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    {timeLeft !== null && (
-                      <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-2xl flex flex-col items-center gap-1.5 mb-2">
-                        <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                          <Clock className="w-4 h-4 animate-pulse" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Sisa Waktu Pembayaran</span>
-                        </div>
-                        <div className="text-xl font-black font-mono text-orange-700 dark:text-orange-300">
-                          {formatTimeLeft(timeLeft)}
-                        </div>
-                        <p className="text-[10px] text-orange-600 dark:text-orange-400/80 font-bold text-center leading-relaxed mt-1">
-                          Segera selesaikan pembayaran Anda sebelum batas waktu habis!
+                  <div className="space-y-4">
+                    {/* Payment Option Selector */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentOption("duitku")}
+                        className={`py-3 rounded-2xl flex flex-col items-center gap-1 border-2 transition-all ${
+                          selectedPaymentOption === "duitku"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"
+                        }`}
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        <span className="font-bold text-[10px] uppercase">Online / Transfer</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentOption("wallet")}
+                        className={`py-3 rounded-2xl flex flex-col items-center gap-1 border-2 transition-all ${
+                          selectedPaymentOption === "wallet"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"
+                        }`}
+                      >
+                        <Wallet className="w-5 h-5" />
+                        <span className="font-bold text-[10px] uppercase">Dompetku</span>
+                      </button>
+                    </div>
+
+                    {selectedPaymentOption === "duitku" ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                        {timeLeft !== null && (
+                          <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-2xl flex flex-col items-center gap-1.5 mb-2">
+                            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                              <Clock className="w-4 h-4 animate-pulse" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Sisa Waktu Pembayaran</span>
+                            </div>
+                            <div className="text-xl font-black font-mono text-orange-700 dark:text-orange-300">
+                              {formatTimeLeft(timeLeft)}
+                            </div>
+                            <p className="text-[10px] text-orange-600 dark:text-orange-400/80 font-bold text-center leading-relaxed mt-1">
+                              Segera selesaikan pembayaran Anda sebelum batas waktu habis!
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          onClick={handlePayDuitku}
+                          disabled={paying}
+                          className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+                        >
+                          {paying ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Bayar Sekarang</>}
+                        </button>
+                        <p className="text-[10px] text-center text-muted font-bold uppercase tracking-widest">
+                          Aman & Terverifikasi Otomatis
                         </p>
-                      </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                        {profileData && (
+                          <div className={`p-4 rounded-2xl border transition-all ${
+                            profileData.wallet_balance >= Number(order.total_amount)
+                              ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400"
+                              : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+                          }`}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <Wallet className="w-5 h-5 shrink-0" />
+                                <div className="text-left min-w-0">
+                                  <p className="text-[10px] font-black uppercase tracking-wider opacity-85 leading-tight">Saldo Dompet Anda</p>
+                                  <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                                </div>
+                              </div>
+                              {profileData.wallet_balance < Number(order.total_amount) && (
+                                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {profileData && profileData.wallet_balance < Number(order.total_amount) ? (
+                          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/50 font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                            <div className="flex items-start gap-2 text-left">
+                              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                              <span className="leading-relaxed">Saldo Anda kurang sebesar <span className="font-black">Rp {(Number(order.total_amount) - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowTopUpModal(true)}
+                              className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[11px] rounded-xl transition-all uppercase tracking-wider self-stretch sm:self-center shrink-0 shadow-md flex items-center justify-center gap-1.5"
+                            >
+                              <span>⚡</span> Isi Saldo Sekarang
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handlePayViaWallet}
+                            disabled={payingViaWallet}
+                            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+                          >
+                            {payingViaWallet ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Wallet className="w-6 h-6" /> Bayar Menggunakan Dompetku</>}
+                          </button>
+                        )}
+                        <p className="text-[10px] text-center text-muted font-bold uppercase tracking-widest">
+                          Pembayaran aman via e-wallet internal
+                        </p>
+                      </motion.div>
                     )}
-                    <button
-                      onClick={handlePayDuitku}
-                      disabled={paying}
-                      className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
-                    >
-                      {paying ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Bayar Sekarang</>}
-                    </button>
-                    <p className="text-[10px] text-center text-muted font-bold uppercase tracking-widest">
-                      Aman & Terverifikasi Otomatis
-                    </p>
-                  </motion.div>
+                  </div>
                 )}
               </div>
             )}
@@ -991,6 +1198,73 @@ export default function OrderTrackingPage() {
                      <Printer className="w-3.5 h-3.5" /> Cetak Kwitansi
                    </button>
                 </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. TOP UP MODAL */}
+      <AnimatePresence>
+        {showTopUpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTopUpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10">
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
+                </h3>
+                <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-150 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
+                <div>
+                  <label htmlFor="orderTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
+                    <input 
+                      id="orderTopUpAmountInput"
+                      type="number" 
+                      required 
+                      min={10000}
+                      value={topUpAmount} 
+                      onChange={e => setTopUpAmount(e.target.value)} 
+                      placeholder="Contoh: 50000" 
+                      title="Nominal Isi Saldo (Rp)"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                  <span className="text-[9px] text-muted font-medium mt-1 block font-bold">Minimal Rp 10.000</span>
+                </div>
+
+                {/* Quick Nominal Selectors */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block font-bold">Pilih Cepat</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
+                      <button
+                        key={nom}
+                        type="button"
+                        onClick={() => setTopUpAmount(String(nom))}
+                        className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                          topUpAmount === String(nom)
+                            ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
+                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
+                        }`}
+                      >
+                        Rp {nom.toLocaleString('id-ID').replace(',00', '')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submittingTopUp}
+                  className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                >
+                  {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

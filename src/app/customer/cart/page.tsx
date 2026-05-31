@@ -169,6 +169,11 @@ export default function CartPage() {
 
   // Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Wallet Top Up States inside checkout
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [submittingTopUp, setSubmittingTopUp] = useState(false);
 
   // Delivery Form States
   const [deliveryName, setDeliveryName] = useState("");
@@ -343,6 +348,71 @@ export default function CartPage() {
       if (data) {
         setProfileData(data);
       }
+    }
+  };
+
+  const handleTopUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(topUpAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Nominal top up tidak valid");
+      return;
+    }
+
+    if (amount < 10000) {
+      toast.error("Minimal top up adalah Rp 10.000");
+      return;
+    }
+
+    setSubmittingTopUp(true);
+    const topupToast = toast.loading("Memproses request top up...");
+    try {
+      const res = await fetch("/api/customer/wallet/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Gagal membuat invoice top up");
+
+      toast.dismiss(topupToast);
+      setShowTopUpModal(false);
+      setTopUpAmount("");
+
+      // Use Duitku Pop if available
+      if (data.reference && typeof (window as any).checkout !== 'undefined') {
+        (window as any).checkout.process(data.reference, {
+          successEvent: function(result: any) {
+            console.log("Duitku Wallet Topup Success:", result);
+            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
+            fetchProfile();
+          },
+          pendingEvent: function(result: any) {
+            console.log("Duitku Wallet Topup Pending:", result);
+            toast("Menunggu pembayaran...", { icon: "⏳" });
+            fetchProfile();
+          },
+          errorEvent: function(result: any) {
+            console.error("Duitku Wallet Topup Error:", result);
+            toast.error("Pembayaran dibatalkan.");
+            fetchProfile();
+          },
+          closeEvent: function() {
+            console.log("Duitku Pop Closed.");
+            fetchProfile();
+          }
+        });
+      } else if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error("Gagal mengunduh tautan pembayaran.");
+      }
+    } catch (err: any) {
+      toast.error(err.message, { id: topupToast });
+    } finally {
+      setSubmittingTopUp(false);
     }
   };
 
@@ -1142,29 +1212,40 @@ export default function CartPage() {
             </div>
 
             {paymentMethod === "wallet" && profileData && (
-              <div className={`p-4 rounded-2xl border mb-4 flex items-center justify-between transition-all ${
+              <div className={`p-4 rounded-2xl border mb-4 transition-all ${
                 profileData.wallet_balance >= totalAmount
                   ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400"
                   : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
               }`}>
-                <div className="flex items-center gap-3">
-                  <Wallet className="w-5 h-5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Saldo Dompet Anda</p>
-                    <p className="text-base font-black">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Wallet className="w-5 h-5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 leading-tight">Saldo Dompet Anda</p>
+                      <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                    </div>
                   </div>
+                  {profileData.wallet_balance < totalAmount && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                  )}
                 </div>
-                {profileData.wallet_balance < totalAmount && (
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse">Saldo Kurang</span>
-                )}
               </div>
             )}
 
             {paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount && (
-              <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-3 rounded-xl border border-red-100 dark:border-red-900/50 font-bold mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                Saldo Anda kurang sebesar Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}. Silakan isi saldo atau pilih metode lain.
-              </p>
+              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/50 font-bold mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">Saldo Anda kurang sebesar <span className="font-black">Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTopUpModal(true)}
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[11px] rounded-xl transition-all uppercase tracking-wider self-stretch sm:self-center shrink-0 shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <span>⚡</span> Isi Saldo Sekarang
+                </button>
+              </div>
             )}
 
             <div className="space-y-2">
@@ -1232,6 +1313,70 @@ export default function CartPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {showTopUpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTopUpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10">
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
+                </h3>
+                <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
+                <div>
+                  <label htmlFor="checkoutTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
+                    <input 
+                      id="checkoutTopUpAmountInput"
+                      type="number" 
+                      required 
+                      min={10000}
+                      value={topUpAmount} 
+                      onChange={e => setTopUpAmount(e.target.value)} 
+                      placeholder="Contoh: 50000" 
+                      title="Nominal Isi Saldo (Rp)"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                  <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp 10.000</span>
+                </div>
+
+                {/* Quick Nominal Selectors */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Cepat</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
+                      <button
+                        key={nom}
+                        type="button"
+                        onClick={() => setTopUpAmount(String(nom))}
+                        className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                          topUpAmount === String(nom)
+                            ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
+                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
+                        }`}
+                      >
+                        Rp {nom.toLocaleString('id-ID').replace(',00', '')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submittingTopUp}
+                  className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                >
+                  {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

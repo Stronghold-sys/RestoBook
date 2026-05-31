@@ -159,25 +159,25 @@ export default function CustomerOrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("active")} className={`rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-primary to-primary-hover ${activeTab === "active" ? "ring-4 ring-primary/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 opacity-80" /><span className="text-white/80 text-sm">Aktif</span></div>
-          <p className="text-3xl font-bold">{activeOrders.length}</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("active")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-primary to-primary-hover ${activeTab === "active" ? "ring-4 ring-primary/30 scale-[1.02]" : ""}`}>
+          <div className="flex items-center gap-1.5 mb-2"><Clock className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium truncate">Aktif</span></div>
+          <p className="text-2xl sm:text-3xl font-bold">{activeOrders.length}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("completed")} className={`rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-green-500 to-emerald-600 ${activeTab === "completed" ? "ring-4 ring-green-500/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-2 mb-2"><CheckCircle className="w-5 h-5 opacity-80" /><span className="text-white/80 text-sm">Selesai</span></div>
-          <p className="text-3xl font-bold">{completedOrders.length}</p>
+        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("completed")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-green-500 to-emerald-600 ${activeTab === "completed" ? "ring-4 ring-green-500/30 scale-[1.02]" : ""}`}>
+          <div className="flex items-center gap-1.5 mb-2"><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium truncate">Selesai</span></div>
+          <p className="text-2xl sm:text-3xl font-bold">{completedOrders.length}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("cancelled")} className={`rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-red-500 to-rose-600 ${activeTab === "cancelled" ? "ring-4 ring-red-500/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-2 mb-2"><XCircle className="w-5 h-5 opacity-80" /><span className="text-white/80 text-sm">Dibatalkan</span></div>
-          <p className="text-3xl font-bold">{cancelledOrders.length}</p>
+        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("cancelled")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-red-500 to-rose-600 ${activeTab === "cancelled" ? "ring-4 ring-red-500/30 scale-[1.02]" : ""}`}>
+          <div className="flex items-center gap-1.5 mb-2"><XCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium leading-tight">Dibatalkan</span></div>
+          <p className="text-2xl sm:text-3xl font-bold">{cancelledOrders.length}</p>
         </motion.div>
       </div>
 
       {/* Tab Buttons */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === tab.id ? `${tab.bgActive} text-white shadow-md` : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:border-primary/50"}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${activeTab === tab.id ? `${tab.bgActive} text-white shadow-md` : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:border-primary/50"}`}>
             {tab.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? "bg-white/20" : "bg-gray-100 dark:bg-gray-800 text-muted"}`}>{tab.count}</span>
           </button>

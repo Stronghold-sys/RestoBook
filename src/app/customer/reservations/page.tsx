@@ -228,12 +228,12 @@ export default function CustomerReservationsPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Observasi & Reservasi Meja</h1>
-          <p className="text-muted mt-1">Ajukan reservasi meja bebas (bisa pilih banyak meja sekaligus)</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark leading-tight">Observasi &amp; Reservasi Meja</h1>
+          <p className="text-muted mt-1 text-sm sm:text-base">Ajukan reservasi meja bebas (bisa pilih banyak meja sekaligus)</p>
         </div>
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowModal(true)} className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/20">
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowModal(true)} className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/20 shrink-0 self-start sm:self-auto">
           <Plus className="w-5 h-5" /> Ajukan Reservasi
         </motion.button>
       </div>

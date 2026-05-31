@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -134,7 +134,8 @@ export default function CartPage() {
   const totalAmount = Math.max(0, subtotal - discountAmount);
 
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash">("non_cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash" | "wallet">("non_cash");
+  const [profileData, setProfileData] = useState<any>(null);
   const [duitkuMethod, setDuitkuMethod] = useState("");
   const [openingTime, setOpeningTime] = useState<string | null>(null);
   const [closingTime, setClosingTime] = useState<string | null>(null);
@@ -331,6 +332,32 @@ export default function CartPage() {
   const supabase = createClient();
   const router = useRouter();
 
+  const fetchProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, wallet_balance")
+        .eq("user_id", session.user.id)
+        .single();
+      if (data) {
+        setProfileData(data);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    const channel = supabase.channel("cart_profile_realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
+        fetchProfile();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     selectedTableRef.current = selectedTable;
     if (typeof window !== "undefined") {
@@ -364,10 +391,10 @@ export default function CartPage() {
   }, [orderType]);
 
   useEffect(() => {
-    if (orderType === "dine_in" || orderType === "takeaway") {
+    if ((orderType === "dine_in" || orderType === "takeaway") && paymentMethod === "cash") {
       setPaymentMethod("non_cash");
     }
-  }, [orderType]);
+  }, [orderType, paymentMethod]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -552,6 +579,61 @@ export default function CartPage() {
       if (!session?.user) throw new Error("Silakan login kembali");
       const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
+
+      if (paymentMethod === "wallet") {
+        toast.loading("Memproses pembayaran saldo dompet...", { id: loadingToast });
+        
+        const dbPaymentMethod = "wallet";
+        const detailedPaymentNotes = "[Pembayaran Saldo Dompet]";
+        const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
+
+        const orderDataPayload = {
+          customer_id: profile.id,
+          table_id: orderType === "dine_in" ? selectedTable : null,
+          order_type: orderType,
+          total_amount: totalAmount,
+          notes: finalNotes,
+          voucher_id: appliedVoucher ? appliedVoucher.id : null,
+          discount: discountAmount,
+          delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
+          delivery_phone: orderType === "delivery" ? deliveryPhone : null,
+          delivery_address: orderType === "delivery" ? deliveryAddress : null,
+          delivery_province: orderType === "delivery" ? deliveryProvince : null,
+          delivery_regency: orderType === "delivery" ? deliveryRegency : null,
+          delivery_district: orderType === "delivery" ? deliveryDistrict : null,
+          delivery_village: orderType === "delivery" ? deliveryVillage : null,
+          delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
+        };
+
+        const itemsDataPayload = items.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.price * item.quantity,
+          notes: item.notes || null,
+        }));
+
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create_wallet_order',
+            orderData: orderDataPayload,
+            itemsData: itemsDataPayload
+          })
+        });
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal memproses pembayaran saldo dompet');
+
+        isOrderCompleted.current = true;
+        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+        clearCart();
+
+        toast.success("Pembayaran Berhasil via Saldo Dompet!", { id: loadingToast });
+        router.push(`/customer/orders/${result.order.id}`);
+        return;
+      }
 
       const dbPaymentMethod = paymentMethod === "cash" ? "cash" : "non_cash";
       
@@ -1036,22 +1118,54 @@ export default function CartPage() {
             <div>
               <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Metode Pembayaran</h3>
               {orderType === "delivery" ? (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <button onClick={() => setPaymentMethod("cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <button type="button" onClick={() => setPaymentMethod("cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                     <Banknote className="w-6 h-6" /><span className="font-bold text-xs uppercase">Tunai</span>
                   </button>
-                  <button onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                     <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
+                  </button>
+                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Wallet className="w-6 h-6" /><span className="font-bold text-xs uppercase">Dompet</span>
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 mb-4">
-                  <div className="py-4 rounded-2xl flex flex-col items-center gap-2 border-2 border-primary bg-primary/5 text-primary">
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                     <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
-                  </div>
+                  </button>
+                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Wallet className="w-6 h-6" /><span className="font-bold text-xs uppercase">Dompet</span>
+                  </button>
                 </div>
               )}
             </div>
+
+            {paymentMethod === "wallet" && profileData && (
+              <div className={`p-4 rounded-2xl border mb-4 flex items-center justify-between transition-all ${
+                profileData.wallet_balance >= totalAmount
+                  ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400"
+                  : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <Wallet className="w-5 h-5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Saldo Dompet Anda</p>
+                    <p className="text-base font-black">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                  </div>
+                </div>
+                {profileData.wallet_balance < totalAmount && (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse">Saldo Kurang</span>
+                )}
+              </div>
+            )}
+
+            {paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount && (
+              <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-3 rounded-xl border border-red-100 dark:border-red-900/50 font-bold mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                Saldo Anda kurang sebesar Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}. Silakan isi saldo atau pilih metode lain.
+              </p>
+            )}
 
             <div className="space-y-2">
               <label className="font-bold text-sm uppercase tracking-wider text-muted block ml-1">Catatan Pesanan</label>
@@ -1059,18 +1173,24 @@ export default function CartPage() {
             </div>
 
             <motion.button 
-              whileHover={isOpen ? { scale: 1.02 } : {}} 
-              whileTap={isOpen ? { scale: 0.98 } : {}} 
+              whileHover={isOpen && !(paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 1.02 } : {}} 
+              whileTap={isOpen && !(paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 0.98 } : {}} 
               onClick={() => paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
-              disabled={!isOpen || loading}
+              disabled={!isOpen || loading || (paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)}
               className={`w-full py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
-                isOpen 
-                  ? "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer" 
-                  : "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
+                !isOpen 
+                  ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
+                  : (paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
+                  ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
+                  : "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer"
               }`}
             >
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
-              {isOpen ? "Lanjut ke Pembayaran" : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}
+              {paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
+                <><AlertTriangle className="w-5 h-5 shrink-0" /> Saldo Dompet Kurang</>
+              ) : (
+                <>{isOpen ? "Lanjut ke Pembayaran" : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}</>
+              )}
             </motion.button>
           </div>
         </div>

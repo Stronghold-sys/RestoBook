@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, AlertCircle, RotateCcw, CheckCircle, XCircle, Search, HelpCircle, ArrowLeft, Calendar, User, CreditCard, Upload } from "lucide-react";
+import { Loader2, AlertCircle, RotateCcw, CheckCircle, XCircle, Search, HelpCircle, ArrowLeft, Calendar, User, CreditCard, Upload, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -39,11 +39,20 @@ export default function AdminRefundsPage() {
 
   useEffect(() => {
     if (selectedRefund && actionType) {
+      const isWallet = selectedRefund.refundDetails.refundMethod === "wallet";
+      const nominal = Number(selectedRefund.total_amount).toLocaleString("id-ID");
       if (actionType === "approve") {
-        const nominal = Number(selectedRefund.total_amount).toLocaleString("id-ID");
-        setAdminNotes(`Halo, dana sebesar Rp ${nominal} telah berhasil kami transfer balik ke rekening ${selectedRefund.refundDetails.bankName} Anda atas nama ${selectedRefund.refundDetails.accountName}. Terima kasih atas kesabaran Anda!`);
+        if (isWallet) {
+          setAdminNotes(`Halo, dana pengembalian sebesar Rp ${nominal} telah berhasil kami cairkan secara otomatis ke Saldo Dompet Anda. Silakan cek saldo Anda kembali. Terima kasih!`);
+        } else {
+          setAdminNotes(`Halo, dana sebesar Rp ${nominal} telah berhasil kami transfer balik ke rekening ${selectedRefund.refundDetails.bankName} Anda atas nama ${selectedRefund.refundDetails.accountName}. Terima kasih atas kesabaran Anda!`);
+        }
       } else {
-        setAdminNotes("Halo, pengajuan refund Anda belum dapat kami setujui karena nomor rekening atau data bank yang diisikan tidak cocok/valid. Silakan ajukan kembali dengan data rekening yang benar atau hubungi layanan pelanggan kami.");
+        if (isWallet) {
+          setAdminNotes("Halo, pengajuan refund Anda belum dapat kami setujui karena alasan kebijakan internal kami. Silakan hubungi layanan pelanggan kami untuk informasi lebih lanjut.");
+        } else {
+          setAdminNotes("Halo, pengajuan refund Anda belum dapat kami setujui karena nomor rekening atau data bank yang diisikan tidak cocok/valid. Silakan ajukan kembali dengan data rekening yang benar atau hubungi layanan pelanggan kami.");
+        }
       }
     } else {
       setAdminNotes("");
@@ -232,18 +241,28 @@ export default function AdminRefundsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-text-light dark:text-text-dark">
-                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                    <div className={`space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark ${details.refundMethod === "wallet" ? "col-span-2" : ""}`}>
                       <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Metode Refund</p>
-                      <p className="font-black text-sm text-primary flex items-center gap-1"><CreditCard className="w-4 h-4 shrink-0" /> {details.bankName}</p>
+                      <p className="font-black text-sm text-primary flex items-center gap-1">
+                        {details.refundMethod === "wallet" ? (
+                          <Wallet className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <CreditCard className="w-4 h-4 shrink-0" />
+                        )} {details.bankName}
+                      </p>
                     </div>
-                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
-                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Nomor Rekening</p>
-                      <p className="font-black text-sm text-text-light dark:text-text-dark">{details.accountNo}</p>
-                    </div>
-                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark col-span-2">
-                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Atas Nama Pemilik</p>
-                      <p className="font-black text-sm text-text-light dark:text-text-dark uppercase">{details.accountName}</p>
-                    </div>
+                    {details.refundMethod !== "wallet" && (
+                      <>
+                        <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                          <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Nomor Rekening</p>
+                          <p className="font-black text-sm text-text-light dark:text-text-dark">{details.accountNo}</p>
+                        </div>
+                        <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark col-span-2">
+                          <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Atas Nama Pemilik</p>
+                          <p className="font-black text-sm text-text-light dark:text-text-dark uppercase">{details.accountName}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="space-y-1.5 p-3.5 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
@@ -313,7 +332,7 @@ export default function AdminRefundsPage() {
                   <p><span className="text-muted">Total Dana:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
                 </div>
 
-                {actionType === "approve" && (
+                {actionType === "approve" && selectedRefund.refundDetails.refundMethod !== "wallet" && (
                   <div>
                     <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Unggah Bukti Transfer Refund</label>
                     <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 text-center hover:border-primary transition-all bg-background-light dark:bg-background-dark">
@@ -337,6 +356,18 @@ export default function AdminRefundsPage() {
                           <input type="file" accept="image/*,application/pdf" onChange={handleUploadProof} className="hidden" />
                         </label>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {actionType === "approve" && selectedRefund.refundDetails.refundMethod === "wallet" && (
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 rounded-2xl text-green-800 dark:text-green-400 flex items-start gap-3">
+                    <Wallet className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider">Pencairan Saldo Otomatis</p>
+                      <p className="text-[11px] font-semibold leading-relaxed mt-0.5">
+                        Dana refund sebesar <span className="font-extrabold">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span> akan langsung dikreditkan ke Saldo Dompet pelanggan saat Anda menyetujui pengajuan ini. Tidak diperlukan bukti transfer fisik.
+                      </p>
                     </div>
                   </div>
                 )}

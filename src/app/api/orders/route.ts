@@ -31,6 +31,91 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, order: newOrder });
     }
 
+    if (action === 'create_wallet_order') {
+      const { orderData, itemsData } = body;
+      if (!orderData || !itemsData) {
+        return NextResponse.json({ error: 'Order data and items data are required' }, { status: 400 });
+      }
+
+      // Get customer profile
+      const { data: profile, error: profileErr } = await supabaseAdmin
+        .from('profiles')
+        .select('id, wallet_balance')
+        .eq('id', orderData.customer_id)
+        .single();
+
+      if (profileErr || !profile) {
+        return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      const balance = Number(profile.wallet_balance || 0);
+      const total = Number(orderData.total_amount);
+
+      if (balance < total) {
+        return NextResponse.json({ error: 'Saldo dompet tidak mencukupi untuk melakukan pembayaran' }, { status: 400 });
+      }
+
+      // Deduct balance
+      const { error: deductErr } = await supabaseAdmin
+        .from('profiles')
+        .update({ wallet_balance: balance - total })
+        .eq('id', profile.id);
+
+      if (deductErr) throw deductErr;
+
+      // Create order
+      const { data: newOrder, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .insert({
+          ...orderData,
+          payment_method: 'wallet',
+          payment_status: 'paid',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        // Rollback balance
+        await supabaseAdmin.from('profiles').update({ wallet_balance: balance }).eq('id', profile.id);
+        throw orderError;
+      }
+
+      // Insert items
+      const itemsToInsert = itemsData.map((item: any) => ({
+        ...item,
+        order_id: newOrder.id
+      }));
+
+      const { error: itemsError } = await supabaseAdmin
+        .from('order_items')
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        // Rollback order and balance
+        await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
+        await supabaseAdmin.from('profiles').update({ wallet_balance: balance }).eq('id', profile.id);
+        throw itemsError;
+      }
+
+      // Update table if dine_in
+      if (newOrder.table_id) {
+        await supabaseAdmin.from("tables").update({ status: "occupied" }).eq("id", newOrder.table_id);
+      }
+
+      // Notification
+      await supabaseAdmin.from('notifications').insert({
+        user_id: newOrder.customer_id,
+        title: 'Pembayaran Saldo Dompet Berhasil',
+        message: `Pembayaran sebesar Rp ${total.toLocaleString("id-ID")} untuk No. Pesanan #${newOrder.id.split('-')[0]} telah didebet dari Saldo Dompet Anda.`,
+        type: 'order',
+        status_badge: 'Berhasil'
+      });
+
+      return NextResponse.json({ success: true, order: newOrder });
+    }
+
+
     if (!orderId) {
       return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
     }
@@ -209,12 +294,16 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
+      const isWallet = refundDetails.refundMethod === 'wallet';
+      const destText = isWallet ? 'Saldo Dompet Anda' : `rekening bank/e-wallet ${refundDetails.bankName}`;
+
       // Add Notification
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
         title: 'Pengajuan Refund Dikirim',
-        message: `Pengajuan refund untuk No. Pesanan #${orderId.split('-')[0]} telah diterima dan sedang diproses.`,
-        type: 'order'
+        message: `Permohonan refund untuk pesanan #${orderId.split('-')[0]} sedang diajukan. Dana diajukan untuk dikembalikan ke ${destText}.`,
+        type: 'order',
+        status_badge: 'Pending'
       });
 
       return NextResponse.json({ success: true, message: 'Refund request submitted' });
@@ -231,14 +320,44 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
+      const isApproved = refundDetails.refundStatus === 'approved';
+      const isWallet = refundDetails.refundMethod === 'wallet';
+
+      if (isApproved && isWallet) {
+        // Fetch current profile wallet_balance
+        const { data: profile, error: profErr } = await supabaseAdmin
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('id', order.customer_id)
+          .single();
+        if (profErr || !profile) throw new Error('Profil pelanggan tidak ditemukan untuk pencairan saldo');
+        
+        const newBalance = Number(profile.wallet_balance || 0) + Number(order.total_amount);
+        const { error: balErr } = await supabaseAdmin
+          .from('profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', order.customer_id);
+        if (balErr) throw balErr;
+      }
+
+      let notifMessage = '';
+      if (isApproved) {
+        if (isWallet) {
+          notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")} telah berhasil dicairkan ke Saldo Dompet Anda.`;
+        } else {
+          notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")} telah berhasil ditransfer ke rekening bank/e-wallet pilihan Anda.`;
+        }
+      } else {
+        notifMessage = `Refund ditolak untuk pesanan #${orderId.split('-')[0]}. Alasan: ${refundDetails.adminNotes || 'Tidak ada catatan'}.`;
+      }
+
       // Add Notification for customer
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
-        title: refundDetails.refundStatus === 'approved' ? 'Refund Disetujui' : 'Refund Ditolak',
-        message: refundDetails.refundStatus === 'approved'
-          ? `Pengajuan refund No. Pesanan #${orderId.split('-')[0]} Anda disetujui sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")}.`
-          : `Pengajuan refund No. Pesanan #${orderId.split('-')[0]} Anda ditolak. Alasan: ${refundDetails.adminNotes || 'Tidak ada catatan'}`,
-        type: 'order'
+        title: isApproved ? 'Refund Disetujui' : 'Refund Ditolak',
+        message: notifMessage,
+        type: 'order',
+        status_badge: isApproved ? 'Berhasil' : 'Gagal'
       });
 
       return NextResponse.json({ success: true, message: 'Refund request processed' });

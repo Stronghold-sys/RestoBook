@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -31,6 +31,7 @@ export default function OrderTrackingPage() {
   
   // Refund States
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundMethod, setRefundMethod] = useState<"wallet" | "bank">("wallet");
   const [bankName, setBankName] = useState("");
   const [accountNo, setAccountNo] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -58,6 +59,7 @@ export default function OrderTrackingPage() {
     const channel = supabase.channel(`order-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` }, payload => {
         setOrder((prev: any) => ({ ...prev, ...payload.new }));
+        fetchOrderDetails();
         toast.success(`Status pesanan berubah: ${getStatusText(payload.new.status)}`);
       })
       .subscribe();
@@ -359,15 +361,20 @@ export default function OrderTrackingPage() {
   };
 
   const handleSubmitRefund = async () => {
-    if (!bankName || !accountNo || !accountName || !refundReason) {
+    const finalBankName = refundMethod === "wallet" ? "Saldo Dompet" : bankName;
+    const finalAccountNo = refundMethod === "wallet" ? "Saldo Dompet" : accountNo;
+    const finalAccountName = refundMethod === "wallet" ? "Saldo Dompet" : accountName;
+
+    if (!refundReason || (refundMethod === "bank" && (!bankName || !accountNo || !accountName))) {
       return toast.error("Mohon lengkapi semua data");
     }
     setSubmittingRefund(true);
     try {
       const refundInfo = {
-        bankName,
-        accountNo,
-        accountName,
+        refundMethod,
+        bankName: finalBankName,
+        accountNo: finalAccountNo,
+        accountName: finalAccountName,
         refundReason,
         refundStatus: "pending",
         requestedAt: new Date().toISOString()
@@ -529,27 +536,37 @@ export default function OrderTrackingPage() {
                    </span>
                 </div>
 
-                {/* Refund Details Grid (Seperti di Gambar) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Metode Refund</p>
-                    <p className="text-lg font-black text-primary flex items-center gap-2">
-                      <CreditCard className="w-5 h-5" /> {refundData.bankName}
-                    </p>
-                  </div>
-                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Nomor Rekening</p>
-                    <p className="text-lg font-black text-text-light dark:text-text-dark tracking-tighter">
-                      {refundData.accountNo}
-                    </p>
-                  </div>
-                  <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm md:col-span-2">
-                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Atas Nama Pemilik</p>
-                    <p className="text-lg font-black text-text-light dark:text-text-dark uppercase">
-                      {refundData.accountName}
-                    </p>
-                  </div>
-                </div>
+                 {refundData.refundMethod === "wallet" ? (
+                   <div className="grid grid-cols-1 gap-4">
+                     <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                       <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Metode Refund</p>
+                       <p className="text-lg font-black text-primary flex items-center gap-2">
+                         <Wallet className="w-5 h-5" /> Saldo Dompet
+                       </p>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                       <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Metode Refund</p>
+                       <p className="text-lg font-black text-primary flex items-center gap-2">
+                         <CreditCard className="w-5 h-5" /> {refundData.bankName}
+                       </p>
+                     </div>
+                     <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                       <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Nomor Rekening</p>
+                       <p className="text-lg font-black text-text-light dark:text-text-dark tracking-tighter">
+                         {refundData.accountNo}
+                       </p>
+                     </div>
+                     <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm md:col-span-2">
+                       <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Atas Nama Pemilik</p>
+                       <p className="text-lg font-black text-text-light dark:text-text-dark uppercase">
+                         {refundData.accountName}
+                       </p>
+                     </div>
+                   </div>
+                 )}
 
                 <div className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
                   <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-1">Alasan Pengaju</p>
@@ -846,20 +863,41 @@ export default function OrderTrackingPage() {
               <div className="p-6 overflow-y-auto space-y-5">
                 <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 font-bold leading-relaxed flex items-start gap-3">
                   <Info className="w-5 h-5 shrink-0" />
-                  Dana yang sudah dibayar akan diproses pengembaliannya secara manual oleh tim Kasir/Admin ke rekening tujuan di bawah.
+                  Dana yang sudah dibayar akan diproses pengembaliannya ke pilihan tujuan di bawah.
                 </p>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bank / Platform E-Wallet</label>
-                  <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Contoh: BCA / DANA / OVO" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Metode Pengembalian Dana</label>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <button type="button" onClick={() => setRefundMethod("wallet")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
+                      <Wallet className="w-5 h-5" /><span className="font-bold text-xs">Saldo Dompet</span>
+                    </button>
+                    <button type="button" onClick={() => setRefundMethod("bank")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "bank" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
+                      <CreditCard className="w-5 h-5" /><span className="font-bold text-xs">Rekening Bank</span>
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nomor Rekening / Nomor HP</label>
-                  <input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Nomor akun/nomor HP yang terdaftar" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Atas Nama Pemilik Akun</label>
-                  <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} placeholder="Nama lengkap pemilik rekening" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
-                </div>
+
+                {refundMethod === "wallet" ? (
+                  <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3.5 rounded-xl border border-green-200 dark:border-green-800 font-bold leading-relaxed flex items-start gap-2.5">
+                    <Wallet className="w-4 h-4 shrink-0 mt-0.5" />
+                    Dana refund akan langsung dikreditkan ke Saldo Dompet Anda secara otomatis setelah pengajuan disetujui admin.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bank / Platform E-Wallet</label>
+                      <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Contoh: BCA / DANA / OVO" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nomor Rekening / Nomor HP</label>
+                      <input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Nomor akun/nomor HP yang terdaftar" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Atas Nama Pemilik Akun</label>
+                      <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} placeholder="Nama lengkap pemilik rekening" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                    </div>
+                  </>
+                )}
                 <div>
                   <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Pembatalan</label>
                   <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Contoh: Menunggu terlalu lama karena pesanan tidak kunjung diproses atau alasan lainnya..." className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />

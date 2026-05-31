@@ -54,6 +54,7 @@ export default function CustomerRewardsPage() {
   }, []);
 
   const fetchPointData = async () => {
+    setLoading(true);
     try {
       // 1. Fetch points and transactions
       const resPoints = await fetch("/api/customer/points");
@@ -140,17 +141,17 @@ export default function CustomerRewardsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 uppercase animate-pulse">Pending</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 uppercase animate-pulse whitespace-nowrap">Pending</span>;
       case "earned":
       case "manual_earned":
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase">Selesai</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase whitespace-nowrap">Selesai</span>;
       case "redeemed":
       case "manual_redeemed":
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 uppercase">Redeem</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 uppercase whitespace-nowrap">Redeem</span>;
       case "cancelled":
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase">Batal</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase whitespace-nowrap">Batal</span>;
       default:
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-50 text-gray-400 border border-gray-100 uppercase">{status}</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-50 text-gray-450 border border-gray-100 uppercase whitespace-nowrap">{status}</span>;
     }
   };
 

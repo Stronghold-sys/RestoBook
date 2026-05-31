@@ -434,7 +434,7 @@ export default function CustomerRewardsPage() {
                         {!red.code && red.rewards?.category === "cashback" && (
                           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl text-xs text-emerald-800 dark:text-emerald-400 font-bold flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 shrink-0" />
-                            Dana cashback sebesar Rp {Number(red.rewards?.cashback_amount || 0).toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
+                            Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
                           </div>
                         )}
 

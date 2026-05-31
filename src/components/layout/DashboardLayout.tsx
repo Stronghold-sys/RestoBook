@@ -5,7 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -184,6 +184,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Resign", href: "/admin/resign", icon: Power },
           { name: "Refund", href: "/admin/refunds", icon: RotateCcw },
           { name: "Reviews", href: "/admin/reviews", icon: Star },
+          { name: "Reward Point", href: "/admin/rewards", icon: Gift },
           { name: "Settings", href: "/admin/settings", icon: Settings },
           { name: "Profil", href: "/admin/profile", icon: UserIcon },
         ];
@@ -211,6 +212,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Menu", href: "/customer/menu", icon: UtensilsCrossed },
           { name: "Keranjang", href: "/customer/cart", icon: ShoppingBag },
           { name: "Voucher Saya", href: "/customer/vouchers", icon: Ticket },
+          { name: "Tukar Point", href: "/customer/rewards", icon: Gift },
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },

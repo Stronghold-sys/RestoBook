@@ -1,220 +1,256 @@
-Kamu adalah senior fullstack developer. Tambahkan fitur manajemen suspen dan ban pengguna
-pada menu "Pelanggan" di panel admin. Implementasikan semua fitur berikut secara lengkap
-dengan logika realtime menggunakan [sebutkan stack: Firebase / Supabase / Socket.io / dll].
+Tambahkan fitur **Sistem Reward Point Pelanggan** yang lengkap untuk aplikasi.
 
-=======================================================================
-FITUR 1: SUSPEN SEMENTARA (TEMPORARY SUSPEND)
-=======================================================================
+## 1. Sistem Point Pelanggan
 
-- Admin dapat mensuspen akun pengguna dengan durasi kustom:
-  Format waktu: tahun / bulan / minggu / hari / jam / menit / detik
-  (bisa kombinasi, contoh: 2 hari 3 jam 30 menit)
-- Admin wajib mengisi:
-  □ Alasan suspen (textarea, wajib diisi)
-  □ Pesan notifikasi untuk pengguna buatkan kata2nya dan (bisa diedit)
-  □ Durasi suspen (input per satuan waktu)
-- Simpan ke database:
-  {
-    status: "suspended",
-    suspend_reason: "...",
-    suspend_message: "...",
-    suspended_at: timestamp,
-    suspend_until: timestamp, // hasil kalkulasi durasi
-    suspend_type: "temporary"
-  }
+Buat fitur reward point untuk pelanggan dengan aturan berikut:
 
-=======================================================================
-FITUR 2: BAN PERMANEN (PERMANENT BAN)
-=======================================================================
+### Penambahan Point
 
-- Admin dapat melakukan ban permanen pada akun pengguna
-- Admin wajib mengisi:
-  □ Alasan ban (textarea, wajib diisi)
-  □ Pesan notifikasi untuk pengguna buatkan kata2nya
-- TIDAK ada input durasi waktu (sembunyikan/disabled field waktu)
-- Simpan ke database:
-  {
-    status: "banned",
-    ban_reason: "...",
-    ban_message: "...",
-    banned_at: timestamp,
-    suspend_until: null, // null = permanen
-    suspend_type: "permanent"
-  }
+* Setiap pelanggan yang berhasil melakukan pesanan akan mendapatkan reward point.
+* Besaran point **ditentukan secara acak** oleh sistem.
+* Rentang point acak dapat diatur admin (contoh: minimal 10 point sampai maksimal 100 point).
+* Point **tidak langsung masuk saat order dibuat**.
+* Point masuk **hanya ketika status pesanan = selesai / completed**.
+* Saat pesanan masih diproses, point disimpan sementara dengan status **Ditahan / Pending Reward**.
+* Jika pesanan dibatalkan:
 
-=======================================================================
-FITUR 3: NOTIFIKASI DI HALAMAN LOGIN
-=======================================================================
+  * point pending otomatis dibatalkan
+  * tidak ditambahkan ke akun pelanggan
 
-Saat pengguna mencoba login, cek status akun di database:
+### Status Point yang wajib ada
 
-A. Jika status = "suspended" (sementara):
-   Tampilkan modal/alert
+Tambahkan status point lengkap:
 
-- Format tampil hanya satuan yang relevan
-     (jika 0 tahun, sembunyikan "tahun", dst)
-- Jika waktu habis → otomatis ubah status = "active" di DB
-     dan perbolehkan login tanpa perlu tindakan admin
+* Pending / Ditahan
+* Berhasil Ditambahkan
+* Digunakan untuk Redeem
+* Dibatalkan
+* Kadaluarsa (opsional jika admin aktifkan masa berlaku point)
+* Dikurangi manual oleh admin
+* Ditambahkan manual oleh admin
 
-B. Jika status = "banned" (permanen):
-   Tampilkan modal/alert
+### Riwayat Point Pelanggan
 
-- TIDAK ada hitung mundur
-- TIDAK bisa login sama sekali
+Di halaman pelanggan tampilkan:
 
-C. Jika status = "active":
-   Tampilkan notifikasi hijau:
+* Total point aktif
+* Point pending
+* Point yang pernah digunakan
+* Riwayat lengkap:
 
-- Notifikasi ini muncul SEKALI saja setelah akun dibuka kembali
-- Gunakan flag: just_restored: true di DB, reset setelah ditampilkan
+  * tanggal
+  * order terkait
+  * jumlah point
+  * status
+  * keterangan
 
-=======================================================================
-FITUR 4: AUTO LOGOUT REALTIME (SUDAH LOGIN)
-=======================================================================
+Contoh:
++35 point — Order selesai
++20 point — Pending
+-100 point — Redeem voucher
+0 point — Dibatalkan
 
-- Gunakan realtime listener (onSnapshot / websocket / SSE) pada
-  dokumen/row user yang sedang login
-- Jika status berubah menjadi "suspended" atau "banned" saat user
-  sedang aktif:
-  1. Langsung invalidasi sesi / token user
-  2. Redirect ke halaman login
-  3. Tampilkan notifikasi sesuai status (sama seperti Fitur 3)
-- Realtime listener dipasang saat user berhasil login dan dilepas
-  saat logout
+---
 
-=======================================================================
-FITUR 5: BUKA KEMBALI AKUN (UNBAN / UNSUSPEND)
-=======================================================================
+## 2. Halaman Reward / Redeem untuk Pelanggan
 
-- Di panel admin, pada tabel pelanggan, tambahkan tombol:
-  "Buka Kembali Akun" (hanya muncul jika status ≠ active)
-- Admin dapat menambahkan pesan pemulihan (opsional)
-- Saat dibuka:
-  {
-    status: "active",
-    restored_at: timestamp,
-    restored_message: "...", // pesan dari admin
-    just_restored: true      // flag untuk notifikasi sekali tampil
-  }
-- Hapus/reset semua field suspen/ban
+Tambahkan menu:
+**Reward Saya / Tukar Point**
 
-=======================================================================
-FITUR 6: TAMPILAN DI PANEL ADMIN (TABEL PELANGGAN)
-=======================================================================
+Tampilkan daftar reward yang bisa ditukar:
 
-Kolom tambahan di tabel:
-│ Nama │ Email │ Status │ Tipe Suspen │ Berakhir │ Aksi │
+* Voucher diskon
+* Gratis makanan/minuman
+* Produk promo
+* Merchandise
+* Cashback
+* Reward custom lainnya
 
-- Kolom STATUS tampilkan badge warna:
-   Aktif |  Suspen Sementara |  Ban Permanen
+Setiap reward tampil:
 
-- Kolom BERAKHIR:
-  Suspen sementara → tampilkan sisa waktu (hitung mundur realtime)
-  Ban permanen     → tampilkan "Permanen"
-  Aktif            → tampilkan "-"
+* gambar/icon
+* nama reward
+* deskripsi
+* jumlah stock (jika ada)
+* minimal point yang dibutuhkan
+* status aktif/nonaktif
+* tombol Redeem
 
-- Kolom AKSI berisi tombol:
-  [Suspen] [Ban Permanen] [Buka Akun] [Lihat Detail] [Riwayat]
+Jika point pelanggan kurang:
 
-=======================================================================
-FITUR 7: RIWAYAT SUSPEN (HISTORY LOG)
-=======================================================================
+* tombol disable
+* tampil pesan:
+  “Point kamu belum cukup untuk menukar reward ini”
+* tampil juga:
+  “Kurang XX point lagi”
 
-Simpan setiap aksi ke koleksi/tabel `suspend_logs`:
-{
-  user_id: "...",
-  action: "suspended | banned | restored | auto_restored",
-  reason: "...",
-  message: "...",
-  duration: "...",        // misal "2 hari 3 jam"
-  suspend_until: timestamp,
-  acted_by: "admin_id",  // siapa admin yang melakukan
-  acted_at: timestamp
-}
+Jika point cukup:
 
-Di detail pelanggan, tampilkan riwayat ini dalam timeline/tabel.
+* tombol aktif
+* saat redeem:
 
-=======================================================================
-FITUR 8: NOTIFIKASI HITUNG MUNDUR REALTIME (DETAIL)
-=======================================================================
+  * tampil popup konfirmasi
+  * kurangi point otomatis
+  * simpan ke akun pelanggan
 
-Fungsi kalkulasi sisa waktu:
+Hasil redeem masuk ke akun pelanggan:
 
-function getSisaWaktu(suspend_until) {
-  const selisih = suspend_until - Date.now();
-  if (selisih <= 0) return null; // sudah habis
-  
-  const detik  = Math.floor(selisih / 1000) % 60;
-  const menit  = Math.floor(selisih / 60000) % 60;
-  const jam    = Math.floor(selisih / 3600000) % 24;
-  const hari   = Math.floor(selisih / 86400000) % 7;
-  const minggu = Math.floor(selisih / 604800000) % 4;
-  const bulan  = Math.floor(selisih / 2592000000) % 12;
-  const tahun  = Math.floor(selisih / 31536000000);
-  
-  // Tampilkan hanya satuan yang > 0
-  return { tahun, bulan, minggu, hari, jam, menit, detik };
-}
+* voucher masuk ke daftar voucher
+* makanan/minuman masuk ke reward milik pelanggan
+* cashback masuk ke wallet/saldo
+* reward lain masuk ke inventory pelanggan
 
-- Update setiap detik dengan setInterval
-- Saat countdown = 0: otomatis update DB status → "active"
-  dan tampilkan notifikasi pemulihan otomatis
+Tambahkan status redeem:
 
-=======================================================================
-FITUR 9: FITUR TAMBAHAN
-=======================================================================
+* Menunggu Verifikasi
+* Berhasil
+* Dipakai
+* Kadaluarsa
+* Dibatalkan
 
-A. SUSPEN MASSAL (BULK SUSPEND):
+---
 
-- Checkbox di tabel untuk pilih banyak user
-- Aksi massal: suspend / ban / buka akun sekaligus
-- Konfirmasi modal sebelum eksekusi
+## 3. Dashboard Admin – Manajemen Reward Point
 
-B. JADWAL SUSPEN OTOMATIS (SCHEDULED SUSPEND):
+Buat panel admin lengkap.
 
-- Admin bisa set: "Suspen mulai tanggal X pukul Y"
-- Sistem otomatis eksekusi saat waktu tiba
-- Simpan: scheduled_suspend_at di DB
+### Pengaturan Point
 
-C. PERINGATAN SEBELUM SUSPEN (WARNING SYSTEM):
+Admin dapat mengatur:
 
-- Sebelum suspen, admin bisa kirim peringatan ke user
-- User terima notifikasi in-app: "Akun Anda akan disuspen dalam X jam"
-- Admin bisa set: 1 peringatan / 3 peringatan sebelum suspen otomatis
+* minimal point random
+* maksimal point random
+* point aktif / nonaktif
+* point berlaku berapa hari
+* point per transaksi maksimal
+* bonus point event tertentu
+* bonus point hari tertentu
+* bonus point pelanggan baru
+* bonus ulang tahun
+* multiplier x2 x3
 
-D. FILTER & PENCARIAN DI TABEL ADMIN:
+### Manajemen Redeem
 
-- Filter by: status (aktif/suspen/ban), tanggal, admin yang aksi
-- Search by: nama, email, alasan suspen
+Admin bisa:
 
-E. STATISTIK PANEL:
+* tambah reward baru
+* edit reward
+* hapus reward
+* aktif/nonaktif reward
+* atur stock reward
+* atur minimal point redeem
+* atur reward kategori:
 
-- Total user aktif | Total disuspen | Total dibanned
-- Grafik suspen per bulan
+  * voucher
+  * makanan
+  * cashback
+  * produk
+  * custom
 
-F. NOTIFIKASI EMAIL/SMS OTOMATIS:
+### Manajemen Pelanggan
 
-- Kirim email ke user saat akun disuspen/dibanned/dibuka
-- Template email bisa dikustom admin
+Admin bisa:
 
-G. APPEAL SYSTEM (BANDING):
+* lihat total point tiap pelanggan
+* lihat pending point
+* tambah point manual
+* kurangi point manual
+* reset point
+* blok redeem pelanggan tertentu
+* lihat histori point pelanggan
+* filter berdasarkan tanggal/status
 
-- User yang disuspen/banned bisa kirim banding lewat form
-- Admin terima notifikasi banding baru di panel
-- Admin bisa: Setujui (buka akun) / Tolak (tetap suspen)
+### Statistik Reward
 
-=======================================================================
-CATATAN IMPLEMENTASI
-=======================================================================
+Dashboard statistik:
 
-- Gunakan  Supabase Realtime
-  untuk semua fitur realtime
-- Semua aksi admin dicatat di audit log
-- Validasi semua input di sisi server
-- Gunakan middleware/guard untuk cek status suspen di setiap request API
-- JWT/session harus diinvalidasi saat suspen realtime
-- Pastikan race condition ditangani (misal: suspen habis tepat saat login)
-- Hitung mundur di client hanya untuk UI; validasi final selalu di server
+* total point dibagikan
+* total point pending
+* total point digunakan
+* reward paling sering ditukar
+* pelanggan point tertinggi
+* grafik reward harian / mingguan / bulanan
 
-Buat semua kode dengan struktur yang rapi, berikan komentar pada
-bagian logika penting, dan pastikan semua edge case tertangani.
+---
+
+## 4. Integrasi Order
+
+Saat order dibuat:
+
+* sistem hitung estimasi point acak
+* simpan status pending
+
+Saat order selesai:
+
+* pending -> berhasil ditambahkan
+
+Saat order dibatalkan:
+
+* pending -> dibatalkan
+
+Saat pelanggan redeem:
+
+* cek saldo point
+* jika cukup:
+
+  * kurangi point
+  * simpan reward
+* jika tidak cukup:
+
+  * tampil alert
+
+Pastikan semua transaksi point:
+
+* tersimpan database
+* aman dari double redeem
+* realtime update di pelanggan
+* realtime update di admin
+* support notifikasi
+
+---
+
+## 5. Notifikasi
+
+Pelanggan menerima notifikasi:
+
+* point pending
+* point berhasil masuk
+* point dibatalkan
+* berhasil redeem
+* gagal redeem
+* reward tersedia baru
+
+Admin menerima notifikasi:
+
+* ada redeem baru
+* stok reward habis
+* pelanggan point tinggi
+* ada transaksi point gagal
+
+---
+
+## 6. UI/UX
+
+Buat tampilan modern premium:
+
+* card point pelanggan
+* progress menuju reward
+* badge status
+* animasi saat point bertambah
+* confetti saat redeem berhasil
+* warna berbeda tiap status
+* responsive mobile
+* loading & skeleton
+* empty state jika belum ada reward
+
+Pastikan semua fitur berjalan penuh end-to-end:
+
+* database
+* validasi
+* UI pelanggan
+* UI admin
+* history
+* notifikasi
+* keamanan transaksi
+* anti double redeem
+* realtime sync

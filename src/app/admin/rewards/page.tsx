@@ -1,0 +1,1012 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Gift, Trophy, Award, Calendar, AlertCircle, Clock, 
+  CheckCircle, HelpCircle, RefreshCw, Loader2, Plus, Edit2,
+  Trash2, Settings, Users, BarChart3, ShieldAlert, X,
+  Save, Ban, Unlock, RefreshCcw, Wallet, ArrowDown, ArrowUp,
+  Ticket, Sparkles, ShoppingBag
+} from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import toast from "react-hot-toast";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { createClient } from "@/lib/supabase/client";
+
+export default function AdminRewardsPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({
+    totalEarned: 0,
+    totalPending: 0,
+    totalRedeemed: 0,
+    leaderboard: [],
+    chart: []
+  });
+  
+  // Point rules settings
+  const [settings, setSettings] = useState<any>({
+    minRandomPoints: 10,
+    maxRandomPoints: 100,
+    isPointsEnabled: true,
+    pointsExpiryDays: 365,
+    maxPointsPerTransaction: 1000,
+    bonusNewCustomer: 25,
+    bonusBirthday: 50,
+    multiplier: 1,
+    bonusEventName: "",
+    bonusEventPoints: 0,
+    bonusDayOfWeek: -1,
+    bonusDayMultiplier: 1
+  });
+
+  const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "settings">("catalog");
+  
+  // Modal states
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [currentReward, setCurrentReward] = useState<any>(null); // null = add, otherwise edit
+  const [rewardForm, setRewardForm] = useState({
+    title: "",
+    description: "",
+    category: "voucher",
+    minPoints: 50,
+    stock: "",
+    imageUrl: "",
+    discountPercent: 10,
+    cashbackAmount: 0
+  });
+
+  // Customer manual adjustment modal
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [adjustForm, setAdjustForm] = useState({
+    action: "adjust", // adjust or reset
+    amount: "",
+    reason: ""
+  });
+  const [customerTxLogs, setCustomerTxLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchAdminData();
+    fetchRestaurantSettings();
+  }, []);
+
+  const fetchAdminData = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch rewards and stats
+      const resRewards = await fetch("/api/admin/rewards");
+      const dataRewards = await resRewards.json();
+      if (!resRewards.ok) throw new Error(dataRewards.error || "Gagal memuat reward admin");
+      setRewards(dataRewards.rewards || []);
+      setStats(dataRewards.stats);
+
+      // 2. Fetch customer point lists
+      const resCust = await fetch("/api/admin/customers/points");
+      const dataCust = await resCust.json();
+      if (!resCust.ok) throw new Error(dataCust.error || "Gagal memuat pelanggan");
+      setCustomers(dataCust.customers || []);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRestaurantSettings = async () => {
+    try {
+      const { data } = await supabase.from("restaurant_settings").select("*").single();
+      if (data) {
+        setSettings({
+          minRandomPoints: data.min_random_points !== undefined && data.min_random_points !== null ? data.min_random_points : 10,
+          maxRandomPoints: data.max_random_points !== undefined && data.max_random_points !== null ? data.max_random_points : 100,
+          isPointsEnabled: data.is_points_enabled !== undefined && data.is_points_enabled !== null ? !!data.is_points_enabled : true,
+          pointsExpiryDays: data.points_expiry_days !== undefined && data.points_expiry_days !== null ? data.points_expiry_days : 365,
+          maxPointsPerTransaction: data.max_points_per_transaction !== undefined && data.max_points_per_transaction !== null ? data.max_points_per_transaction : 1000,
+          bonusNewCustomer: data.bonus_new_customer !== undefined && data.bonus_new_customer !== null ? data.bonus_new_customer : 25,
+          bonusBirthday: data.bonus_birthday !== undefined && data.bonus_birthday !== null ? data.bonus_birthday : 50,
+          multiplier: data.multiplier !== undefined && data.multiplier !== null ? data.multiplier : 1,
+          bonusEventName: data.bonus_event_name || "",
+          bonusEventPoints: data.bonus_event_points !== undefined && data.bonus_event_points !== null ? data.bonus_event_points : 0,
+          bonusDayOfWeek: data.bonus_day_of_week !== undefined && data.bonus_day_of_week !== null ? data.bonus_day_of_week : -1,
+          bonusDayMultiplier: data.bonus_day_multiplier !== undefined && data.bonus_day_multiplier !== null ? data.bonus_day_multiplier : 1
+        });
+      }
+    } catch (err) {
+      console.error("Error loading point settings:", err);
+    }
+  };
+
+  const handleOpenRewardModal = (reward: any = null) => {
+    if (reward) {
+      setCurrentReward(reward);
+      setRewardForm({
+        title: reward.title,
+        description: reward.description || "",
+        category: reward.category,
+        minPoints: reward.min_points,
+        stock: reward.stock !== null ? String(reward.stock) : "",
+        imageUrl: reward.image_url || "",
+        discountPercent: reward.discount_percent || 10,
+        cashbackAmount: reward.cashback_amount || 0
+      });
+    } else {
+      setCurrentReward(null);
+      setRewardForm({
+        title: "",
+        description: "",
+        category: "voucher",
+        minPoints: 50,
+        stock: "",
+        imageUrl: "",
+        discountPercent: 10,
+        cashbackAmount: 0
+      });
+    }
+    setShowRewardModal(true);
+  };
+
+  const handleSaveReward = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const loadingToast = toast.loading("Menyimpan reward...");
+    try {
+      const url = "/api/admin/rewards";
+      const method = currentReward ? "PUT" : "POST";
+      const bodyPayload = currentReward ? { id: currentReward.id, ...rewardForm } : rewardForm;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyPayload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan reward");
+
+      toast.success(currentReward ? "Reward berhasil diperbarui!" : "Reward baru berhasil ditambahkan!", { id: loadingToast });
+      setShowRewardModal(false);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteReward = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus reward ini secara permanen?")) return;
+    const loadingToast = toast.loading("Menghapus reward...");
+    try {
+      const res = await fetch(`/api/admin/rewards?id=${id}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus reward");
+
+      toast.success("Reward berhasil dihapus!", { id: loadingToast });
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleToggleRewardActive = async (reward: any) => {
+    const loadingToast = toast.loading("Mengubah status reward...");
+    try {
+      const res = await fetch("/api/admin/rewards", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: reward.id,
+          title: reward.title,
+          description: reward.description,
+          category: reward.category,
+          minPoints: reward.min_points,
+          stock: reward.stock !== null ? String(reward.stock) : "",
+          imageUrl: reward.image_url,
+          discountPercent: reward.discount_percent,
+          cashbackAmount: reward.cashback_amount,
+          isActive: !reward.is_active
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memperbarui status reward");
+
+      toast.success("Status reward berhasil diperbarui!", { id: loadingToast });
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const loadingToast = toast.loading("Menyimpan aturan poin...");
+    try {
+      const res = await fetch("/api/admin/settings/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan pengaturan");
+
+      toast.success("Aturan poin berhasil diperbarui!", { id: loadingToast });
+      fetchRestaurantSettings();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenAdjustModal = async (cust: any) => {
+    setSelectedCustomer(cust);
+    setAdjustForm({
+      action: "adjust",
+      amount: "",
+      reason: ""
+    });
+    setCustomerTxLogs([]);
+    setShowAdjustModal(true);
+
+    // Fetch customer logs
+    setLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/admin/customers/points?customerId=${cust.id}`);
+      const data = await res.json();
+      if (res.ok) {
+        setCustomerTxLogs(data.transactions || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleAdjustPointsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCustomer || saving) return;
+    setSaving(true);
+    const loadingToast = toast.loading("Memproses penyesuaian poin...");
+    try {
+      const res = await fetch("/api/admin/customers/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: selectedCustomer.id,
+          action: adjustForm.action,
+          amount: adjustForm.action === "reset" ? 0 : Number(adjustForm.amount),
+          reason: adjustForm.reason
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyesuaikan poin");
+
+      toast.success("Poin pelanggan berhasil disesuaikan!", { id: loadingToast });
+      setShowAdjustModal(false);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleBlockRedeem = async (cust: any) => {
+    const loadingToast = toast.loading("Mengubah status blokir pelanggan...");
+    try {
+      const res = await fetch("/api/admin/customers/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: cust.id,
+          action: "toggle_block"
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah status blokir");
+
+      toast.success(data.isRedeemBlocked ? "Akses redeem berhasil diblokir!" : "Akses redeem berhasil dibuka!", { id: loadingToast });
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-primary flex items-center gap-3">
+            <Trophy className="w-8 h-8 text-orange-500" /> Kelola Reward & Poin
+          </h1>
+          <p className="text-muted text-sm mt-1">
+            Pantau statistik, atur poin pesanan, kelola reward penukaran, dan manipulasi poin pelanggan secara manual.
+          </p>
+        </div>
+        <button
+          onClick={fetchAdminData}
+          disabled={loading}
+          className="flex items-center gap-2 self-start sm:self-center px-4 py-2 text-sm font-bold bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl text-muted hover:text-primary transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`} /> Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+          <span>Memuat data kontrol reward & poin...</span>
+        </div>
+      ) : (
+        <>
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex items-center gap-5">
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-2xl">
+                <ArrowUp className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Poin Terdistribusi</p>
+                <h3 className="text-2xl font-black mt-1 font-mono text-text-light dark:text-text-dark">{stats.totalEarned}</h3>
+              </div>
+            </div>
+
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex items-center gap-5">
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 rounded-2xl">
+                <Clock className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Poin Pending</p>
+                <h3 className="text-2xl font-black mt-1 font-mono text-text-light dark:text-text-dark">{stats.totalPending}</h3>
+              </div>
+            </div>
+
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex items-center gap-5">
+              <div className="p-4 bg-rose-50 dark:bg-rose-950/20 text-rose-600 rounded-2xl">
+                <ArrowDown className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Poin Terpakai (Redeem)</p>
+                <h3 className="text-2xl font-black mt-1 font-mono text-text-light dark:text-text-dark">{stats.totalRedeemed}</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Analytics Chart & Leaderboard */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Chart */}
+            <div className="lg:col-span-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-sm">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-6 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-primary" /> Volume Penukaran Reward (7 Hari Terakhir)
+              </h3>
+              <div className="h-64 w-full">
+                {stats.chart.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.chart}>
+                      <XAxis dataKey="label" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ background: "var(--card-color)", border: "1px solid var(--border-color)", borderRadius: "12px", fontSize: "12px" }} />
+                      <Bar dataKey="count" fill="#ff5722" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted text-xs">Belum ada data penukaran</div>
+                )}
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-sm">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-6 flex items-center gap-2">
+                <Award className="w-4 h-4 text-yellow-500" /> Poin Tertinggi Pelanggan
+              </h3>
+              <div className="space-y-4">
+                {stats.leaderboard.length > 0 ? (
+                  stats.leaderboard.map((cust: any, idx: number) => (
+                    <div key={cust.id} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs ${
+                          idx === 0 ? "bg-yellow-400 text-white" :
+                          idx === 1 ? "bg-gray-300 text-gray-800" :
+                          idx === 2 ? "bg-amber-600 text-white" :
+                          "bg-gray-100 dark:bg-gray-800 text-muted"
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <p className="font-bold text-xs text-text-light dark:text-text-dark line-clamp-1 uppercase">{cust.full_name}</p>
+                          <p className="text-[10px] text-muted line-clamp-1">{cust.email}</p>
+                        </div>
+                      </div>
+                      <span className="font-mono font-black text-primary text-xs shrink-0">{cust.points} Poin</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-muted text-xs text-center py-10">Belum ada data pelanggan</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex border-b border-border-light dark:border-border-dark">
+            <button
+              onClick={() => setActiveTab("catalog")}
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+                activeTab === "catalog"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+              }`}
+            >
+              Katalog Reward ({rewards.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("customers")}
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+                activeTab === "customers"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+              }`}
+            >
+              Manajemen Poin Pelanggan ({customers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+                activeTab === "settings"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+              }`}
+            >
+              Aturan & Pengaturan Poin
+            </button>
+          </div>
+
+          {/* Tab Contents */}
+          <div className="space-y-6">
+            {activeTab === "catalog" ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Katalog Reward Penukaran</h3>
+                  <button
+                    onClick={() => handleOpenRewardModal(null)}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Plus className="w-4 h-4" /> Tambah Reward
+                  </button>
+                </div>
+
+                {rewards.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
+                    <Gift className="w-12 h-12 text-muted/30 mb-3" />
+                    <span className="font-bold text-lg text-text-light dark:text-text-dark">Katalog Kosong</span>
+                    <span className="text-xs mt-1 max-w-sm">Belum ada penawaran reward yang dibuat. Tambahkan reward baru sekarang!</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {rewards.map((reward) => (
+                      <div key={reward.id} className={`bg-card-light dark:bg-card-dark border rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all group overflow-hidden relative ${reward.is_active ? "border-border-light dark:border-border-dark" : "border-red-200 opacity-60 dark:border-red-950"}`}>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-primary/5 p-3 rounded-2xl shrink-0">
+                                {reward.category === "voucher" ? <Ticket className="w-6 h-6 text-orange-500" /> :
+                                 reward.category === "food" ? <Sparkles className="w-6 h-6 text-amber-500" /> :
+                                 reward.category === "cashback" ? <Wallet className="w-6 h-6 text-emerald-500" /> :
+                                 reward.category === "product" ? <ShoppingBag className="w-6 h-6 text-blue-500" /> :
+                                 <Gift className="w-6 h-6 text-purple-500" />}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-base text-text-light dark:text-text-dark line-clamp-1">{reward.title}</h4>
+                                <span className="text-[9px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted font-black uppercase tracking-wider">{reward.category}</span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-xl font-black text-primary font-mono">{reward.min_points}</span>
+                              <span className="block text-[9px] font-bold text-muted uppercase">Poin</span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-muted leading-relaxed line-clamp-2">
+                            {reward.description || "Tidak ada deskripsi."}
+                          </p>
+
+                          {reward.category === "voucher" && (
+                            <div className="bg-orange-50/50 dark:bg-orange-950/10 p-3 rounded-xl text-xs text-orange-700 dark:text-orange-400 font-bold">
+                              Potongan Voucher: {reward.discount_percent || 10}% Diskon
+                            </div>
+                          )}
+
+                          {reward.category === "cashback" && (
+                            <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3 rounded-xl text-xs text-emerald-700 dark:text-emerald-400 font-bold">
+                              Jumlah Saldo: Rp {Number(reward.cashback_amount || 0).toLocaleString("id-ID")}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex items-center justify-between gap-4">
+                          <span className="text-xs font-semibold text-muted">
+                            Stok: {reward.stock !== null ? `${reward.stock} item` : "Tanpa batas"}
+                          </span>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleToggleRewardActive(reward)}
+                              title={reward.is_active ? "Nonaktifkan Reward" : "Aktifkan Reward"}
+                              className={`p-2 rounded-xl border text-xs font-black transition-all ${
+                                reward.is_active
+                                  ? "bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-200"
+                                  : "bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
+                              }`}
+                            >
+                              {reward.is_active ? "Nonaktifkan" : "Aktifkan"}
+                            </button>
+                            <button
+                              onClick={() => handleOpenRewardModal(reward)}
+                              title="Edit Reward"
+                              className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-muted hover:text-primary transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReward(reward.id)}
+                              title="Hapus Reward"
+                              className="p-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : activeTab === "customers" ? (
+              <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
+                        <th className="px-6 py-4">Nama Pelanggan</th>
+                        <th className="px-6 py-4">Email</th>
+                        <th className="px-6 py-4 text-right">Poin Aktif</th>
+                        <th className="px-6 py-4 text-right">Poin Pending</th>
+                        <th className="px-6 py-4 text-right">Dompet (Rp)</th>
+                        <th className="px-6 py-4 text-center">Status</th>
+                        <th className="px-6 py-4 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customers.map((cust) => (
+                        <tr key={cust.id} className="border-b border-border-light dark:border-border-dark text-xs hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
+                          <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark uppercase">
+                            {cust.full_name}
+                          </td>
+                          <td className="px-6 py-4 text-muted">
+                            {cust.email || "-"}
+                          </td>
+                          <td className="px-6 py-4 text-right font-black font-mono text-primary text-sm">
+                            {cust.points || 0}
+                          </td>
+                          <td className="px-6 py-4 text-right font-black font-mono text-amber-500 text-sm">
+                            {cust.pending_points || 0}
+                          </td>
+                          <td className="px-6 py-4 text-right font-black font-mono text-emerald-600 dark:text-emerald-400">
+                            Rp {Number(cust.wallet_balance || 0).toLocaleString("id-ID")}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {cust.is_redeem_blocked ? (
+                              <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-red-50 text-red-600 border border-red-200">Blocked</span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenAdjustModal(cust)}
+                              className="px-3 py-1.5 bg-primary/10 text-primary font-black text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
+                            >
+                              Detail & Poin
+                            </button>
+                            <button
+                              onClick={() => handleToggleBlockRedeem(cust)}
+                              className={`p-1.5 rounded-xl border text-xs transition-all ${
+                                cust.is_redeem_blocked
+                                  ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                                  : "bg-red-50 border-red-200 text-red-500 hover:bg-red-100"
+                              }`}
+                              title={cust.is_redeem_blocked ? "Buka Blokir Redeem" : "Blokir Redeem"}
+                            >
+                              {cust.is_redeem_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveSettings} className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8 shadow-sm max-w-2xl mx-auto space-y-6">
+                <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight border-b border-border-light dark:border-border-dark pb-3 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary" /> Pengaturan Sistem Reward Point
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                    <div>
+                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Status Modul Point</label>
+                      <span className="text-[10px] text-muted font-bold">Aktifkan atau nonaktifkan sistem poin pesanan pelanggan.</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.isPointsEnabled} 
+                        onChange={e => setSettings({ ...settings, isPointsEnabled: e.target.checked })}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin Random</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.minRandomPoints} 
+                      onChange={e => setSettings({ ...settings, minRandomPoints: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Random</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={1}
+                      value={settings.maxRandomPoints} 
+                      onChange={e => setSettings({ ...settings, maxRandomPoints: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Masa Aktif Poin (Hari)</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={1}
+                      value={settings.pointsExpiryDays} 
+                      onChange={e => setSettings({ ...settings, pointsExpiryDays: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Maksimal Poin Per Transaksi</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={1}
+                      value={settings.maxPointsPerTransaction} 
+                      onChange={e => setSettings({ ...settings, maxPointsPerTransaction: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Pelanggan Baru</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.bonusNewCustomer} 
+                      onChange={e => setSettings({ ...settings, bonusNewCustomer: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bonus Ulang Tahun Pelanggan</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={0}
+                      value={settings.bonusBirthday} 
+                      onChange={e => setSettings({ ...settings, bonusBirthday: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Poin Multiplier Global (x1, x2, x3)</label>
+                    <select 
+                      value={settings.multiplier} 
+                      onChange={e => setSettings({ ...settings, multiplier: Number(e.target.value) })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                      title="Multiplier"
+                    >
+                      <option value={1}>x1 (Normal)</option>
+                      <option value={2}>x2 (Ganda)</option>
+                      <option value={3}>x3 (Triple)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border-light dark:border-border-dark flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Simpan Pengaturan</>}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* 1. Add / Edit Reward Dialog Modal */}
+      <AnimatePresence>
+        {showRewardModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRewardModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-primary" /> {currentReward ? "Edit Katalog Reward" : "Tambah Reward Baru"}
+                </h3>
+                <button onClick={() => setShowRewardModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <form onSubmit={handleSaveReward} className="overflow-y-auto p-6 space-y-5 flex-1 custom-scrollbar">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nama / Judul Reward</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={rewardForm.title} 
+                    onChange={e => setRewardForm({ ...rewardForm, title: e.target.value })} 
+                    placeholder="Contoh: Voucher Diskon 20%" 
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Kategori Reward</label>
+                  <select 
+                    value={rewardForm.category} 
+                    onChange={e => setRewardForm({ ...rewardForm, category: e.target.value })} 
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                    title="Kategori"
+                  >
+                    <option value="voucher">Voucher Diskon</option>
+                    <option value="food">Makanan / Minuman</option>
+                    <option value="cashback">Cashback Saldo</option>
+                    <option value="product">Produk Promo</option>
+                    <option value="custom">Reward Custom</option>
+                  </select>
+                </div>
+
+                {rewardForm.category === "voucher" && (
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Diskon (%)</label>
+                    <input 
+                      type="number" 
+                      min={1} 
+                      max={100}
+                      value={rewardForm.discountPercent} 
+                      onChange={e => setRewardForm({ ...rewardForm, discountPercent: Number(e.target.value) })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                )}
+
+                {rewardForm.category === "cashback" && (
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Saldo Cashback (Rp)</label>
+                    <input 
+                      type="number" 
+                      min={0}
+                      value={rewardForm.cashbackAmount} 
+                      onChange={e => setRewardForm({ ...rewardForm, cashbackAmount: Number(e.target.value) })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin</label>
+                    <input 
+                      type="number" 
+                      required 
+                      min={0}
+                      value={rewardForm.minPoints} 
+                      onChange={e => setRewardForm({ ...rewardForm, minPoints: Number(e.target.value) })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Stok Ketersediaan</label>
+                    <input 
+                      type="number" 
+                      value={rewardForm.stock} 
+                      onChange={e => setRewardForm({ ...rewardForm, stock: e.target.value })} 
+                      placeholder="Kosongkan jika tak terbatas"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Deskripsi Reward</label>
+                  <textarea 
+                    rows={3} 
+                    value={rewardForm.description} 
+                    onChange={e => setRewardForm({ ...rewardForm, description: e.target.value })} 
+                    placeholder="Contoh: Voucher diskon ini berlaku 30 hari untuk makan di tempat."
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  />
+                </div>
+
+                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800 rounded-2xl">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Image URL / Link Foto Reward</label>
+                  <input 
+                    type="url" 
+                    value={rewardForm.imageUrl} 
+                    onChange={e => setRewardForm({ ...rewardForm, imageUrl: e.target.value })} 
+                    placeholder="https://..." 
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" 
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={saving} 
+                  className="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-hover uppercase tracking-wider"
+                >
+                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Simpan Reward</>}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. Customer Manual points control Sheet Modal */}
+      <AnimatePresence>
+        {showAdjustModal && selectedCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdjustModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <div>
+                  <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-tight">Detail & Kelola Poin</h3>
+                  <p className="text-[10px] text-muted font-bold mt-0.5">Pelanggan: {selectedCustomer.full_name} ({selectedCustomer.email || "Tanpa Email"})</p>
+                </div>
+                <button onClick={() => setShowAdjustModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                {/* Profile points card */}
+                <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
+                  <div>
+                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Aktif</span>
+                    <span className="text-xl font-mono font-black text-primary">{selectedCustomer.points || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Pending</span>
+                    <span className="text-xl font-mono font-black text-amber-500">{selectedCustomer.pending_points || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Saldo Dompet</span>
+                    <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400">Rp {Number(selectedCustomer.wallet_balance || 0).toLocaleString("id-ID")}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Adjustment Form */}
+                  <form onSubmit={handleAdjustPointsSubmit} className="space-y-4 border-r border-border-light dark:border-border-dark pr-0 md:pr-6">
+                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Penyesuaian Manual</h4>
+                    
+                    <div>
+                      <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Pilih Aksi</label>
+                      <select 
+                        value={adjustForm.action} 
+                        onChange={e => setAdjustForm({ ...adjustForm, action: e.target.value })} 
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                        title="Aksi"
+                      >
+                        <option value="adjust">Tambah / Kurangi Poin</option>
+                        <option value="reset">Reset Poin ke 0</option>
+                      </select>
+                    </div>
+
+                    {adjustForm.action === "adjust" && (
+                      <div>
+                        <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Jumlah Poin (Negatif untuk kurangi)</label>
+                        <input 
+                          type="number" 
+                          required 
+                          placeholder="Misal: 50 atau -25"
+                          value={adjustForm.amount} 
+                          onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
+                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
+                      <textarea 
+                        rows={2} 
+                        required
+                        placeholder="Masukkan alasan manipulasi poin..."
+                        value={adjustForm.reason} 
+                        onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                      />
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={saving}
+                      className="w-full py-3 bg-primary text-white font-black rounded-xl shadow-md hover:shadow-lg transition-all text-xs uppercase tracking-wider"
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Penyesuaian"}
+                    </button>
+                  </form>
+
+                  {/* Customer Transaction Logs */}
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat Poin</h4>
+                    
+                    {loadingLogs ? (
+                      <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                    ) : customerTxLogs.length === 0 ? (
+                      <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas poin</div>
+                    ) : (
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                        {customerTxLogs.map((tx) => (
+                          <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
+                            <div>
+                              <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
+                              <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                            </div>
+                            <span className={`font-mono font-black text-xs shrink-0 ${tx.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                              {tx.points > 0 ? `+${tx.points}` : tx.points}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

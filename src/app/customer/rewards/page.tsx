@@ -196,22 +196,34 @@ export default function CustomerRewardsPage() {
   };
 
   const activeRedemptions = redemptions.filter(red => {
-    if (red.status !== 'used') return true;
-    if (red.status === 'used' && red.rewards?.category === 'cashback' && red.used_at) {
-      const elapsedMs = Date.now() - new Date(red.used_at).getTime();
-      return elapsedMs < 60 * 1000;
+    if (red.status === 'used') {
+      if (red.rewards?.category === 'cashback' && red.used_at) {
+        const elapsedMs = Date.now() - new Date(red.used_at).getTime();
+        return elapsedMs < 60 * 1000;
+      }
+      return false;
     }
-    return false;
+    if (red.status === 'expired') return false;
+    if (red.expires_at && new Date(red.expires_at).getTime() <= Date.now()) {
+      return false;
+    }
+    return true;
   });
 
   const usedRedemptions = redemptions.filter(red => {
-    if (red.status !== 'used') return false;
-    if (red.rewards?.category === 'cashback') {
-      if (!red.used_at) return true;
-      const elapsedMs = Date.now() - new Date(red.used_at).getTime();
-      return elapsedMs >= 60 * 1000;
+    if (red.status === 'expired') return true;
+    if (red.status !== 'used' && red.expires_at && new Date(red.expires_at).getTime() <= Date.now()) {
+      return true;
     }
-    return true;
+    if (red.status === 'used') {
+      if (red.rewards?.category === 'cashback') {
+        if (!red.used_at) return true;
+        const elapsedMs = Date.now() - new Date(red.used_at).getTime();
+        return elapsedMs >= 60 * 1000;
+      }
+      return true;
+    }
+    return false;
   });
   const getCountdownString = (expiresAtStr: string) => {
     if (!expiresAtStr) return null;
@@ -694,6 +706,7 @@ export default function CustomerRewardsPage() {
                       {usedRedemptions.map((red) => {
                         const category = red.rewards?.category || "custom";
                         const cashbackVal = Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0));
+                        const isExpired = red.status === "expired" || (red.status !== "used" && red.expires_at && new Date(red.expires_at).getTime() <= Date.now());
 
                         return (
                           <div
@@ -701,8 +714,12 @@ export default function CustomerRewardsPage() {
                             className="bg-card-light/50 dark:bg-card-dark/50 border border-border-light/50 dark:border-border-dark/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
                           >
                             <div className="absolute top-0 right-0 p-3">
-                              <span className="px-2.5 py-1 text-[9px] font-black uppercase rounded bg-gray-100 text-gray-500 border border-gray-200">
-                                Telah Digunakan
+                              <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                                isExpired
+                                  ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-450 border border-rose-200/20"
+                                  : "bg-gray-100 text-gray-500 border border-gray-200"
+                              }`}>
+                                {isExpired ? "Kadaluarsa" : "Telah Digunakan"}
                               </span>
                             </div>
 
@@ -717,7 +734,18 @@ export default function CustomerRewardsPage() {
                                 </div>
                               </div>
 
-                              {category === "cashback" ? (
+                              {isExpired ? (
+                                <div className="bg-rose-50/30 dark:bg-rose-950/10 border border-rose-200/30 dark:border-rose-900/30 rounded-2xl p-3 text-xs text-rose-750 dark:text-rose-400 font-bold leading-relaxed flex flex-col gap-1">
+                                  <span>
+                                    Voucher/Reward &ldquo;{red.rewards?.title || "Reward"}&rdquo; telah kadaluarsa dan tidak dapat digunakan lagi.
+                                  </span>
+                                  {red.expires_at && (
+                                    <span className="text-[10px] opacity-80 font-normal block">
+                                      Tanggal Kadaluarsa: {getWibExpiryString(red.expires_at)}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : category === "cashback" ? (
                                 <div className="bg-green-50/30 dark:bg-green-950/10 border border-green-200/30 dark:border-green-900/30 rounded-2xl p-3 text-xs text-green-750 dark:text-green-400 font-bold leading-relaxed">
                                   Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} telah berhasil diklaim dan dikreditkan ke Saldo Dompet Anda.
                                 </div>

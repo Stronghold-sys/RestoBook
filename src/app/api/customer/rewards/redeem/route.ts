@@ -3,6 +3,14 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+const getWibExpiryString = (expiresAtStr: string) => {
+  if (!expiresAtStr) return "";
+  const date = new Date(expiresAtStr);
+  return format(date, "EEEE, dd MMMM yyyy 'pukul' HH:mm", { locale: id }) + " WIB";
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +53,30 @@ export async function POST(req: NextRequest) {
 
     if (result && result.success === false) {
       return NextResponse.json({ error: result.error || 'Gagal menukarkan reward' }, { status: 400 });
+    }
+
+    // Jika reward yang ditukar memiliki batas waktu, perbarui deskripsi notifikasi agar memuat informasi kadaluarsa WIB
+    try {
+      if (result.redemption_id) {
+        const { data: redemption } = await supabaseAdmin
+          .from('reward_redemptions')
+          .select('*, rewards(title)')
+          .eq('id', result.redemption_id)
+          .single();
+
+        if (redemption && redemption.expires_at) {
+          const formattedExpiry = getWibExpiryString(redemption.expires_at);
+          const activeMessage = `Kamu berhasil menukar ${redemption.points_spent} point untuk ${redemption.rewards?.title || 'Reward'}. Reward ini AKTIF dan berlaku sampai dengan ${formattedExpiry}. Silakan gunakan sebelum batas waktu berakhir!`;
+
+          await supabaseAdmin
+            .from('notifications')
+            .update({ message: activeMessage })
+            .eq('reference_id', redemption.id)
+            .eq('type', 'point');
+        }
+      }
+    } catch (notifErr) {
+      console.error("Gagal memperbarui pesan notifikasi aktif:", notifErr);
     }
 
     return NextResponse.json({

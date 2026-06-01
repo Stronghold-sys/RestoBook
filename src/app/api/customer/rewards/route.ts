@@ -3,6 +3,14 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+const getWibExpiryString = (expiresAtStr: string) => {
+  if (!expiresAtStr) return "";
+  const date = new Date(expiresAtStr);
+  return format(date, "EEEE, dd MMMM yyyy 'pukul' HH:mm", { locale: id }) + " WIB";
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +39,44 @@ export async function GET(req: NextRequest) {
       .order('min_points', { ascending: true });
 
     if (rewardsError) throw rewardsError;
+
+    // Check and update expired redemptions dynamically in real-time
+    const now = new Date().toISOString();
+    const { data: expiredRedemptions } = await supabaseAdmin
+      .from('reward_redemptions')
+      .select('*, rewards(title)')
+      .eq('customer_id', profile.id)
+      .eq('status', 'success')
+      .lt('expires_at', now);
+
+    if (expiredRedemptions && expiredRedemptions.length > 0) {
+      for (const redemption of expiredRedemptions) {
+        // 1. Update status di database menjadi 'expired'
+        await supabaseAdmin
+          .from('reward_redemptions')
+          .update({
+            status: 'expired',
+            updated_at: now
+          })
+          .eq('id', redemption.id);
+
+        // 2. Kirim notifikasi kadaluarsa
+        const rewardTitle = redemption.rewards?.title || 'Reward';
+        const formattedExpiry = getWibExpiryString(redemption.expires_at);
+        const expiredMessage = `Reward "${rewardTitle}" Anda telah kadaluarsa pada ${formattedExpiry} dan tidak dapat digunakan lagi.`;
+
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: profile.id,
+            title: 'Reward Kadaluarsa',
+            message: expiredMessage,
+            type: 'point',
+            reference_id: redemption.id,
+            status_badge: 'Gagal'
+          });
+      }
+    }
 
     // Get user's redemption logs
     const { data: redemptions, error: redemptionsError } = await supabaseAdmin

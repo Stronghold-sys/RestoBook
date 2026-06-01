@@ -11,16 +11,6 @@ export default function AppSplashScreen() {
   const supabase = createClient();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isPWA = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
-      const isLighthouse = /Lighthouse|GTmetrix|HeadlessChrome|Chrome-Lighthouse/i.test(navigator.userAgent);
-      
-      if (isLighthouse || !isPWA) {
-        setIsVisible(false);
-        return;
-      }
-    }
-
     // 1. Fetch logo from database
     const fetchLogo = async () => {
       try {

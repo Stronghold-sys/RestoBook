@@ -65,7 +65,8 @@ export default function AdminRewardsPage() {
     imageUrl: "",
     discountPercent: 10,
     cashbackAmount: 0,
-    isAutoCashback: false
+    isAutoCashback: false,
+    expiryDays: ""
   });
 
   // Customer manual adjustment modal
@@ -176,7 +177,8 @@ export default function AdminRewardsPage() {
         imageUrl: reward.image_url || "",
         discountPercent: reward.discount_percent || 10,
         cashbackAmount: reward.cashback_amount || 0,
-        isAutoCashback: !!reward.is_auto_cashback
+        isAutoCashback: !!reward.is_auto_cashback,
+        expiryDays: reward.expiry_days !== null && reward.expiry_days !== undefined ? String(reward.expiry_days) : ""
       });
     } else {
       setCurrentReward(null);
@@ -189,7 +191,8 @@ export default function AdminRewardsPage() {
         imageUrl: "",
         discountPercent: 10,
         cashbackAmount: 0,
-        isAutoCashback: false
+        isAutoCashback: false,
+        expiryDays: ""
       });
     }
     setShowRewardModal(true);
@@ -207,7 +210,8 @@ export default function AdminRewardsPage() {
         minPoints: !rewardForm.minPoints ? 0 : Number(rewardForm.minPoints),
         discountPercent: !rewardForm.discountPercent ? 0 : Number(rewardForm.discountPercent),
         cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount),
-        isAutoCashback: !!rewardForm.isAutoCashback
+        isAutoCashback: !!rewardForm.isAutoCashback,
+        expiryDays: rewardForm.expiryDays === "" ? null : Number(rewardForm.expiryDays)
       };
       const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
 
@@ -272,6 +276,7 @@ export default function AdminRewardsPage() {
           imageUrl: reward.image_url,
           discountPercent: reward.discount_percent,
           cashbackAmount: reward.cashback_amount,
+          expiryDays: reward.expiry_days,
           isActive: !reward.is_active
         })
       });
@@ -599,9 +604,16 @@ export default function AdminRewardsPage() {
                         </div>
 
                         <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex items-center justify-between gap-4">
-                          <span className="text-xs font-semibold text-muted">
-                            Stok: {reward.stock !== null ? `${reward.stock} item` : "Tanpa batas"}
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-semibold text-muted">
+                              Stok: {reward.stock !== null ? `${reward.stock} item` : "Tanpa batas"}
+                            </span>
+                            {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
+                              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                Kadaluarsa: {reward.expiry_days} Hari
+                              </span>
+                            )}
+                          </div>
                           
                           <div className="flex gap-2">
                             <button
@@ -1155,6 +1167,20 @@ export default function AdminRewardsPage() {
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="rewardExpiryDays" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Masa Berlaku Reward Setelah Ditukar (Hari)</label>
+                  <input 
+                    id="rewardExpiryDays"
+                    type="number" 
+                    min={1}
+                    value={rewardForm.expiryDays} 
+                    onChange={e => setRewardForm({ ...rewardForm, expiryDays: e.target.value })} 
+                    placeholder="Kosongkan jika tanpa batas waktu (selamanya)"
+                    title="Masa Berlaku Reward Setelah Ditukar (Hari)"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  />
                 </div>
 
                 <div>

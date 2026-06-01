@@ -46,6 +46,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Reward ini sudah pernah digunakan atau diaktifkan' }, { status: 400 });
     }
 
+    if (redemption.expires_at !== null) {
+      const expiresAt = new Date(redemption.expires_at).getTime();
+      if (Date.now() > expiresAt) {
+        return NextResponse.json({ error: 'Reward ini telah kedaluwarsa dan tidak dapat digunakan lagi.' }, { status: 400 });
+      }
+    }
+
     const category = redemption.rewards?.category || 'custom';
 
     if (category === 'cashback') {

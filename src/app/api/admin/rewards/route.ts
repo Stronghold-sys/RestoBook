@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback } = body;
+    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, expiryDays } = body;
 
     if (!title || !category) {
       return NextResponse.json({ error: 'Judul dan Kategori harus diisi' }, { status: 400 });
@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
         discount_percent: discountPercent || 10,
         cashback_amount: finalCashback,
         is_auto_cashback: !!isAutoCashback,
+        expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
         is_active: true
       })
       .select()
@@ -165,7 +166,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive } = body;
+    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive, expiryDays } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID Reward tidak disertakan' }, { status: 400 });
@@ -185,6 +186,7 @@ export async function PUT(req: NextRequest) {
         discount_percent: discountPercent,
         cashback_amount: finalCashback,
         is_auto_cashback: !!isAutoCashback,
+        expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
         is_active: isActive,
         updated_at: new Date().toISOString()
       })

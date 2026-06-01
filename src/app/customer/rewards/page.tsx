@@ -51,7 +51,7 @@ export default function CustomerRewardsPage() {
 
     const interval = setInterval(() => {
       setTick(t => t + 1);
-    }, 10000);
+    }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -213,6 +213,34 @@ export default function CustomerRewardsPage() {
     }
     return true;
   });
+  const getCountdownString = (expiresAtStr: string) => {
+    if (!expiresAtStr) return null;
+    const expiresAt = new Date(expiresAtStr).getTime();
+    const now = Date.now();
+    const diff = expiresAt - now;
+
+    if (diff <= 0) {
+      return "EXPIRED";
+    }
+
+    const seconds = Math.floor((diff / 1000) % 60);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    const pad = (num: number) => String(num).padStart(2, "0");
+
+    if (days > 0) {
+      return `${days} hari ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  };
+
+  const getWibExpiryString = (expiresAtStr: string) => {
+    if (!expiresAtStr) return "";
+    const date = new Date(expiresAtStr);
+    return format(date, "EEEE, dd MMMM yyyy 'pukul' HH:mm", { locale: id }) + " WIB";
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
@@ -402,9 +430,17 @@ export default function CustomerRewardsPage() {
                         </div>
 
                         <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex items-center justify-between gap-4">
-                          <span className="text-xs font-bold text-muted shrink-0">
-                            {reward.stock !== null ? `Stok: ${reward.stock} item` : "Stok melimpah"}
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-bold text-muted shrink-0">
+                              {reward.stock !== null ? `Stok: ${reward.stock} item` : "Stok melimpah"}
+                            </span>
+                            {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
+                              <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
+                                Masa Aktif: {reward.expiry_days} Hari
+                              </span>
+                            )}
+                          </div>
+
 
                           {isOutOfStock ? (
                             <button
@@ -459,6 +495,9 @@ export default function CustomerRewardsPage() {
                         const category = red.rewards?.category || "custom";
                         const cashbackVal = Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0));
 
+                        const countdownText = getCountdownString(red.expires_at);
+                        const isExpired = countdownText === "EXPIRED";
+
                         return (
                           <motion.div
                             key={red.id}
@@ -470,9 +509,11 @@ export default function CustomerRewardsPage() {
                               <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
                                 isUsed 
                                   ? "bg-gray-100 text-gray-500 border border-gray-200" 
-                                  : "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20"
+                                  : isExpired
+                                    ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-450 border border-rose-200/20"
+                                    : "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20"
                               }`}>
-                                {isUsed ? "Telah Digunakan" : "Belum Aktif"}
+                                {isUsed ? "Telah Digunakan" : isExpired ? "Kadaluarsa" : "Belum Aktif"}
                               </span>
                             </div>
 
@@ -532,48 +573,98 @@ export default function CustomerRewardsPage() {
                               {/* JIKA REWARD BELUM AKTIF (Menampilkan tombol Gunakan) */}
                               {!isUsed && (
                                 <div className="space-y-3">
+                                  {/* Info Masa Berlaku & Countdown */}
+                                  {red.expires_at && (
+                                    <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed font-bold ${
+                                      isExpired 
+                                        ? "bg-rose-50 dark:bg-rose-950/10 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-455"
+                                        : "bg-amber-50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-400"
+                                    }`}>
+                                      <div className="flex items-center gap-2 mb-1.5">
+                                        <Clock className={`w-4 h-4 ${isExpired ? "text-rose-600 dark:text-rose-400" : "text-amber-600 dark:text-amber-400"}`} />
+                                        <span className="font-extrabold uppercase tracking-wide">
+                                          {isExpired ? "Telah Kadaluarsa" : `Sisa Waktu: ${countdownText}`}
+                                        </span>
+                                      </div>
+                                      <p className="text-[11px] opacity-90">
+                                        Berlaku hingga: <span className="font-extrabold">{getWibExpiryString(red.expires_at)}</span>
+                                      </p>
+                                      <p className="text-[11px] mt-1.5 font-extrabold flex items-center gap-1.5">
+                                        {isExpired ? (
+                                          <>
+                                            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                            <span>Reward ini telah kadaluarsa dan tidak dapat digunakan lagi.</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
+                                            <span>Peringatan: Silakan gunakan reward ini sebelum batas waktu berakhir!</span>
+                                          </>
+                                        )}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Panduan Penggunaan (Hanya jika belum kadaluarsa) */}
+                                  {!isExpired && (
+                                    <>
+                                      {category === "cashback" ? (
+                                        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                          Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
+                                        </div>
+                                      ) : category === "voucher" || category === "food" ? (
+                                        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                          Voucher &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan dan dimasukkan ke menu Voucher Saya Anda. Silakan klik tombol di bawah untuk menggunakan.
+                                        </div>
+                                      ) : (
+                                        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                          Reward &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan. Silakan tunjukkan ke kasir/pelayan atau klik tombol di bawah untuk mengaktifkan.
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {/* Tombol Gunakan (Disabled jika kadaluarsa) */}
                                   {category === "cashback" ? (
-                                    <>
-                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
-                                        Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
-                                      </div>
-                                      <button
-                                        onClick={() => handleClaimCashback(red.id)}
-                                        disabled={submitting}
-                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
-                                      >
-                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
-                                      </button>
-                                    </>
+                                    <button
+                                      onClick={() => handleClaimCashback(red.id)}
+                                      disabled={submitting || isExpired}
+                                      className={`w-full py-3 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 ${
+                                        isExpired 
+                                          ? "bg-gray-250 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300/30"
+                                          : "bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20"
+                                      }`}
+                                    >
+                                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : isExpired ? "Cashback Kadaluarsa" : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
+                                    </button>
                                   ) : category === "voucher" || category === "food" ? (
-                                    <>
-                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
-                                        Voucher &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan dan dimasukkan ke menu Voucher Saya Anda. Silakan klik tombol di bawah untuk menggunakan.
-                                      </div>
-                                      <button
-                                        onClick={() => handleClaimCashback(red.id)}
-                                        disabled={submitting}
-                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
-                                      >
-                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Ticket className="w-4 h-4" /> Gunakan Reward</>}
-                                      </button>
-                                    </>
+                                    <button
+                                      onClick={() => handleClaimCashback(red.id)}
+                                      disabled={submitting || isExpired}
+                                      className={`w-full py-3 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 ${
+                                        isExpired 
+                                          ? "bg-gray-250 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300/30"
+                                          : "bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20"
+                                      }`}
+                                    >
+                                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : isExpired ? "Voucher Kadaluarsa" : <><Ticket className="w-4 h-4" /> Gunakan Reward</>}
+                                    </button>
                                   ) : (
-                                    <>
-                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
-                                        Reward &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan. Silakan tunjukkan ke kasir/pelayan atau klik tombol di bawah untuk mengaktifkan.
-                                      </div>
-                                      <button
-                                        onClick={() => handleClaimCashback(red.id)}
-                                        disabled={submitting}
-                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
-                                      >
-                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Gift className="w-4 h-4" /> Gunakan Reward</>}
-                                      </button>
-                                    </>
+                                    <button
+                                      onClick={() => handleClaimCashback(red.id)}
+                                      disabled={submitting || isExpired}
+                                      className={`w-full py-3 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 ${
+                                        isExpired 
+                                          ? "bg-gray-250 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300/30"
+                                          : "bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20"
+                                      }`}
+                                    >
+                                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : isExpired ? "Reward Kadaluarsa" : <><Gift className="w-4 h-4" /> Gunakan Reward</>}
+                                    </button>
                                   )}
                                 </div>
                               )}
+
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-border-light dark:border-border-dark flex justify-between items-center text-[10px] text-muted">

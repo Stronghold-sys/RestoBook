@@ -189,17 +189,46 @@ export default function CustomerOrdersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("active")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-primary to-primary-hover ${activeTab === "active" ? "ring-4 ring-primary/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-1.5 mb-2"><Clock className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium truncate">Aktif</span></div>
-          <p className="text-2xl sm:text-3xl font-bold">{activeOrders.length}</p>
+        <motion.div 
+          whileHover={{ y: -2 }} 
+          onClick={() => setActiveTab("active")} 
+          className={`rounded-2xl p-2.5 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-primary to-primary-hover flex flex-col items-center justify-center text-center ${
+            activeTab === "active" ? "ring-4 ring-primary/30 scale-[1.02]" : ""
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 mb-1.5 w-full">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" />
+            <span className="text-white/80 text-[10px] sm:text-sm font-bold tracking-wide uppercase sm:normal-case sm:font-medium truncate">Aktif</span>
+          </div>
+          <p className="text-xl sm:text-3xl font-black">{activeOrders.length}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("completed")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-green-500 to-emerald-600 ${activeTab === "completed" ? "ring-4 ring-green-500/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-1.5 mb-2"><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium truncate">Selesai</span></div>
-          <p className="text-2xl sm:text-3xl font-bold">{completedOrders.length}</p>
+
+        <motion.div 
+          whileHover={{ y: -2 }} 
+          onClick={() => setActiveTab("completed")} 
+          className={`rounded-2xl p-2.5 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-green-500 to-emerald-600 flex flex-col items-center justify-center text-center ${
+            activeTab === "completed" ? "ring-4 ring-green-500/30 scale-[1.02]" : ""
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 mb-1.5 w-full">
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" />
+            <span className="text-white/80 text-[10px] sm:text-sm font-bold tracking-wide uppercase sm:normal-case sm:font-medium truncate">Selesai</span>
+          </div>
+          <p className="text-xl sm:text-3xl font-black">{completedOrders.length}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2 }} onClick={() => setActiveTab("cancelled")} className={`rounded-2xl p-3 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-red-500 to-rose-600 ${activeTab === "cancelled" ? "ring-4 ring-red-500/30 scale-[1.02]" : ""}`}>
-          <div className="flex items-center gap-1.5 mb-2"><XCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" /><span className="text-white/80 text-xs sm:text-sm font-medium leading-tight">Dibatalkan</span></div>
-          <p className="text-2xl sm:text-3xl font-bold">{cancelledOrders.length}</p>
+
+        <motion.div 
+          whileHover={{ y: -2 }} 
+          onClick={() => setActiveTab("cancelled")} 
+          className={`rounded-2xl p-2.5 sm:p-5 text-white shadow-lg cursor-pointer transition-all bg-gradient-to-br from-red-500 to-rose-600 flex flex-col items-center justify-center text-center ${
+            activeTab === "cancelled" ? "ring-4 ring-red-500/30 scale-[1.02]" : ""
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 mb-1.5 w-full">
+            <XCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-80 shrink-0" />
+            <span className="text-white/80 text-[10px] sm:text-sm font-bold tracking-wide uppercase sm:normal-case sm:font-medium truncate leading-tight">Dibatalkan</span>
+          </div>
+          <p className="text-xl sm:text-3xl font-black">{cancelledOrders.length}</p>
         </motion.div>
       </div>
 

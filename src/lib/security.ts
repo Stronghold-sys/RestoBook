@@ -106,7 +106,7 @@ export const ApiErrors = {
     { error: 'Terlalu banyak permintaan. Coba lagi nanti.', retryAfter },
     { status: 429, headers: { 'Retry-After': String(retryAfter) } }
   ),
-  serverError: (detail?: string) => Response.json(
+  serverError: () => Response.json(
     { error: 'Terjadi kesalahan server. Tim kami telah diberitahu.' },
     { status: 500 }
   ),

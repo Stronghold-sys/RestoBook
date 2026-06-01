@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-export const runtime = 'edge';
-
 export async function GET(req: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();

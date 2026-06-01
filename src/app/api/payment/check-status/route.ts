@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
+import { md5 } from '@/lib/md5';
 
-export const runtime = 'edge';
-
-async function md5(message: string) {
-  const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('MD5' as any, msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 export async function POST(req: Request) {
   try {

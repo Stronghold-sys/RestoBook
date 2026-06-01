@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-export const runtime = 'edge';
-
 const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE!;
 const DUITKU_API_KEY = process.env.DUITKU_API_KEY!;
 

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { md5 } from '@/lib/md5';
 
-export const runtime = 'edge';
-
 function getFormattedDate() {
   const now = new Date();
   const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));

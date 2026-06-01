@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
-import { md5 } from '@/lib/md5';
+export const dynamic = 'force-dynamic';
 
-export const runtime = 'edge';
+import { NextResponse } from 'next/server';
+
+import { md5 } from '@/lib/md5';
 
 export async function GET() {
   const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE || '';

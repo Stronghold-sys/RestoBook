@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-export const runtime = 'edge';
-
 export async function POST(req: Request) {
   try {
     const { email, name, month, pdfBase64 } = await req.json();

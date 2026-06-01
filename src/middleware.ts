@@ -128,9 +128,10 @@ let lastCleanup = Date.now();
 function cleanupStore() {
   const now = Date.now();
   if (now - lastCleanup > 300_000) {
-    for (const [key, entry] of rateLimitStore.entries()) {
+    // Array.from() diperlukan agar kompatibel dengan target TypeScript lama
+    Array.from(rateLimitStore.entries()).forEach(([key, entry]) => {
       if (entry.resetAt <= now) rateLimitStore.delete(key);
-    }
+    });
     lastCleanup = now;
   }
 }
@@ -145,7 +146,7 @@ function secureResponse(response: NextResponse): NextResponse {
   return response;
 }
 
-function rateLimitedResponse(retryAfter: number, ip: string): NextResponse {
+function rateLimitedResponse(retryAfter: number): NextResponse {
   const res = NextResponse.json(
     {
       error: 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
@@ -185,7 +186,7 @@ export async function middleware(request: NextRequest) {
   if (!isStaticAsset) {
     const { allowed, retryAfter } = checkRateLimit(ip, path);
     if (!allowed) {
-      return rateLimitedResponse(retryAfter!, ip);
+      return rateLimitedResponse(retryAfter!);
     }
   }
 

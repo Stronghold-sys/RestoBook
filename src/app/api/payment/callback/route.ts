@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
 
-export const runtime = 'edge';
-
 export async function POST(req: Request) {
   try {
     const contentType = req.headers.get('content-type') || '';

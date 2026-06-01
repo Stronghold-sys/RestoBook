@@ -10,13 +10,25 @@ export default function TablesPage() {
   const [tables, setTables] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingTable, setUpdatingTable] = useState<string | null>(null);
-  const [settings, setSettings] = useState({
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
+  const [settings, setSettings] = useState<{
+    hours: string;
+    minutes: string;
+    seconds: string;
+  }>({
+    hours: "0",
+    minutes: "0",
+    seconds: "0",
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const supabase = createClient();
+
+  const cleanValue = (val: string, maxVal: number) => {
+    let clean = val.replace(/\D/g, '');
+    if (clean === "") return "";
+    const num = parseInt(clean, 10);
+    if (num > maxVal) return String(maxVal);
+    return String(num);
+  };
 
   useEffect(() => {
     fetchTables();
@@ -44,9 +56,9 @@ export default function TablesPage() {
       const { data } = await supabase.from("restaurant_settings").select("auto_empty_hours, auto_empty_minutes, auto_empty_seconds").single();
       if (data) {
         setSettings({
-          hours: data.auto_empty_hours || 0,
-          minutes: data.auto_empty_minutes || 0,
-          seconds: data.auto_empty_seconds || 0,
+          hours: data.auto_empty_hours !== null && data.auto_empty_hours !== undefined ? String(data.auto_empty_hours) : "0",
+          minutes: data.auto_empty_minutes !== null && data.auto_empty_minutes !== undefined ? String(data.auto_empty_minutes) : "0",
+          seconds: data.auto_empty_seconds !== null && data.auto_empty_seconds !== undefined ? String(data.auto_empty_seconds) : "0",
         });
       }
     } catch (error) {
@@ -62,9 +74,9 @@ export default function TablesPage() {
       if (!currentSettings) throw new Error("Pengaturan belum diinisialisasi");
 
       const { error } = await supabase.from("restaurant_settings").update({
-        auto_empty_hours: Number(settings.hours),
-        auto_empty_minutes: Number(settings.minutes),
-        auto_empty_seconds: Number(settings.seconds),
+        auto_empty_hours: Number(settings.hours) || 0,
+        auto_empty_minutes: Number(settings.minutes) || 0,
+        auto_empty_seconds: Number(settings.seconds) || 0,
       }).eq("id", currentSettings.id);
 
       if (error) throw error;
@@ -128,11 +140,11 @@ export default function TablesPage() {
             <label htmlFor="hours" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1">Jam</label>
             <input 
               id="hours"
-              type="number" 
-              min={0} 
-              max={23} 
+              type="text" 
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={settings.hours} 
-              onChange={e => setSettings({ ...settings, hours: Math.max(0, parseInt(e.target.value) || 0) })}
+              onChange={e => setSettings({ ...settings, hours: cleanValue(e.target.value, 23) })}
               className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-primary font-bold"
             />
           </div>
@@ -141,11 +153,11 @@ export default function TablesPage() {
             <label htmlFor="minutes" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1">Menit</label>
             <input 
               id="minutes"
-              type="number" 
-              min={0} 
-              max={59} 
+              type="text" 
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={settings.minutes} 
-              onChange={e => setSettings({ ...settings, minutes: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)) })}
+              onChange={e => setSettings({ ...settings, minutes: cleanValue(e.target.value, 59) })}
               className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-primary font-bold"
             />
           </div>
@@ -154,11 +166,11 @@ export default function TablesPage() {
             <label htmlFor="seconds" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1">Detik</label>
             <input 
               id="seconds"
-              type="number" 
-              min={0} 
-              max={59} 
+              type="text" 
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={settings.seconds} 
-              onChange={e => setSettings({ ...settings, seconds: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)) })}
+              onChange={e => setSettings({ ...settings, seconds: cleanValue(e.target.value, 59) })}
               className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-primary font-bold"
             />
           </div>

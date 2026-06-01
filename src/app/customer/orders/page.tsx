@@ -227,11 +227,11 @@ export default function CustomerOrdersPage() {
               {currentOrders.map((order, i) => (
                 <Link key={order.id} href={`/customer/orders/${order.id}`}>
                   <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} whileHover={{ y: -2 }} className={`bg-card-light dark:bg-card-dark border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer transition-colors shadow-sm mb-4 ${order.status === "cancelled" ? "border-red-200 dark:border-red-900/40" : "border-border-light dark:border-border-dark hover:border-primary/50"}`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-xl hidden sm:flex items-center justify-center ${order.status === "cancelled" ? "bg-red-100 dark:bg-red-900/20" : order.status === "completed" ? "bg-green-100 dark:bg-green-900/20" : "bg-primary/10"}`}>
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className={`p-3 rounded-xl hidden sm:flex items-center justify-center shrink-0 ${order.status === "cancelled" ? "bg-red-100 dark:bg-red-900/20" : order.status === "completed" ? "bg-green-100 dark:bg-green-900/20" : "bg-primary/10"}`}>
                         {getStatusIcon(order.status)}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1 flex-wrap">
                           <h3 className="font-bold text-lg text-text-light dark:text-text-dark">#{order.id.split("-")[0]}</h3>
                           <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${getStatusColor(order.status)}`}>
@@ -261,10 +261,10 @@ export default function CustomerOrdersPage() {
                         {order.status === "cancelled" && renderCancelReason(order.cancel_reason)}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-0 border-border-light dark:border-border-dark pt-4 md:pt-0 mt-2 md:mt-0">
-                      <div className="text-left md:text-right">
+                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-0 border-border-light dark:border-border-dark pt-4 md:pt-0 mt-2 md:mt-0 shrink-0">
+                      <div className="text-left md:text-right shrink-0">
                         <p className="text-xs text-muted mb-1">Total</p>
-                        <p className={`font-bold text-lg ${order.status === "cancelled" ? "text-muted line-through" : "text-primary"}`}>
+                        <p className={`font-bold text-lg whitespace-nowrap ${order.status === "cancelled" ? "text-muted line-through" : "text-primary"}`}>
                           Rp {Number(order.total_amount).toLocaleString("id-ID")}
                         </p>
                       </div>

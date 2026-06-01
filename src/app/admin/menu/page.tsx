@@ -33,6 +33,23 @@ export default function AdminMenu() {
 
   useEffect(() => {
     fetchData();
+
+    const menuChannel = supabase.channel("admin-menu-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    const categoriesChannel = supabase.channel("admin-menu-categories-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoriesChannel);
+    };
   }, []);
 
   const fetchData = async () => {

@@ -17,7 +17,19 @@ export default function AdminOrdersPage() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const supabase = createClient();
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    fetchOrders();
+
+    const channel = supabase.channel("admin-orders-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchOrders = async () => {
     try {

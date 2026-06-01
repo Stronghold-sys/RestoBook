@@ -26,6 +26,30 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    const ordersChannel = supabase.channel("customer-dashboard-orders-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchDashboardData();
+      })
+      .subscribe();
+
+    const reservationsChannel = supabase.channel("customer-dashboard-reservations-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => {
+        fetchDashboardData();
+      })
+      .subscribe();
+
+    const notificationsChannel = supabase.channel("customer-dashboard-notifications-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
+        fetchDashboardData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(reservationsChannel);
+      supabase.removeChannel(notificationsChannel);
+    };
   }, []);
 
   const fetchDashboardData = async () => {

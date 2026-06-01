@@ -1,395 +1,140 @@
-Tambahkan fitur **Dompetku / Wallet Pelanggan** yang lengkap dan terintegrasi penuh ke aplikasi.
-
-Gunakan bahasa Indonesia di seluruh tampilan.
-
-Tujuan:
-Pelanggan memiliki dompet digital internal di akun untuk:
-
-* isi saldo
-* bayar pesanan
-* menerima refund
-* menerima cashback
-* melihat riwayat transaksi
-* melihat detail transaksi
-* menggunakan saldo saat checkout
-
-Pastikan fitur berjalan end-to-end:
-frontend + backend + database + validasi + realtime update + notifikasi.
-
-=====================================
-
-1. MENU DOMPETKU
-   =====================================
-
-Tambahkan menu baru di akun pelanggan:
-**Dompetku**
-
-Halaman Dompetku tampilkan:
-
-* saldo utama pelanggan
-* saldo tertahan (jika ada)
-* cashback aktif
-* total transaksi bulan ini
-* total top up bulan ini
-* total pengeluaran bulan ini
-
-Card saldo utama tampil premium.
-
-Contoh:
-Saldo Dompetku
-Rp 250.000
-
-Tombol:
-
-* Isi Saldo
-* Tarik Dana (opsional jika diaktifkan admin)
-* Bayar Sekarang
-* Riwayat
-* Voucher
-* Bantuan
-
-=====================================
-2. TOP UP / ISI SALDO
-=====================
-
-Saat klik tombol:
-**Isi Saldo**
-
-buka popup/modal.
-
-Isi popup:
-
-Judul:
-Isi Saldo
-
-Field:
-
-* nominal top up
-* tombol nominal cepat:
-  Rp10.000
-  Rp20.000
-  Rp50.000
-  Rp100.000
-  Rp200.000
-  Rp500.000
-
-Validasi:
-
-* minimal top up bisa diatur admin
-* maksimal top up bisa diatur admin
-
-Contoh:
-minimal Rp10.000
-maksimal Rp2.000.000
-
-Setelah pilih nominal:
-klik tombol:
-**Isi Saldo**
-
-langsung buka payment gateway:
-**Duitku**
-
-Integrasi Duitku:
-
-Payment flow:
-Pelanggan isi nominal
-→ klik Isi Saldo
-→ buka popup Duitku
-→ pilih metode pembayaran
-→ bayar
-→ Duitku callback sukses
-→ sistem verifikasi
-→ saldo pelanggan otomatis bertambah
-
-Status pembayaran:
-
-* Menunggu Pembayaran
-* Diproses
-* Berhasil
-* Gagal
-* Dibatalkan
-* Kadaluarsa
-
-Jika sukses:
-saldo wallet otomatis bertambah realtime
-
-Jika gagal:
-saldo tidak berubah
-
-Jika pending:
-tampilkan pending
-
-Simpan:
-
-* payment reference
-* Duitku transaction id
-* nominal
-* metode pembayaran
-* fee
-* status
-* tanggal
-* waktu
-
-=====================================
-3. METODE PEMBAYARAN DUITKU
-===========================
-
-Tampilkan metode Duitku:
-
-* QRIS
-* Virtual Account BCA
-* Virtual Account Mandiri
-* Virtual Account BNI
-* Virtual Account BRI
-* E-Wallet DANA
-* E-Wallet OVO
-* E-Wallet ShopeePay
-* Indomaret
-* Alfamart
-
-Admin dapat:
-aktif/nonaktif metode tertentu
-
-=====================================
-4. RIWAYAT TRANSAKSI WALLET
-===========================
-
-Menu:
-Riwayat
-
-Tampilkan list transaksi:
-
-Jenis:
-
-* Top Up
-* Pembayaran pesanan
-* Refund
-* Cashback
-* Voucher reward
-* Penyesuaian admin
-* Pembatalan
-* Pengembalian dana
-
-Data:
-
-* nomor transaksi
-* tanggal
-* jam
-* nominal
-* status
-* metode pembayaran
-* tipe transaksi
-* deskripsi
-
-Contoh:
-
-TOP UP
-Rp100.000
-Berhasil
-01 Juni 2026 10:22
-
-PEMBAYARAN ORDER
--Rp85.000
-Selesai
-
-REFUND
-+Rp25.000
-Berhasil
-
-Filter:
-
-* Semua
-* Top Up
-* Pembayaran
-* Refund
-* Cashback
-
-Search:
-
-* cari nomor transaksi
-
-=====================================
-5. PEMBAYARAN DENGAN DOMPETKU
-=============================
-
-Saat checkout:
-
-Tambahkan opsi:
-Gunakan Dompetku
-
-Jika saldo cukup:
-pelanggan bisa bayar langsung
-
-Jika saldo kurang:
-muncul:
-Saldo tidak cukup
-
-Tombol:
-Isi Saldo Sekarang
-
-Jika bayar berhasil:
-saldo otomatis berkurang
-
-Jika pesanan dibatalkan:
-refund kembali ke Dompetku
-
-=====================================
-6. REFUND OTOMATIS
-==================
-
-Jika:
-
-* pesanan dibatalkan
-* reservasi gagal
-* pembayaran gagal diverifikasi
-
-maka:
-saldo kembali ke wallet otomatis
-
-Status:
-Refund Berhasil
-
-Riwayat masuk:
-
-* refund
-
-=====================================
-7. CASHBACK
-===========
-
-Admin bisa atur cashback:
-
-contoh:
-5%
-10%
-nominal tertentu
-
-Cashback otomatis masuk ke wallet
-
-Tampilkan:
-Cashback diterima Rp10.000
-
-Riwayat cashback wajib tersimpan
-
-=====================================
-8. NOTIFIKASI WALLET
-====================
-
-Tambahkan notif ke halaman notifikasi:
-
-Top Up Berhasil
-
-Isi:
-Top up sebesar Rp100.000 berhasil masuk ke Dompetku.
-
-Top Up Pending
-
-Isi:
-Pembayaran top up sedang menunggu verifikasi.
-
-Top Up Gagal
-
-Isi:
-Top up gagal diproses.
-
-Pembayaran via Dompetku Berhasil
-
-Isi:
-Pembayaran pesanan berhasil menggunakan Dompetku.
-
-Refund Berhasil
-
-Isi:
-Refund Rp25.000 berhasil masuk ke Dompetku.
-
-Cashback Masuk
-
-Isi:
-Cashback Rp10.000 berhasil ditambahkan.
-
-Saldo Tidak Cukup
-
-Isi:
-Saldo Dompetku tidak mencukupi.
-
-=====================================
-9. ADMIN WALLET MANAGEMENT
-==========================
-
-Admin panel:
-
-Lihat semua wallet pelanggan
-
-Data:
-
-* nama pelanggan
-* saldo
-* total top up
-* total transaksi
-* cashback
-* pending payment
-
-Admin bisa:
-
-* tambah saldo manual
-* kurangi saldo manual
-* refund manual
-* blok wallet
-* aktif/nonaktif wallet
-* reset saldo
-* lihat histori pelanggan
-
-Pengaturan:
-
-* minimal top up
-* maksimal top up
-* aktif/nonaktif Duitku
-* aktif/nonaktif cashback
-* biaya admin
-* auto refund on/off
-
-=====================================
-10. KEAMANAN
-============
-
-Wajib:
-
-* verifikasi callback Duitku
-* validasi nominal
-* anti duplicate payment
-* anti duplicate callback
-* transaction lock
-* audit log
-* database transaction rollback
-* realtime sync
-
-=====================================
-11. UI / UX
-===========
-
-Tampilan modern premium.
-
-Tambahkan:
-
-* saldo card
-* animasi saldo bertambah
-* loading state
-* empty state
-* skeleton loading
-* badge status
-* realtime update
-* responsive mobile
-* responsive desktop
-
-Pastikan semua fitur wallet terhubung:
-
-* Dompetku
-* Duitku
-* checkout
-* refund
-* cashback
-* admin
-* notifikasi
-* database
-* riwayat transaksi
-  secara lengkap end-to-end.
+Buatkan sistem keamanan menyeluruh untuk server dan website yang berfokus pada perlindungan dari DDoS, brute force, bot abuse, injeksi, scraping berlebihan, eksploitasi celah umum, dan gangguan layanan lainnya, sekaligus menyiapkan antisipasi error agar server tetap stabil, aman, dan mudah dipulihkan.
+
+Konteks:
+
+* Platform: server web/aplikasi produksi.
+* Tujuan utama: meningkatkan keamanan, ketahanan, dan ketersediaan layanan.
+* Prioritas: preventif, detektif, responsif, dan pemulihan.
+* Solusi harus siap dipakai di lingkungan production.
+* Jika ada trade-off, utamakan keamanan, stabilitas, dan maintainability.
+
+Tugas yang harus dibuat:
+
+1. Analisis risiko dan titik serang utama
+
+   * Identifikasi ancaman: DDoS layer 3/4/7, brute force login, credential stuffing, bot spam, SQL injection, XSS, CSRF, SSRF, RCE, path traversal, file upload abuse, API abuse, header spoofing, session hijacking, dan request flooding.
+   * Petakan bagian yang paling rentan: login, register, reset password, API publik, upload file, endpoint pencarian, webhook, admin panel, dan halaman yang berat.
+   * Jelaskan kemungkinan error server yang sering muncul saat trafik tinggi: timeout, 5xx, deadlock, memory leak, CPU spike, disk penuh, database overload, dan connection exhaustion.
+
+2. Perlindungan jaringan dan traffic
+
+   * Terapkan proteksi DDoS berlapis.
+   * Gunakan CDN dan WAF.
+   * Aktifkan rate limiting per IP, per user, per token, dan per endpoint.
+   * Terapkan request throttling, burst control, dan connection limiting.
+   * Blokir trafik anomali, user agent mencurigakan, ASN/proxy tertentu jika diperlukan, dan pola bot.
+   * Tambahkan cache untuk konten statis dan endpoint yang aman untuk menurunkan beban.
+   * Gunakan load balancer, health check, dan failover otomatis.
+   * Buat aturan khusus untuk endpoint sensitif seperti login, OTP, reset password, dan API publik.
+
+3. Proteksi aplikasi web
+
+   * Wajib validasi input di client dan server.
+   * Sanitasi data dan escape output.
+   * Gunakan parameterized query/ORM yang aman.
+   * Terapkan CSRF token pada form sensitif.
+   * Tambahkan Content Security Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, dan HSTS.
+   * Amankan cookie dengan HttpOnly, Secure, dan SameSite.
+   * Batasi sesi login: session timeout, refresh token rotation, logout semua perangkat, deteksi login anomali.
+   * Lindungi upload file dengan whitelist ekstensi, validasi MIME type, ukuran maksimal, scanning malware, dan penyimpanan terisolasi.
+   * Tambahkan proteksi terhadap enumeration akun, password guessing, dan OTP abuse.
+   * Sembunyikan detail error sensitif dari user, tetapi simpan error lengkap di log internal.
+
+4. Proteksi autentikasi dan akses
+
+   * Tambahkan MFA/2FA untuk admin dan akun penting.
+   * Terapkan account lockout atau progressive delay yang aman terhadap brute force.
+   * Gunakan captcha adaptif hanya saat diperlukan, tanpa merusak UX normal.
+   * Batasi percobaan login, reset password, dan verifikasi OTP.
+   * Terapkan role-based access control yang ketat.
+   * Pisahkan hak akses user, moderator, admin, dan superadmin.
+   * Tambahkan audit log untuk aktivitas sensitif: login, perubahan password, perubahan role, delete data, ekspor data, dan perubahan konfigurasi.
+
+5. Keamanan server dan infrastruktur
+
+   * Konfigurasi firewall yang ketat.
+   * Tutup port yang tidak diperlukan.
+   * Nonaktifkan service yang tidak dipakai.
+   * Gunakan SSH hardening: key-based auth, nonaktifkan login root, ubah port bila perlu, dan batasi IP admin.
+   * Terapkan patch management untuk OS, runtime, framework, database, dan dependency.
+   * Jalankan service dengan user non-root.
+   * Batasi resource per service agar satu proses tidak menjatuhkan seluruh server.
+   * Atur limits untuk CPU, RAM, file descriptor, worker, dan connection pool.
+   * Pisahkan environment development, staging, dan production.
+   * Amankan rahasia: API key, token, database password, dan private key dengan secret manager atau environment yang aman.
+
+6. Monitoring, logging, dan deteksi dini
+
+   * Buat monitoring untuk CPU, RAM, disk, network, response time, error rate, throughput, queue length, dan database health.
+   * Tambahkan alert real-time via email/telegram/slack jika terjadi lonjakan trafik, error 5xx, timeout, brute force, atau anomali login.
+   * Simpan log terstruktur dengan timestamp, request ID, user ID, IP, endpoint, status code, latency, dan error message yang aman.
+   * Terapkan log rotation dan log retention.
+   * Buat dashboard observability yang mudah dibaca.
+   * Tambahkan deteksi anomali untuk trafik mendadak, pola request berulang, dan penyalahgunaan endpoint.
+
+7. Ketahanan aplikasi dan pencegahan error
+
+   * Terapkan timeout yang realistis pada request, database, dan external API.
+   * Gunakan retry dengan exponential backoff untuk request tertentu.
+   * Terapkan circuit breaker pada integrasi eksternal.
+   * Pastikan ada fallback logic bila service eksternal gagal.
+   * Tambahkan queue/job async untuk proses berat.
+   * Hindari blocking di request utama.
+   * Optimalkan query database, indeks, pagination, dan cache.
+   * Siapkan mekanisme graceful degradation saat server overload.
+   * Tambahkan halaman maintenance yang rapi saat deployment atau insiden.
+   * Pastikan aplikasi tidak crash walau sebagian layanan down.
+
+8. Backup, recovery, dan disaster recovery
+
+   * Buat backup otomatis untuk database, file penting, dan konfigurasi.
+   * Terapkan backup harian, snapshot berkala, dan verifikasi restore.
+   * Simpan backup di lokasi terpisah dan aman.
+   * Buat rencana pemulihan jika server terkena serangan, korupsi data, atau kegagalan sistem.
+   * Tambahkan prosedur rollback deployment.
+   * Siapkan dokumentasi restore step-by-step.
+
+9. DevSecOps dan deployment aman
+
+   * Gunakan pipeline CI/CD yang aman.
+   * Lakukan dependency scanning, secret scanning, SAST, dan container scanning bila relevan.
+   * Gunakan environment variable rahasia, bukan hardcode.
+   * Terapkan code review untuk perubahan sensitif.
+   * Deploy dengan strategi aman: blue-green, canary, atau rolling update.
+   * Tambahkan health check sebelum traffic penuh dialihkan.
+   * Buat rollback otomatis jika metrik memburuk.
+
+10. Dokumentasi dan SOP insiden
+
+* Buat SOP saat terjadi DDoS, login attack, database overload, kebocoran token, atau server error.
+* Sertakan langkah triase cepat, mitigasi, eskalasi, dan pemulihan.
+* Buat daftar kontak darurat.
+* Buat checklist hardening untuk server baru.
+* Buat checklist audit keamanan berkala.
+
+1. Deliverables yang harus dihasilkan
+
+* Rencana arsitektur keamanan.
+* Daftar ancaman dan mitigasi.
+* Konfigurasi contoh untuk firewall, rate limit, header keamanan, dan logging.
+* Rekomendasi teknis untuk aplikasi, server, dan database.
+* Checklist keamanan produksi.
+* SOP penanganan insiden.
+* Rekomendasi monitoring dan alert.
+* Rencana backup dan recovery.
+* Contoh implementasi kode jika dibutuhkan.
+* Evaluasi celah yang masih tersisa dan saran lanjutan.
+
+1. Kriteria hasil akhir
+
+* Solusi harus praktis, lengkap, dan siap diimplementasikan.
+* Jelaskan mana yang wajib, mana yang opsional, dan mana yang bergantung pada skala trafik.
+* Gunakan bahasa Indonesia yang jelas.
+* Berikan hasil secara sistematis, rapi, dan teknis.
+* Jangan hanya memberi teori; sertakan langkah konkret dan contoh konfigurasi bila memungkinkan.
+
+Catatan tambahan:
+
+* Fokus pada pencegahan, deteksi, dan pemulihan.
+* Jangan mengorbankan keamanan demi kemudahan.
+* Jika ada bagian yang berpotensi membuat sistem justru lebih rentan, jelaskan risikonya dan berikan alternatif yang lebih aman.

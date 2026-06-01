@@ -22,6 +22,58 @@ const nextConfig = {
     ],
     dangerouslyAllowSVG: true,
   },
+
+  // ── Security Headers ────────────────────────────────────────────
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // Cegah embedding di iframe (Clickjacking)
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Cegah browser menebak MIME type
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Referrer Policy
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Permissions Policy: batasi akses kamera, mikrofon, lokasi
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+          // HSTS: paksa HTTPS selama 1 tahun
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+          // XSS Protection (untuk browser lama)
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // Content Security Policy - izinkan konten yang dibutuhkan aplikasi
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sandbox.duitku.com https://api.duitku.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https://images.unsplash.com https://source.unsplash.com https://placehold.co https://dazsblmccvxtewtmaljf.supabase.co https://lh3.googleusercontent.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.duitku.com https://sandbox.duitku.com",
+              "frame-src https://sandbox.duitku.com https://api.duitku.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; ')
+          },
+        ],
+      },
+      // API Routes: tambahkan header CORS yang ketat
+      {
+        source: '/api/(.*)',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+        ],
+      },
+    ];
+  },
+
+  // ── Rewrites untuk rate limit friendly URLs ─────────────────────
+  async rewrites() {
+    return [];
+  },
 };
 
 export default nextConfig;

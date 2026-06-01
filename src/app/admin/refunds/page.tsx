@@ -39,11 +39,20 @@ export default function AdminRefundsPage() {
 
   useEffect(() => {
     if (selectedRefund && actionType) {
-      const isWallet = selectedRefund.refundDetails.refundMethod === "wallet";
+      const isWallet = selectedRefund.refundDetails.refundMethod === "wallet" || selectedRefund.payment_method === "duitku" || selectedRefund.payment_method === "non_cash" || selectedRefund.payment_method === "wallet";
       const nominal = Number(selectedRefund.total_amount).toLocaleString("id-ID");
+      const hasVoucher = !!selectedRefund.voucher_id;
+      const isFree = Number(selectedRefund.total_amount) === 0;
+
       if (actionType === "approve") {
-        if (isWallet) {
-          setAdminNotes(`Halo, dana pengembalian sebesar Rp ${nominal} telah berhasil kami cairkan secara otomatis ke Saldo Dompet Anda. Silakan cek saldo Anda kembali. Terima kasih!`);
+        if (isFree && hasVoucher) {
+          setAdminNotes(`Halo, pengajuan pembatalan pesanan gratis Anda telah disetujui. Voucher belanja Anda telah kami kembalikan dan dapat Anda gunakan kembali. Terima kasih!`);
+        } else if (isWallet) {
+          if (hasVoucher) {
+            setAdminNotes(`Halo, dana pengembalian sebesar Rp ${nominal} telah berhasil kami cairkan otomatis ke Saldo Dompet Anda. Voucher belanja Anda juga telah dikembalikan agar dapat digunakan lagi. Silakan cek saldo Anda kembali. Terima kasih!`);
+          } else {
+            setAdminNotes(`Halo, dana pengembalian sebesar Rp ${nominal} telah berhasil kami cairkan secara otomatis ke Saldo Dompet Anda. Silakan cek saldo Anda kembali. Terima kasih!`);
+          }
         } else {
           setAdminNotes(`Halo, dana sebesar Rp ${nominal} telah berhasil kami transfer balik ke rekening ${selectedRefund.refundDetails.bankName} Anda atas nama ${selectedRefund.refundDetails.accountName}. Terima kasih atas kesabaran Anda!`);
         }
@@ -241,6 +250,26 @@ export default function AdminRefundsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-text-light dark:text-text-dark">
+                    <div className="space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark col-span-2">
+                      <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Jenis Pembayaran Asal</p>
+                      <p className="font-black text-xs text-text-light dark:text-text-dark flex items-center gap-1.5 flex-wrap">
+                        {Number(order.total_amount) === 0 && order.voucher_id ? (
+                          <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 uppercase text-[9px] font-black">Full Voucher (Gratis)</span>
+                        ) : order.voucher_id && Number(order.total_amount) > 0 ? (
+                          <>
+                            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black">Kombo (Duitku + Voucher)</span>
+                            <span className="text-muted text-[10px] font-semibold">
+                              (Duitku: Rp {Number(order.total_amount).toLocaleString("id-ID")} + Voucher: Rp {Number(order.discount).toLocaleString("id-ID")})
+                            </span>
+                          </>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black">
+                            {order.payment_method === 'wallet' ? 'Saldo Dompet' : 'Duitku / Online'}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
                     <div className={`space-y-1 bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark ${details.refundMethod === "wallet" ? "col-span-2" : ""}`}>
                       <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Metode Refund</p>
                       <p className="font-black text-sm text-primary flex items-center gap-1">
@@ -329,7 +358,22 @@ export default function AdminRefundsPage() {
                 <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
                   <p><span className="text-muted">ID Pesanan:</span> #{selectedRefund.id.split("-")[0]}</p>
                   <p><span className="text-muted">Pelanggan:</span> {selectedRefund.profiles?.full_name}</p>
-                  <p><span className="text-muted">Total Dana:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
+                  <p><span className="text-muted">Dana Cash Dibayar:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
+                  {selectedRefund.voucher_id && (
+                    <p><span className="text-muted">Potongan Voucher:</span> <span className="text-rose-500 font-extrabold">Rp {Number(selectedRefund.discount).toLocaleString("id-ID")}</span></p>
+                  )}
+                  <p>
+                    <span className="text-muted">Jenis Pembayaran:</span>{' '}
+                    {Number(selectedRefund.total_amount) === 0 && selectedRefund.voucher_id ? (
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 uppercase text-[9px] font-black inline-block">Full Voucher (Gratis)</span>
+                    ) : selectedRefund.voucher_id && Number(selectedRefund.total_amount) > 0 ? (
+                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black inline-block">Kombo (Duitku + Voucher)</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black inline-block">
+                        {selectedRefund.payment_method === 'wallet' ? 'Saldo Dompet' : 'Duitku / Online'}
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 {actionType === "approve" && selectedRefund.refundDetails.refundMethod !== "wallet" && (
@@ -360,13 +404,17 @@ export default function AdminRefundsPage() {
                   </div>
                 )}
 
-                {actionType === "approve" && selectedRefund.refundDetails.refundMethod === "wallet" && (
+                {actionType === "approve" && (selectedRefund.refundDetails.refundMethod === "wallet" || selectedRefund.payment_method === "duitku" || selectedRefund.payment_method === "non_cash" || selectedRefund.payment_method === "wallet") && (
                   <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 rounded-2xl text-green-800 dark:text-green-400 flex items-start gap-3">
                     <Wallet className="w-5 h-5 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider">Pencairan Saldo Otomatis</p>
+                      <p className="text-xs font-black uppercase tracking-wider">Pencairan Dana Refund</p>
                       <p className="text-[11px] font-semibold leading-relaxed mt-0.5">
-                        Dana refund sebesar <span className="font-extrabold">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span> akan langsung dikreditkan ke Saldo Dompet pelanggan saat Anda menyetujui pengajuan ini. Tidak diperlukan bukti transfer fisik.
+                        {Number(selectedRefund.total_amount) === 0 ? (
+                          <span>Pesanan ini gratis (full voucher). Menyetujui pengajuan akan mengembalikan voucher belanja ke pelanggan agar dapat digunakan kembali.</span>
+                        ) : (
+                          <span>Dana refund cash sebesar <span className="font-extrabold">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span> akan langsung dikreditkan ke Saldo Dompet pelanggan secara otomatis. Tidak diperlukan bukti transfer fisik. {selectedRefund.voucher_id && "Voucher belanja yang digunakan juga otomatis dikembalikan ke akun pelanggan."}</span>
+                        )}
                       </p>
                     </div>
                   </div>

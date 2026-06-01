@@ -426,39 +426,84 @@ export async function POST(req: NextRequest) {
 
       const isApproved = refundDetails.refundStatus === 'approved';
       const isWallet = refundDetails.refundMethod === 'wallet';
+      const isOnlineOrWalletPayment = order.payment_method === 'duitku' || order.payment_method === 'non_cash' || order.payment_method === 'wallet';
 
-      if (isApproved && isWallet) {
-        // Fetch current profile wallet_balance
-        const { data: profile, error: profErr } = await supabaseAdmin
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('id', order.customer_id)
-          .single();
-        if (profErr || !profile) throw new Error('Profil pelanggan tidak ditemukan untuk pencairan saldo');
-        
-        const newBalance = Number(profile.wallet_balance || 0) + Number(order.total_amount);
-        const { error: balErr } = await supabaseAdmin
-          .from('profiles')
-          .update({ wallet_balance: newBalance })
-          .eq('id', order.customer_id);
-        if (balErr) throw balErr;
+      if (isApproved) {
+        // 1. Restore voucher if applicable (decrement usage counts so customer can reuse it)
+        if (order.voucher_id) {
+          const { data: vData } = await supabaseAdmin
+            .from('vouchers')
+            .select('used_count')
+            .eq('id', order.voucher_id)
+            .single();
+          if (vData) {
+            await supabaseAdmin
+              .from('vouchers')
+              .update({ used_count: Math.max(0, Number(vData.used_count || 0) - 1) })
+              .eq('id', order.voucher_id);
+          }
 
-        // Log wallet transaction
-        await supabaseAdmin.from('wallet_transactions').insert({
-          customer_id: order.customer_id,
-          amount: Number(order.total_amount),
-          type: 'refund',
-          status: 'success',
-          description: `Refund pesanan #${order.id.substring(0, 8).toUpperCase()}`
-        });
+          const { data: cvData } = await supabaseAdmin
+            .from('customer_vouchers')
+            .select('used_count')
+            .eq('customer_id', order.customer_id)
+            .eq('voucher_id', order.voucher_id)
+            .single();
+          if (cvData) {
+            await supabaseAdmin
+              .from('customer_vouchers')
+              .update({ used_count: Math.max(0, Number(cvData.used_count || 0) - 1) })
+              .eq('customer_id', order.customer_id)
+              .eq('voucher_id', order.voucher_id);
+          }
+        }
+
+        // 2. Refund cash amount to e-wallet balance if chosen wallet or paid online/wallet
+        const refundToWallet = isWallet || isOnlineOrWalletPayment;
+        const refundAmount = Number(order.total_amount);
+
+        if (refundToWallet && refundAmount > 0) {
+          const { data: profile, error: profErr } = await supabaseAdmin
+            .from('profiles')
+            .select('wallet_balance')
+            .eq('id', order.customer_id)
+            .single();
+          if (profErr || !profile) throw new Error('Profil pelanggan tidak ditemukan untuk pencairan saldo');
+          
+          const newBalance = Number(profile.wallet_balance || 0) + refundAmount;
+          const { error: balErr } = await supabaseAdmin
+            .from('profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('id', order.customer_id);
+          if (balErr) throw balErr;
+
+          // Log wallet transaction
+          await supabaseAdmin.from('wallet_transactions').insert({
+            customer_id: order.customer_id,
+            amount: refundAmount,
+            type: 'refund',
+            status: 'success',
+            description: `Refund pesanan #${order.id.substring(0, 8).toUpperCase()}`
+          });
+        }
       }
 
       let notifMessage = '';
       if (isApproved) {
-        if (isWallet) {
-          notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")} telah berhasil dicairkan ke Saldo Dompet Anda.`;
+        const refundToWallet = isWallet || isOnlineOrWalletPayment;
+        const refundAmount = Number(order.total_amount);
+        const hasVoucher = !!order.voucher_id;
+
+        if (refundToWallet && refundAmount > 0) {
+          if (hasVoucher) {
+            notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana cash sebesar Rp ${refundAmount.toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda, dan voucher belanja Anda telah dikembalikan agar dapat digunakan kembali.`;
+          } else {
+            notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${refundAmount.toLocaleString("id-ID")} telah dicairkan ke Saldo Dompet Anda.`;
+          }
+        } else if (hasVoucher && refundAmount === 0) {
+          notifMessage = `Refund disetujui untuk pesanan gratis #${orderId.split('-')[0]}. Voucher belanja Anda telah dikembalikan dan dapat Anda gunakan kembali.`;
         } else {
-          notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${Number(order.total_amount).toLocaleString("id-ID")} telah berhasil ditransfer ke rekening bank/e-wallet pilihan Anda.`;
+          notifMessage = `Refund disetujui untuk pesanan #${orderId.split('-')[0]}. Dana sebesar Rp ${refundAmount.toLocaleString("id-ID")} telah berhasil ditransfer ke rekening bank/e-wallet pilihan Anda.`;
         }
       } else {
         notifMessage = `Refund ditolak untuk pesanan #${orderId.split('-')[0]}. Alasan: ${refundDetails.adminNotes || 'Tidak ada catatan'}.`;

@@ -213,6 +213,36 @@ export default function AdminRewardsPage() {
     setShowRewardModal(true);
   };
 
+  const generateAutoDescription = () => {
+    const { title, category, minPoints, discountPercent, cashbackAmount, isAutoCashback, stock, expiryDays } = rewardForm;
+    const pts = Number(minPoints) || 0;
+    const exp = expiryDays ? `Berlaku ${expiryDays} hari setelah ditukar.` : "Berlaku tanpa batas waktu.";
+    const stokInfo = stock ? `Stok tersedia: ${stock} buah.` : "Stok tidak terbatas.";
+
+    let desc = "";
+    if (category === "voucher") {
+      const disc = Number(discountPercent) || 0;
+      desc = `${title || "Reward ini"} memberikan diskon sebesar ${disc}% untuk pembelian di RestoBook. Dapat ditukar dengan minimal ${pts} poin. ${exp} ${stokInfo}`;
+    } else if (category === "food") {
+      desc = `${title || "Menu spesial ini"} hadir sebagai hadiah eksklusif untuk pelanggan setia RestoBook! Tukarkan minimal ${pts} poin Anda dan nikmati sajian istimewa dari kami. ${exp} ${stokInfo}`;
+    } else if (category === "cashback") {
+      if (isAutoCashback) {
+        const estimasi = pts * 100;
+        desc = `Tukarkan ${pts} poin dan dapatkan saldo Dompetku sebesar Rp ${estimasi.toLocaleString("id-ID")} secara otomatis (Rp 100 per poin). ${exp} ${stokInfo}`;
+      } else {
+        const cb = Number(cashbackAmount) || 0;
+        desc = `Tukarkan ${pts} poin dan dapatkan cashback saldo Dompetku sebesar Rp ${cb.toLocaleString("id-ID")}. ${exp} ${stokInfo}`;
+      }
+    } else if (category === "product") {
+      desc = `${title || "Produk promo eksklusif ini"} tersedia khusus untuk pelanggan RestoBook. Tukarkan minimal ${pts} poin dan dapatkan produk pilihan kami. ${exp} ${stokInfo}`;
+    } else {
+      desc = `${title || "Reward eksklusif ini"} dapat ditukar dengan minimal ${pts} poin RestoBook. ${exp} ${stokInfo}`;
+    }
+    setRewardForm((prev: any) => ({ ...prev, description: desc }));
+    toast.success("Deskripsi berhasil digenerate!");
+  };
+
+
   const handleSaveReward = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -1369,13 +1399,22 @@ export default function AdminRewardsPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="rewardDescription" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Deskripsi Reward</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="rewardDescription" className="text-[10px] font-black uppercase text-muted tracking-widest">Deskripsi Reward</label>
+                    <button
+                      type="button"
+                      onClick={generateAutoDescription}
+                      className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase tracking-wide hover:bg-primary/20 transition-all"
+                    >
+                      <Sparkles className="w-3 h-3" /> Generate Otomatis
+                    </button>
+                  </div>
                   <textarea 
                     id="rewardDescription"
                     rows={3} 
                     value={rewardForm.description} 
                     onChange={e => setRewardForm({ ...rewardForm, description: e.target.value })} 
-                    placeholder="Contoh: Voucher diskon ini berlaku 30 hari untuk makan di tempat."
+                    placeholder="Klik 'Generate Otomatis' atau tulis deskripsi reward secara manual."
                     title="Deskripsi Reward"
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                   />

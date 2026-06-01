@@ -159,6 +159,9 @@ export default function ProfileContent() {
   const [step, setStep] = useState<"request" | "verify">("request");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [oldPassword, setOldPassword] = useState("");
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
   const [otpMethod, setOtpMethod] = useState<"email" | "whatsapp">("email");
   const [submittingPass, setSubmittingPass] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -347,8 +350,16 @@ export default function ProfileContent() {
   };
 
   const handleSendOTP = async () => {
+    if (!oldPassword.trim()) return toast.error("Masukkan password lama Anda terlebih dahulu");
     setSubmittingPass(true);
     try {
+      // Verify old password first via Supabase signIn
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: oldPassword
+      });
+      if (signInError) throw new Error("Password lama tidak sesuai. Silakan coba kembali.");
+
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -375,12 +386,14 @@ export default function ProfileContent() {
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) return toast.error("Password minimal 6 karakter");
+    if (newPassword.length < 6) return toast.error("Password baru minimal 6 karakter");
+    if (otp.length < 6) return toast.error("Masukkan kode OTP 6 digit");
     setSubmittingPass(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/profile/change-password', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: profile.email,
           otp,
@@ -396,6 +409,7 @@ export default function ProfileContent() {
       setStep("request");
       setOtp("");
       setNewPassword("");
+      setOldPassword("");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -886,50 +900,95 @@ export default function ProfileContent() {
       <AnimatePresence>
         {showPasswordModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPasswordModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8">
-              <button onClick={() => setShowPasswordModal(false)} aria-label="Tutup" title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowPasswordModal(false); setStep("request"); setOldPassword(""); setOtp(""); setNewPassword(""); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
+              <button onClick={() => { setShowPasswordModal(false); setStep("request"); setOldPassword(""); setOtp(""); setNewPassword(""); }} aria-label="Tutup" title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
               
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Lock className="w-8 h-8" /></div>
                 <h3 className="text-2xl font-black text-text-light dark:text-text-dark">Ganti Password</h3>
-                <p className="text-sm text-muted mt-2">Gunakan kode OTP dari email untuk keamanan</p>
+                <p className="text-sm text-muted mt-2">
+                  {step === "request" ? "Masukkan password lama dan pilih metode OTP" : "Masukkan kode OTP yang diterima & password baru"}
+                </p>
+              </div>
+
+              {/* Step indicators */}
+              <div className="flex items-center gap-2 mb-6">
+                <div className={`flex-1 h-1.5 rounded-full transition-all ${step === "request" ? "bg-primary" : "bg-primary"}`} />
+                <div className={`flex-1 h-1.5 rounded-full transition-all ${step === "verify" ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`} />
               </div>
 
               {step === "request" ? (
-                <div className="space-y-6">
-                  <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2">
-                    <button 
-                      onClick={() => setOtpMethod("email")}
-                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "email" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}
-                    >
-                      <Mail className="w-4 h-4" /> Email
-                    </button>
-                    <button 
-                      onClick={() => setOtpMethod("whatsapp")}
-                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "whatsapp" ? "bg-white dark:bg-gray-700 shadow-sm text-green-500" : "text-muted"}`}
-                    >
-                      <Phone className="w-4 h-4" /> WhatsApp
-                    </button>
+                <div className="space-y-5">
+                  {/* Old Password Field */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="oldPasswordInput" className="text-xs font-black uppercase text-muted ml-1">Password Lama</label>
+                    <div className="relative">
+                      <input
+                        id="oldPasswordInput"
+                        type={showOldPass ? "text" : "password"}
+                        value={oldPassword}
+                        onChange={e => setOldPassword(e.target.value)}
+                        className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono"
+                        placeholder="Masukkan password saat ini..."
+                        title="Password Lama"
+                      />
+                      <button type="button" onClick={() => setShowOldPass(!showOldPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text-light dark:hover:text-text-dark">
+                        {showOldPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
                   </div>
 
-                  <p className="text-sm text-text-light dark:text-text-dark leading-relaxed text-center">
-                    Kami akan mengirimkan 6-digit kode OTP ke <span className="font-bold">{otpMethod === "email" ? profile.email : profile.phone}</span>
-                  </p>
+                  {/* OTP Method Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-muted ml-1">Kirim OTP Ke</label>
+                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => setOtpMethod("email")}
+                        className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "email" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}
+                      >
+                        <Mail className="w-4 h-4" /> Email
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setOtpMethod("whatsapp")}
+                        className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "whatsapp" ? "bg-white dark:bg-gray-700 shadow-sm text-green-500" : "text-muted"}`}
+                      >
+                        <Phone className="w-4 h-4" /> WhatsApp
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted ml-1">
+                      OTP dikirim ke: <span className="font-bold">{otpMethod === "email" ? profile.email : (profile.phone || "Nomor belum diatur")}</span>
+                    </p>
+                  </div>
                   
-                  <button onClick={handleSendOTP} disabled={submittingPass} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase text-xs">
-                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Kode OTP"}
+                  <button onClick={handleSendOTP} disabled={submittingPass || !oldPassword.trim()} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50">
+                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Kirim OTP"}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-5">
                   <div className="space-y-1.5">
                     <label htmlFor="otpInput" className="text-xs font-black uppercase text-muted ml-1">Kode OTP</label>
-                    <input id="otpInput" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} type="text" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px]" placeholder="000000" title="Masukkan Kode OTP" />
+                    <input id="otpInput" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} type="text" inputMode="numeric" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px]" placeholder="000000" title="Masukkan Kode OTP" />
                   </div>
                   <div className="space-y-1.5">
                     <label htmlFor="newPasswordInput" className="text-xs font-black uppercase text-muted ml-1">Password Baru</label>
-                    <input id="newPasswordInput" value={newPassword} onChange={e => setNewPassword(e.target.value)} type="password" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary" placeholder="********" title="Masukkan Password Baru" />
+                    <div className="relative">
+                      <input
+                        id="newPasswordInput"
+                        type={showNewPass ? "text" : "password"}
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono"
+                        placeholder="Minimal 6 karakter..."
+                        title="Password Baru"
+                      />
+                      <button type="button" onClick={() => setShowNewPass(!showNewPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text-light dark:hover:text-text-dark">
+                        {showNewPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
                   </div>
                   <button onClick={handleChangePassword} disabled={submittingPass} className="w-full py-4 bg-green-500 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 hover:bg-green-600 transition-all flex items-center justify-center gap-2 uppercase text-xs">
                     {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Ganti Password"}
@@ -939,26 +998,27 @@ export default function ProfileContent() {
                     <p className="text-[10px] font-black uppercase text-muted">Belum menerima kode?</p>
                     <div className="flex flex-col gap-2">
                       <button 
-                        onClick={() => {
-                          setOtpMethod("email");
-                          handleSendOTP();
-                        }} 
+                        onClick={() => { setOtpMethod("email"); handleSendOTP(); }} 
                         disabled={countdown > 0 || submittingPass}
                         className="text-[11px] font-bold text-primary hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl"
                       >
                         <Mail className="w-3.5 h-3.5" /> {countdown > 0 ? `Kirim Ulang Email (${countdown}s)` : "Kirim Ulang via Email"}
                       </button>
                       <button 
-                        onClick={() => {
-                          setOtpMethod("whatsapp");
-                          handleSendOTP();
-                        }} 
+                        onClick={() => { setOtpMethod("whatsapp"); handleSendOTP(); }} 
                         disabled={waCountdown > 0 || submittingPass}
                         className="text-[11px] font-bold text-green-600 hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"
                       >
                         <MessageSquare className="w-3.5 h-3.5" /> {waCountdown > 0 ? `Kirim via WhatsApp (${waCountdown}s)` : "Kirim via WhatsApp Saja"}
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => { setStep("request"); setOtp(""); setNewPassword(""); }}
+                      className="text-[11px] font-bold text-muted hover:text-text-light dark:hover:text-text-dark py-2"
+                    >
+                      ← Kembali
+                    </button>
                   </div>
                 </div>
               )}

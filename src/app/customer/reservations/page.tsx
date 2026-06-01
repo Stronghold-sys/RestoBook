@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -28,12 +28,16 @@ interface Table {
   status: string;
 }
 
+const ACTIVE_STATUSES = ["pending", "confirmed"];
+const HISTORY_STATUSES = ["cancelled", "completed", "rejected"];
+
 export default function CustomerReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [profileId, setProfileId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [form, setForm] = useState({
     date: "",
     time: "12:00",
@@ -144,8 +148,8 @@ export default function CustomerReservationsPage() {
 
       // Update reservation status and notes with cancellation reason
       const updatedNotes = parsedNotes
-        ? JSON.stringify({ ...parsedNotes, catatan_batal: cancelReason })
-        : JSON.stringify({ catatan_batal: cancelReason });
+        ? JSON.stringify({ ...parsedNotes, catatan_batal: cancelReason, dibatalkan_oleh: "pelanggan" })
+        : JSON.stringify({ catatan_batal: cancelReason, dibatalkan_oleh: "pelanggan" });
 
       const { error: resError } = await supabase
         .from("reservations")
@@ -198,14 +202,35 @@ export default function CustomerReservationsPage() {
       confirmed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
       cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
       completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+      rejected: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
     };
     return map[s] || "bg-gray-100 text-gray-800";
   };
 
   const getStatusText = (s: string) => {
-    const map: Record<string, string> = { pending: "Menunggu", confirmed: "Dikonfirmasi", cancelled: "Dibatalkan", completed: "Selesai" };
+    const map: Record<string, string> = { 
+      pending: "Menunggu", 
+      confirmed: "Dikonfirmasi", 
+      cancelled: "Dibatalkan", 
+      completed: "Selesai",
+      rejected: "Ditolak"
+    };
     return map[s] || s;
   };
+
+  const getCancelledByLabel = (parsedNotes: any) => {
+    if (!parsedNotes?.dibatalkan_oleh) return null;
+    const byMap: Record<string, { label: string; color: string }> = {
+      pelanggan: { label: "Dibatalkan oleh Anda", color: "text-orange-600 dark:text-orange-400" },
+      kasir: { label: "Dibatalkan oleh Kasir", color: "text-red-600 dark:text-red-400" },
+      admin: { label: "Dibatalkan oleh Admin", color: "text-red-700 dark:text-red-500" },
+    };
+    return byMap[parsedNotes.dibatalkan_oleh] || { label: `Dibatalkan oleh ${parsedNotes.dibatalkan_oleh}`, color: "text-red-600 dark:text-red-400" };
+  };
+
+  const activeReservations = reservations.filter(r => ACTIVE_STATUSES.includes(r.status));
+  const historyReservations = reservations.filter(r => HISTORY_STATUSES.includes(r.status));
+  const displayedReservations = activeTab === "active" ? activeReservations : historyReservations;
 
   if (loading) {
     return (
@@ -227,89 +252,174 @@ export default function CustomerReservationsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 pb-24">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 pb-24">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark leading-tight">Observasi &amp; Reservasi Meja</h1>
-          <p className="text-muted mt-1 text-sm sm:text-base">Ajukan reservasi meja bebas (bisa pilih banyak meja sekaligus)</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark leading-tight">Reservasi Meja</h1>
+          <p className="text-muted mt-1 text-sm sm:text-base">Ajukan dan pantau reservasi meja Anda</p>
         </div>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowModal(true)} className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/20 shrink-0 self-start sm:self-auto">
           <Plus className="w-5 h-5" /> Ajukan Reservasi
         </motion.button>
       </div>
 
-      <div className="space-y-4">
-        <AnimatePresence>
-          {reservations.map((res, i) => {
-            const parsedNotes = getParsedNotes(res.notes);
-            const displayNotes = parsedNotes ? parsedNotes.catatan : res.notes;
-            const displayAtasNama = parsedNotes ? parsedNotes.atas_nama : null;
-            const displayMejaList = parsedNotes?.meja_tambahan ? parsedNotes.meja_tambahan.join(", ") : res.tables?.table_number;
-
-            return (
-              <motion.div key={res.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark p-6 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary/10 p-4 rounded-xl text-center min-w-[70px]">
-                      <p className="text-xs text-primary font-medium uppercase">{format(new Date(res.reservation_date), "MMM", { locale: localeId })}</p>
-                      <p className="text-2xl font-bold text-primary">{format(new Date(res.reservation_date), "dd")}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-text-light dark:text-text-dark text-lg">
-                        {displayAtasNama ? `Atas Nama: ${displayAtasNama}` : format(new Date(res.reservation_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
-                      </p>
-                      {displayAtasNama && (
-                        <p className="text-sm text-muted mb-1">{format(new Date(res.reservation_date), "EEEE, dd MMMM yyyy", { locale: localeId })}</p>
-                      )}
-                      <div className="flex flex-wrap gap-3 text-sm text-muted">
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {res.reservation_time?.substring(0, 5)}</span>
-                        <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {res.guest_count} Orang</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Meja: {displayMejaList}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
-                    {res.status === "pending" && (
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
-                        <X className="w-5 h-5" />
-                      </motion.button>
-                    )}
-                  </div>
-                </div>
-                {displayNotes && <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg"><span className="font-bold">Catatan:</span> {displayNotes}</p>}
-                {parsedNotes?.catatan_batal && (
-                  <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                    <span className="font-bold">Alasan Pembatalan:</span> {parsedNotes.catatan_batal}
-                  </p>
-                )}
-                {parsedNotes?.catatan_tolak && (
-                  <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                    <span className="font-bold">Alasan Penolakan:</span> {parsedNotes.catatan_tolak}
-                  </p>
-                )}
-                {parsedNotes?.telepon && <p className="mt-2 text-xs text-muted">No. Telepon: {parsedNotes.telepon}</p>}
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-        {reservations.length === 0 && (
-          <div className="text-center py-20">
-            <CalendarDays className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Belum Ada Reservasi</h3>
-            <p className="text-muted mt-2">Pilih meja bebas dan ajukan observasi sekarang!</p>
-          </div>
-        )}
+      {/* Tab Navigation */}
+      <div className="flex bg-gray-100 dark:bg-gray-800/60 p-1.5 rounded-2xl gap-2">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+            activeTab === "active"
+              ? "bg-white dark:bg-gray-700 shadow-md text-primary"
+              : "text-muted hover:text-text-light dark:hover:text-text-dark"
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          Reservasi Aktif
+          {activeReservations.length > 0 && (
+            <span className={`text-xs font-black px-2 py-0.5 rounded-full ${activeTab === "active" ? "bg-primary text-white" : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"}`}>
+              {activeReservations.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+            activeTab === "history"
+              ? "bg-white dark:bg-gray-700 shadow-md text-text-light dark:text-text-dark"
+              : "text-muted hover:text-text-light dark:hover:text-text-dark"
+          }`}
+        >
+          <History className="w-4 h-4" />
+          Riwayat
+          {historyReservations.length > 0 && (
+            <span className={`text-xs font-black px-2 py-0.5 rounded-full ${activeTab === "history" ? "bg-gray-700 dark:bg-gray-500 text-white" : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"}`}>
+              {historyReservations.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Modal */}
+      {/* Reservation Cards */}
+      <div className="space-y-4">
+        <AnimatePresence mode="wait">
+          {displayedReservations.length === 0 ? (
+            <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20">
+              {activeTab === "active" ? (
+                <>
+                  <CalendarDays className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak Ada Reservasi Aktif</h3>
+                  <p className="text-muted mt-2">Buat reservasi baru untuk memesan meja!</p>
+                </>
+              ) : (
+                <>
+                  <History className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Belum Ada Riwayat</h3>
+                  <p className="text-muted mt-2">Riwayat reservasi Anda akan tampil di sini.</p>
+                </>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {displayedReservations.map((res, i) => {
+                const parsedNotes = getParsedNotes(res.notes);
+                const displayNotes = parsedNotes ? parsedNotes.catatan : res.notes;
+                const displayAtasNama = parsedNotes ? parsedNotes.atas_nama : null;
+                const displayMejaList = parsedNotes?.meja_tambahan ? parsedNotes.meja_tambahan.join(", ") : res.tables?.table_number;
+                const cancelledByInfo = getCancelledByLabel(parsedNotes);
+                const isHistory = HISTORY_STATUSES.includes(res.status);
+
+                return (
+                  <motion.div 
+                    key={res.id} 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: i * 0.05 }} 
+                    className={`bg-card-light dark:bg-card-dark rounded-2xl border p-5 sm:p-6 shadow-sm ${
+                      isHistory 
+                        ? "border-border-light dark:border-border-dark opacity-80" 
+                        : "border-border-light dark:border-border-dark"
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className={`p-4 rounded-xl text-center min-w-[70px] shrink-0 ${isHistory ? "bg-gray-100 dark:bg-gray-800" : "bg-primary/10"}`}>
+                          <p className={`text-xs font-medium uppercase ${isHistory ? "text-muted" : "text-primary"}`}>{format(new Date(res.reservation_date), "MMM", { locale: localeId })}</p>
+                          <p className={`text-2xl font-bold ${isHistory ? "text-muted" : "text-primary"}`}>{format(new Date(res.reservation_date), "dd")}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-text-light dark:text-text-dark text-lg truncate">
+                            {displayAtasNama ? `Atas Nama: ${displayAtasNama}` : format(new Date(res.reservation_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                          </p>
+                          {displayAtasNama && (
+                            <p className="text-sm text-muted mb-1">{format(new Date(res.reservation_date), "EEEE, dd MMMM yyyy", { locale: localeId })}</p>
+                          )}
+                          <div className="flex flex-wrap gap-3 text-sm text-muted">
+                            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {res.reservation_time?.substring(0, 5)}</span>
+                            <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {res.guest_count} Orang</span>
+                            <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Meja: {displayMejaList}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
+                        {res.status === "pending" && (
+                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
+                            <X className="w-5 h-5" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {displayNotes && <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg"><span className="font-bold">Catatan:</span> {displayNotes}</p>}
+                    
+                    {/* Cancelled by info */}
+                    {res.status === "cancelled" && cancelledByInfo && (
+                      <div className="mt-2 flex items-center gap-2 text-xs font-semibold">
+                        <Ban className={`w-3.5 h-3.5 ${cancelledByInfo.color}`} />
+                        <span className={cancelledByInfo.color}>{cancelledByInfo.label}</span>
+                      </div>
+                    )}
+
+                    {parsedNotes?.catatan_batal && (
+                      <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                        <span className="font-bold">Alasan Pembatalan:</span> {parsedNotes.catatan_batal}
+                      </p>
+                    )}
+                    {parsedNotes?.catatan_tolak && (
+                      <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                        <span className="font-bold">Alasan Penolakan:</span> {parsedNotes.catatan_tolak}
+                      </p>
+                    )}
+                    {parsedNotes?.telepon && <p className="mt-2 text-xs text-muted">No. Telepon: {parsedNotes.telepon}</p>}
+
+                    {/* Status label for history */}
+                    {isHistory && (
+                      <div className="mt-3 pt-3 border-t border-border-light dark:border-border-dark flex items-center gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-muted shrink-0" />
+                        <p className="text-xs text-muted">
+                          {res.status === "completed" && "Reservasi ini telah selesai."}
+                          {res.status === "cancelled" && "Reservasi ini telah dibatalkan."}
+                          {res.status === "rejected" && "Reservasi ini ditolak oleh kasir."}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Modal Ajukan Reservasi */}
       <AnimatePresence>
         {showModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowModal(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
               <div className="bg-primary p-6 text-white flex justify-between items-center">
                 <div>
-                  <h2 className="text-xl font-bold">Ajukan Observasi Meja</h2>
+                  <h2 className="text-xl font-bold">Ajukan Reservasi Meja</h2>
                   <p className="text-white/80 text-sm mt-1">Lengkapi informasi diri & pilih meja bebas</p>
                 </div>
                 <button onClick={() => setShowModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>

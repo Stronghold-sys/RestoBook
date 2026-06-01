@@ -280,7 +280,7 @@ export default function CustomerWalletPage() {
           },
           pendingEvent: function(result: any) {
             console.log("Duitku Topup Pending:", result);
-            toast("Menunggu pembayaran...", { icon: "⏳" });
+            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             setIsDuitkuOpen(false);
             fetchWalletData();
           },
@@ -337,7 +337,7 @@ export default function CustomerWalletPage() {
             pendingEvent: async function(result: any) {
               console.log("Duitku Order Pending:", result);
               setIsDuitkuOpen(false);
-              toast("Menunggu konfirmasi pembayaran...", { icon: "⏳" });
+              toast("Menunggu konfirmasi pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
               await fetch('/api/payment/check-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -423,7 +423,7 @@ export default function CustomerWalletPage() {
           },
           pendingEvent: function(result: any) {
             console.log("Duitku Wallet Topup Pending:", result);
-            toast("Menunggu pembayaran...", { icon: "⏳" });
+            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchWalletData();
           },
           errorEvent: function(result: any) {
@@ -572,8 +572,9 @@ export default function CustomerWalletPage() {
                         : `Akses transaksi Dompetku Anda telah dinonaktifkan sementara oleh administrator. Alasan: ${wallet.blockReason || 'Kebijakan Keamanan Restoran'}.`
                       }
                     </p>
-                    <p className="text-xs text-rose-500 font-extrabold mt-2">
-                      ⚠️ Anda tidak dapat melakukan Top Up maupun melakukan pembayaran menggunakan saldo Dompetku selama blokir aktif.
+                    <p className="text-xs text-rose-500 font-extrabold mt-2 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                      <span>Anda tidak dapat melakukan Top Up maupun melakukan pembayaran menggunakan saldo Dompetku selama blokir aktif.</span>
                     </p>
                   </div>
                 </div>
@@ -599,8 +600,9 @@ export default function CustomerWalletPage() {
                 ) : (
                   <form onSubmit={handleAppealSubmit} className="space-y-4">
                     {walletAppeal && walletAppeal.status === 'rejected' && (
-                      <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-xs text-rose-600 dark:text-rose-400 font-bold">
-                        ❌ Permohonan banding Anda sebelumnya ditolak: &quot;{walletAppeal.admin_message || 'Alasan ditolak tidak dicantumkan.'}&quot;. Silakan ajukan kembali dengan menyertakan bukti pendukung baru yang valid.
+                      <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-xs text-rose-600 dark:text-rose-400 font-bold flex items-start gap-2">
+                        <X className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span>Permohonan banding Anda sebelumnya ditolak: &quot;{walletAppeal.admin_message || 'Alasan ditolak tidak dicantumkan.'}&quot;. Silakan ajukan kembali dengan menyertakan bukti pendukung baru yang valid.</span>
                       </div>
                     )}
                     
@@ -1304,7 +1306,7 @@ function CountdownTimer({ createdAt, expiryMinutes, onExpire }: { createdAt: str
 
   return (
     <span className="text-[9px] text-amber-600 dark:text-amber-400 font-extrabold font-mono bg-amber-50 dark:bg-amber-950/20 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900 animate-pulse inline-flex items-center gap-1">
-      ⏳ {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+      <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" /> {pad(hours)}:{pad(minutes)}:{pad(seconds)}
     </span>
   );
 }

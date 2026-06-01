@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: profile.email,
-          subject: 'Hadiah Selamat Datang Berhasil Diklaim! 🎉',
+          subject: 'Hadiah Selamat Datang Berhasil Diklaim!',
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fff8f0; border-radius: 16px; border: 1px solid #e85d04;">
               <h2 style="color: #e85d04; text-align: center; margin-bottom: 20px;">Selamat! Klaim Hadiah Berhasil</h2>

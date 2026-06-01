@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
-import { Armchair, Loader2 } from "lucide-react";
+import { Armchair, Loader2, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function TablesPage() {
@@ -147,7 +147,13 @@ export default function TablesPage() {
     setUpdatingTable(tableId);
     try {
       const newStatus = currentStatus === "available" ? "occupied" : "available";
-      const { error } = await supabase.from("tables").update({ status: newStatus }).eq("id", tableId);
+      const updateData: any = { status: newStatus };
+      if (newStatus === "occupied") {
+        updateData.occupied_at = new Date().toISOString();
+      } else {
+        updateData.occupied_at = null;
+      }
+      const { error } = await supabase.from("tables").update(updateData).eq("id", tableId);
       if (error) throw error;
       toast.success(`Meja ${newStatus === "available" ? "tersedia kembali" : "ditandai terisi"}`);
       fetchTables();
@@ -243,8 +249,8 @@ export default function TablesPage() {
                 const remaining = getRemainingTime(table);
                 if (remaining) {
                   return (
-                    <div className="text-center bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono text-xs sm:text-sm font-black px-3 py-1.5 rounded-2xl tracking-widest animate-pulse">
-                      ⏳ {remaining}
+                    <div className="text-center bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono text-xs sm:text-sm font-black px-3 py-1.5 rounded-2xl tracking-widest animate-pulse flex items-center justify-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> {remaining}
                     </div>
                   );
                 }

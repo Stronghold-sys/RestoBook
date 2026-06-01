@@ -663,7 +663,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook <noreply@restobookid.my.id>',
           to: target_email,
-          subject: `Detail Reservasi RestoBook Anda - ${reservation.reservation_date} 📅`,
+          subject: `Detail Reservasi RestoBook Anda - ${reservation.reservation_date}`,
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -781,7 +781,7 @@ async function executeTool(name: string, args: any) {
         await resend.emails.send({
           from: 'RestoBook Security <security@restobookid.my.id>',
           to: target_email,
-          subject: 'Rincian Saldo dan Transaksi Dompetku RestoBook 💳',
+          subject: 'Rincian Saldo dan Transaksi Dompetku RestoBook',
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">

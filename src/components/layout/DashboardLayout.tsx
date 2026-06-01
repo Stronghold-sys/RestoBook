@@ -381,7 +381,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         {/* Main Content */}
         <div className="lg:pl-72 min-h-screen flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl">
+          <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-4 lg:hidden">
               <button
                 onClick={() => setIsSidebarOpen(true)}

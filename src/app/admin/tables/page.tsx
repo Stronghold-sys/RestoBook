@@ -63,12 +63,22 @@ export default function AdminTables() {
     e.preventDefault();
     setSaving(true);
     try {
+      const updateData: any = { ...formData };
+      const currentTable = tables.find(t => t.id === editingId);
+      if (formData.status === "occupied") {
+        if (!currentTable || currentTable.status !== "occupied" || !currentTable.occupied_at) {
+          updateData.occupied_at = new Date().toISOString();
+        }
+      } else {
+        updateData.occupied_at = null;
+      }
+
       if (editingId) {
-        const { error } = await supabase.from('tables').update(formData).eq('id', editingId);
+        const { error } = await supabase.from('tables').update(updateData).eq('id', editingId);
         if (error) throw error;
         toast.success("Meja berhasil diperbarui");
       } else {
-        const { error } = await supabase.from('tables').insert([formData]);
+        const { error } = await supabase.from('tables').insert([updateData]);
         if (error) throw error;
         toast.success("Meja berhasil ditambahkan");
       }

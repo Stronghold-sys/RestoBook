@@ -1127,7 +1127,7 @@ export default function POSPage() {
                         if (orderType === "dine_in" && !selectedTableId) return toast.error("Silakan pilih meja untuk Dine In!");
                         if (!customerName.trim()) setCustomerName("Guest");
                         if (orderType === "dine_in" && selectedTableId) {
-                           await supabase.from("tables").update({status: "occupied"}).eq("id", selectedTableId);
+                           await supabase.from("tables").update({status: "occupied", occupied_at: new Date().toISOString()}).eq("id", selectedTableId);
                         }
                         setIsOrderSessionActive(true);
                       }}

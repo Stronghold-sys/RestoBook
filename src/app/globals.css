@@ -214,4 +214,10 @@ aside.fixed.lg\:hidden {
   text-rendering: optimizeLegibility;
 }
 
+/* Lower header z-index when a full-screen overlay/modal is active so the overlay/blur covers the header */
+body:has([class*="fixed"][class*="inset-0"]) header.sticky {
+  z-index: 0 !important;
+}
+
+
 

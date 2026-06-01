@@ -401,7 +401,7 @@ export default function CartPage() {
           },
           pendingEvent: function(result: any) {
             console.log("Duitku Wallet Topup Pending:", result);
-            toast("Menunggu pembayaran...", { icon: "⏳" });
+            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchProfile();
           },
           errorEvent: function(result: any) {
@@ -638,10 +638,10 @@ export default function CartPage() {
 
     try {
       if (prevTableId) {
-        await supabase.from("tables").update({ status: "available" }).eq("id", prevTableId);
+        await supabase.from("tables").update({ status: "available", occupied_at: null }).eq("id", prevTableId);
       }
       if (newTableId) {
-        await supabase.from("tables").update({ status: "occupied" }).eq("id", newTableId);
+        await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", newTableId);
       }
     } catch (e) {
       console.error("Error updating table lock:", e);
@@ -725,7 +725,7 @@ export default function CartPage() {
         if (itemsError) throw itemsError;
  
         if (orderType === "dine_in") {
-          await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
+          await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", selectedTable);
         }
  
         isOrderCompleted.current = true;
@@ -862,7 +862,7 @@ export default function CartPage() {
       if (itemsError) throw itemsError;
 
       if (orderType === "dine_in") {
-        await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
+        await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", selectedTable);
       }
 
       if (paymentMethod === "cash") {
@@ -1563,7 +1563,7 @@ export default function CartPage() {
                   />
                   {pinRemainingAttempts !== null && (
                     <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
-                      ⚠️ Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
                     </span>
                   )}
                 </div>

@@ -51,7 +51,7 @@ async function sendPinEmail(email: string, name: string, type: 'created' | 'chan
         <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px">Halo, ${name}!</h2>
         <p style="line-height:1.6;color:#4b5563;font-size:15px">${messages[type]}</p>
         <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin:24px 0;font-size:14px;color:#92400e">
-          <strong>⚠️ Peringatan Keamanan:</strong><br/>${warnings[type]}
+          <strong>Peringatan Keamanan:</strong><br/>${warnings[type]}
         </div>
         <hr style="border:none;border-top:1px solid #f3f4f6;margin:30px 0 20px"/>
         <p style="font-size:12px;color:#9ca3af;text-align:center;margin:0">

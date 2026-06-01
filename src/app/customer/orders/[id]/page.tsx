@@ -132,7 +132,7 @@ export default function OrderTrackingPage() {
           },
           pendingEvent: function(result: any) {
             console.log("Duitku Wallet Topup Pending:", result);
-            toast("Menunggu pembayaran...", { icon: "⏳" });
+            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchProfile();
           },
           errorEvent: function(result: any) {
@@ -1365,7 +1365,7 @@ export default function OrderTrackingPage() {
                   />
                   {pinRemainingAttempts !== null && (
                     <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
-                      ⚠️ Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
                     </span>
                   )}
                 </div>

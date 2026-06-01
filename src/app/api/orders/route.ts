@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
           }).eq('id', profile.id);
           await supabaseAdmin.from('notifications').insert({
             user_id: profile.id,
-            title: '🔒 Dompetku Diblokir Otomatis',
+            title: 'Dompetku Diblokir Otomatis',
             message: 'PIN Dompetku Anda salah 3 kali berturut-turut. Dompetku Anda telah diblokir untuk keamanan. Ajukan banding di halaman Dompetku.',
             type: 'wallet_blocked',
           });
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
 
       // Update table if dine_in
       if (newOrder.table_id) {
-        await supabaseAdmin.from("tables").update({ status: "occupied" }).eq("id", newOrder.table_id);
+        await supabaseAdmin.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", newOrder.table_id);
       }
 
       // Notification
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
           }).eq('id', profile.id);
           await supabaseAdmin.from('notifications').insert({
             user_id: profile.id,
-            title: '🔒 Dompetku Diblokir Otomatis',
+            title: 'Dompetku Diblokir Otomatis',
             message: 'PIN Dompetku Anda salah 3 kali berturut-turut. Dompetku Anda telah diblokir untuk keamanan. Ajukan banding di halaman Dompetku.',
             type: 'wallet_blocked',
           });
@@ -339,7 +339,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (order.table_id) {
-        await supabaseAdmin.from('tables').update({ status: 'available' }).eq('id', order.table_id);
+        await supabaseAdmin.from('tables').update({ status: 'available', occupied_at: null }).eq('id', order.table_id);
       }
 
       return NextResponse.json({ success: true, message: 'Pesanan berhasil dibatalkan' });
@@ -399,7 +399,7 @@ export async function POST(req: NextRequest) {
       }
 
       if ((status === 'cancelled' || status === 'completed') && order.table_id) {
-        await supabaseAdmin.from('tables').update({ status: 'available' }).eq('id', order.table_id);
+        await supabaseAdmin.from('tables').update({ status: 'available', occupied_at: null }).eq('id', order.table_id);
       }
 
       return NextResponse.json({ success: true, message: `Status pesanan diperbarui ke ${status}` });
@@ -442,7 +442,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (body.tableId) {
-          await supabaseAdmin.from('tables').update({ status: 'occupied' }).eq('id', body.tableId);
+          await supabaseAdmin.from('tables').update({ status: 'occupied', occupied_at: new Date().toISOString() }).eq('id', body.tableId);
         }
       }
 

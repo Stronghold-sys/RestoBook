@@ -118,7 +118,7 @@ export async function POST(req: Request) {
         if (profile) {
           await supabaseAdmin.from('notifications').insert({
             user_id: profile.id,
-            title: 'Hadiah Selamat Datang Menanti! 🎉',
+            title: 'Hadiah Selamat Datang Menanti!',
             message: `Selamat bergabung! Anda mendapatkan Hadiah Selamat Datang sebesar ${points.toLocaleString('id-ID')} Poin Reward yang siap diklaim di halaman dashboard utama Anda.`,
             type: 'point',
             points: points,
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
             await resend.emails.send({
               from: 'RestoBook <noreply@restobookid.my.id>',
               to: email,
-              subject: 'Selamat Bergabung di RestoBook! Ada Hadiah Poin Untukmu 🎁',
+              subject: 'Selamat Bergabung di RestoBook! Ada Hadiah Poin Untukmu',
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fff8f0; border-radius: 16px; border: 1px solid #e85d04;">
                   <h2 style="color: #e85d04; text-align: center; margin-bottom: 20px;">Selamat Bergabung di RestoBook!</h2>

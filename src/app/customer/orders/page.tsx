@@ -107,6 +107,35 @@ export default function CustomerOrdersPage() {
     }
   };
 
+  const renderCancelReason = (reason: string) => {
+    if (!reason) return null;
+    let displayReason = reason;
+    let adminNotes = "";
+    
+    try {
+      const parsed = JSON.parse(reason);
+      if (parsed && typeof parsed === 'object') {
+        displayReason = parsed.refundReason || parsed.reason || reason;
+        adminNotes = parsed.adminNotes || "";
+      }
+    } catch (e) {
+      // Bukan JSON
+    }
+
+    return (
+      <div className="mt-1.5 space-y-1">
+        <p className="text-xs text-red-500 flex items-center gap-1.5 font-bold">
+          <XCircle className="w-3.5 h-3.5 shrink-0" /> Alasan: {displayReason}
+        </p>
+        {adminNotes && (
+          <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 p-2 rounded-xl leading-relaxed font-bold inline-block max-w-full">
+            Catatan: {adminNotes}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Filter orders by tab
   const activeOrders = orders.filter(o => !["completed", "cancelled"].includes(o.status));
   const completedOrders = orders.filter(o => o.status === "completed");
@@ -229,11 +258,7 @@ export default function CustomerOrdersPage() {
                             </>
                           )}
                         </div>
-                        {order.status === "cancelled" && order.cancel_reason && (
-                          <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5" /> Alasan: {order.cancel_reason}
-                          </p>
-                        )}
+                        {order.status === "cancelled" && renderCancelReason(order.cancel_reason)}
                       </div>
                     </div>
                     <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-0 border-border-light dark:border-border-dark pt-4 md:pt-0 mt-2 md:mt-0">

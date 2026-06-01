@@ -214,9 +214,19 @@ aside.fixed.lg\:hidden {
   text-rendering: optimizeLegibility;
 }
 
-/* Lower header z-index when a full-screen overlay/modal is active so the overlay/blur covers the header */
+/* Turunkan z-index header saat modal/overlay aktif agar blur menutupi seluruh layar termasuk header */
 body:has([class*="fixed"][class*="inset-0"]) header.sticky {
   z-index: 0 !important;
+}
+
+/* Pastikan semua elemen fixed inset-0 selalu di atas segalanya */
+[class*="fixed"][class*="inset-0"] {
+  isolation: isolate;
+}
+
+/* Sidebar dan mobile overlay tidak boleh menutup modal */
+aside.fixed {
+  z-index: 30;
 }
 
 

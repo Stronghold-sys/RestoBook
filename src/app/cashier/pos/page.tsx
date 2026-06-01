@@ -1544,6 +1544,15 @@ export default function POSPage() {
                           <div>
                             <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
                             <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
+                            <div className="flex gap-2 mt-2">
+                              <button 
+                                type="button" 
+                                onClick={() => setCashAmount(cartTotal)} 
+                                className="px-4 py-2 text-xs font-bold rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
+                              >
+                                Uang Pas (Rp {cartTotal.toLocaleString("id-ID")})
+                              </button>
+                            </div>
                           </div>
                           
                           {Number(cashAmount) > 0 && (

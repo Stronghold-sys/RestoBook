@@ -506,7 +506,7 @@ export default function OrderTrackingPage() {
       
       const { error } = await supabase.from("reviews").insert({
         order_id: id,
-        user_id: session.user.id,
+        customer_id: order.customer_id,
         rating: reviewRating,
         comment: reviewComment
       });
@@ -770,7 +770,7 @@ export default function OrderTrackingPage() {
               {steps.map((step, i) => {
                 const done = i <= currentIdx; const current = i === currentIdx; const Icon = step.icon;
                 return (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center gap-3">
+                  <div key={step.id} className="relative z-[2] flex flex-col items-center gap-3">
                     <motion.div animate={{ scale: current ? 1.2 : 1, backgroundColor: done ? "#f97316" : "var(--card-color)" }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${done ? "border-primary text-white" : "border-gray-300 dark:border-gray-600 text-gray-400 bg-card-light dark:bg-card-dark"}`}>
                       <Icon className="w-6 h-6" />
                     </motion.div>

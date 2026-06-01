@@ -1427,7 +1427,13 @@ export default function CartPage() {
                     <div className="space-y-2 max-w-md mx-auto">
                       <h3 className="font-black text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
                       <p className="text-muted text-sm leading-relaxed">
-                        Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat pesanan selesai atau ketika Anda mengambil makanan.
+                        {orderType === "delivery" ? (
+                          <>Pesanan Anda akan segera diproses. Pembayaran dilakukan secara tunai kepada kurir saat pesanan Anda diantar sampai ke tujuan.</>
+                        ) : orderType === "takeaway" ? (
+                          <>Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat Anda mengambil makanan di restoran.</>
+                        ) : (
+                          <>Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat pesanan selesai atau ketika Anda makan.</>
+                        )}
                       </p>
                     </div>
                     <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">

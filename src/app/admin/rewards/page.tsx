@@ -47,7 +47,8 @@ export default function AdminRewardsPage() {
     isDuitkuEnabled: true,
     isCashbackEnabled: true,
     walletAdminFee: 0,
-    isAutoRefundEnabled: true
+    isAutoRefundEnabled: true,
+    topupExpiryMinutes: 15
   });
 
   const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "settings">("catalog");
@@ -153,7 +154,8 @@ export default function AdminRewardsPage() {
           isDuitkuEnabled: data.is_duitku_enabled !== undefined && data.is_duitku_enabled !== null ? !!data.is_duitku_enabled : true,
           isCashbackEnabled: data.is_cashback_enabled !== undefined && data.is_cashback_enabled !== null ? !!data.is_cashback_enabled : true,
           walletAdminFee: data.wallet_admin_fee !== undefined && data.wallet_admin_fee !== null ? data.wallet_admin_fee : 0,
-          isAutoRefundEnabled: data.is_auto_refund_enabled !== undefined && data.is_auto_refund_enabled !== null ? !!data.is_auto_refund_enabled : true
+          isAutoRefundEnabled: data.is_auto_refund_enabled !== undefined && data.is_auto_refund_enabled !== null ? !!data.is_auto_refund_enabled : true,
+          topupExpiryMinutes: data.topup_expiry_minutes !== undefined && data.topup_expiry_minutes !== null ? data.topup_expiry_minutes : 15
         });
       }
     } catch (err) {
@@ -928,7 +930,7 @@ export default function AdminRewardsPage() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div>
                     <label htmlFor="walletAdminFee" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Biaya Admin per Top Up (Rp)</label>
                     <input 
                       id="walletAdminFee"
@@ -939,6 +941,21 @@ export default function AdminRewardsPage() {
                       onChange={e => setSettings({ ...settings, walletAdminFee: e.target.value })}
                       placeholder="0"
                       title="Biaya Admin per Top Up"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="topupExpiryMinutes" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Batas Waktu Pembayaran (Menit)</label>
+                    <input 
+                      id="topupExpiryMinutes"
+                      type="number" 
+                      required
+                      min={1}
+                      value={settings.topupExpiryMinutes} 
+                      onChange={e => setSettings({ ...settings, topupExpiryMinutes: e.target.value })}
+                      placeholder="15"
+                      title="Batas Waktu Pembayaran (Menit)"
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
                   </div>

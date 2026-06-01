@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
       isDuitkuEnabled,
       isCashbackEnabled,
       walletAdminFee,
-      isAutoRefundEnabled
+      isAutoRefundEnabled,
+      topupExpiryMinutes
     } = body;
 
     // Get the first setting row ID
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
     if (isCashbackEnabled !== undefined) updateFields.is_cashback_enabled = !!isCashbackEnabled;
     if (walletAdminFee !== undefined) updateFields.wallet_admin_fee = Number(walletAdminFee);
     if (isAutoRefundEnabled !== undefined) updateFields.is_auto_refund_enabled = !!isAutoRefundEnabled;
+    if (topupExpiryMinutes !== undefined) updateFields.topup_expiry_minutes = Number(topupExpiryMinutes);
 
     const { data: updatedSettings, error: updateError } = await supabaseAdmin
       .from('restaurant_settings')

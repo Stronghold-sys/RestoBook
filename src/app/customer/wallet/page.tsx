@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Wallet, ArrowUpRight, ArrowDownLeft, HelpCircle, 
   RefreshCw, Loader2, ArrowRight, Sparkles, CheckCircle, 
-  Clock, AlertTriangle, Search, Filter, Play, DollarSign, X, Check, ArrowDown, ArrowUp, Calendar, Ticket, RotateCcw
+  Clock, AlertTriangle, Search, Filter, Play, DollarSign, X, Check, ArrowDown, ArrowUp, Calendar, Ticket, RotateCcw,
+  ShoppingBag
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -50,6 +51,9 @@ export default function CustomerWalletPage() {
   // Modals
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showUnpaidModal, setShowUnpaidModal] = useState(false);
+  const [unpaidTransactions, setUnpaidTransactions] = useState<any[]>([]);
+  const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<string>("");
 
   const supabase = createClient();
@@ -57,13 +61,16 @@ export default function CustomerWalletPage() {
   useEffect(() => {
     fetchWalletData();
 
-    // Real-time Subscription to wallet transactions and profiles changes
+    // Real-time Subscription to wallet transactions, profiles, and orders changes
     const channel = supabase
       .channel("customer-wallet-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "wallet_transactions" }, () => {
         fetchWalletData();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
+        fetchWalletData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchWalletData();
       })
       .subscribe();
@@ -84,6 +91,7 @@ export default function CustomerWalletPage() {
       setWallet(data.wallet);
       setSettings(data.settings);
       setTransactions(data.transactions || []);
+      setUnpaidTransactions(data.unpaidTransactions || []);
       if (isManual) {
         toast.success("Saldo & transaksi berhasil diperbarui!");
       }
@@ -92,6 +100,123 @@ export default function CustomerWalletPage() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleUnpaidClick = async (tx: any) => {
+    if (tx.type === 'topup') {
+      if (!tx.payment_reference) {
+        toast.error("Reference pembayaran tidak ditemukan.");
+        return;
+      }
+      
+      if (typeof (window as any).checkout !== 'undefined') {
+        setIsDuitkuOpen(true);
+        (window as any).checkout.process(tx.payment_reference, {
+          successEvent: function(result: any) {
+            console.log("Duitku Topup Success:", result);
+            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
+            setIsDuitkuOpen(false);
+            setShowUnpaidModal(false);
+            fetchWalletData();
+          },
+          pendingEvent: function(result: any) {
+            console.log("Duitku Topup Pending:", result);
+            toast("Menunggu pembayaran...", { icon: "⏳" });
+            setIsDuitkuOpen(false);
+            fetchWalletData();
+          },
+          errorEvent: function(result: any) {
+            console.error("Duitku Topup Error:", result);
+            toast.error("Pembayaran gagal/dibatalkan.");
+            setIsDuitkuOpen(false);
+            fetchWalletData();
+          },
+          closeEvent: function() {
+            console.log("Duitku Pop Closed.");
+            setIsDuitkuOpen(false);
+            fetchWalletData();
+          }
+        });
+      } else {
+        toast.error("Portal Duitku tidak siap. Silakan coba lagi.");
+      }
+    } else if (tx.type === 'order') {
+      const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
+      try {
+        const res = await fetch('/api/payment/create-invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            orderId: tx.id,
+            paymentMethod: "",
+            returnUrl: window.location.href
+          })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
+        
+        if (data.reference && typeof (window as any).checkout !== 'undefined') {
+          toast.dismiss(pToast);
+          setIsDuitkuOpen(true);
+          (window as any).checkout.process(data.reference, {
+            successEvent: async function(result: any) {
+              console.log("Duitku Order Success:", result);
+              setIsDuitkuOpen(false);
+              setShowUnpaidModal(false);
+              toast.success("Pembayaran Pesanan Berhasil!");
+              await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  orderId: tx.id,
+                  duitkuOrderId: result?.merchantOrderId || tx.id 
+                })
+              });
+              fetchWalletData();
+            },
+            pendingEvent: async function(result: any) {
+              console.log("Duitku Order Pending:", result);
+              setIsDuitkuOpen(false);
+              toast("Menunggu konfirmasi pembayaran...", { icon: "⏳" });
+              await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  orderId: tx.id,
+                  duitkuOrderId: result?.merchantOrderId || tx.id 
+                })
+              });
+              fetchWalletData();
+            },
+            errorEvent: async function(result: any) {
+              setIsDuitkuOpen(false);
+              toast.error("Transaksi dibatalkan.");
+              await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", tx.id);
+              fetchWalletData();
+            },
+            closeEvent: async function() {
+              console.log("Duitku Pop Closed. Syncing status...");
+              setIsDuitkuOpen(false);
+              await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", tx.id);
+              await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: tx.id })
+              });
+              fetchWalletData();
+            }
+          });
+        } else if (data.paymentUrl) {
+          toast.dismiss(pToast);
+          window.location.href = data.paymentUrl;
+        } else {
+          throw new Error("Gagal memuat portal pembayaran.");
+        }
+      } catch (err: any) {
+        toast.error(err.message, { id: pToast });
+      }
     }
   };
 
@@ -324,9 +449,14 @@ export default function CustomerWalletPage() {
           {/* Quick Menu Actions */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <button
-              onClick={() => router.push("/customer/menu")}
-              className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group"
+              onClick={() => setShowUnpaidModal(true)}
+              className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group relative"
             >
+              {unpaidTransactions.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full shadow-md animate-pulse">
+                  {unpaidTransactions.length}
+                </span>
+              )}
               <Play className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
               <span className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark">Bayar Sekarang</span>
             </button>
@@ -413,7 +543,16 @@ export default function CustomerWalletPage() {
                           <p className="text-[10px] text-muted mt-0.5">
                             {tx.description} • {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
                           </p>
-                          <p className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider">ID: #{tx.id.substring(0, 8).toUpperCase()}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <p className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider">ID: #{tx.id.substring(0, 8).toUpperCase()}</p>
+                            {tx.status === 'pending' && tx.type === 'topup' && (
+                              <CountdownTimer 
+                                createdAt={tx.created_at} 
+                                expiryMinutes={settings.topupExpiryMinutes || 15} 
+                                onExpire={() => fetchWalletData()} 
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex sm:flex-col items-end justify-between sm:justify-center w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-border-light dark:border-border-dark">
@@ -533,6 +672,125 @@ export default function CustomerWalletPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 3. Bayar Sekarang (Unpaid Transactions) Modal */}
+      <AnimatePresence>
+        {showUnpaidModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUnpaidModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800 z-10">
+              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary" /> Transaksi Belum Dibayar
+                </h3>
+                <button onClick={() => setShowUnpaidModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+                <p className="text-xs text-muted leading-relaxed">
+                  Pilih transaksi yang tertunda di bawah ini untuk melanjutkan proses pembayaran secara aman via Duitku.
+                </p>
+
+                {unpaidTransactions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <CheckCircle className="w-12 h-12 text-emerald-500 mb-3 animate-bounce" />
+                    <span className="font-bold text-sm text-text-light dark:text-text-dark">Semua Tagihan Lunas!</span>
+                    <span className="text-[11px] text-muted mt-1">Tidak ada transaksi atau isi saldo yang menunggu pembayaran saat ini.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {unpaidTransactions.map((tx) => (
+                      <div
+                        key={tx.id}
+                        onClick={() => handleUnpaidClick(tx)}
+                        className="p-4 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-850/50 border border-gray-150 dark:border-gray-700/60 rounded-2xl flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                            {tx.type === 'topup' ? (
+                              <Wallet className="w-5 h-5 text-primary" />
+                            ) : (
+                              <ShoppingBag className="w-5 h-5 text-orange-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="text-xs font-black text-text-light dark:text-text-dark">
+                                {tx.type === 'topup' ? 'Isi Saldo Dompetku' : 'Pesanan Makanan'}
+                              </span>
+                              <CountdownTimer
+                                createdAt={tx.created_at}
+                                expiryMinutes={tx.type === 'topup' ? (settings.topupExpiryMinutes || 15) : (settings.paymentExpiryMinutes || 60)}
+                                onExpire={() => fetchWalletData()}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted block mt-0.5 font-medium truncate max-w-[200px] sm:max-w-[280px]">
+                              {tx.description}
+                            </span>
+                            <span className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider block">
+                              ID: #{tx.id.substring(0, 8).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-black text-xs text-primary block">
+                            Rp {Number(tx.amount).toLocaleString("id-ID")}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black text-white bg-primary px-2.5 py-1 rounded-lg uppercase tracking-wider mt-1.5 shadow-sm group-hover:bg-primary-hover">
+                            Bayar <ArrowRight className="w-2.5 h-2.5" />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function CountdownTimer({ createdAt, expiryMinutes, onExpire }: { createdAt: string; expiryMinutes: number; onExpire: () => void }) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const createdTime = new Date(createdAt).getTime();
+      const expiryTime = createdTime + expiryMinutes * 60 * 1000;
+      const difference = expiryTime - Date.now();
+      return difference > 0 ? Math.floor(difference / 1000) : 0;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        onExpire();
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [createdAt, expiryMinutes]);
+
+  if (timeLeft <= 0) {
+    return <span className="text-[9px] text-rose-500 font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900">Waktu habis</span>;
+  }
+
+  const hours = Math.floor(timeLeft / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
+  const seconds = timeLeft % 60;
+
+  const pad = (num: number) => String(num).padStart(2, "0");
+
+  return (
+    <span className="text-[9px] text-amber-600 dark:text-amber-400 font-extrabold font-mono bg-amber-50 dark:bg-amber-950/20 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900 animate-pulse inline-flex items-center gap-1">
+      ⏳ {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+    </span>
   );
 }

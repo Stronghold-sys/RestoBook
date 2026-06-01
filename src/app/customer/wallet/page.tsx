@@ -45,6 +45,7 @@ export default function CustomerWalletPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Modals
   const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -72,7 +73,10 @@ export default function CustomerWalletPage() {
     };
   }, []);
 
-  const fetchWalletData = async () => {
+  const fetchWalletData = async (isManual = false) => {
+    if (isManual) {
+      setIsRefreshing(true);
+    }
     try {
       const res = await fetch("/api/customer/wallet");
       const data = await res.json();
@@ -80,10 +84,14 @@ export default function CustomerWalletPage() {
       setWallet(data.wallet);
       setSettings(data.settings);
       setTransactions(data.transactions || []);
+      if (isManual) {
+        toast.success("Saldo & transaksi berhasil diperbarui!");
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -217,11 +225,11 @@ export default function CustomerWalletPage() {
           </p>
         </div>
         <button
-          onClick={fetchWalletData}
-          disabled={loading}
+          onClick={() => fetchWalletData(true)}
+          disabled={loading || isRefreshing}
           className="flex items-center gap-2 self-start sm:self-center px-4 py-2 text-sm font-bold bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl text-muted hover:text-primary transition-all disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`} /> Refresh
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-primary" : ""}`} /> Refresh
         </button>
       </div>
 

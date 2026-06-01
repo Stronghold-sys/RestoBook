@@ -6,7 +6,7 @@ import {
   Wallet, ArrowUpRight, ArrowDownLeft, HelpCircle, 
   RefreshCw, Loader2, ArrowRight, Sparkles, CheckCircle, 
   Clock, AlertTriangle, Search, Filter, Play, DollarSign, X, Check, ArrowDown, ArrowUp, Calendar, Ticket, RotateCcw,
-  ShoppingBag
+  ShoppingBag, Lock, ShieldAlert, FileText, Upload, Key
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -56,6 +56,34 @@ export default function CustomerWalletPage() {
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<string>("");
 
+  // PIN Transaction states
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinType, setPinType] = useState<"create" | "change" | null>(null);
+  const [pinForm, setPinForm] = useState({
+    oldPin: "",
+    newPin: "",
+    pin: "",
+    otp: "",
+    otpChannel: "email" as "email" | "whatsapp",
+  });
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  // Appeal states
+  const [appealReason, setAppealReason] = useState("");
+  const [appealFile, setAppealFile] = useState<File | null>(null);
+  const [appealLoading, setAppealLoading] = useState(false);
+  const [walletAppeal, setWalletAppeal] = useState<any>(null);
+
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const t = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [otpTimer]);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -92,6 +120,7 @@ export default function CustomerWalletPage() {
       setSettings(data.settings);
       setTransactions(data.transactions || []);
       setUnpaidTransactions(data.unpaidTransactions || []);
+      setWalletAppeal(data.walletAppeal || null);
       if (isManual) {
         toast.success("Saldo & transaksi berhasil diperbarui!");
       }
@@ -100,6 +129,135 @@ export default function CustomerWalletPage() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (otpTimer > 0) return;
+    setOtpLoading(true);
+    try {
+      const isCreate = !wallet.hasPin || pinType === "create" || wallet.pinResetRequired;
+      const res = await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: wallet.email,
+          phone: wallet.phone,
+          type: isCreate ? "create_pin" : "change_pin",
+          method: pinForm.otpChannel,
+          name: wallet.fullName,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengirim OTP");
+      toast.success(`OTP berhasil dikirim ke ${pinForm.otpChannel === "email" ? "Email" : "WhatsApp"} Anda!`);
+      setOtpSent(true);
+      setOtpTimer(60);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const isCreate = !wallet.hasPin || pinType === "create" || wallet.pinResetRequired;
+    const targetPin = isCreate ? pinForm.pin : pinForm.newPin;
+
+    if (!/^\d{6}$/.test(targetPin)) {
+      toast.error("PIN harus terdiri dari 6 digit angka");
+      return;
+    }
+
+    if (!isCreate && !/^\d{6}$/.test(pinForm.oldPin)) {
+      toast.error("PIN lama harus terdiri dari 6 digit angka");
+      return;
+    }
+
+    if (!pinForm.otp) {
+      toast.error("Kode OTP wajib diisi");
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      const res = await fetch("/api/customer/wallet/pin", {
+        method: isCreate ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pin: isCreate ? pinForm.pin : undefined,
+          oldPin: isCreate ? undefined : pinForm.oldPin,
+          newPin: isCreate ? undefined : pinForm.newPin,
+          otp: pinForm.otp,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses PIN");
+      toast.success(isCreate ? "PIN transaksi berhasil dibuat!" : "PIN transaksi berhasil diubah!");
+      setShowPinModal(false);
+      setPinForm({
+        oldPin: "",
+        newPin: "",
+        pin: "",
+        otp: "",
+        otpChannel: "email",
+      });
+      setOtpSent(false);
+      fetchWalletData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
+  const handleAppealSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appealReason.trim()) {
+      toast.error("Alasan banding wajib diisi");
+      return;
+    }
+
+    setAppealLoading(true);
+    const appealToast = toast.loading("Mengirim permohonan banding...");
+    try {
+      let uploadedUrl = "";
+      if (appealFile) {
+        const formData = new FormData();
+        formData.append("file", appealFile);
+        formData.append("userId", wallet.fullName || "customer");
+        formData.append("bucket", "profiles");
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal mengunggah file bukti");
+        uploadedUrl = uploadData.url;
+      }
+
+      // Submit appeal
+      const res = await fetch("/api/admin/customers/appeal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: wallet.id,
+          reason: appealReason,
+          type: "wallet_unblock",
+          attachment_url: uploadedUrl || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengirim banding");
+      toast.success("Permohonan banding berhasil dikirim ke Admin!", { id: appealToast });
+      setAppealReason("");
+      setAppealFile(null);
+      fetchWalletData();
+    } catch (err: any) {
+      toast.error(err.message, { id: appealToast });
+    } finally {
+      setAppealLoading(false);
     }
   };
 
@@ -365,6 +523,140 @@ export default function CustomerWalletPage() {
         </div>
       ) : (
         <>
+          {/* Recommendation & Block Banners */}
+          {!wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/5 dark:to-orange-500/5 border border-amber-500/30 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 shrink-0">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Amankan Transaksi Dompetku Anda!</h4>
+                  <p className="text-xs text-muted mt-0.5">Anda belum membuat PIN transaksi. Kami sangat menyarankan untuk segera membuatnya demi melindungi saldo Dompetku Anda.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setPinType("create");
+                  setOtpSent(false);
+                  setShowPinModal(true);
+                }}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
+              >
+                Buat PIN Sekarang
+              </button>
+            </motion.div>
+          )}
+
+          {wallet.isBlocked && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Premium Blocked Banner */}
+              <div className="bg-gradient-to-r from-rose-500/10 to-red-650/10 dark:from-rose-500/5 dark:to-red-650/5 border border-rose-500/30 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg shadow-rose-500/5">
+                <div className="flex items-start gap-4">
+                  <div className="p-4 bg-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-400 shrink-0 mt-0.5">
+                    <ShieldAlert className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-xl text-rose-600 dark:text-rose-400">Akses Dompetku Diblokir</h3>
+                    <p className="text-sm text-muted mt-1 leading-relaxed">
+                      {wallet.blockReason === 'wrong_pin_3x' 
+                        ? 'Demi keamanan akun, akses transaksi Dompetku Anda diblokir otomatis setelah salah memasukkan PIN sebanyak 3x berturut-turut.'
+                        : `Akses transaksi Dompetku Anda telah dinonaktifkan sementara oleh administrator. Alasan: ${wallet.blockReason || 'Kebijakan Keamanan Restoran'}.`
+                      }
+                    </p>
+                    <p className="text-xs text-rose-500 font-extrabold mt-2">
+                      ⚠️ Anda tidak dapat melakukan Top Up maupun melakukan pembayaran menggunakan saldo Dompetku selama blokir aktif.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Appeal Section */}
+              <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 md:p-8 space-y-6 shadow-sm">
+                <h4 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" /> Pengajuan Banding Pembukaan Blokir
+                </h4>
+
+                {walletAppeal && walletAppeal.status === 'pending' ? (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 text-center space-y-3">
+                    <Clock className="w-10 h-10 text-amber-500 mx-auto animate-pulse" />
+                    <h5 className="font-extrabold text-base text-amber-600 dark:text-amber-400">Banding Sedang Ditinjau Admin</h5>
+                    <p className="text-xs text-muted max-w-lg mx-auto">
+                      Permohonan banding Anda yang dikirim pada tanggal <strong>{format(new Date(walletAppeal.created_at), "dd MMMM yyyy", { locale: id })}</strong> sedang dalam proses verifikasi dokumen dan investigasi oleh tim restoran. Proses peninjauan memakan waktu maksimal 1x24 jam.
+                    </p>
+                    <div className="pt-2">
+                      <span className="px-3 py-1 text-[10px] font-black rounded-full bg-amber-500 text-white uppercase tracking-wider animate-pulse">Pending Review</span>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleAppealSubmit} className="space-y-4">
+                    {walletAppeal && walletAppeal.status === 'rejected' && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-xs text-rose-600 dark:text-rose-400 font-bold">
+                        ❌ Permohonan banding Anda sebelumnya ditolak: &quot;{walletAppeal.admin_message || 'Alasan ditolak tidak dicantumkan.'}&quot;. Silakan ajukan kembali dengan menyertakan bukti pendukung baru yang valid.
+                      </div>
+                    )}
+                    
+                    <div className="space-y-1.5">
+                      <label htmlFor="appealReasonInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Pengajuan Banding</label>
+                      <textarea
+                        id="appealReasonInput"
+                        required
+                        value={appealReason}
+                        onChange={e => setAppealReason(e.target.value)}
+                        placeholder="Jelaskan alasan mengapa blokir dompet Anda harus dibuka (misalnya: 'Saya lupa PIN transaksi saya karena jarang bertransaksi, tolong bantu buka blokir')"
+                        rows={3}
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="appealFileInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Unggah Bukti Pendukung (KTP/Screenshot Percobaan PIN)</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-muted hover:text-primary cursor-pointer hover:border-primary/50 transition-all">
+                          <Upload className="w-4 h-4 text-primary" /> 
+                          {appealFile ? appealFile.name : "Pilih File Gambar"}
+                          <input
+                            id="appealFileInput"
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setAppealFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                          />
+                        </label>
+                        {appealFile && (
+                          <button
+                            type="button"
+                            onClick={() => setAppealFile(null)}
+                            className="p-2 hover:bg-rose-50 rounded-xl text-rose-500 transition-all text-xs font-bold"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted font-medium mt-1">Format gambar (JPG, PNG) maksimal 5MB. Dokumen ini hanya akan digunakan oleh admin untuk verifikasi identitas pemilik akun demi mencegah pencurian saldo.</p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={appealLoading}
+                      className="px-6 py-3.5 bg-primary hover:bg-primary-hover text-white font-black text-xs rounded-xl shadow-md uppercase tracking-wider flex items-center gap-2 transition-all disabled:opacity-50"
+                    >
+                      {appealLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Kirim Permohonan Banding
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* Main Info Dashboard Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Premium Wallet Balance Card */}
@@ -447,7 +739,18 @@ export default function CustomerWalletPage() {
           </div>
 
           {/* Quick Menu Actions */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <button
+              onClick={() => {
+                setPinType(wallet.hasPin ? "change" : "create");
+                setOtpSent(false);
+                setShowPinModal(true);
+              }}
+              className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group"
+            >
+              <Lock className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark">Keamanan PIN</span>
+            </button>
             <button
               onClick={() => setShowUnpaidModal(true)}
               className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group relative"
@@ -745,6 +1048,217 @@ export default function CustomerWalletPage() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. PIN Modal */}
+      <AnimatePresence>
+        {showPinModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPinModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-10">
+              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-primary" /> {pinType === "create" ? "Buat PIN Keamanan Baru" : "Ubah PIN Keamanan"}
+                </h3>
+                <button onClick={() => setShowPinModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <form onSubmit={handlePinSubmit} className="p-6 space-y-4">
+                {pinType === "change" && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="oldPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">PIN Transaksi Lama</label>
+                    <input
+                      id="oldPinInput"
+                      type="password"
+                      maxLength={6}
+                      required
+                      value={pinForm.oldPin}
+                      onChange={e => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
+                      placeholder="Masukkan 6 digit PIN lama"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label htmlFor="newPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">
+                    {pinType === "create" ? "PIN Transaksi Baru (6 Digit)" : "PIN Transaksi Baru"}
+                  </label>
+                  <input
+                    id="newPinInput"
+                    type="password"
+                    maxLength={6}
+                    required
+                    value={pinType === "create" ? pinForm.pin : pinForm.newPin}
+                    onChange={e => setPinForm(
+                      pinType === "create" 
+                        ? { ...pinForm, pin: e.target.value.replace(/\D/g, "") }
+                        : { ...pinForm, newPin: e.target.value.replace(/\D/g, "") }
+                    )}
+                    placeholder="Masukkan 6 digit angka"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Metode Pengiriman OTP</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
+                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                        pinForm.otpChannel === "email"
+                          ? "bg-primary border-primary text-white"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                      }`}
+                    >
+                      Email ({wallet.email ? `${wallet.email.substring(0, 3)}...` : 'Terdaftar'})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
+                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                        pinForm.otpChannel === "whatsapp"
+                          ? "bg-primary border-primary text-white"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                      }`}
+                    >
+                      WhatsApp ({wallet.phone ? `...${wallet.phone.slice(-4)}` : 'Terdaftar'})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <label htmlFor="otpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Kode OTP Verifikasi</label>
+                    <input
+                      id="otpInput"
+                      type="text"
+                      maxLength={6}
+                      required
+                      value={pinForm.otp}
+                      onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
+                      placeholder="6 Digit OTP"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={otpLoading || otpTimer > 0}
+                    onClick={handleSendOtp}
+                    className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
+                  >
+                    {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={pinLoading || !pinForm.otp || (pinType === "create" ? !pinForm.pin : !pinForm.newPin)}
+                  className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                >
+                  {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Simpan PIN"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. Forced PIN Reset Modal */}
+      <AnimatePresence>
+        {wallet.pinResetRequired && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/85 backdrop-blur-xl pointer-events-none" />
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-[101]">
+              <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 bg-emerald-500/5 text-center">
+                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <h3 className="font-black text-xl text-gray-900 dark:text-white">Banding Dompetku Disetujui!</h3>
+                <p className="text-xs text-muted mt-2 leading-relaxed">
+                  Permohonan banding Anda telah disetujui. Untuk menjaga keamanan saldo Dompetku Anda dari potensi akses ilegal, <strong>Anda wajib membuat PIN transaksi baru</strong> sebelum dapat bertransaksi kembali.
+                </p>
+              </div>
+
+              <form onSubmit={handlePinSubmit} className="p-6 md:p-8 space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="forcedNewPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Buat PIN Transaksi Baru (6 Digit)</label>
+                  <input
+                    id="forcedNewPinInput"
+                    type="password"
+                    maxLength={6}
+                    required
+                    value={pinForm.pin}
+                    onChange={e => setPinForm({ ...pinForm, pin: e.target.value.replace(/\D/g, "") })}
+                    placeholder="Masukkan 6 digit angka baru"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Saluran Kirim OTP</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
+                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                        pinForm.otpChannel === "email"
+                          ? "bg-primary border-primary text-white"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                      }`}
+                    >
+                      Email ({wallet.email ? `${wallet.email.substring(0, 3)}...` : 'Terdaftar'})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
+                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                        pinForm.otpChannel === "whatsapp"
+                          ? "bg-primary border-primary text-white"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                      }`}
+                    >
+                      WhatsApp ({wallet.phone ? `...${wallet.phone.slice(-4)}` : 'Terdaftar'})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <label htmlFor="forcedOtpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Masukkan Kode OTP</label>
+                    <input
+                      id="forcedOtpInput"
+                      type="text"
+                      maxLength={6}
+                      required
+                      value={pinForm.otp}
+                      onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
+                      placeholder="6 Digit OTP"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={otpLoading || otpTimer > 0}
+                    onClick={handleSendOtp}
+                    className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
+                  >
+                    {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={pinLoading || !pinForm.otp || !pinForm.pin}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                >
+                  {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Buat PIN & Aktifkan E-Wallet"}
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

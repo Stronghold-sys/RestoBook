@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, reason } = await req.json();
+    const { user_id, reason, type = 'suspension', attachment_url = null } = await req.json();
 
     if (!user_id || !reason) {
       return NextResponse.json({ error: 'User ID and reason are required' }, { status: 400 });
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     // 1. Get profile details to include in email
     const { data: profile, error: profileErr } = await supabaseAdmin
       .from('profiles')
-      .select('email, full_name, phone, role, is_blocked, is_active, suspend_reason, suspend_message, suspend_type, suspend_until')
+      .select('email, full_name, phone, role, is_blocked, is_active, suspend_reason, suspend_message, suspend_type, suspend_until, wallet_block_reason')
       .eq('id', user_id)
       .single();
 
@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
       .insert({
         user_id,
         reason,
-        status: 'pending'
+        status: 'pending',
+        type,
+        attachment_url
       })
       .select()
       .single();
@@ -76,22 +78,38 @@ export async function POST(req: NextRequest) {
 
         const ccEmail = settings?.email || 'admin@restobook.com';
 
+        const isWallet = type === 'wallet_unblock';
+        const subject = isWallet 
+          ? 'Tanda Terima Pengajuan Banding Dompetku RestoBook'
+          : 'Tanda Terima Pengajuan Banding Akun RestoBook';
+        
+        const titleText = isWallet
+          ? 'Tanda Terima Pengajuan Banding Dompetku'
+          : 'Tanda Terima Pengajuan Banding';
+          
+        const descText = isWallet
+          ? 'Kami mengonfirmasi bahwa pengajuan banding Anda untuk pembukaan blokir Dompetku RestoBook telah berhasil kami terima. Permohonan Anda sedang dalam antrean peninjauan oleh tim manajemen kami.'
+          : 'Kami mengonfirmasi bahwa pengajuan banding Anda untuk pemulihan akun RestoBook telah berhasil kami terima. Permohonan Anda sedang dalam antrean peninjauan oleh tim manajemen kami.';
+
+        const typeLabel = isWallet ? 'Pembatasan Dompetku (Wallet Blocked)' : (profile.suspend_type === 'permanent' || profile.is_blocked ? 'Blokir Permanen (Banned)' : 'Penangguhan Sementara (Suspended)');
+        const reasonLabel = isWallet ? (profile.wallet_block_reason === 'wrong_pin_3x' ? 'Kesalahan Input PIN 3x' : profile.wallet_block_reason || 'Pemblokiran Keamanan') : (profile.suspend_reason || 'Pelanggaran Ketentuan Layanan');
+
         await resend.emails.send({
-          from: 'RestoBook <noreply@restobookid.my.id>',
+          from: 'RestoBook Security <security@restobookid.my.id>',
           to: [profile.email],
           cc: ccEmail ? [ccEmail] : undefined,
-          subject: 'Tanda Terima Pengajuan Banding Akun RestoBook',
+          subject: subject,
           html: `
             <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
               <div style="text-align: center; margin-bottom: 24px;">
                 <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
-                <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Tanda Terima Pengajuan Banding</p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">${titleText}</p>
               </div>
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
               
               <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${profile.full_name || 'Pelanggan'}!</h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                Kami mengonfirmasi bahwa pengajuan banding Anda untuk pemulihan akun RestoBook telah berhasil kami terima. Permohonan Anda sedang dalam antrean peninjauan oleh tim manajemen kami.
+                ${descText}
               </p>
               
               <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; margin: 24px 0;">
@@ -111,16 +129,16 @@ export async function POST(req: NextRequest) {
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #6b7280;">Tipe Pembatasan</td>
-                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${profile.suspend_type === 'permanent' || profile.is_blocked ? 'Blokir Permanen (Banned)' : 'Penangguhan Sementara (Suspended)'}</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${typeLabel}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 6px 0; color: #6b7280;">Alasan Pelanggaran</td>
-                    <td style="padding: 6px 0; color: #dc2626; font-weight: bold;">${profile.suspend_reason || 'Pelanggaran Ketentuan Layanan'}</td>
+                    <td style="padding: 6px 0; color: #6b7280;">Alasan Pelanggaran / Pemblokiran</td>
+                    <td style="padding: 6px 0; color: #dc2626; font-weight: bold;">${reasonLabel}</td>
                   </tr>
-                  ${profile.suspend_until ? `
+                  ${attachment_url ? `
                   <tr>
-                    <td style="padding: 6px 0; color: #6b7280;">Masa Penangguhan</td>
-                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">Hingga ${new Date(profile.suspend_until).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })} WIB</td>
+                    <td style="padding: 6px 0; color: #6b7280;">Dokumen Lampiran</td>
+                    <td style="padding: 6px 0;"><a href="${attachment_url}" target="_blank" style="color: #ea580c; font-weight: bold; text-decoration: underline;">Lihat Lampiran</a></td>
                   </tr>
                   ` : ''}
                 </table>
@@ -132,7 +150,7 @@ export async function POST(req: NextRequest) {
               </div>
 
               <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
-                Proses peninjauan banding memerlukan waktu maksimal <strong>1x24 jam</strong>. Keputusan resmi (apakah banding disetujui atau ditolak) akan otomatis dikirimkan ke alamat email ini setelah proses peninjauan selesai.
+                Proses peninjauan banding memerlukan waktu maksimal <strong>1x24 jam</strong>. Keputusan resmi akan otomatis dikirimkan ke alamat email ini setelah proses peninjauan selesai.
               </p>
               
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
@@ -189,104 +207,214 @@ export async function PATCH(req: NextRequest) {
     const emailToSend = appeal.profiles?.email;
 
     if (status === 'approved') {
-      // Restore user account
-      const { error: restoreErr } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          status: 'active',
-          suspend_reason: null,
-          suspend_message: null,
-          suspended_at: null,
+      if (appeal.type === 'wallet_unblock') {
+        // Unblock wallet & reset PIN
+        const { error: restoreErr } = await supabaseAdmin
+          .from('profiles')
+          .update({
+            is_wallet_blocked: false,
+            wallet_block_reason: null,
+            wrong_pin_count: 0,
+            wallet_pin: null,
+            wallet_pin_reset_required: true
+          })
+          .eq('id', appeal.user_id);
+
+        if (restoreErr) throw restoreErr;
+
+        // Add to notifications
+        await supabaseAdmin.from('notifications').insert({
+          user_id: appeal.user_id,
+          title: 'Banding Dompetku Disetujui',
+          message: admin_message || 'Banding Dompetku Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali. Silakan buat PIN baru di halaman Dompetku.',
+          type: 'wallet_unblocked',
+        });
+
+        // Send email
+        if (resendKey && emailToSend) {
+          try {
+            const resend = new Resend(resendKey);
+            await resend.emails.send({
+              from: 'RestoBook Security <security@restobookid.my.id>',
+              to: emailToSend,
+              subject: 'Hasil Banding Dompetku RestoBook: Banding Disetujui',
+              html: `
+                <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                  <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                    Kami dengan senang hati memberitahukan bahwa permohonan banding Dompetku Anda telah <strong>disetujui</strong> oleh administrator kami. Akses Dompetku Anda telah diaktifkan kembali.
+                  </p>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                    Demi keamanan transaksi, PIN lama Anda telah direset. Silakan masuk ke halaman Dompetku untuk membuat PIN baru.
+                  </p>
+                  <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
+                    <strong>Pesan Administrator:</strong><br/>
+                    ${admin_message || 'Banding Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali.'}
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                  <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                    Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                  </p>
+                </div>
+              `
+            });
+          } catch (err) {
+            console.error('Failed to send appeal approval email:', err);
+          }
+        }
+      } else {
+        // Restore user account
+        const { error: restoreErr } = await supabaseAdmin
+          .from('profiles')
+          .update({
+            status: 'active',
+            suspend_reason: null,
+            suspend_message: null,
+            suspended_at: null,
+            suspend_until: null,
+            suspend_type: null,
+            just_restored: true,
+            is_active: true
+          })
+          .eq('id', appeal.user_id);
+
+        if (restoreErr) throw restoreErr;
+
+        // Add to suspend_logs
+        await supabaseAdmin.from('suspend_logs').insert({
+          user_id: appeal.user_id,
+          action: 'restored',
+          reason: 'Banding disetujui oleh administrator.',
+          message: admin_message || 'Banding Anda telah disetujui. Akun Anda telah diaktifkan kembali.',
+          duration: null,
           suspend_until: null,
-          suspend_type: null,
-          just_restored: true,
-          is_active: true
-        })
-        .eq('id', appeal.user_id);
+          acted_by: admin_id || null
+        });
 
-      if (restoreErr) throw restoreErr;
-
-      // Add to suspend_logs
-      await supabaseAdmin.from('suspend_logs').insert({
-        user_id: appeal.user_id,
-        action: 'restored',
-        reason: 'Banding disetujui oleh administrator.',
-        message: admin_message || 'Banding Anda telah disetujui. Akun Anda telah diaktifkan kembali.',
-        duration: null,
-        suspend_until: null,
-        acted_by: admin_id || null
-      });
-
-      // Send email
-      if (resendKey && emailToSend) {
-        try {
-          const resend = new Resend(resendKey);
-          await resend.emails.send({
-            from: 'RestoBook <noreply@restobookid.my.id>',
-            to: emailToSend,
-            subject: 'Hasil Banding Akun RestoBook: Banding Disetujui',
-            html: `
-              <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
-                  <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
+        // Send email
+        if (resendKey && emailToSend) {
+          try {
+            const resend = new Resend(resendKey);
+            await resend.emails.send({
+              from: 'RestoBook <noreply@restobookid.my.id>',
+              to: emailToSend,
+              subject: 'Hasil Banding Akun RestoBook: Banding Disetujui',
+              html: `
+                <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                  <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                    Kami dengan senang hati memberitahukan bahwa permohonan banding Anda telah <strong>disetujui</strong> oleh administrator kami. Akun Anda telah dipulihkan secara penuh.
+                  </p>
+                  <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
+                    <strong>Pesan Administrator:</strong><br/>
+                    ${admin_message || 'Akun Anda telah diaktifkan kembali. Selamat menikmati layanan kami.'}
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                  <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                    Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                  </p>
                 </div>
-                <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
-                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                  Kami dengan senang hati memberitahukan bahwa permohonan banding Anda telah <strong>disetujui</strong> oleh administrator kami. Akun Anda telah dipulihkan secara penuh.
-                </p>
-                <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
-                  <strong>Pesan Administrator:</strong><br/>
-                  ${admin_message || 'Akun Anda telah diaktifkan kembali. Selamat menikmati layanan kami.'}
-                </div>
-                <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
-                <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
-                  Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
-                </p>
-              </div>
-            `
-          });
-        } catch (err) {
-          console.error('Failed to send appeal approval email:', err);
+              `
+            });
+          } catch (err) {
+            console.error('Failed to send appeal approval email:', err);
+          }
         }
       }
     } else if (status === 'rejected') {
-      // Send email
-      if (resendKey && emailToSend) {
-        try {
-          const resend = new Resend(resendKey);
-          await resend.emails.send({
-            from: 'RestoBook <noreply@restobookid.my.id>',
-            to: emailToSend,
-            subject: 'Hasil Banding Akun RestoBook: Banding Ditolak',
-            html: `
-              <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <h1 style="color: #dc2626; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
-                  <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Ditolak</p>
+      if (appeal.type === 'wallet_unblock') {
+        // Add notification
+        await supabaseAdmin.from('notifications').insert({
+          user_id: appeal.user_id,
+          title: 'Banding Dompetku Ditolak',
+          message: admin_message || 'Mohon maaf, banding pembukaan blokir Dompetku Anda telah ditolak oleh administrator.',
+          type: 'wallet_appeal_rejected',
+        });
+
+        // Send email
+        if (resendKey && emailToSend) {
+          try {
+            const resend = new Resend(resendKey);
+            await resend.emails.send({
+              from: 'RestoBook Security <security@restobookid.my.id>',
+              to: emailToSend,
+              subject: 'Hasil Banding Dompetku RestoBook: Banding Ditolak',
+              html: `
+                <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #dc2626; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Ditolak</p>
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                  <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                    Kami menyesal memberitahukan bahwa permohonan banding untuk pembukaan blokir Dompetku Anda telah <strong>ditolak</strong> setelah ditinjau ulang oleh administrator kami.
+                  </p>
+                  <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #991b1b;">
+                    <strong>Pesan Administrator:</strong><br/>
+                    ${admin_message || 'Banding ditolak karena alasan keamanan.'}
+                  </div>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
+                    Status pemblokiran Dompetku Anda tetap berlaku sebagaimana keputusan awal manajemen.
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                  <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                    Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                  </p>
                 </div>
-                <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
-                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                  Kami menyesal memberitahukan bahwa permohonan banding untuk pemulihan akun Anda telah <strong>ditolak</strong> setelah ditinjau ulang oleh administrator kami.
-                </p>
-                <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #991b1b;">
-                  <strong>Pesan Administrator:</strong><br/>
-                  ${admin_message || 'Banding ditolak karena alasan keamanan atau pelanggaran berat.'}
+              `
+            });
+          } catch (err) {
+            console.error('Failed to send appeal rejection email:', err);
+          }
+        }
+      } else {
+        // Send email
+        if (resendKey && emailToSend) {
+          try {
+            const resend = new Resend(resendKey);
+            await resend.emails.send({
+              from: 'RestoBook <noreply@restobookid.my.id>',
+              to: emailToSend,
+              subject: 'Hasil Banding Akun RestoBook: Banding Ditolak',
+              html: `
+                <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #dc2626; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Ditolak</p>
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                  <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                    Kami menyesal memberitahukan bahwa permohonan banding untuk pemulihan akun Anda telah <strong>ditolak</strong> setelah ditinjau ulang oleh administrator kami.
+                  </p>
+                  <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #991b1b;">
+                    <strong>Pesan Administrator:</strong><br/>
+                    ${admin_message || 'Banding ditolak karena alasan keamanan atau pelanggaran berat.'}
+                  </div>
+                  <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
+                    Status penangguhan atau pemblokiran akun Anda tetap berlaku sebagaimana keputusan awal manajemen.
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                  <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                    Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                  </p>
                 </div>
-                <p style="line-height: 1.6; color: #4b5563; font-size: 14px;">
-                  Status penangguhan atau pemblokiran akun Anda tetap berlaku sebagaimana keputusan awal manajemen.
-                </p>
-                <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
-                <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
-                  Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
-                </p>
-              </div>
-            `
-          });
-        } catch (err) {
-          console.error('Failed to send appeal rejection email:', err);
+              `
+            });
+          } catch (err) {
+            console.error('Failed to send appeal rejection email:', err);
+          }
         }
       }
     }

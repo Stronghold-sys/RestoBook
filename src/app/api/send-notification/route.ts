@@ -56,6 +56,45 @@ export async function POST(req: Request) {
         waMessage = `*UBAH PASSWORD BERHASIL*\n\nHalo *${name}*,\n\nPerubahan password pada profil Anda telah berhasil dilakukan. Pastikan Anda menyimpan password baru Anda dengan aman.\n\nTerima kasih,\n*Manajemen RestoBook*`;
       }
 
+    else if (type === 'create_pin_success') {
+      subject = 'PIN Dompetku Berhasil Dibuat – RestoBook';
+      emailHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #ea580c;">PIN Dompetku Berhasil Dibuat</h2>
+          <p>Halo <strong>${name}</strong>,</p>
+          <p>PIN keamanan transaksi Dompetku Anda telah berhasil dibuat. Mulai sekarang, setiap pembayaran menggunakan Dompetku akan memerlukan PIN 6 digit Anda.</p>
+          <p>Simpan PIN Anda dengan aman. Jangan berikan PIN kepada siapa pun.</p>
+        </div>
+      `;
+      waMessage = `*PIN DOMPETKU BERHASIL DIBUAT*\n\nHalo *${name}*,\n\nPIN keamanan transaksi Dompetku Anda telah berhasil dibuat. Setiap pembayaran via Dompetku kini dilindungi PIN 6 digit.\n\nJangan berikan PIN kepada siapa pun.\n\nTerima kasih,\n*Tim Keamanan RestoBook*`;
+    }
+
+    else if (type === 'change_pin_success') {
+      subject = 'PIN Dompetku Berhasil Diubah – RestoBook';
+      emailHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #ea580c;">PIN Dompetku Berhasil Diubah</h2>
+          <p>Halo <strong>${name}</strong>,</p>
+          <p>PIN keamanan Dompetku Anda telah berhasil diperbarui. Gunakan PIN baru Anda untuk bertransaksi.</p>
+          <p>Jika Anda tidak merasa melakukan perubahan ini, segera hubungi Admin RestoBook.</p>
+        </div>
+      `;
+      waMessage = `*PIN DOMPETKU BERHASIL DIUBAH*\n\nHalo *${name}*,\n\nPIN keamanan transaksi Dompetku Anda telah berhasil diperbarui. Silakan gunakan PIN baru Anda untuk bertransaksi.\n\nJika ini bukan Anda, segera hubungi Admin.\n\nTerima kasih,\n*Tim Keamanan RestoBook*`;
+    }
+
+    else if (type === 'wallet_unblocked_success') {
+      subject = 'Hasil Banding Dompetku RestoBook: Banding Disetujui';
+      emailHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #ea580c;">Banding Dompetku Disetujui</h2>
+          <p>Halo <strong>${name}</strong>,</p>
+          <p>Banding Dompetku Anda telah disetujui oleh administrator. Akses Dompetku Anda telah dibuka kembali.</p>
+          <p>Demi keamanan transaksi, silakan masuk ke halaman Dompetku untuk membuat PIN baru.</p>
+        </div>
+      `;
+      waMessage = `*BANDING DOMPETKU DISETUJUI*\n\nHalo *${name}*,\n\nPermohonan banding Dompetku Anda telah disetujui oleh administrator. Akses Dompetku Anda telah dibuka kembali.\n\nSilakan buat PIN baru di halaman Dompetku.\n\nTerima kasih,\n*Tim RestoBook*`;
+    }
+
     // 1. Kirim via WhatsApp (Jika ada nomor)
     if (phone) {
       try {

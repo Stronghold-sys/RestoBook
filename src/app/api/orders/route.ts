@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       // Get customer profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
-        .select('id, wallet_balance, is_wallet_blocked')
+        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count')
         .eq('id', orderData.customer_id)
         .single();
 
@@ -49,8 +49,47 @@ export async function POST(req: NextRequest) {
       }
 
       if (profile.is_wallet_blocked) {
-        return NextResponse.json({ error: 'Akses Dompetku Anda diblokir sementara oleh admin.' }, { status: 400 });
+        const reason = profile.wallet_block_reason || 'Dompetku Anda diblokir. Hubungi admin atau ajukan banding di halaman Dompetku.';
+        return NextResponse.json({ error: reason, code: 'WALLET_BLOCKED' }, { status: 400 });
       }
+
+      // Verifikasi PIN jika sudah diset
+      const { pin } = body;
+      if (!profile.wallet_pin) {
+        return NextResponse.json({ error: 'Anda belum membuat PIN Dompetku. Silakan buat PIN terlebih dahulu di halaman Dompetku.', code: 'NO_PIN' }, { status: 400 });
+      }
+      if (!pin) {
+        return NextResponse.json({ error: 'Masukkan PIN Dompetku untuk melanjutkan pembayaran', code: 'PIN_REQUIRED' }, { status: 400 });
+      }
+
+      // Hash PIN dan cocokkan
+      const encoder = new TextEncoder();
+      const pinBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(String(pin)));
+      const hashedPin = Array.from(new Uint8Array(pinBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (hashedPin !== profile.wallet_pin) {
+        const newCount = (profile.wrong_pin_count || 0) + 1;
+        if (newCount >= 3) {
+          // Blokir dompet
+          await supabaseAdmin.from('profiles').update({
+            wrong_pin_count: newCount,
+            is_wallet_blocked: true,
+            wallet_block_reason: 'Dompetku Anda diblokir secara otomatis karena PIN salah dimasukkan 3 kali berturut-turut. Ajukan banding di halaman Dompetku untuk membuka blokir.'
+          }).eq('id', profile.id);
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            title: '🔒 Dompetku Diblokir Otomatis',
+            message: 'PIN Dompetku Anda salah 3 kali berturut-turut. Dompetku Anda telah diblokir untuk keamanan. Ajukan banding di halaman Dompetku.',
+            type: 'wallet_blocked',
+          });
+          return NextResponse.json({ error: 'PIN salah 3 kali berturut-turut. Dompetku Anda telah diblokir otomatis. Buka halaman Dompetku untuk mengajukan banding.', code: 'WALLET_BLOCKED_NOW' }, { status: 400 });
+        }
+        await supabaseAdmin.from('profiles').update({ wrong_pin_count: newCount }).eq('id', profile.id);
+        return NextResponse.json({ error: `PIN salah. Sisa percobaan: ${3 - newCount} kali lagi.`, code: 'WRONG_PIN', remaining: 3 - newCount }, { status: 400 });
+      }
+
+      // PIN benar — reset hitungan
+      await supabaseAdmin.from('profiles').update({ wrong_pin_count: 0 }).eq('id', profile.id);
 
       const balance = Number(profile.wallet_balance || 0);
       const total = Number(orderData.total_amount);
@@ -155,7 +194,7 @@ export async function POST(req: NextRequest) {
       // Fetch profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
-        .select('id, wallet_balance, is_wallet_blocked')
+        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count')
         .eq('id', order.customer_id)
         .single();
 
@@ -164,8 +203,46 @@ export async function POST(req: NextRequest) {
       }
 
       if (profile.is_wallet_blocked) {
-        return NextResponse.json({ error: 'Akses Dompetku Anda diblokir sementara oleh admin.' }, { status: 400 });
+        const reason = profile.wallet_block_reason || 'Dompetku Anda diblokir. Hubungi admin atau ajukan banding di halaman Dompetku.';
+        return NextResponse.json({ error: reason, code: 'WALLET_BLOCKED' }, { status: 400 });
       }
+
+      // Verifikasi PIN jika sudah diset
+      const { pin: payPin } = body;
+      if (!profile.wallet_pin) {
+        return NextResponse.json({ error: 'Anda belum membuat PIN Dompetku. Silakan buat PIN terlebih dahulu di halaman Dompetku.', code: 'NO_PIN' }, { status: 400 });
+      }
+      if (!payPin) {
+        return NextResponse.json({ error: 'Masukkan PIN Dompetku untuk melanjutkan pembayaran', code: 'PIN_REQUIRED' }, { status: 400 });
+      }
+
+      // Hash PIN dan cocokkan
+      const payEncoder = new TextEncoder();
+      const payPinBuffer = await crypto.subtle.digest('SHA-256', payEncoder.encode(String(payPin)));
+      const hashedPayPin = Array.from(new Uint8Array(payPinBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (hashedPayPin !== profile.wallet_pin) {
+        const newPayCount = (profile.wrong_pin_count || 0) + 1;
+        if (newPayCount >= 3) {
+          await supabaseAdmin.from('profiles').update({
+            wrong_pin_count: newPayCount,
+            is_wallet_blocked: true,
+            wallet_block_reason: 'Dompetku Anda diblokir secara otomatis karena PIN salah dimasukkan 3 kali berturut-turut. Ajukan banding di halaman Dompetku untuk membuka blokir.'
+          }).eq('id', profile.id);
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            title: '🔒 Dompetku Diblokir Otomatis',
+            message: 'PIN Dompetku Anda salah 3 kali berturut-turut. Dompetku Anda telah diblokir untuk keamanan. Ajukan banding di halaman Dompetku.',
+            type: 'wallet_blocked',
+          });
+          return NextResponse.json({ error: 'PIN salah 3 kali berturut-turut. Dompetku Anda telah diblokir otomatis. Buka halaman Dompetku untuk mengajukan banding.', code: 'WALLET_BLOCKED_NOW' }, { status: 400 });
+        }
+        await supabaseAdmin.from('profiles').update({ wrong_pin_count: newPayCount }).eq('id', profile.id);
+        return NextResponse.json({ error: `PIN salah. Sisa percobaan: ${3 - newPayCount} kali lagi.`, code: 'WRONG_PIN', remaining: 3 - newPayCount }, { status: 400 });
+      }
+
+      // PIN benar — reset hitungan
+      await supabaseAdmin.from('profiles').update({ wrong_pin_count: 0 }).eq('id', profile.id);
 
       const balance = Number(profile.wallet_balance || 0);
       const total = Number(order.total_amount);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet, Lock } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -179,6 +179,11 @@ export default function CartPage() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [submittingTopUp, setSubmittingTopUp] = useState(false);
+
+  // Wallet PIN payment states
+  const [showPinPaymentModal, setShowPinPaymentModal] = useState(false);
+  const [paymentPin, setPaymentPin] = useState("");
+  const [pinRemainingAttempts, setPinRemainingAttempts] = useState<number | null>(null);
 
   // Delivery Form States
   const [deliveryName, setDeliveryName] = useState("");
@@ -651,7 +656,7 @@ export default function CartPage() {
 
   const handleProcessPayment = () => handleCheckoutClick();
 
-  const handleCheckoutClick = async () => {
+  const handleCheckoutClick = async (enteredPin?: string) => {
     if (items.length === 0) return toast.error("Keranjang kosong");
     const storeStatus = getStoreStatus(openingTime, closingTime, isTemporaryClosed, isHoliday, holidayReopenDate, temporaryClosedReopenTime, is24Hours);
     if (!storeStatus.isOpen) {
@@ -664,6 +669,13 @@ export default function CartPage() {
         return toast.error("Silakan lengkapi informasi pengiriman");
       }
     }
+
+    if (paymentMethod === "wallet" && !enteredPin) {
+      setPinRemainingAttempts(null);
+      setPaymentPin("");
+      setShowPinPaymentModal(true);
+      return;
+    }
     
     setLoading(true);
     const loadingToast = toast.loading("Memproses pesanan...");
@@ -672,7 +684,7 @@ export default function CartPage() {
       if (!session?.user) throw new Error("Silakan login kembali");
       const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
-
+ 
       if (totalAmount === 0) {
         toast.loading("Memproses pesanan gratis...", { id: loadingToast });
         const finalNotes = `[Pesanan Gratis - Voucher Reward] ${orderNotes}`.trim();
@@ -697,9 +709,9 @@ export default function CartPage() {
           delivery_village: orderType === "delivery" ? deliveryVillage : null,
           delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
         }).select().single();
-
+ 
         if (orderError) throw orderError;
-
+ 
         const orderItems = items.map(item => ({
           order_id: orderData.id, 
           menu_item_id: item.id, 
@@ -711,34 +723,34 @@ export default function CartPage() {
         
         const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
         if (itemsError) throw itemsError;
-
+ 
         if (orderType === "dine_in") {
           await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
         }
-
+ 
         isOrderCompleted.current = true;
         if (typeof window !== "undefined") localStorage.removeItem("selected_table");
         clearCart();
-
+ 
         // Trigger Notification (Non-blocking)
         fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
         }).catch(err => console.error("Notification error:", err));
-
+ 
         toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
         router.push(`/customer/orders/${orderData.id}`);
         return;
       }
-
+ 
       if (paymentMethod === "wallet") {
         toast.loading("Memproses pembayaran saldo dompet...", { id: loadingToast });
         
         const dbPaymentMethod = "wallet";
         const detailedPaymentNotes = "[Pembayaran Saldo Dompet]";
         const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
-
+ 
         const orderDataPayload = {
           customer_id: profile.id,
           table_id: orderType === "dine_in" ? selectedTable : null,
@@ -756,7 +768,7 @@ export default function CartPage() {
           delivery_village: orderType === "delivery" ? deliveryVillage : null,
           delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
         };
-
+ 
         const itemsDataPayload = items.map(item => ({
           menu_item_id: item.id,
           quantity: item.quantity,
@@ -764,24 +776,46 @@ export default function CartPage() {
           subtotal: item.price * item.quantity,
           notes: item.notes || null,
         }));
-
+ 
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'create_wallet_order',
             orderData: orderDataPayload,
-            itemsData: itemsDataPayload
+            itemsData: itemsDataPayload,
+            pin: enteredPin
           })
         });
-
+ 
         const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Gagal memproses pembayaran saldo dompet');
-
+        if (!res.ok) {
+          if (result.code === 'WALLET_BLOCKED' || result.code === 'WALLET_BLOCKED_NOW') {
+            setShowPinPaymentModal(false);
+            toast.error(result.error || 'Akses Dompetku diblokir.', { id: loadingToast });
+            router.push('/customer/wallet');
+            return;
+          }
+          if (result.code === 'NO_PIN') {
+            setShowPinPaymentModal(false);
+            toast.error(result.error || 'Anda belum memiliki PIN.', { id: loadingToast });
+            router.push('/customer/wallet');
+            return;
+          }
+          if (result.code === 'WRONG_PIN') {
+            toast.error(result.error || 'PIN salah.', { id: loadingToast });
+            setPinRemainingAttempts(result.remaining);
+            setPaymentPin("");
+            return;
+          }
+          throw new Error(result.error || 'Gagal memproses pembayaran saldo dompet');
+        }
+ 
         isOrderCompleted.current = true;
         if (typeof window !== "undefined") localStorage.removeItem("selected_table");
         clearCart();
-
+        setShowPinPaymentModal(false);
+ 
         toast.success("Pembayaran Berhasil via Saldo Dompet!", { id: loadingToast });
         router.push(`/customer/orders/${result.order.id}`);
         return;
@@ -1398,7 +1432,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">
                       <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
-                      <button onClick={handleCheckoutClick} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                      <button onClick={() => handleCheckoutClick()} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi Pesanan</>}
                       </button>
                     </div>
@@ -1467,6 +1501,79 @@ export default function CartPage() {
                   className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
                 >
                   {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. PIN Payment Modal */}
+      <AnimatePresence>
+        {showPinPaymentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowPinPaymentModal(false)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 30 }} 
+              className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10"
+            >
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-primary" /> PIN Transaksi
+                </h3>
+                <button onClick={() => setShowPinPaymentModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+              </div>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCheckoutClick(paymentPin);
+                }} 
+                className="p-6 space-y-4"
+              >
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+                    <Wallet className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Masukkan PIN Dompetku</h4>
+                  <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed">
+                    Demi keamanan, silakan masukkan 6 digit PIN transaksi Dompetku Anda untuk menyelesaikan pembayaran sebesar <strong>Rp {totalAmount.toLocaleString("id-ID")}</strong>.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <input
+                    id="paymentPinInput"
+                    type="password"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    value={paymentPin}
+                    onChange={e => setPaymentPin(e.target.value.replace(/\D/g, ""))}
+                    placeholder="Masukkan 6 Digit PIN"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-3.5 text-lg outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold text-text-light dark:text-text-dark"
+                  />
+                  {pinRemainingAttempts !== null && (
+                    <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
+                      ⚠️ Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || paymentPin.length !== 6}
+                  className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
                 </button>
               </form>
             </motion.div>

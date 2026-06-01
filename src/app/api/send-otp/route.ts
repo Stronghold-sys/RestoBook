@@ -84,6 +84,12 @@ export async function POST(req: Request) {
     } else if (type === 'change_password') {
       subject = 'Ganti Password RestoBook';
       actionText = 'mengganti password akun Anda';
+    } else if (type === 'create_pin') {
+      subject = 'Verifikasi Pembuatan PIN Dompetku RestoBook';
+      actionText = 'membuat PIN keamanan baru pada Dompetku Anda';
+    } else if (type === 'change_pin') {
+      subject = 'Verifikasi Perubahan PIN Dompetku RestoBook';
+      actionText = 'mengonfirmasi perubahan PIN keamanan Dompetku Anda';
     }
 
     const waMessage = `*KODE OTP RESTOBOOK*\n\nHalo ${name},\n\nGunakan kode OTP berikut untuk ${actionText}:\n\n*${code}*\n\nKode ini bersifat RAHASIA dan hanya berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun.`;

@@ -257,7 +257,11 @@ export async function POST(req: NextRequest) {
       const nextStatus = !profile.is_wallet_blocked;
       const { error: updateErr } = await supabaseAdmin
         .from('profiles')
-        .update({ is_wallet_blocked: nextStatus })
+        .update({ 
+          is_wallet_blocked: nextStatus,
+          wallet_block_reason: nextStatus ? (reason || 'Diblokir oleh administrator') : null,
+          wrong_pin_count: nextStatus ? undefined : 0 // reset pin attempts on manual unblock
+        })
         .eq('id', customerId);
 
       if (updateErr) throw updateErr;
@@ -267,7 +271,7 @@ export async function POST(req: NextRequest) {
         user_id: customerId,
         title: nextStatus ? 'Akses Dompet Diblokir' : 'Akses Dompet Dibuka',
         message: nextStatus 
-          ? 'Penggunaan e-wallet Dompetku Anda telah diblokir sementara oleh admin. Hubungi admin untuk detail.'
+          ? `Penggunaan e-wallet Dompetku Anda telah diblokir sementara oleh admin. Alasan: ${reason || 'Kebijakan Keamanan'}`
           : 'Akses e-wallet Dompetku Anda telah dibuka kembali. Anda sekarang dapat bertransaksi kembali.',
         type: 'point'
       });

@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, wallet_balance')
+      .select('id, email, full_name, phone, wallet_balance, wallet_pin, is_wallet_blocked, wallet_block_reason, wallet_pin_reset_required')
       .eq('user_id', user.id)
       .single();
 
@@ -148,13 +148,31 @@ export async function GET(req: NextRequest) {
       .filter((tx: any) => tx.status === 'success' && new Date(tx.created_at) >= startOfMonth)
       .length;
 
+    // Fetch latest wallet appeal status
+    const { data: latestWalletAppeal } = await supabaseAdmin
+      .from('appeals')
+      .select('id, status, reason, admin_message, created_at')
+      .eq('user_id', profile.id)
+      .eq('type', 'wallet_unblock')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     return NextResponse.json({
       success: true,
       wallet: {
+        id: profile.id,
         balance: Number(profile.wallet_balance || 0),
         monthlyTopup,
         monthlySpending,
-        monthlyTxCount
+        monthlyTxCount,
+        hasPin: !!profile.wallet_pin,
+        isBlocked: !!profile.is_wallet_blocked,
+        blockReason: profile.wallet_block_reason || null,
+        pinResetRequired: !!profile.wallet_pin_reset_required,
+        email: profile.email || '',
+        phone: profile.phone || '',
+        fullName: profile.full_name || '',
       },
       settings: {
         minTopup: Number(settings?.min_topup || 10000),
@@ -165,7 +183,8 @@ export async function GET(req: NextRequest) {
         paymentExpiryMinutes: orderExpiryMinutes
       },
       transactions: activeTx,
-      unpaidTransactions
+      unpaidTransactions,
+      walletAppeal: latestWalletAppeal || null,
     });
 
   } catch (error: any) {

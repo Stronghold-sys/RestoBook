@@ -312,8 +312,12 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" /> }
               </button>
-              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm">
-                {userProfile?.full_name?.charAt(0) || "U"}
+              <div className="h-10 w-10 rounded-xl overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  userProfile?.full_name?.charAt(0) || "U"
+                )}
               </div>
             </div>
           </header>

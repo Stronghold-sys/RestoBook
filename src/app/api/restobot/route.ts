@@ -527,7 +527,7 @@ async function executeTool(name: string, args: any) {
     // 1. Ambil detail pesanan & item
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('*, profiles(full_name)')
+      .select('*, profiles!orders_customer_id_fkey(full_name)')
       .eq('id', order_id)
       .maybeSingle();
 

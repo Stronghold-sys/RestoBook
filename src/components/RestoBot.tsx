@@ -436,7 +436,7 @@ export default function RestoBot() {
           if (userProfile.role === 'admin' || userProfile.role === 'cashier') {
             const { data: activeOrders } = await supabase
               .from('orders')
-              .select('*, profiles(full_name), tables(table_number)')
+              .select('*, profiles!orders_customer_id_fkey(full_name), tables(table_number)')
               .not('status', 'in', '("completed","cancelled")')
               .order('created_at', { ascending: false });
             if (activeOrders) {

@@ -51,6 +51,7 @@ export default function CustomerReservationsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => { 
@@ -187,7 +188,6 @@ export default function CustomerReservationsPage() {
   };
 
   const handleDeleteHistory = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus riwayat reservasi ini?")) return;
     try {
       const { error } = await supabase.from("reservations").delete().eq("id", id);
       if (error) throw error;
@@ -376,7 +376,7 @@ export default function CustomerReservationsPage() {
                           </motion.button>
                         )}
                         {isHistory && (
-                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleDeleteHistory(res.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 p-2 rounded-lg transition-colors" aria-label="Hapus Riwayat" title="Hapus Riwayat">
+                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setDeletingHistoryId(res.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 p-2 rounded-lg transition-colors" aria-label="Hapus Riwayat" title="Hapus Riwayat">
                             <Trash2 className="w-5 h-5" />
                           </motion.button>
                         )}
@@ -545,6 +545,62 @@ export default function CustomerReservationsPage() {
                   </motion.button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Konfirmasi Hapus Riwayat */}
+      <AnimatePresence>
+        {deletingHistoryId && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
+            onClick={() => setDeletingHistoryId(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              onClick={e => e.stopPropagation()} 
+              className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark"
+            >
+              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">Hapus Riwayat</h2>
+                  <p className="text-white/80 text-sm">Konfirmasi tindakan</p>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
+                  Apakah Anda yakin ingin menghapus riwayat reservasi ini secara permanen dari akun Anda? Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div className="flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setDeletingHistoryId(null)} 
+                    className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-border-light dark:border-border-dark"
+                  >
+                    Batal
+                  </button>
+                  <motion.button 
+                    whileTap={{ scale: 0.98 }} 
+                    onClick={async () => {
+                      const id = deletingHistoryId;
+                      setDeletingHistoryId(null);
+                      await handleDeleteHistory(id);
+                    }}
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-750 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                  >
+                    Hapus
+                  </motion.button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

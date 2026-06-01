@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { md5 } from '@/lib/md5';
 

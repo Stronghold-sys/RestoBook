@@ -5,8 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet,
-  CheckCheck, Loader2
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,7 +25,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const [submittingNotif, setSubmittingNotif] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -215,31 +213,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     }
   };
 
-  const markAllNotificationsAsRead = async () => {
-    if (submittingNotif) return;
-    setSubmittingNotif(true);
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) return;
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.session.user.id).single();
-      if (!profile) return;
-      
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", profile.id)
-        .eq("is_read", false);
 
-      if (error) throw error;
-
-      setUnreadNotifCount(0);
-      toast.success("Semua notifikasi telah dibaca");
-    } catch (e: any) {
-      toast.error(e.message || "Gagal memperbarui notifikasi");
-    } finally {
-      setSubmittingNotif(false);
-    }
-  };
 
   const fetchOnlineOrderCount = async () => {
     const { count } = await supabase
@@ -526,43 +500,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           )}
         </AnimatePresence>
 
-        {/* Floating Notification Popup for Customer */}
-        <AnimatePresence>
-          {role === "customer" && unreadNotifCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              className="fixed bottom-6 right-6 z-50 w-full max-w-sm bg-white/95 dark:bg-card-dark/95 backdrop-blur-xl border border-primary/20 dark:border-primary/30 p-5 rounded-[2rem] shadow-2xl flex flex-col gap-3.5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 animate-bounce">
-                  <Bell className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-tight">Notifikasi Baru</h4>
-                  <p className="text-xs text-muted leading-tight mt-0.5">
-                    Anda memiliki <span className="font-extrabold text-primary font-mono">{unreadNotifCount}</span> notifikasi yang belum dibaca.
-                  </p>
-                </div>
-              </div>
-              
-              <button
-                onClick={markAllNotificationsAsRead}
-                disabled={submittingNotif}
-                className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
-              >
-                {submittingNotif ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCheck className="w-4 h-4" /> Tandai Semua Dibaca
-                  </>
-                )}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
       </div>
     </div>
   );

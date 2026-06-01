@@ -139,7 +139,7 @@ export default function CustomerWalletPage() {
           }
         });
       } else {
-        toast.error("Portal Duitku tidak siap. Silakan coba lagi.");
+        toast.error("Portal pembayaran tidak siap. Silakan coba lagi.");
       }
     } else if (tx.type === 'order') {
       const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
@@ -593,7 +593,7 @@ export default function CustomerWalletPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Metode Top Up Pembayaran</h4>
-                  <p>Top Up didukung penuh secara realtime dengan Integrasi Payment Gateway Duitku. Anda bisa menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), E-Wallet (DANA, OVO, ShopeePay), dan Gerai Retail terdekat (Indomaret, Alfamart).</p>
+                  <p>Top Up didukung penuh secara realtime dengan Integrasi Gerbang Pembayaran Resmi. Anda bisa menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), E-Wallet (DANA, OVO, ShopeePay), dan Gerai Retail terdekat (Indomaret, Alfamart).</p>
                 </div>
                 <div>
                   <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Ketentuan Top Up</h4>
@@ -678,44 +678,44 @@ export default function CustomerWalletPage() {
         {showUnpaidModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUnpaidModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800 z-10">
-              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-[calc(100%-2rem)] md:w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800 z-10">
+              <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white flex items-center gap-2">
                   <Play className="w-5 h-5 text-primary" /> Transaksi Belum Dibayar
                 </h3>
                 <button onClick={() => setShowUnpaidModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
-                <p className="text-xs text-muted leading-relaxed">
-                  Pilih transaksi yang tertunda di bawah ini untuk melanjutkan proses pembayaran secara aman via Duitku.
+              <div className="p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar flex-1">
+                <p className="text-xs md:text-sm text-muted leading-relaxed">
+                  Pilih transaksi yang tertunda di bawah ini untuk melanjutkan proses pembayaran secara aman.
                 </p>
 
                 {unpaidTransactions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle className="w-12 h-12 text-emerald-500 mb-3 animate-bounce" />
-                    <span className="font-bold text-sm text-text-light dark:text-text-dark">Semua Tagihan Lunas!</span>
-                    <span className="text-[11px] text-muted mt-1">Tidak ada transaksi atau isi saldo yang menunggu pembayaran saat ini.</span>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <CheckCircle className="w-16 h-16 text-emerald-500 mb-4 animate-bounce" />
+                    <span className="font-extrabold text-base text-text-light dark:text-text-dark">Semua Tagihan Lunas!</span>
+                    <span className="text-xs text-muted mt-1.5">Tidak ada transaksi atau isi saldo yang menunggu pembayaran saat ini.</span>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {unpaidTransactions.map((tx) => (
                       <div
                         key={tx.id}
                         onClick={() => handleUnpaidClick(tx)}
-                        className="p-4 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-850/50 border border-gray-150 dark:border-gray-700/60 rounded-2xl flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group"
+                        className="p-4 sm:p-5 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-850/50 border border-gray-150 dark:border-gray-700/60 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group shadow-sm hover:shadow"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors shrink-0">
                             {tx.type === 'topup' ? (
-                              <Wallet className="w-5 h-5 text-primary" />
+                              <Wallet className="w-6 h-6 text-primary" />
                             ) : (
-                              <ShoppingBag className="w-5 h-5 text-orange-500" />
+                              <ShoppingBag className="w-6 h-6 text-orange-500" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <span className="text-xs font-black text-text-light dark:text-text-dark">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-black text-text-light dark:text-text-dark">
                                 {tx.type === 'topup' ? 'Isi Saldo Dompetku' : 'Pesanan Makanan'}
                               </span>
                               <CountdownTimer
@@ -724,20 +724,20 @@ export default function CustomerWalletPage() {
                                 onExpire={() => fetchWalletData()}
                               />
                             </div>
-                            <span className="text-[10px] text-muted block mt-0.5 font-medium truncate max-w-[200px] sm:max-w-[280px]">
+                            <span className="text-xs text-muted block mt-1 font-medium truncate max-w-full">
                               {tx.description}
                             </span>
-                            <span className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider block">
+                            <span className="text-[10px] font-mono text-muted uppercase mt-0.5 tracking-wider block">
                               ID: #{tx.id.substring(0, 8).toUpperCase()}
                             </span>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <span className="font-mono font-black text-xs text-primary block">
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 dark:border-gray-700/50 shrink-0">
+                          <span className="font-mono font-black text-base text-primary block">
                             Rp {Number(tx.amount).toLocaleString("id-ID")}
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[9px] font-black text-white bg-primary px-2.5 py-1 rounded-lg uppercase tracking-wider mt-1.5 shadow-sm group-hover:bg-primary-hover">
-                            Bayar <ArrowRight className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1.5 text-xs font-black text-white bg-primary px-4 py-2 rounded-xl uppercase tracking-wider sm:mt-2 shadow-md shadow-primary/20 group-hover:bg-primary-hover group-hover:shadow-primary/30 transition-all">
+                            Bayar <ArrowRight className="w-3.5 h-3.5" />
                           </span>
                         </div>
                       </div>

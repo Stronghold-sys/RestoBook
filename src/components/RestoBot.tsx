@@ -735,7 +735,7 @@ export default function RestoBot() {
 - Jumlah Transaksi Selesai (Completed): ${reportsSummary.today_completed_orders_count} pesanan
 - Total Pendapatan Hari Ini: Rp ${Number(reportsSummary.today_total_revenue).toLocaleString('id-ID')}
 - Pendapatan Tunai (Cash): Rp ${Number(reportsSummary.today_cash_revenue).toLocaleString('id-ID')}
-- Pendapatan Non-Tunai (Digital/Duitku): Rp ${Number(reportsSummary.today_non_cash_revenue).toLocaleString('id-ID')}`;
+- Pendapatan Non-Tunai (Digital/Online): Rp ${Number(reportsSummary.today_non_cash_revenue).toLocaleString('id-ID')}`;
     }
 
     // Inject Customer Rewards Data (only for customer role)

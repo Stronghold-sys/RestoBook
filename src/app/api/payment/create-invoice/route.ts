@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("Duitku API Invalid Response Format:", responseText);
       return NextResponse.json({ 
-        error: `Duitku Gateway Error (${response.status})`,
+        error: 'Gagal menghubungi gerbang pembayaran',
         details: responseText.substring(0, 120)
       }, { status: 400 });
     }
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
       console.error("Duitku Invoice Creation Rejected:", JSON.stringify(data));
       const errorMsg = data.message || data.Message || data.statusMessage || "Unknown API Error";
       return NextResponse.json({ 
-        error: `Duitku: ${errorMsg}`,
+        error: `Gagal memproses transaksi: ${errorMsg}`,
         details: data
       }, { status: 400 });
     }

@@ -848,8 +848,8 @@ export default function AdminRewardsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
                     <div>
-                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Metode Pembayaran Online Duitku</label>
-                      <span className="text-[10px] text-muted font-bold">Aktifkan integrasi isi saldo wallet via payment gateway Duitku.</span>
+                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Metode Pembayaran Online</label>
+                      <span className="text-[10px] text-muted font-bold">Aktifkan integrasi isi saldo dompet via gerbang pembayaran online.</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -857,8 +857,8 @@ export default function AdminRewardsPage() {
                         checked={settings.isDuitkuEnabled} 
                         onChange={e => setSettings({ ...settings, isDuitkuEnabled: e.target.checked })}
                         className="sr-only peer" 
-                        title="Status Duitku"
-                        aria-label="Status Duitku"
+                        title="Status Pembayaran Online"
+                        aria-label="Status Pembayaran Online"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
                     </label>

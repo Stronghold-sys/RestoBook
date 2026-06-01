@@ -575,7 +575,7 @@ async function executeTool(name: string, args: any) {
                 <strong>Informasi Tambahan:</strong><br/>
                 - Tipe Pesanan: ${order.order_type === 'dine_in' ? 'Makan di Tempat (Dine In)' : 'Bawa Pulang (Takeaway)'}<br/>
                 - Status Pembayaran: ${order.payment_status === 'paid' ? 'Lunas (Paid)' : 'Belum Lunas (Unpaid)'}<br/>
-                - Metode Pembayaran: ${order.payment_method === 'cash' ? 'Tunai (Cash)' : 'Non-Tunai (Digital/Duitku)'}
+                - Metode Pembayaran: ${order.payment_method === 'cash' ? 'Tunai (Cash)' : 'Non-Tunai (Digital/Online)'}
               </div>
               
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />

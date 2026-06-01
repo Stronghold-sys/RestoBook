@@ -257,14 +257,14 @@ export default function AdminRefundsPage() {
                           <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 uppercase text-[9px] font-black">Full Voucher (Gratis)</span>
                         ) : order.voucher_id && Number(order.total_amount) > 0 ? (
                           <>
-                            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black">Kombo (Duitku + Voucher)</span>
+                            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black">Kombo (Online + Voucher)</span>
                             <span className="text-muted text-[10px] font-semibold">
-                              (Duitku: Rp {Number(order.total_amount).toLocaleString("id-ID")} + Voucher: Rp {Number(order.discount).toLocaleString("id-ID")})
+                              (Online: Rp {Number(order.total_amount).toLocaleString("id-ID")} + Voucher: Rp {Number(order.discount).toLocaleString("id-ID")})
                             </span>
                           </>
                         ) : (
                           <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black">
-                            {order.payment_method === 'wallet' ? 'Saldo Dompet' : 'Duitku / Online'}
+                            {order.payment_method === 'wallet' ? 'Saldo Dompet' : 'Pembayaran Online'}
                           </span>
                         )}
                       </p>
@@ -367,10 +367,10 @@ export default function AdminRefundsPage() {
                     {Number(selectedRefund.total_amount) === 0 && selectedRefund.voucher_id ? (
                       <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 uppercase text-[9px] font-black inline-block">Full Voucher (Gratis)</span>
                     ) : selectedRefund.voucher_id && Number(selectedRefund.total_amount) > 0 ? (
-                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black inline-block">Kombo (Duitku + Voucher)</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black inline-block">Kombo (Online + Voucher)</span>
                     ) : (
                       <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black inline-block">
-                        {selectedRefund.payment_method === 'wallet' ? 'Saldo Dompet' : 'Duitku / Online'}
+                        {selectedRefund.payment_method === 'wallet' ? 'Saldo Dompet' : 'Pembayaran Online'}
                       </span>
                     )}
                   </p>

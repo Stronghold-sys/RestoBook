@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { ShoppingBag, CalendarDays, Bell, ArrowRight, Loader2, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, CalendarDays, Bell, ArrowRight, Loader2, Clock, Gift } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { SkeletonDashboard } from "@/components/Skeleton";
+import toast from "react-hot-toast";
 
 export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [upcomingReservations, setUpcomingReservations] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  
+  // Welcome Gift Popup States
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [welcomePoints, setWelcomePoints] = useState(1000);
+  const [claiming, setClaiming] = useState(false);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -25,13 +32,18 @@ export default function CustomerDashboard() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) return;
 
-      const { data: profile } = await supabase.from('profiles').select('id, full_name').eq('user_id', session.session.user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('id, full_name, welcome_gift_claimed').eq('user_id', session.session.user.id).single();
       if (!profile) return;
 
       // Clean up expired unpaid non-cash orders
-      const { data: settings } = await supabase.from("restaurant_settings").select("payment_expiry_minutes").single();
+      const { data: settings } = await supabase.from("restaurant_settings").select("payment_expiry_minutes, welcome_gift_enabled, welcome_gift_points").single();
       const expiryMinutes = settings?.payment_expiry_minutes ? Number(settings.payment_expiry_minutes) : 60;
       const expiryThreshold = new Date(Date.now() - expiryMinutes * 60 * 1000).toISOString();
+
+      if (settings && settings.welcome_gift_enabled && !profile.welcome_gift_claimed) {
+        setWelcomePoints(settings.welcome_gift_points || 1000);
+        setShowWelcomeModal(true);
+      }
 
       const { data: expiredOrders } = await supabase.from("orders")
         .select("id, table_id")
@@ -90,6 +102,25 @@ export default function CustomerDashboard() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClaimPoints = async () => {
+    setClaiming(true);
+    try {
+      const res = await fetch("/api/customer/claim-welcome-points", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengklaim poin");
+      
+      toast.success(`Selamat! ${welcomePoints.toLocaleString('id-ID')} Poin Reward berhasil diklaim.`);
+      setShowWelcomeModal(false);
+      fetchDashboardData();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -247,6 +278,57 @@ export default function CustomerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Welcome Gift Modal */}
+      <AnimatePresence>
+        {showWelcomeModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="bg-card-light dark:bg-card-dark rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark p-8 flex flex-col items-center text-center relative"
+            >
+              {/* Decorative top background gradient */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-primary to-rose-500" />
+              
+              <div className="w-20 h-20 bg-amber-100 dark:bg-amber-950/40 rounded-full flex items-center justify-center text-amber-500 mb-6 shadow-inner animate-bounce">
+                <Gift className="w-10 h-10" />
+              </div>
+              
+              <h2 className="text-2xl font-black text-text-light dark:text-text-dark mb-2">Selamat Datang! 🎉</h2>
+              
+              <p className="text-muted text-sm leading-relaxed mb-6">
+                Terima kasih telah bergabung di RestoBook. Sebagai ucapan terima kasih spesial, dapatkan bonus poin cuma-cuma dari kami!
+              </p>
+              
+              <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 px-6 py-4 rounded-2xl mb-8 flex flex-col items-center justify-center">
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Bonus Akun Baru</span>
+                <span className="text-3xl font-black text-amber-500 font-mono">+{welcomePoints.toLocaleString('id-ID')} Poin</span>
+              </div>
+              
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleClaimPoints}
+                disabled={claiming}
+                className="w-full py-4 bg-gradient-to-r from-amber-500 to-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:from-amber-600 hover:to-primary-hover transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"
+              >
+                {claiming ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>Klaim Poin Reward</>
+                )}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

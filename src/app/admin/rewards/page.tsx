@@ -48,7 +48,9 @@ export default function AdminRewardsPage() {
     isCashbackEnabled: true,
     walletAdminFee: 0,
     isAutoRefundEnabled: true,
-    topupExpiryMinutes: 15
+    topupExpiryMinutes: 15,
+    welcomeGiftEnabled: true,
+    welcomeGiftPoints: 1000
   });
 
   const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "redemptions" | "settings">("catalog");
@@ -171,7 +173,9 @@ export default function AdminRewardsPage() {
           isCashbackEnabled: data.is_cashback_enabled !== undefined && data.is_cashback_enabled !== null ? !!data.is_cashback_enabled : true,
           walletAdminFee: data.wallet_admin_fee !== undefined && data.wallet_admin_fee !== null ? data.wallet_admin_fee : 0,
           isAutoRefundEnabled: data.is_auto_refund_enabled !== undefined && data.is_auto_refund_enabled !== null ? !!data.is_auto_refund_enabled : true,
-          topupExpiryMinutes: data.topup_expiry_minutes !== undefined && data.topup_expiry_minutes !== null ? data.topup_expiry_minutes : 15
+          topupExpiryMinutes: data.topup_expiry_minutes !== undefined && data.topup_expiry_minutes !== null ? data.topup_expiry_minutes : 15,
+          welcomeGiftEnabled: data.welcome_gift_enabled !== undefined && data.welcome_gift_enabled !== null ? !!data.welcome_gift_enabled : true,
+          welcomeGiftPoints: data.welcome_gift_points !== undefined && data.welcome_gift_points !== null ? data.welcome_gift_points : 1000
         });
       }
     } catch (err) {
@@ -944,23 +948,58 @@ export default function AdminRewardsPage() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
-                    <div>
-                      <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block">Status Modul Point</label>
-                      <span className="text-[10px] text-muted font-bold">Aktifkan atau nonaktifkan sistem poin pesanan pelanggan.</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={settings.isPointsEnabled} 
-                        onChange={e => setSettings({ ...settings, isPointsEnabled: e.target.checked })}
-                        className="sr-only peer" 
-                        title="Status Modul Point"
-                        aria-label="Status Modul Point"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
-                    </label>
-                  </div>
+                   <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                     <div>
+                       <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block font-bold">Status Modul Point</label>
+                       <span className="text-[10px] text-muted font-bold">Aktifkan atau nonaktifkan sistem poin pesanan pelanggan.</span>
+                     </div>
+                     <label className="relative inline-flex items-center cursor-pointer">
+                       <input 
+                         type="checkbox" 
+                         checked={settings.isPointsEnabled} 
+                         onChange={e => setSettings({ ...settings, isPointsEnabled: e.target.checked })}
+                         className="sr-only peer" 
+                         title="Status Modul Point"
+                         aria-label="Status Modul Point"
+                       />
+                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                     </label>
+                   </div>
+
+                   <div className="flex items-center justify-between sm:col-span-2 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                     <div>
+                       <label className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-wide block font-bold">Hadiah Selamat Datang (Welcome Gift)</label>
+                       <span className="text-[10px] text-muted font-bold">Aktifkan pop-up ucapan selamat datang dan bonus poin gratis untuk akun baru saat login pertama kali.</span>
+                     </div>
+                     <label className="relative inline-flex items-center cursor-pointer">
+                       <input 
+                         type="checkbox" 
+                         checked={settings.welcomeGiftEnabled} 
+                         onChange={e => setSettings({ ...settings, welcomeGiftEnabled: e.target.checked })}
+                         className="sr-only peer" 
+                         title="Status Hadiah Selamat Datang"
+                         aria-label="Status Hadiah Selamat Datang"
+                       />
+                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary" />
+                     </label>
+                   </div>
+
+                   {settings.welcomeGiftEnabled && (
+                     <div className="sm:col-span-2">
+                       <label htmlFor="welcomeGiftPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Jumlah Poin Selamat Datang</label>
+                       <input 
+                         id="welcomeGiftPoints"
+                         type="number" 
+                         required
+                         min={1}
+                         value={settings.welcomeGiftPoints} 
+                         onChange={e => setSettings({ ...settings, welcomeGiftPoints: e.target.value })}
+                         placeholder="1000"
+                         title="Jumlah Poin Selamat Datang"
+                         className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                       />
+                     </div>
+                   )}
 
                   <div>
                     <label htmlFor="minRandomPoints" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Minimal Poin Random</label>

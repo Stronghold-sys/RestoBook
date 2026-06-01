@@ -2,6 +2,7 @@ export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { Resend } from 'resend';
 
 export async function POST(req: Request) {
   try {
@@ -95,6 +96,61 @@ export async function POST(req: Request) {
     if (profileError) {
       console.error('[Register] Profile error:', profileError.message);
       return NextResponse.json({ error: profileError.message }, { status: 400 });
+    }
+
+    // Send Welcome Gift notification and email notice
+    try {
+      const { data: settings } = await supabaseAdmin
+        .from('restaurant_settings')
+        .select('welcome_gift_enabled, welcome_gift_points')
+        .single();
+
+      if (settings && settings.welcome_gift_enabled) {
+        const points = settings.welcome_gift_points || 1000;
+        
+        // Fetch created profile id
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+          
+        if (profile) {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            title: 'Hadiah Selamat Datang Menanti! 🎉',
+            message: `Selamat bergabung! Anda mendapatkan Hadiah Selamat Datang sebesar ${points.toLocaleString('id-ID')} Poin Reward yang siap diklaim di halaman dashboard utama Anda.`,
+            type: 'point',
+            points: points,
+            status_badge: 'Pending'
+          });
+
+          // Send welcome notice email
+          const resendKey = process.env.RESEND_API_KEY;
+          if (email && resendKey) {
+            const resend = new Resend(resendKey);
+            await resend.emails.send({
+              from: 'RestoBook <noreply@restobookid.my.id>',
+              to: email,
+              subject: 'Selamat Bergabung di RestoBook! Ada Hadiah Poin Untukmu 🎁',
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fff8f0; border-radius: 16px; border: 1px solid #e85d04;">
+                  <h2 style="color: #e85d04; text-align: center; margin-bottom: 20px;">Selamat Bergabung di RestoBook!</h2>
+                  <p>Halo <strong>${fullName}</strong>,</p>
+                  <p>Terima kasih telah melakukan pendaftaran di RestoBook. Akun Anda telah berhasil diverifikasi dan siap digunakan.</p>
+                  <p>Sebagai ucapan terima kasih kami, kami telah menyiapkan <strong>Hadiah Selamat Datang sebesar ${points.toLocaleString('id-ID')} Poin Reward</strong> secara gratis untuk Anda!</p>
+                  <p>Hadiah ini belum dimasukkan ke saldo Anda. Silakan login ke akun Anda dan masuk ke halaman Dashboard utama untuk mengklaim poin reward Anda.</p>
+                  <p>Selamat mencoba dan selamat memesan!</p>
+                  <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                  <p style="font-size: 11px; color: #888; text-align: center;">(C) 2026 RestoBook Management System. Semua hak dilindungi.</p>
+                </div>
+              `
+            });
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[Register] Welcome gift notification error:', err.message);
     }
 
     console.log('[Register] Registration complete for:', email);

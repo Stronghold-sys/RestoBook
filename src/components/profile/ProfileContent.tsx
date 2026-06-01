@@ -958,9 +958,6 @@ export default function ProfileContent() {
                         <Phone className="w-4 h-4" /> WhatsApp
                       </button>
                     </div>
-                    <p className="text-[11px] text-muted ml-1">
-                      OTP dikirim ke: <span className="font-bold">{otpMethod === "email" ? profile.email : (profile.phone || "Nomor belum diatur")}</span>
-                    </p>
                   </div>
                   
                   <button onClick={handleSendOTP} disabled={submittingPass || !oldPassword.trim()} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50">

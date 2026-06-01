@@ -1115,7 +1115,7 @@ export default function CustomerWalletPage() {
                           : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
                       }`}
                     >
-                      Email ({wallet.email ? `${wallet.email.substring(0, 3)}...` : 'Terdaftar'})
+                      Email
                     </button>
                     <button
                       type="button"
@@ -1126,7 +1126,7 @@ export default function CustomerWalletPage() {
                           : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
                       }`}
                     >
-                      WhatsApp ({wallet.phone ? `...${wallet.phone.slice(-4)}` : 'Terdaftar'})
+                      WhatsApp
                     </button>
                   </div>
                 </div>
@@ -1211,7 +1211,7 @@ export default function CustomerWalletPage() {
                           : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
                       }`}
                     >
-                      Email ({wallet.email ? `${wallet.email.substring(0, 3)}...` : 'Terdaftar'})
+                      Email
                     </button>
                     <button
                       type="button"
@@ -1222,7 +1222,7 @@ export default function CustomerWalletPage() {
                           : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
                       }`}
                     >
-                      WhatsApp ({wallet.phone ? `...${wallet.phone.slice(-4)}` : 'Terdaftar'})
+                      WhatsApp
                     </button>
                   </div>
                 </div>

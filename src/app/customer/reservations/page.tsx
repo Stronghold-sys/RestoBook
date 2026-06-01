@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -186,6 +186,18 @@ export default function CustomerReservationsPage() {
     }
   };
 
+  const handleDeleteHistory = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus riwayat reservasi ini?")) return;
+    try {
+      const { error } = await supabase.from("reservations").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Riwayat reservasi berhasil dihapus!");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Gagal menghapus riwayat: " + err.message);
+    }
+  };
+
   const getParsedNotes = (notesStr: string) => {
     try {
       const parsed = JSON.parse(notesStr);
@@ -292,11 +304,6 @@ export default function CustomerReservationsPage() {
         >
           <History className="w-4 h-4" />
           Riwayat
-          {historyReservations.length > 0 && (
-            <span className={`text-xs font-black px-2 py-0.5 rounded-full ${activeTab === "history" ? "bg-gray-700 dark:bg-gray-500 text-white" : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"}`}>
-              {historyReservations.length}
-            </span>
-          )}
         </button>
       </div>
 
@@ -366,6 +373,11 @@ export default function CustomerReservationsPage() {
                         {res.status === "pending" && (
                           <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
                             <X className="w-5 h-5" />
+                          </motion.button>
+                        )}
+                        {isHistory && (
+                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleDeleteHistory(res.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 p-2 rounded-lg transition-colors" aria-label="Hapus Riwayat" title="Hapus Riwayat">
+                            <Trash2 className="w-5 h-5" />
                           </motion.button>
                         )}
                       </div>

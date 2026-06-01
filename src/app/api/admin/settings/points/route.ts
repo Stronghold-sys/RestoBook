@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
+    if (body.welcomeGiftEnabled !== undefined) updateFields.welcome_gift_enabled = !!body.welcomeGiftEnabled;
+    if (body.welcomeGiftPoints !== undefined) updateFields.welcome_gift_points = Number(body.welcomeGiftPoints);
+
     // Add wallet settings if provided in payload
     if (minTopup !== undefined) updateFields.min_topup = Number(minTopup);
     if (maxTopup !== undefined) updateFields.max_topup = Number(maxTopup);

@@ -907,109 +907,112 @@ export default function CartPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8 shadow-sm sticky top-24">
-          <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-6">Ringkasan</h2>
-          
-          <div className="space-y-4 mb-8">
-            <div className="flex justify-between text-muted"><span>Subtotal</span><span className="font-semibold text-text-light dark:text-text-dark">Rp {subtotal.toLocaleString("id-ID")}</span></div>
-            {appliedVoucher && (
-              <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                <span>Diskon ({appliedVoucher.discount_percent}%)</span>
-                <span className="font-bold">-Rp {discountAmount.toLocaleString("id-ID")}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-muted">
-              <span>Pajak ({taxPercent}%)</span>
-              <span className="font-semibold text-text-light dark:text-text-dark">
-                Rp {Math.round(subtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)
-              </span>
-            </div>
+        {/* Single sticky card wrapping everything on the right to prevent layout breaking */}
+        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 lg:p-8 shadow-sm sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-6">Ringkasan</h2>
             
-            {/* Input Kode Voucher */}
-            <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3">
-              <label className="text-xs font-bold text-muted uppercase tracking-wider block">Kupon / Voucher Promo</label>
-              {!appliedVoucher ? (
-                <>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Masukkan kode voucher..."
-                      value={voucherCodeInput}
-                      onChange={e => setVoucherCodeInput(e.target.value)}
-                      className="flex-1 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark uppercase font-mono"
-                    />
-                    <button
-                      onClick={handleApplyVoucher}
-                      disabled={isApplyingVoucher}
-                      className="bg-primary hover:bg-primary/95 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center transition-all disabled:opacity-50"
-                    >
-                      {isApplyingVoucher ? "..." : "Gunakan"}
-                    </button>
-                  </div>
-                  {availableVouchers.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] text-muted font-bold block uppercase tracking-wider">Voucher Anda (Klik untuk gunakan):</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {availableVouchers.map((v: any) => (
-                          <button
-                            key={v.id}
-                            type="button"
-                            onClick={() => {
-                              setVoucherCodeInput(v.code);
-                              toast.success(`Kode ${v.code} dipilih! Klik Gunakan.`);
-                            }}
-                            className="text-[10px] font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all uppercase"
-                          >
-                            {v.code} ({v.discount_percent}%)
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/30 rounded-xl px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <div>
-                      <span className="font-mono font-black text-xs text-emerald-700 dark:text-emerald-300 uppercase">{appliedVoucher.code}</span>
-                      <span className="block text-[10px] text-emerald-600 dark:text-emerald-400">Hemat {appliedVoucher.discount_percent}%</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleRemoveVoucher}
-                    className="text-red-500 hover:text-red-700 text-xs font-bold p-1"
-                  >
-                    Hapus
-                  </button>
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between text-muted text-sm"><span>Subtotal</span><span className="font-semibold text-text-light dark:text-text-dark">Rp {subtotal.toLocaleString("id-ID")}</span></div>
+              {appliedVoucher && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-sm">
+                  <span>Diskon ({appliedVoucher.discount_percent}%)</span>
+                  <span className="font-bold">-Rp {discountAmount.toLocaleString("id-ID")}</span>
                 </div>
               )}
-            </div>
-
-            {appliedVoucher && (
-              <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
-                <span>Total Anda Hemat</span>
-                <span>Rp {discountAmount.toLocaleString("id-ID")}</span>
+              <div className="flex justify-between text-muted text-sm">
+                <span>Pajak ({taxPercent}%)</span>
+                <span className="font-semibold text-text-light dark:text-text-dark">
+                  Rp {Math.round(subtotal * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)
+                </span>
               </div>
-            )}
+              
+              {/* Input Kode Voucher */}
+              <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3">
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider block">Kupon / Voucher Promo</label>
+                {!appliedVoucher ? (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Masukkan kode voucher..."
+                        value={voucherCodeInput}
+                        onChange={e => setVoucherCodeInput(e.target.value)}
+                        className="flex-1 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark uppercase font-mono"
+                      />
+                      <button
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher}
+                        className="bg-primary hover:bg-primary/95 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center transition-all disabled:opacity-50"
+                      >
+                        {isApplyingVoucher ? "..." : "Gunakan"}
+                      </button>
+                    </div>
+                    {availableVouchers.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[9px] text-muted font-bold block uppercase tracking-wider">Voucher Anda (Klik untuk gunakan):</span>
+                        <div className="flex flex-wrap gap-1">
+                          {availableVouchers.map((v: any) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => {
+                                setVoucherCodeInput(v.code);
+                                toast.success(`Kode ${v.code} dipilih! Klik Gunakan.`);
+                              }}
+                              className="text-[9px] font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all uppercase"
+                            >
+                              {v.code} ({v.discount_percent}%)
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/30 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <span className="font-mono font-black text-xs text-emerald-700 dark:text-emerald-300 uppercase">{appliedVoucher.code}</span>
+                        <span className="block text-[9px] text-emerald-600 dark:text-emerald-400">Hemat {appliedVoucher.discount_percent}%</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveVoucher}
+                      className="text-red-500 hover:text-red-700 text-xs font-bold p-1"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            <div className="pt-4 border-t border-border-light dark:border-border-dark flex justify-between items-center">
-              <span className="font-bold text-lg text-text-light dark:text-text-dark">Total Tagihan</span>
-              <span className="text-2xl font-black text-primary">Rp {totalAmount.toLocaleString("id-ID")}</span>
+              {appliedVoucher && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
+                  <span>Total Anda Hemat</span>
+                  <span>Rp {discountAmount.toLocaleString("id-ID")}</span>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-border-light dark:border-border-dark flex justify-between items-center">
+                <span className="font-bold text-base text-text-light dark:text-text-dark">Total Tagihan</span>
+                <span className="text-xl font-black text-primary">Rp {totalAmount.toLocaleString("id-ID")}</span>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-6">
             <div>
-              <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Tipe Pesanan</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <button onClick={() => setOrderType("dine_in")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "dine_in" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-muted mb-3">Tipe Pesanan</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => setOrderType("dine_in")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "dine_in" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                   <UtensilsCrossed className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Dine In</span>
                 </button>
-                <button onClick={() => setOrderType("takeaway")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "takeaway" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                <button onClick={() => setOrderType("takeaway")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "takeaway" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                   <Store className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Takeaway</span>
                 </button>
-                <button onClick={() => setOrderType("delivery")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "delivery" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                <button onClick={() => setOrderType("delivery")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${orderType === "delivery" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                   <Globe className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Delivery</span>
                 </button>
               </div>
@@ -1186,71 +1189,74 @@ export default function CartPage() {
             </div>
 
             <div>
-              <h3 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Metode Pembayaran</h3>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-muted mb-3">Metode Pembayaran</h3>
               {orderType === "delivery" ? (
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <button type="button" onClick={() => setPaymentMethod("cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                    <Banknote className="w-6 h-6" /><span className="font-bold text-xs uppercase">Tunai</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button type="button" onClick={() => setPaymentMethod("cash")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Banknote className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Tunai</span>
                   </button>
-                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                    <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
+                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <CreditCard className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Non-Tunai</span>
                   </button>
-                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                    <Wallet className="w-6 h-6" /><span className="font-bold text-xs uppercase">Dompet</span>
+                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Wallet className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Dompet</span>
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                    <CreditCard className="w-6 h-6" /><span className="font-bold text-xs uppercase">Non-Tunai</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setPaymentMethod("non_cash")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <CreditCard className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Non-Tunai</span>
                   </button>
-                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
-                    <Wallet className="w-6 h-6" /><span className="font-bold text-xs uppercase">Dompet</span>
+                  <button type="button" onClick={() => setPaymentMethod("wallet")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
+                    <Wallet className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Dompet</span>
                   </button>
                 </div>
               )}
             </div>
 
             {paymentMethod === "wallet" && profileData && (
-              <div className={`p-4 rounded-2xl border mb-4 transition-all ${
+              <div className={`p-4 rounded-2xl border transition-all ${
                 profileData.wallet_balance >= totalAmount
-                  ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400"
-                  : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+                  ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
+                  : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
               }`}>
+                {/* Balance display and status indicator */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <Wallet className="w-5 h-5 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 leading-tight">Saldo Dompet Anda</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
                       <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
                     </div>
                   </div>
-                  {profileData.wallet_balance < totalAmount && (
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                  {profileData.wallet_balance >= totalAmount ? (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
+                  ) : (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
                   )}
                 </div>
-              </div>
-            )}
 
-            {paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount && (
-              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/50 font-bold mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">Saldo Anda kurang sebesar <span className="font-black">Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowTopUpModal(true)}
-                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[11px] rounded-xl transition-all uppercase tracking-wider self-stretch sm:self-center shrink-0 shadow-md flex items-center justify-center gap-1.5"
-                >
-                  <span>⚡</span> Isi Saldo Sekarang
-                </button>
+                {/* Insufficient balance warning and top up action button nested inside same container */}
+                {profileData.wallet_balance < totalAmount && (
+                  <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
+                    <p className="text-xs font-semibold leading-relaxed">
+                      Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowTopUpModal(true)}
+                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      Isi Saldo Sekarang
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="font-bold text-sm uppercase tracking-wider text-muted block ml-1">Catatan Pesanan</label>
-              <textarea value={orderNotes} onChange={e => setOrderNotes(e.target.value)} rows={2} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark" placeholder="Contoh: Tanpa bawang, pedas sedang..." />
+              <label className="font-bold text-xs uppercase tracking-wider text-muted block ml-1">Catatan Pesanan</label>
+              <textarea value={orderNotes} onChange={e => setOrderNotes(e.target.value)} rows={2} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark text-sm" placeholder="Contoh: Tanpa bawang, pedas sedang..." />
             </div>
 
             <motion.button 

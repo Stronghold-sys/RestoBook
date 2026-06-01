@@ -907,39 +907,44 @@ export default function OrderTrackingPage() {
                         {profileData && (
                           <div className={`p-4 rounded-2xl border transition-all ${
                             profileData.wallet_balance >= Number(order.total_amount)
-                              ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400"
-                              : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+                              ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
+                              : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
                           }`}>
+                            {/* Balance display and status indicator */}
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex items-center gap-3 min-w-0">
                                 <Wallet className="w-5 h-5 shrink-0" />
                                 <div className="text-left min-w-0">
-                                  <p className="text-[10px] font-black uppercase tracking-wider opacity-85 leading-tight">Saldo Dompet Anda</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
                                   <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
                                 </div>
                               </div>
-                              {profileData.wallet_balance < Number(order.total_amount) && (
-                                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-red-100 dark:bg-red-900/40 rounded-full animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                              {profileData.wallet_balance >= Number(order.total_amount) ? (
+                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
+                              ) : (
+                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
                               )}
                             </div>
+
+                            {/* Insufficient balance warning and top up action button nested inside same container */}
+                            {profileData.wallet_balance < Number(order.total_amount) && (
+                              <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
+                                <p className="text-xs font-semibold text-left leading-relaxed">
+                                  Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(Number(order.total_amount) - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowTopUpModal(true)}
+                                  className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+                                >
+                                  Isi Saldo Sekarang
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {profileData && profileData.wallet_balance < Number(order.total_amount) ? (
-                          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/50 font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                            <div className="flex items-start gap-2 text-left">
-                              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                              <span className="leading-relaxed">Saldo Anda kurang sebesar <span className="font-black">Rp {(Number(order.total_amount) - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowTopUpModal(true)}
-                              className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[11px] rounded-xl transition-all uppercase tracking-wider self-stretch sm:self-center shrink-0 shadow-md flex items-center justify-center gap-1.5"
-                            >
-                              <span>⚡</span> Isi Saldo Sekarang
-                            </button>
-                          </div>
-                        ) : (
+                        {profileData && profileData.wallet_balance >= Number(order.total_amount) && (
                           <button
                             onClick={handlePayViaWallet}
                             disabled={payingViaWallet}

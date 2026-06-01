@@ -433,7 +433,7 @@ export async function POST(req: NextRequest) {
         if (order.voucher_id) {
           const { data: vData } = await supabaseAdmin
             .from('vouchers')
-            .select('used_count')
+            .select('code, used_count')
             .eq('id', order.voucher_id)
             .single();
           if (vData) {
@@ -441,6 +441,38 @@ export async function POST(req: NextRequest) {
               .from('vouchers')
               .update({ used_count: Math.max(0, Number(vData.used_count || 0) - 1) })
               .eq('id', order.voucher_id);
+
+            // Cari dan kembalikan reward_redemptions terkait agar muncul di Reward Saya
+            const { data: rrData } = await supabaseAdmin
+              .from('reward_redemptions')
+              .select('id, rewards(title)')
+              .eq('customer_id', order.customer_id)
+              .eq('code', vData.code)
+              .eq('status', 'used')
+              .maybeSingle();
+
+            if (rrData) {
+              await supabaseAdmin
+                .from('reward_redemptions')
+                .update({
+                  status: 'success',
+                  refunded_at: new Date().toISOString(),
+                  used_at: null
+                })
+                .eq('id', rrData.id);
+
+              const rewardTitle = (rrData.rewards as any)?.title || 'Reward';
+
+              // Tambahkan log point_transactions bertipe 'refunded' agar muncul badge "Dikembalikan"
+              await supabaseAdmin
+                .from('point_transactions')
+                .insert({
+                  customer_id: order.customer_id,
+                  points: 0,
+                  status: 'refunded',
+                  description: `Voucher dikembalikan: ${rewardTitle} (${vData.code})`
+                });
+            }
           }
 
           const { data: cvData } = await supabaseAdmin

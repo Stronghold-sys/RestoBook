@@ -28,6 +28,7 @@ export default function CustomerRewardsPage() {
   const [redemptions, setRedemptions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"catalog" | "history" | "my-rewards">("catalog");
   const [confirmReward, setConfirmReward] = useState<any>(null);
+  const [tick, setTick] = useState(0);
 
   const supabase = createClient();
 
@@ -48,8 +49,13 @@ export default function CustomerRewardsPage() {
       })
       .subscribe();
 
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 10000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
@@ -128,6 +134,37 @@ export default function CustomerRewardsPage() {
     }
   };
 
+  const handleClaimCashback = async (redemptionId: string) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const loadingToast = toast.loading("Sedang mengklaim cashback ke dompet Anda...");
+    try {
+      const res = await fetch("/api/customer/rewards/claim-cashback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ redemptionId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengklaim cashback");
+
+      toast.success(data.message || "Cashback berhasil dikreditkan!", { id: loadingToast });
+      
+      // Refresh data
+      fetchPointData();
+      
+      // Trigger Confetti
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.85 }
+      });
+    } catch (error: any) {
+      toast.error(error.message, { id: loadingToast });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getRewardIcon = (category: string) => {
     switch (category) {
       case "voucher": return <Ticket className="w-6 h-6 text-orange-500" />;
@@ -150,13 +187,32 @@ export default function CustomerRewardsPage() {
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 uppercase whitespace-nowrap">Redeem</span>;
       case "cancelled":
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase whitespace-nowrap">Batal</span>;
+      case "refunded":
+      case "returned":
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase whitespace-nowrap">Dikembalikan</span>;
       default:
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-50 text-gray-450 border border-gray-100 uppercase whitespace-nowrap">{status}</span>;
     }
   };
 
-  const activeRedemptions = redemptions.filter(red => red.status !== 'used');
-  const usedRedemptions = redemptions.filter(red => red.status === 'used');
+  const activeRedemptions = redemptions.filter(red => {
+    if (red.status !== 'used') return true;
+    if (red.status === 'used' && red.rewards?.category === 'cashback' && red.used_at) {
+      const elapsedMs = Date.now() - new Date(red.used_at).getTime();
+      return elapsedMs < 60 * 1000;
+    }
+    return false;
+  });
+
+  const usedRedemptions = redemptions.filter(red => {
+    if (red.status !== 'used') return false;
+    if (red.rewards?.category === 'cashback') {
+      if (!red.used_at) return true;
+      const elapsedMs = Date.now() - new Date(red.used_at).getTime();
+      return elapsedMs >= 60 * 1000;
+    }
+    return true;
+  });
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
@@ -423,29 +479,38 @@ export default function CustomerRewardsPage() {
                                 <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher Penukaran</span>
                                 <span className="font-mono font-black text-primary text-lg uppercase tracking-wide">{red.code}</span>
                               </div>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(red.code);
-                                  toast.success(`Kode voucher ${red.code} berhasil disalin! Gunakan saat proses checkout.`);
-                                }}
-                                className="px-3 py-2 bg-primary/10 text-primary font-bold text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
-                              >
-                                Salin Kode
-                              </button>
+                              <span className="px-3.5 py-2 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-extrabold text-xs rounded-xl border border-green-200/50 dark:border-green-900/30 uppercase tracking-wide text-center shrink-0">
+                                Tersimpan di Menu Voucher Saya
+                              </span>
                             </div>
                             {red.rewards?.category === 'food' && (
                               <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50/50 dark:bg-emerald-950/10 p-2.5 rounded-xl border border-emerald-100/20">
-                                *Gunakan kode voucher diskon 100% ini saat melakukan pembayaran untuk memesan makanan/minuman secara gratis (Maksimal 5 item, sudah termasuk pajak).
+                                *Gunakan voucher diskon 100% ini pada halaman pembayaran untuk memesan makanan/minuman secara gratis (Maksimal 5 item, sudah termasuk pajak).
                               </p>
                             )}
                           </div>
                         )}
 
                         {!red.code && red.rewards?.category === "cashback" && (
-                          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl text-xs text-emerald-800 dark:text-emerald-400 font-bold flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 shrink-0" />
-                            Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
-                          </div>
+                          red.status === "used" ? (
+                            <div className="p-4 bg-green-50 dark:bg-green-950/10 border border-green-200 dark:border-green-900/50 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                              Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
+                              </div>
+                              <button
+                                onClick={() => handleClaimCashback(red.id)}
+                                disabled={submitting}
+                                className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+                              >
+                                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
+                              </button>
+                            </div>
+                          )
                         )}
 
                         {!red.code && red.rewards?.category !== "cashback" && (

@@ -720,12 +720,12 @@ export default function CartPage() {
         if (typeof window !== "undefined") localStorage.removeItem("selected_table");
         clearCart();
 
-        // Trigger Notification
-        await fetch('/api/orders', {
+        // Trigger Notification (Non-blocking)
+        fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-        });
+        }).catch(err => console.error("Notification error:", err));
 
         toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
         router.push(`/customer/orders/${orderData.id}`);
@@ -836,12 +836,12 @@ export default function CartPage() {
         if (typeof window !== "undefined") localStorage.removeItem("selected_table");
         clearCart();
 
-        // Trigger Notification
-        await fetch('/api/orders', {
+        // Trigger Notification (Non-blocking)
+        fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-        });
+        }).catch(err => console.error("Notification error:", err));
 
         toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
         router.push(`/customer/orders/${orderData.id}`);
@@ -876,12 +876,12 @@ export default function CartPage() {
                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
                clearCart();
                
-               // Trigger Notification
-               await fetch('/api/orders', {
+               // Trigger Notification (Non-blocking)
+               fetch('/api/orders', {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json' },
                  body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-               });
+               }).catch(err => console.error("Notification error:", err));
 
                toast.success("Pembayaran Berhasil!");
                router.push(`/customer/orders/${orderData.id}`);
@@ -891,12 +891,12 @@ export default function CartPage() {
                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
                clearCart();
                
-               // Trigger Notification
-               await fetch('/api/orders', {
+               // Trigger Notification (Non-blocking)
+               fetch('/api/orders', {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json' },
                  body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-               });
+               }).catch(err => console.error("Notification error:", err));
 
                router.push(`/customer/orders/${orderData.id}?status=pending`);
              },
@@ -921,11 +921,12 @@ export default function CartPage() {
           if (typeof window !== "undefined") localStorage.removeItem("selected_table");
           clearCart();
           
-          await fetch('/api/orders', {
+          // Trigger Notification (Non-blocking)
+          fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-          });
+          }).catch(err => console.error("Notification error:", err));
 
           toast.success("Mengalihkan ke halaman pembayaran...", { id: loadingToast });
           window.location.href = duitkuData.paymentUrl;

@@ -327,12 +327,16 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       // Add Notification
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id,
-        title: 'Pesanan Dibatalkan',
-        message: `No. Pesanan #${orderId.split('-')[0]} telah dibatalkan. Alasan: ${cancelReason}`,
-        type: 'order'
-      });
+      if (order.customer_id) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: order.customer_id,
+          title: 'Pesanan Dibatalkan',
+          message: `No. Pesanan #${orderId.split('-')[0].toUpperCase()} telah dibatalkan. Alasan: ${cancelReason}`,
+          type: 'order',
+          order_id: orderId,
+          status_badge: 'dibatalkan'
+        });
+      }
 
       if (order.table_id) {
         await supabaseAdmin.from('tables').update({ status: 'available' }).eq('id', order.table_id);
@@ -357,32 +361,42 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       // Add Notification
-      let notifTitle = 'Update Pesanan';
-      let notifMsg = `Status No. Pesanan #${orderId.split('-')[0]} diperbarui ke: ${status}`;
-      
-      if (status === 'confirmed') {
-        notifTitle = 'Pesanan Dikonfirmasi';
-        notifMsg = `No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi oleh kasir.`;
-      } else if (status === 'processing') {
-        notifTitle = 'Pesanan Dimasak';
-        notifMsg = `Chef sedang menyiapkan hidangan Anda. Mohon tunggu sebentar!`;
-      } else if (status === 'ready') {
-        notifTitle = 'Pesanan Siap';
-        notifMsg = `Pesanan Anda sudah siap disajikan!`;
-      } else if (status === 'completed') {
-        notifTitle = 'Pesanan Selesai';
-        notifMsg = `Terima kasih telah berkunjung! Berikan ulasan terbaik Anda.`;
-      } else if (status === 'cancelled') {
-        notifTitle = 'Pesanan Dibatalkan';
-        notifMsg = `Pesanan Anda dibatalkan oleh kasir. Alasan: ${reason || 'Tidak disebutkan'}`;
-      }
+      if (order.customer_id) {
+        let notifTitle = 'Update Pesanan';
+        let notifMsg = `Status No. Pesanan #${orderId.split('-')[0].toUpperCase()} diperbarui ke: ${status}`;
+        let statusBadge = status;
+        
+        if (status === 'confirmed') {
+          notifTitle = 'Pesanan Dikonfirmasi';
+          notifMsg = `No. Pesanan #${orderId.split('-')[0].toUpperCase()} telah dikonfirmasi oleh kasir.`;
+          statusBadge = 'dikonfirmasi';
+        } else if (status === 'processing') {
+          notifTitle = 'Pesanan Dimasak';
+          notifMsg = `Chef sedang menyiapkan hidangan Anda. Mohon tunggu sebentar!`;
+          statusBadge = 'proses';
+        } else if (status === 'ready') {
+          notifTitle = 'Pesanan Siap';
+          notifMsg = `Pesanan Anda sudah siap disajikan!`;
+          statusBadge = 'siap';
+        } else if (status === 'completed') {
+          notifTitle = 'Pesanan Selesai';
+          notifMsg = `Terima kasih telah berkunjung! Berikan ulasan terbaik Anda.`;
+          statusBadge = 'selesai';
+        } else if (status === 'cancelled') {
+          notifTitle = 'Pesanan Dibatalkan';
+          notifMsg = `Pesanan Anda dibatalkan oleh kasir. Alasan: ${reason || 'Tidak disebutkan'}`;
+          statusBadge = 'dibatalkan';
+        }
 
-      await supabaseAdmin.from('notifications').insert({
-        user_id: order.customer_id,
-        title: notifTitle,
-        message: notifMsg,
-        type: 'order'
-      });
+        await supabaseAdmin.from('notifications').insert({
+          user_id: order.customer_id,
+          title: notifTitle,
+          message: notifMsg,
+          type: 'order',
+          order_id: orderId,
+          status_badge: statusBadge
+        });
+      }
 
       if ((status === 'cancelled' || status === 'completed') && order.table_id) {
         await supabaseAdmin.from('tables').update({ status: 'available' }).eq('id', order.table_id);

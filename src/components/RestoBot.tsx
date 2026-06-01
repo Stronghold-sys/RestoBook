@@ -67,6 +67,7 @@ YANG BISA KAMU BANTU:
 - Notifikasi dan pengingat jadwal makan
 - Informasi menu dan rekomendasi berdasarkan preferensi
 - Pertanyaan tentang akun pelanggan
+- Mengirimkan rincian/detail pesanan makanan, detail reservasi meja, atau rincian saldo dan transaksi Dompetku langsung ke email pengguna (gunakan tool send_order_details_email, send_reservation_details_email, atau send_wallet_details_email).
 
 LOGIKA NOTIFIKASI OTOMATIS:
 Saat percakapan dimulai, periksa data pelanggan:
@@ -184,6 +185,8 @@ const QUICK_REPLIES = {
         'Status reservasi saya',
         'Riwayat pesanan',
         'Poin reward saya',
+        'Kirim data pesanan ke email',
+        'Kirim riwayat Dompetku ke email',
         'Ubah reservasi',
         'Batalkan reservasi',
         'Rekomendasi menu'

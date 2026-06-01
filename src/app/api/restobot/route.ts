@@ -74,6 +74,36 @@ const MISTRAL_TOOLS = [
         required: ["order_id", "target_email"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_reservation_details_email",
+      description: "Mengirimkan rincian/detail reservasi meja makan aktif/selesai ke email tertentu.",
+      parameters: {
+        type: "object",
+        properties: {
+          reservation_id: { type: "string", description: "UUID reservasi." },
+          target_email: { type: "string", description: "Alamat email penerima rincian reservasi." }
+        },
+        required: ["reservation_id", "target_email"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_wallet_details_email",
+      description: "Mengirimkan rincian saldo dan riwayat transaksi Dompetku (E-Wallet) pelanggan ke email tertentu.",
+      parameters: {
+        type: "object",
+        properties: {
+          customer_id: { type: "string", description: "ID Profil pelanggan dari DATA USER AKTIF." },
+          target_email: { type: "string", description: "Alamat email penerima rincian dompetku." }
+        },
+        required: ["customer_id", "target_email"]
+      }
+    }
   }
 ];
 
@@ -594,6 +624,212 @@ async function executeTool(name: string, args: any) {
     return {
       success: true,
       message: 'Rincian pesanan berhasil dikirim ke email.',
+      email_sent: emailSent,
+      email_target: target_email
+    };
+  }
+
+  if (name === 'send_reservation_details_email') {
+    const { reservation_id, target_email } = args;
+
+    // 1. Ambil detail reservasi
+    const { data: reservation, error: fetchErr } = await supabase
+      .from('reservations')
+      .select('*, tables(table_number)')
+      .eq('id', reservation_id)
+      .maybeSingle();
+
+    if (fetchErr || !reservation) {
+      return { success: false, error: 'Reservasi tidak ditemukan.' };
+    }
+
+    let atasNama = 'Pelanggan';
+    let telepon = '';
+    let catatan = '';
+    try {
+      const parsedNotes = JSON.parse(reservation.notes);
+      if (parsedNotes) {
+        atasNama = parsedNotes.atas_nama || atasNama;
+        telepon = parsedNotes.telepon || '';
+        catatan = parsedNotes.catatan || '';
+      }
+    } catch (e) {}
+
+    // 2. Kirim email
+    let emailSent = false;
+    if (resendKey && target_email) {
+      try {
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: 'RestoBook <noreply@restobookid.my.id>',
+          to: target_email,
+          subject: `Detail Reservasi RestoBook Anda - ${reservation.reservation_date} 📅`,
+          html: `
+            <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Detail Reservasi Meja</p>
+              </div>
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atasNama}!</h2>
+              <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                Berikut adalah detail reservasi meja makan Anda di <strong>RestoBook</strong>:
+              </p>
+              
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5;">
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280; width: 40%;">Atas Nama</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${atasNama}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">No. Telepon</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${telepon || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Tanggal Kunjungan</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${reservation.reservation_date}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Jam Reservasi</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${reservation.reservation_time} WIB</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Jumlah Tamu</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">${reservation.guest_count} Orang</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Nomor Meja</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold;">Meja ${reservation.tables?.table_number || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Status Reservasi</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: bold; text-transform: uppercase;">${reservation.status}</td>
+                  </tr>
+                  ${catatan ? `
+                  <tr>
+                    <td style="padding: 6px 0; color: #6b7280;">Catatan Tambahan</td>
+                    <td style="padding: 6px 0; color: #111827; font-style: italic;">"${catatan}"</td>
+                  </tr>` : ''}
+                </table>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+              <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+              </p>
+            </div>
+          `
+        });
+        emailSent = true;
+      } catch (err) {
+        console.error('Failed to send reservation details email:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Rincian reservasi berhasil dikirim ke email.',
+      email_sent: emailSent,
+      email_target: target_email
+    };
+  }
+
+  if (name === 'send_wallet_details_email') {
+    const { customer_id, target_email } = args;
+
+    // 1. Ambil detail profile / balance
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', customer_id)
+      .single();
+
+    if (profileErr || !profile) {
+      return { success: false, error: 'Profil pelanggan tidak ditemukan.' };
+    }
+
+    // 2. Ambil 10 transaksi terakhir
+    const { data: transactions } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('customer_id', customer_id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const txHtml = (transactions || []).map(tx => {
+      const typeLabel = tx.type === 'topup' ? 'Top Up' : 'Pembayaran';
+      const statusLabel = tx.status === 'success' ? 'Sukses' : (tx.status === 'pending' ? 'Pending' : 'Batal');
+      const color = tx.type === 'topup' ? '#16a34a' : '#dc2626';
+      const sign = tx.type === 'topup' ? '+' : '-';
+      const dateStr = new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      return `
+        <tr style="border-bottom: 1px solid #f3f4f6; font-size: 13px;">
+          <td style="padding: 8px 0; color: #111827;">${dateStr}</td>
+          <td style="padding: 8px 0; color: #4b5563;">${tx.description || typeLabel}</td>
+          <td style="padding: 8px 0; text-align: center; color: #111827;">${statusLabel}</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: ${color};">${sign} Rp ${Number(tx.amount).toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // 3. Kirim email
+    let emailSent = false;
+    if (resendKey && target_email) {
+      try {
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: 'RestoBook Security <security@restobookid.my.id>',
+          to: target_email,
+          subject: 'Rincian Saldo dan Transaksi Dompetku RestoBook 💳',
+          html: `
+            <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Detail Saldo & Transaksi Dompetku</p>
+              </div>
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+              <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${profile.full_name || 'Pelanggan'}!</h2>
+              <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                Berikut adalah ringkasan saldo dan 10 transaksi terakhir Dompetku Anda:
+              </p>
+              
+              <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; border-radius: 12px; margin: 24px 0; text-align: center;">
+                <p style="margin: 0; font-size: 13px; color: #15803d; font-weight: bold; text-transform: uppercase;">Saldo Aktif Dompetku</p>
+                <h3 style="margin: 8px 0 0 0; font-size: 28px; font-weight: 800; color: #166534;">Rp ${Number(profile.wallet_balance || 0).toLocaleString('id-ID')}</h3>
+              </div>
+
+              <h3 style="font-size: 15px; font-weight: 700; color: #111827; margin: 24px 0 12px 0; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px;">10 Transaksi Terakhir</h3>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #e5e7eb; color: #6b7280; font-weight: bold;">
+                    <th style="text-align: left; padding: 8px 0;">Tanggal</th>
+                    <th style="text-align: left; padding: 8px 0;">Keterangan</th>
+                    <th style="text-align: center; padding: 8px 0; width: 80px;">Status</th>
+                    <th style="text-align: right; padding: 8px 0; width: 120px;">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${txHtml || '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #9ca3af; font-style: italic;">Belum ada riwayat transaksi.</td></tr>'}
+                </tbody>
+              </table>
+              
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+              <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+              </p>
+            </div>
+          `
+        });
+        emailSent = true;
+      } catch (err) {
+        console.error('Failed to send wallet details email:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Rincian transaksi & saldo dompetku berhasil dikirim ke email.',
       email_sent: emailSent,
       email_target: target_email
     };

@@ -62,6 +62,18 @@ export async function GET(req: NextRequest) {
         .update({ status: 'cancelled', cancel_reason: 'Batas waktu pembayaran habis (Batal Otomatis)' })
         .in('id', expiredIds);
 
+      // Insert notifications for each auto-cancelled order
+      for (const expiredOrder of expiredOrders) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: profile.id,
+          title: 'Pesanan Batal Otomatis',
+          message: `No. Pesanan #${expiredOrder.id.split('-')[0].toUpperCase()} dibatalkan otomatis karena batas waktu pembayaran habis.`,
+          type: 'order',
+          order_id: expiredOrder.id,
+          status_badge: 'dibatalkan'
+        });
+      }
+
       if (tableIdsToRelease.length > 0) {
         await supabaseAdmin
           .from('tables')

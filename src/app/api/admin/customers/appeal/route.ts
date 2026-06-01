@@ -183,7 +183,7 @@ export async function PATCH(req: NextRequest) {
     // Fetch the appeal to get user details
     const { data: appeal, error: fetchErr } = await supabaseAdmin
       .from('appeals')
-      .select('*, profiles(email, full_name)')
+      .select('*, profiles(email, full_name, wrong_pin_count, wallet_block_reason, wallet_pin)')
       .eq('id', appeal_id)
       .single();
 
@@ -208,25 +208,43 @@ export async function PATCH(req: NextRequest) {
 
     if (status === 'approved') {
       if (appeal.type === 'wallet_unblock') {
-        // Unblock wallet & reset PIN
+        const isWrongPinBlock = 
+          (appeal.profiles?.wrong_pin_count && appeal.profiles.wrong_pin_count >= 3) || 
+          (appeal.profiles?.wallet_block_reason?.toLowerCase().includes('pin salah')) ||
+          (appeal.profiles?.wallet_block_reason === 'wrong_pin_3x');
+
+        const updateData: any = {
+          is_wallet_blocked: false,
+          wallet_block_reason: null,
+          wrong_pin_count: 0
+        };
+
+        if (isWrongPinBlock) {
+          updateData.wallet_pin = null;
+          updateData.wallet_pin_reset_required = true;
+        } else {
+          updateData.wallet_pin_reset_required = false;
+        }
+
+        // Unblock wallet & reset PIN conditionally
         const { error: restoreErr } = await supabaseAdmin
           .from('profiles')
-          .update({
-            is_wallet_blocked: false,
-            wallet_block_reason: null,
-            wrong_pin_count: 0,
-            wallet_pin: null,
-            wallet_pin_reset_required: true
-          })
+          .update(updateData)
           .eq('id', appeal.user_id);
 
         if (restoreErr) throw restoreErr;
+
+        const notifMessage = admin_message || (
+          isWrongPinBlock 
+            ? 'Banding Dompetku Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali. Silakan buat PIN baru di halaman Dompetku.'
+            : 'Banding Dompetku Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali secara penuh.'
+        );
 
         // Add to notifications
         await supabaseAdmin.from('notifications').insert({
           user_id: appeal.user_id,
           title: 'Banding Dompetku Disetujui',
-          message: admin_message || 'Banding Dompetku Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali. Silakan buat PIN baru di halaman Dompetku.',
+          message: notifMessage,
           type: 'wallet_unblocked',
         });
 
@@ -234,34 +252,62 @@ export async function PATCH(req: NextRequest) {
         if (resendKey && emailToSend) {
           try {
             const resend = new Resend(resendKey);
+            const emailHtml = isWrongPinBlock ? `
+              <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                  <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
+                </div>
+                <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                  Kami dengan senang hati memberitahukan bahwa permohonan banding Dompetku Anda telah <strong>disetujui</strong> oleh administrator kami. Akses Dompetku Anda telah diaktifkan kembali.
+                </p>
+                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                  Namun, karena pembatasan sebelumnya disebabkan oleh kesalahan input PIN sebanyak 3 kali berturut-turut, demi keamanan saldo dan transaksi Anda, <strong>Anda wajib membuat PIN transaksi baru</strong> sebelum dapat bertransaksi kembali.
+                </p>
+                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                  Silakan masuk ke halaman Dompetku di aplikasi RestoBook untuk membuat PIN baru dengan memasukkan kode OTP yang dikirimkan ke email Anda.
+                </p>
+                <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
+                  <strong>Pesan Administrator:</strong><br/>
+                  ${admin_message || 'Banding Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali.'}
+                </div>
+                <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                  Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                </p>
+              </div>
+            ` : `
+              <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
+                  <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
+                </div>
+                <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
+                <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
+                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                  Kami dengan senang hati memberitahukan bahwa permohonan banding Dompetku Anda telah <strong>disetujui</strong> oleh administrator kami. Akses Dompetku Anda telah diaktifkan kembali secara penuh.
+                </p>
+                <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                  Anda dapat langsung kembali menggunakan Dompetku dengan <strong>menggunakan PIN transaksi lama</strong> Anda. Tidak ada kewajiban untuk membuat PIN baru.
+                </p>
+                <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
+                  <strong>Pesan Administrator:</strong><br/>
+                  ${admin_message || 'Banding Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali secara penuh.'}
+                </div>
+                <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                  Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                </p>
+              </div>
+            `;
+
             await resend.emails.send({
               from: 'RestoBook Security <security@restobookid.my.id>',
               to: emailToSend,
-              subject: 'Hasil Banding Dompetku RestoBook: Banding Disetujui',
-              html: `
-                <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
-                  <div style="text-align: center; margin-bottom: 24px;">
-                    <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 800;">RestoBook</h1>
-                    <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Pemberitahuan Banding Sukses</p>
-                  </div>
-                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
-                  <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${name}!</h2>
-                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                    Kami dengan senang hati memberitahukan bahwa permohonan banding Dompetku Anda telah <strong>disetujui</strong> oleh administrator kami. Akses Dompetku Anda telah diaktifkan kembali.
-                  </p>
-                  <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                    Demi keamanan transaksi, PIN lama Anda telah direset. Silakan masuk ke halaman Dompetku untuk membuat PIN baru.
-                  </p>
-                  <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: #166534;">
-                    <strong>Pesan Administrator:</strong><br/>
-                    ${admin_message || 'Banding Anda telah disetujui. Akses Dompetku Anda telah dibuka kembali.'}
-                  </div>
-                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
-                  <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
-                    Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
-                  </p>
-                </div>
-              `
+              subject: isWrongPinBlock ? 'Hasil Banding Dompetku RestoBook: Banding Disetujui (Wajib Reset PIN)' : 'Hasil Banding Dompetku RestoBook: Banding Disetujui (Akses Aktif)',
+              html: emailHtml
             });
           } catch (err) {
             console.error('Failed to send appeal approval email:', err);

@@ -6,7 +6,7 @@ import {
   Users, Search, Mail, Phone, Calendar,
   Filter, Download, User, Shield, Trash2, Edit, Loader2,
   AlertTriangle, Clock, Ban, CheckCircle, ShieldAlert,
-  ArrowRight, MessageSquare, Check, X, Bell
+  ArrowRight, MessageSquare, Check, X, Bell, Wallet
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
@@ -73,7 +73,7 @@ function CountdownTimer({ suspendUntil, onExpired }: { suspendUntil: string; onE
 export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"customers" | "appeals">("customers");
+  const [activeTab, setActiveTab] = useState<"customers" | "account_appeals" | "wallet_appeals">("customers");
   const [appeals, setAppeals] = useState<any[]>([]);
   const [loadingAppeals, setLoadingAppeals] = useState(false);
   const [reviewAppeal, setReviewAppeal] = useState<any | null>(null);
@@ -195,6 +195,23 @@ export default function AdminCustomersPage() {
   useEffect(() => {
     fetchCustomers();
     fetchAppeals();
+
+    const appealsChannel = supabase.channel("admin-appeals-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appeals" }, () => {
+        fetchAppeals();
+      })
+      .subscribe();
+
+    const profilesChannel = supabase.channel("admin-profiles-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        fetchCustomers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(appealsChannel);
+      supabase.removeChannel(profilesChannel);
+    };
   }, []);
 
   const fetchAppeals = async () => {
@@ -816,17 +833,33 @@ export default function AdminCustomersPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab("appeals")}
+          onClick={() => setActiveTab("account_appeals")}
           className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === "appeals"
+            activeTab === "account_appeals"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
           }`}
         >
-          <MessageSquare className="w-4 h-4" /> Pengajuan Banding
-          {appeals.filter(a => a.status === 'pending').length > 0 && (
+          <MessageSquare className="w-4 h-4" /> Banding Akun
+          {appeals.filter(a => a.status === 'pending' && a.type !== 'wallet_unblock').length > 0 && (
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-bold animate-pulse">
-              {appeals.filter(a => a.status === 'pending').length}
+              {appeals.filter(a => a.status === 'pending' && a.type !== 'wallet_unblock').length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("wallet_appeals")}
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "wallet_appeals"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+          }`}
+        >
+          <Wallet className="w-4 h-4" /> Banding Dompetku
+          {appeals.filter(a => a.status === 'pending' && a.type === 'wallet_unblock').length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-bold animate-pulse">
+              {appeals.filter(a => a.status === 'pending' && a.type === 'wallet_unblock').length}
             </span>
           )}
         </button>
@@ -1136,103 +1169,117 @@ export default function AdminCustomersPage() {
         </div>
       </div>
         </>
-      ) : (
-        /* Appeals Table Section */
-        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-border-light dark:border-border-dark flex flex-col lg:flex-row gap-4 justify-between items-center">
-            <div>
-              <h3 className="text-lg font-black text-text-light dark:text-text-dark">Semua Pengajuan Banding</h3>
-              <p className="text-xs text-muted font-medium mt-0.5">Daftar permohonan pemulihan akun yang diajukan oleh pelanggan</p>
+      ) : (() => {
+        const filteredAppeals = activeTab === "wallet_appeals"
+          ? appeals.filter(a => a.type === "wallet_unblock")
+          : appeals.filter(a => a.type !== "wallet_unblock");
+        
+        const appealsTitle = activeTab === "wallet_appeals" 
+          ? "Semua Pengajuan Banding Dompetku" 
+          : "Semua Pengajuan Banding Akun";
+          
+        const appealsDesc = activeTab === "wallet_appeals"
+          ? "Daftar permohonan pembukaan blokir Dompetku (E-Wallet) milik pelanggan"
+          : "Daftar permohonan pemulihan akun yang diajukan oleh pelanggan";
+
+        return (
+          /* Appeals Table Section */
+          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-border-light dark:border-border-dark flex flex-col lg:flex-row gap-4 justify-between items-center">
+              <div>
+                <h3 className="text-lg font-black text-text-light dark:text-text-dark">{appealsTitle}</h3>
+                <p className="text-xs text-muted font-medium mt-0.5">{appealsDesc}</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900/50">
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Pelanggan</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Tanggal Pengajuan</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Alasan Banding</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Status</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right whitespace-nowrap">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                  {loadingAppeals ? (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+                        <p className="text-muted font-bold">Sedang memuat data banding...</p>
+                      </td>
+                    </tr>
+                  ) : filteredAppeals.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center text-muted font-medium italic">
+                        Tidak ada pengajuan banding.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAppeals.map((appeal) => {
+                      const profile = appeal.profiles || {};
+                      return (
+                        <tr key={appeal.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0 flex items-center justify-center text-primary bg-primary/10">
+                                {profile.avatar_url ? (
+                                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <User className="w-5 h-5" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight whitespace-nowrap">
+                                  {profile.full_name || "Pelanggan"}
+                                </p>
+                                <p className="text-[10px] text-muted font-medium whitespace-nowrap">
+                                  {profile.email}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80 whitespace-nowrap">
+                            {format(new Date(appeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
+                          </td>
+                          <td className="px-6 py-5 text-xs font-medium text-text-light dark:text-text-dark max-w-xs truncate whitespace-nowrap" title={appeal.reason}>
+                            {appeal.reason}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${
+                              appeal.status === "approved" ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30" :
+                              appeal.status === "rejected" ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30" :
+                              "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
+                            }`}>
+                              {appeal.status === "approved" ? "Disetujui" :
+                               appeal.status === "rejected" ? "Ditolak" : "Pending"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5 text-right whitespace-nowrap">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setReviewAppeal(appeal);
+                                  setReviewMessage(appeal.admin_message || "");
+                                }}
+                                className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors whitespace-nowrap"
+                              >
+                                Tinjau Banding
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Pelanggan</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Tanggal Pengajuan</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Alasan Banding</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap">Status</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted text-right whitespace-nowrap">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                {loadingAppeals ? (
-                  <tr>
-                    <td colSpan={5} className="py-20 text-center">
-                      <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-                      <p className="text-muted font-bold">Sedang memuat data banding...</p>
-                    </td>
-                  </tr>
-                ) : appeals.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-20 text-center text-muted font-medium italic">
-                      Tidak ada pengajuan banding.
-                    </td>
-                  </tr>
-                ) : (
-                  appeals.map((appeal) => {
-                    const profile = appeal.profiles || {};
-                    return (
-                      <tr key={appeal.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0 flex items-center justify-center text-primary bg-primary/10">
-                              {profile.avatar_url ? (
-                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-5 h-5" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-bold text-text-light dark:text-text-dark text-sm leading-tight whitespace-nowrap">
-                                {profile.full_name || "Pelanggan"}
-                              </p>
-                              <p className="text-[10px] text-muted font-medium whitespace-nowrap">
-                                {profile.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 text-xs font-semibold text-text-light/80 dark:text-text-dark/80 whitespace-nowrap">
-                          {format(new Date(appeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
-                        </td>
-                        <td className="px-6 py-5 text-xs font-medium text-text-light dark:text-text-dark max-w-xs truncate whitespace-nowrap" title={appeal.reason}>
-                          {appeal.reason}
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${
-                            appeal.status === "approved" ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30" :
-                            appeal.status === "rejected" ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30" :
-                            "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
-                          }`}>
-                            {appeal.status === "approved" ? "Disetujui" :
-                             appeal.status === "rejected" ? "Ditolak" : "Pending"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right whitespace-nowrap">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => {
-                                setReviewAppeal(appeal);
-                                setReviewMessage(appeal.admin_message || "");
-                              }}
-                              className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors whitespace-nowrap"
-                            >
-                              Tinjau Banding
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Slideover Detail Panel */}
       <AnimatePresence>
@@ -1820,9 +1867,11 @@ export default function AdminCustomersPage() {
                 </p>
               </div>
 
-              {/* Account Details Block */}
+              {/* Account / Wallet Details Block */}
               <div className="bg-gray-50 dark:bg-gray-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark mb-6 space-y-3 text-left">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted">Detail Akun</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted font-bold">
+                  {reviewAppeal.type === 'wallet_unblock' ? 'Detail E-Wallet (Dompetku)' : 'Detail Akun'}
+                </p>
                 <div className="grid grid-cols-2 gap-y-2 text-xs font-semibold">
                   <span className="text-muted font-medium">Nama Lengkap:</span>
                   <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.full_name || 'Pelanggan'}</span>
@@ -1833,21 +1882,47 @@ export default function AdminCustomersPage() {
                   <span className="text-muted font-medium">No. Telepon:</span>
                   <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.phone || '-'}</span>
 
-                  <span className="text-muted font-medium">Status Akun Saat Ini:</span>
-                  <span className={`text-right font-black uppercase text-[10px] ${
-                    reviewAppeal.profiles?.status === 'banned' ? 'text-red-650' : 
-                    reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600' : 'text-green-600'
-                  }`}>
-                    {reviewAppeal.profiles?.status || 'active'}
-                  </span>
+                  {reviewAppeal.type === 'wallet_unblock' ? (
+                    <>
+                      <span className="text-muted font-medium">Status Dompetku:</span>
+                      <span className={`text-right font-black uppercase text-[10px] ${
+                        reviewAppeal.profiles?.is_wallet_blocked ? 'text-red-650 font-bold' : 'text-green-600 font-bold'
+                      }`}>
+                        {reviewAppeal.profiles?.is_wallet_blocked ? 'Terblokir' : 'Aktif'}
+                      </span>
 
-                  <span className="text-muted font-medium">Jumlah Peringatan:</span>
-                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.warning_count || 0} Kali</span>
+                      <span className="text-muted font-medium">Saldo Dompetku:</span>
+                      <span className="text-text-light dark:text-text-dark text-right font-mono font-bold">
+                        Rp {new Intl.NumberFormat('id-ID').format(reviewAppeal.profiles?.wallet_balance || 0)}
+                      </span>
 
-                  <span className="text-muted font-medium">Alasan Hukuman:</span>
-                  <span className="text-text-light dark:text-text-dark text-right italic font-medium">
-                    &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
-                  </span>
+                      <span className="text-muted font-medium">Salah PIN Count:</span>
+                      <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.wrong_pin_count || 0} Kali</span>
+
+                      <span className="text-muted font-medium">Alasan Blokir Dompet:</span>
+                      <span className="text-text-light dark:text-text-dark text-right italic font-medium text-red-650" title={reviewAppeal.profiles?.wallet_block_reason}>
+                        &quot;{reviewAppeal.profiles?.wallet_block_reason || '-'}&quot;
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-muted font-medium">Status Akun Saat Ini:</span>
+                      <span className={`text-right font-black uppercase text-[10px] ${
+                        reviewAppeal.profiles?.status === 'banned' ? 'text-red-650 font-bold' : 
+                        reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600 font-bold' : 'text-green-600 font-bold'
+                      }`}>
+                        {reviewAppeal.profiles?.status || 'active'}
+                      </span>
+
+                      <span className="text-muted font-medium">Jumlah Peringatan:</span>
+                      <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.warning_count || 0} Kali</span>
+
+                      <span className="text-muted font-medium">Alasan Hukuman:</span>
+                      <span className="text-text-light dark:text-text-dark text-right italic font-medium">
+                        &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 

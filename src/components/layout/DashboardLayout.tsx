@@ -5,7 +5,8 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet,
+  CheckCheck, Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,6 +25,8 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [submittingNotif, setSubmittingNotif] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -80,6 +83,43 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     };
   }, []);
 
+  // Real-time listener untuk notifikasi pelanggan
+  useEffect(() => {
+    if (!userProfile?.id || role !== "customer") return;
+
+    // Fetch count awal
+    fetchUnreadNotifCount();
+
+    // Subscribe ke notifikasi real-time
+    const channel = supabase
+      .channel(`customer-notifications-${userProfile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userProfile.id}`
+        },
+        (payload: any) => {
+          fetchUnreadNotifCount();
+
+          if (payload.eventType === "INSERT") {
+            playSingleNotifSound();
+            toast.success(`Notifikasi Baru: ${payload.new.title || 'Pesan Baru'}`, {
+              duration: 5000,
+              position: "top-right"
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id, role]);
+
   const playFallbackBeep = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -126,6 +166,81 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     }
   };
 
+  const playSingleFallbackBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  };
+
+  const playSingleNotifSound = () => {
+    try {
+      const notifAudio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+      notifAudio.volume = 0.7;
+      notifAudio.play().catch(() => {
+        playSingleFallbackBeep();
+      });
+    } catch (e) {
+      playSingleFallbackBeep();
+    }
+  };
+
+  const fetchUnreadNotifCount = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) return;
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.session.user.id).single();
+      if (!profile) return;
+
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", profile.id)
+        .eq("is_read", false);
+
+      setUnreadNotifCount(count || 0);
+    } catch (e) {
+      console.error("Error fetching unread notification count:", e);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    if (submittingNotif) return;
+    setSubmittingNotif(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) return;
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.session.user.id).single();
+      if (!profile) return;
+      
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", profile.id)
+        .eq("is_read", false);
+
+      if (error) throw error;
+
+      setUnreadNotifCount(0);
+      toast.success("Semua notifikasi telah dibaca");
+    } catch (e: any) {
+      toast.error(e.message || "Gagal memperbarui notifikasi");
+    } finally {
+      setSubmittingNotif(false);
+    }
+  };
+
   const fetchOnlineOrderCount = async () => {
     const { count } = await supabase
       .from('orders')
@@ -153,6 +268,14 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     if (profile) {
       setRole(profile.role);
       setUserProfile(profile);
+      if (profile.role === "customer") {
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", profile.id)
+          .eq("is_read", false);
+        setUnreadNotifCount(count || 0);
+      }
     }
   };
 
@@ -217,7 +340,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
-          { name: "Notifikasi", href: "/customer/notifications", icon: Bell },
+          { name: "Notifikasi", href: "/customer/notifications", icon: Bell, badge: unreadNotifCount },
           { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];
       default:
@@ -400,6 +523,44 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 </div>
               </motion.aside>
             </>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Notification Popup for Customer */}
+        <AnimatePresence>
+          {role === "customer" && unreadNotifCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="fixed bottom-6 right-6 z-50 w-full max-w-sm bg-white/95 dark:bg-card-dark/95 backdrop-blur-xl border border-primary/20 dark:border-primary/30 p-5 rounded-[2rem] shadow-2xl flex flex-col gap-3.5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 animate-bounce">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-black text-text-light dark:text-text-dark uppercase tracking-tight">Notifikasi Baru</h4>
+                  <p className="text-xs text-muted leading-tight mt-0.5">
+                    Anda memiliki <span className="font-extrabold text-primary font-mono">{unreadNotifCount}</span> notifikasi yang belum dibaca.
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={markAllNotificationsAsRead}
+                disabled={submittingNotif}
+                className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+              >
+                {submittingNotif ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCheck className="w-4 h-4" /> Tandai Semua Dibaca
+                  </>
+                )}
+              </button>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

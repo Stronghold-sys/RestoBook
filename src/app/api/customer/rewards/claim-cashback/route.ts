@@ -42,6 +42,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Data penukaran reward tidak ditemukan' }, { status: 404 });
     }
 
+    if (redemption.is_blocked) {
+      const blockMsg = redemption.block_reason || 'Penukaran reward ini telah diblokir oleh admin.';
+      
+      // Log notification about the blocked attempt
+      await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: profile.id,
+          title: 'Penggunaan Reward Ditolak',
+          message: `Gagal menggunakan "${redemption.rewards?.title || 'Reward'}": Status penukaran ini diblokir oleh admin. Alasan: ${blockMsg}`,
+          type: 'point',
+          reference_id: redemptionId,
+          status_badge: 'Diblokir'
+        });
+
+      return NextResponse.json({ error: `Gagal menggunakan reward! Penukaran ini diblokir oleh admin: ${blockMsg}` }, { status: 400 });
+    }
+
     if (redemption.status === 'used' || redemption.used_at !== null) {
       return NextResponse.json({ error: 'Reward ini sudah pernah digunakan atau diaktifkan' }, { status: 400 });
     }

@@ -51,7 +51,7 @@ export default function AdminRewardsPage() {
     topupExpiryMinutes: 15
   });
 
-  const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "settings">("catalog");
+  const [activeTab, setActiveTab] = useState<"catalog" | "customers" | "redemptions" | "settings">("catalog");
   
   // Modal states
   const [showRewardModal, setShowRewardModal] = useState(false);
@@ -86,6 +86,14 @@ export default function AdminRewardsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Redemption management states
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [selectedRedemption, setSelectedRedemption] = useState<any>(null);
+  const [blockReason, setBlockReason] = useState("");
+  const [showDeleteRedemptionConfirm, setShowDeleteRedemptionConfirm] = useState(false);
+  const [selectedRedemptionForDelete, setSelectedRedemptionForDelete] = useState<any>(null);
 
   const supabase = createClient();
 
@@ -126,6 +134,13 @@ export default function AdminRewardsPage() {
       const dataCust = await resCust.json();
       if (!resCust.ok) throw new Error(dataCust.error || "Gagal memuat pelanggan");
       setCustomers(dataCust.customers || []);
+
+      // 3. Fetch customer redemptions
+      const resRed = await fetch("/api/admin/rewards/redemptions");
+      const dataRed = await resRed.json();
+      if (resRed.ok) {
+        setRedemptions(dataRed.redemptions || []);
+      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -390,6 +405,63 @@ export default function AdminRewardsPage() {
     }
   };
 
+  const handleToggleBlockRedemption = (red: any) => {
+    if (red.is_blocked) {
+      confirmToggleBlockRedemption(red, false, "");
+    } else {
+      setSelectedRedemption(red);
+      setBlockReason("");
+      setShowBlockModal(true);
+    }
+  };
+
+  const confirmToggleBlockRedemption = async (red: any, blockStatus: boolean, reason: string) => {
+    const loadingToast = toast.loading(blockStatus ? "Memblokir penukaran..." : "Membuka blokir penukaran...");
+    try {
+      const res = await fetch("/api/admin/rewards/redemptions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          redemptionId: red.id,
+          isBlocked: blockStatus,
+          blockReason: reason
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah status blokir");
+
+      toast.success(blockStatus ? "Penukaran reward berhasil diblokir!" : "Blokir penukaran reward dibuka!", { id: loadingToast });
+      setShowBlockModal(false);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleDeleteRedemption = (red: any) => {
+    setSelectedRedemptionForDelete(red);
+    setShowDeleteRedemptionConfirm(true);
+  };
+
+  const confirmDeleteRedemption = async () => {
+    if (!selectedRedemptionForDelete) return;
+    const loadingToast = toast.loading("Menghapus penukaran reward...");
+    try {
+      const res = await fetch(`/api/admin/rewards/redemptions?redemptionId=${selectedRedemptionForDelete.id}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus penukaran reward");
+
+      toast.success("Penukaran reward berhasil dihapus!", { id: loadingToast });
+      setShowDeleteRedemptionConfirm(false);
+      setSelectedRedemptionForDelete(null);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
       {/* Header */}
@@ -528,6 +600,16 @@ export default function AdminRewardsPage() {
               }`}
             >
               Manajemen Poin Pelanggan ({customers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("redemptions")}
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+                activeTab === "redemptions"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
+              }`}
+            >
+              Daftar Penukaran ({redemptions.length})
             </button>
             <button
               onClick={() => setActiveTab("settings")}
@@ -721,6 +803,108 @@ export default function AdminRewardsPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            ) : activeTab === "redemptions" ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Daftar Penukaran Reward Pelanggan</h3>
+                    <p className="text-xs text-muted mt-1">Kelola status aktif, blokir, dan hapus reward yang telah ditukar oleh pelanggan.</p>
+                  </div>
+                </div>
+
+                {redemptions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
+                    <Gift className="w-12 h-12 text-muted/30 mb-3" />
+                    <span className="font-bold text-lg text-text-light dark:text-text-dark">Belum Ada Penukaran</span>
+                    <span className="text-xs mt-1 max-w-sm">Belum ada pelanggan yang menukarkan poin mereka dengan reward.</span>
+                  </div>
+                ) : (
+                  <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
+                            <th className="px-6 py-4 whitespace-nowrap">Pelanggan</th>
+                            <th className="px-6 py-4 whitespace-nowrap">Reward</th>
+                            <th className="px-6 py-4 text-center whitespace-nowrap">Poin</th>
+                            <th className="px-6 py-4 whitespace-nowrap">Kode / Status</th>
+                            <th className="px-6 py-4 whitespace-nowrap">Tanggal Tukar</th>
+                            <th className="px-6 py-4 text-center whitespace-nowrap">Status Blokir</th>
+                            <th className="px-6 py-4 text-center whitespace-nowrap">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {redemptions.map((red) => {
+                            const formattedDate = format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id }) + " WIB";
+                            return (
+                              <tr key={red.id} className="border-b border-border-light dark:border-border-dark text-xs hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <p className="font-bold text-text-light dark:text-text-dark uppercase">{red.profiles?.full_name || "Pelanggan"}</p>
+                                  <p className="text-[10px] text-muted">{red.profiles?.email || "-"}</p>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <p className="font-bold text-text-light dark:text-text-dark">{red.rewards?.title || "Reward Dihapus"}</p>
+                                  <span className="text-[9px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted font-black uppercase tracking-wider">{red.rewards?.category || "custom"}</span>
+                                </td>
+                                <td className="px-6 py-4 text-center font-black font-mono text-primary text-sm whitespace-nowrap">
+                                  {red.points_spent}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {red.status === 'used' ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="px-2 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-250 uppercase w-fit">Telah Digunakan</span>
+                                      {red.code && <span className="font-mono font-bold text-[10px] text-muted">Kode: {red.code}</span>}
+                                    </div>
+                                  ) : red.status === 'expired' ? (
+                                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase">Kadaluarsa</span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-200 uppercase w-fit whitespace-nowrap animate-pulse">Belum Digunakan</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-muted whitespace-nowrap">
+                                  {formattedDate}
+                                </td>
+                                <td className="px-6 py-4 text-center whitespace-nowrap">
+                                  {red.is_blocked ? (
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="px-2.5 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200">Diblokir</span>
+                                      {red.block_reason && <span className="text-[9px] text-red-500 font-bold max-w-[120px] truncate" title={red.block_reason}>{red.block_reason}</span>}
+                                    </div>
+                                  ) : (
+                                    <span className="px-2.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200">Aktif</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <button
+                                      onClick={() => handleToggleBlockRedemption(red)}
+                                      className={`p-1.5 rounded-xl border text-xs transition-all ${
+                                        red.is_blocked
+                                          ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                                          : "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
+                                      }`}
+                                      title={red.is_blocked ? "Buka Blokir Penukaran" : "Blokir Penukaran"}
+                                    >
+                                      {red.is_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteRedemption(red)}
+                                      className="p-1.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all"
+                                      title="Hapus Penukaran"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSaveSettings} className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8 shadow-sm max-w-2xl mx-auto space-y-6">
@@ -1393,6 +1577,112 @@ export default function AdminRewardsPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Block Redemption Modal */}
+      <AnimatePresence>
+        {showBlockModal && selectedRedemption && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowBlockModal(false)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden p-8 border border-gray-150 dark:border-gray-800 z-10 space-y-6 text-center"
+            >
+              <div>
+                <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-red-200/50">
+                  <Ban className="w-8 h-8 text-red-650" />
+                </div>
+                <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Blokir Reward Pelanggan?</h3>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  Blokir penukaran reward <span className="font-bold text-text-light dark:text-text-dark">&ldquo;{selectedRedemption.rewards?.title}&rdquo;</span> milik <span className="font-bold text-text-light dark:text-text-dark">{selectedRedemption.profiles?.full_name}</span>.
+                </p>
+              </div>
+
+              <div className="space-y-2 text-left">
+                <label htmlFor="blockReasonInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Pemblokiran / Peringatan Kustom</label>
+                <textarea 
+                  id="blockReasonInput"
+                  rows={3} 
+                  required
+                  placeholder="Misal: Reward ditangguhkan karena pelanggaran ketentuan penggunaan atau transaksi mencurigakan."
+                  value={blockReason} 
+                  onChange={e => setBlockReason(e.target.value)} 
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowBlockModal(false)} 
+                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-xs uppercase"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => confirmToggleBlockRedemption(selectedRedemption, true, blockReason)} 
+                  disabled={!blockReason.trim()}
+                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-750 transition-all disabled:opacity-50 text-xs uppercase"
+                >
+                  Ya, Blokir
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Redemption Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteRedemptionConfirm && selectedRedemptionForDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowDeleteRedemptionConfirm(false)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800 z-10 space-y-4"
+            >
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 mx-auto rounded-2xl flex items-center justify-center mb-2 border border-red-200">
+                <Trash2 className="w-8 h-8 text-red-650" />
+              </div>
+              <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Hapus Penukaran?</h3>
+              <p className="text-xs text-muted leading-relaxed font-medium">
+                Apakah Anda yakin ingin menghapus data penukaran reward <span className="font-bold text-text-light dark:text-text-dark">&ldquo;{selectedRedemptionForDelete.rewards?.title}&rdquo;</span> milik <span className="font-bold text-text-light dark:text-text-dark">{selectedRedemptionForDelete.profiles?.full_name}</span>?
+              </p>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/15 rounded-2xl text-[10px] text-amber-700 dark:text-amber-450 font-bold border border-amber-200/50">
+                Tindakan ini tidak dapat dibatalkan. Reward akan langsung hilang dari halaman &ldquo;Reward Saya&rdquo; pelanggan secara real-time.
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowDeleteRedemptionConfirm(false)} 
+                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-xs uppercase"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={confirmDeleteRedemption} 
+                  className="flex-1 py-3.5 bg-red-650 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-700 transition-all text-xs uppercase"
+                >
+                  Ya, Hapus
+                </button>
               </div>
             </motion.div>
           </div>

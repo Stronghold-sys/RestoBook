@@ -136,8 +136,14 @@ export default function CustomerRewardsPage() {
 
   const handleClaimCashback = async (redemptionId: string) => {
     if (submitting) return;
+
+    // Find category for custom label
+    const red = redemptions.find(r => r.id === redemptionId);
+    const category = red?.rewards?.category || 'custom';
+    const actionLabel = category === 'cashback' ? "mengklaim cashback" : "mengaktifkan reward";
+
     setSubmitting(true);
-    const loadingToast = toast.loading("Sedang mengklaim cashback ke dompet Anda...");
+    const loadingToast = toast.loading(`Sedang ${actionLabel}...`);
     try {
       const res = await fetch("/api/customer/rewards/claim-cashback", {
         method: "POST",
@@ -145,9 +151,9 @@ export default function CustomerRewardsPage() {
         body: JSON.stringify({ redemptionId })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mengklaim cashback");
+      if (!res.ok) throw new Error(data.error || `Gagal ${actionLabel}`);
 
-      toast.success(data.message || "Cashback berhasil dikreditkan!", { id: loadingToast });
+      toast.success(data.message || "Reward berhasil diaktifkan!", { id: loadingToast });
       
       // Refresh data
       fetchPointData();
@@ -519,13 +525,15 @@ export default function CustomerRewardsPage() {
                           >
                             <div className="absolute top-0 right-0 p-3">
                               <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
-                                isUsed 
-                                  ? "bg-gray-100 text-gray-500 border border-gray-200" 
-                                  : isExpired
-                                    ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-450 border border-rose-200/20"
-                                    : "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20"
+                                red.is_blocked
+                                  ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200/40 animate-pulse"
+                                  : isUsed 
+                                    ? "bg-gray-100 text-gray-500 border border-gray-200" 
+                                    : isExpired
+                                      ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-450 border border-rose-200/20"
+                                      : "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20"
                               }`}>
-                                {isUsed ? "Telah Digunakan" : isExpired ? "Kadaluarsa" : "Belum Aktif"}
+                                {red.is_blocked ? "Diblokir oleh Admin" : isUsed ? "Telah Digunakan" : isExpired ? "Kadaluarsa" : "Belum Aktif"}
                               </span>
                             </div>
 
@@ -620,7 +628,15 @@ export default function CustomerRewardsPage() {
                                   {/* Panduan Penggunaan (Hanya jika belum kadaluarsa) */}
                                   {!isExpired && (
                                     <>
-                                      {category === "cashback" ? (
+                                      {red.is_blocked ? (
+                                        <div className="p-3.5 bg-red-50 dark:bg-red-950/10 border border-red-200 dark:border-red-900/50 rounded-2xl text-xs text-red-800 dark:text-red-400 font-bold leading-relaxed flex flex-col gap-1">
+                                          <div className="flex items-center gap-1.5 text-red-700 dark:text-red-400">
+                                            <AlertCircle className="w-4 h-4 shrink-0" />
+                                            <span className="font-extrabold uppercase tracking-wide">Reward ini diblokir</span>
+                                          </div>
+                                          <span>Alasan: {red.block_reason || "Tidak ada alasan spesifik."}</span>
+                                        </div>
+                                      ) : category === "cashback" ? (
                                         <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
                                           Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
                                         </div>

@@ -114,6 +114,11 @@ export default function CartPage() {
         throw new Error(data.error || "Gagal menerapkan voucher");
       }
       
+      const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (data.voucher?.code?.startsWith("FREEFOOD-") && totalItemsCount > 5) {
+        throw new Error("Voucher makanan gratis hanya berlaku untuk maksimal 5 item di keranjang.");
+      }
+      
       setAppliedVoucher(data.voucher);
       toast.success(data.message || "Voucher berhasil diterapkan!");
       setVoucherCodeInput("");
@@ -508,6 +513,24 @@ export default function CartPage() {
     };
   }, [items, removeItem]);
 
+  // Monitor FREEFOOD voucher item limit dynamically
+  useEffect(() => {
+    if (appliedVoucher && appliedVoucher.code?.startsWith("FREEFOOD-")) {
+      const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalItemsCount > 5) {
+        setAppliedVoucher(null);
+        toast((t) => (
+          <div className="flex flex-col gap-1 p-1">
+            <p className="font-extrabold text-sm text-red-605 text-red-600">Voucher Dilepas</p>
+            <p className="text-xs text-text-light dark:text-text-dark">
+              Voucher makanan gratis dilepas karena jumlah item di keranjang melebihi batas maksimal 5 item.
+            </p>
+          </div>
+        ), { duration: 6000, position: "top-center" });
+      }
+    }
+  }, [items, appliedVoucher]);
+
   // Realtime Operational Hours Sync
   useEffect(() => {
     const fetchSettings = async () => {
@@ -649,6 +672,65 @@ export default function CartPage() {
       if (!session?.user) throw new Error("Silakan login kembali");
       const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
+
+      if (totalAmount === 0) {
+        toast.loading("Memproses pesanan gratis...", { id: loadingToast });
+        const finalNotes = `[Pesanan Gratis - Voucher Reward] ${orderNotes}`.trim();
+        
+        const { data: orderData, error: orderError } = await supabase.from("orders").insert({
+          customer_id: profile.id, 
+          table_id: orderType === "dine_in" ? selectedTable : null,
+          order_type: orderType, 
+          total_amount: 0, 
+          notes: finalNotes,
+          status: "pending", 
+          payment_method: 'voucher', 
+          payment_status: 'paid',
+          voucher_id: appliedVoucher ? appliedVoucher.id : null,
+          discount: discountAmount,
+          delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
+          delivery_phone: orderType === "delivery" ? deliveryPhone : null,
+          delivery_address: orderType === "delivery" ? deliveryAddress : null,
+          delivery_province: orderType === "delivery" ? deliveryProvince : null,
+          delivery_regency: orderType === "delivery" ? deliveryRegency : null,
+          delivery_district: orderType === "delivery" ? deliveryDistrict : null,
+          delivery_village: orderType === "delivery" ? deliveryVillage : null,
+          delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
+        }).select().single();
+
+        if (orderError) throw orderError;
+
+        const orderItems = items.map(item => ({
+          order_id: orderData.id, 
+          menu_item_id: item.id, 
+          quantity: item.quantity,
+          price: item.price, 
+          subtotal: item.price * item.quantity, 
+          notes: item.notes || null,
+        }));
+        
+        const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+        if (itemsError) throw itemsError;
+
+        if (orderType === "dine_in") {
+          await supabase.from("tables").update({ status: "occupied" }).eq("id", selectedTable);
+        }
+
+        isOrderCompleted.current = true;
+        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+        clearCart();
+
+        // Trigger Notification
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+        });
+
+        toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
+        router.push(`/customer/orders/${orderData.id}`);
+        return;
+      }
 
       if (paymentMethod === "wallet") {
         toast.loading("Memproses pembayaran saldo dompet...", { id: loadingToast });
@@ -1190,7 +1272,12 @@ export default function CartPage() {
 
             <div>
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted mb-3">Metode Pembayaran</h3>
-              {orderType === "delivery" ? (
+              {totalAmount === 0 ? (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 rounded-2xl text-xs text-emerald-800 dark:text-emerald-400 font-bold flex items-center gap-2.5">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Pembayaran Gratis (Diskon Voucher 100%)</span>
+                </div>
+              ) : orderType === "delivery" ? (
                 <div className="grid grid-cols-3 gap-2">
                   <button type="button" onClick={() => setPaymentMethod("cash")} className={`py-3.5 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-primary bg-primary/5 text-primary" : "border-border-light dark:border-border-dark text-muted hover:border-primary/50"}`}>
                     <Banknote className="w-5 h-5" /><span className="font-bold text-[10px] uppercase">Tunai</span>
@@ -1214,7 +1301,7 @@ export default function CartPage() {
               )}
             </div>
 
-            {paymentMethod === "wallet" && profileData && (
+            {totalAmount > 0 && paymentMethod === "wallet" && profileData && (
               <div className={`p-4 rounded-2xl border transition-all ${
                 profileData.wallet_balance >= totalAmount
                   ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
@@ -1260,23 +1347,23 @@ export default function CartPage() {
             </div>
 
             <motion.button 
-              whileHover={isOpen && !(paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 1.02 } : {}} 
-              whileTap={isOpen && !(paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 0.98 } : {}} 
-              onClick={() => paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
-              disabled={!isOpen || loading || (paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)}
+              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 1.02 } : {}} 
+              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 0.98 } : {}} 
+              onClick={() => totalAmount > 0 && paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
+              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)}
               className={`w-full py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 !isOpen 
                   ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
-                  : (paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
+                  : (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
                   : "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer"
               }`}
             >
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
-              {paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
+              {totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
                 <><AlertTriangle className="w-5 h-5 shrink-0" /> Saldo Dompet Kurang</>
               ) : (
-                <>{isOpen ? "Lanjut ke Pembayaran" : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}</>
+                <>{isOpen ? (totalAmount === 0 ? "Konfirmasi Pesanan Gratis" : "Lanjut ke Pembayaran") : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}</>
               )}
             </motion.button>
           </div>

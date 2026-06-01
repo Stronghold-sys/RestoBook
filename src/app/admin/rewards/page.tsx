@@ -90,6 +90,23 @@ export default function AdminRewardsPage() {
   useEffect(() => {
     fetchAdminData();
     fetchRestaurantSettings();
+
+    const channel = supabase
+      .channel("admin-rewards-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reward_redemptions" }, () => {
+        fetchAdminData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        fetchAdminData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "point_transactions" }, () => {
+        fetchAdminData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchAdminData = async () => {
@@ -623,65 +640,67 @@ export default function AdminRewardsPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
-                        <th className="px-6 py-4">Nama Pelanggan</th>
-                        <th className="px-6 py-4">Email</th>
-                        <th className="px-6 py-4 text-right">Poin Aktif</th>
-                        <th className="px-6 py-4 text-right">Poin Pending</th>
-                        <th className="px-6 py-4 text-right">Dompet (Rp)</th>
-                        <th className="px-6 py-4 text-center">Status</th>
-                        <th className="px-6 py-4 text-center">Aksi</th>
+                        <th className="px-6 py-4 whitespace-nowrap">Nama Pelanggan</th>
+                        <th className="px-6 py-4 whitespace-nowrap">Email</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Poin</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Pending</th>
+                        <th className="px-6 py-4 text-right whitespace-nowrap">Dompet (Rp)</th>
+                        <th className="px-6 py-4 text-center whitespace-nowrap">Status</th>
+                        <th className="px-6 py-4 text-center whitespace-nowrap">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {customers.map((cust) => (
                         <tr key={cust.id} className="border-b border-border-light dark:border-border-dark text-xs hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
-                          <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark uppercase">
+                          <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark uppercase whitespace-nowrap">
                             {cust.full_name}
                           </td>
-                          <td className="px-6 py-4 text-muted">
+                          <td className="px-6 py-4 text-muted whitespace-nowrap">
                             {cust.email || "-"}
                           </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-primary text-sm">
+                          <td className="px-6 py-4 text-right font-black font-mono text-primary text-sm whitespace-nowrap">
                             {cust.points || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-amber-500 text-sm">
+                          <td className="px-6 py-4 text-right font-black font-mono text-amber-500 text-sm whitespace-nowrap">
                             {cust.pending_points || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-emerald-600 dark:text-emerald-400">
+                          <td className="px-6 py-4 text-right font-black font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             Rp {Number(cust.wallet_balance || 0).toLocaleString("id-ID")}
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-6 py-4 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5 justify-center">
                               {cust.is_redeem_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-20 text-center">Poin Blok</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-24 text-center whitespace-nowrap">Redeem Blok</span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-20 text-center">Poin Aktif</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Redeem Aktif</span>
                               )}
                               {cust.is_wallet_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-20 text-center">Wlt Blok</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-24 text-center whitespace-nowrap">Dompet Blok</span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-20 text-center">Wlt Aktif</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Dompet Aktif</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleOpenAdjustModal(cust)}
-                              className="px-3 py-1.5 bg-primary/10 text-primary font-black text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
-                            >
-                              Detail & Poin
-                            </button>
-                            <button
-                              onClick={() => handleToggleBlockRedeem(cust)}
-                              className={`p-1.5 rounded-xl border text-xs transition-all ${
-                                cust.is_redeem_blocked
-                                  ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                                  : "bg-red-50 border-red-200 text-red-500 hover:bg-red-100"
-                              }`}
-                              title={cust.is_redeem_blocked ? "Buka Blokir Redeem" : "Blokir Redeem"}
-                            >
-                              {cust.is_redeem_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                            </button>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                              <button
+                                onClick={() => handleOpenAdjustModal(cust)}
+                                className="px-3 py-1.5 bg-primary/10 text-primary font-black text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
+                              >
+                                Detail & Poin
+                              </button>
+                              <button
+                                onClick={() => handleToggleBlockRedeem(cust)}
+                                className={`p-1.5 rounded-xl border text-xs transition-all ${
+                                  cust.is_redeem_blocked
+                                    ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                                    : "bg-red-50 border-red-200 text-red-500 hover:bg-red-100"
+                                }`}
+                                title={cust.is_redeem_blocked ? "Buka Blokir Redeem" : "Blokir Redeem"}
+                              >
+                                {cust.is_redeem_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

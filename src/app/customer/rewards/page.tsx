@@ -155,6 +155,9 @@ export default function CustomerRewardsPage() {
     }
   };
 
+  const activeRedemptions = redemptions.filter(red => red.status !== 'used');
+  const usedRedemptions = redemptions.filter(red => red.status === 'used');
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
       {/* Header */}
@@ -262,7 +265,7 @@ export default function CustomerRewardsPage() {
                   : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
               }`}
             >
-              Reward Saya ({redemptions.length})
+              Reward Saya ({activeRedemptions.length})
             </button>
             <button
               onClick={() => setActiveTab("history")}
@@ -379,7 +382,7 @@ export default function CustomerRewardsPage() {
                 </div>
               )
             ) : activeTab === "my-rewards" ? (
-              redemptions.length === 0 ? (
+              activeRedemptions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
                   <Award className="w-12 h-12 text-muted/30 mb-3" />
                   <span className="font-bold text-lg text-text-light dark:text-text-dark">Belum Ada Penukaran</span>
@@ -389,7 +392,7 @@ export default function CustomerRewardsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {redemptions.map((red) => (
+                  {activeRedemptions.map((red) => (
                     <motion.div
                       key={red.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -414,20 +417,27 @@ export default function CustomerRewardsPage() {
                         </div>
 
                         {red.code && (
-                          <div className="bg-gray-50 dark:bg-gray-800/40 border border-border-light/50 dark:border-border-dark/50 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-                            <div>
-                              <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher Penukaran</span>
-                              <span className="font-mono font-black text-primary text-lg uppercase tracking-wide">{red.code}</span>
+                          <div className="space-y-2">
+                            <div className="bg-gray-50 dark:bg-gray-800/40 border border-border-light/50 dark:border-border-dark/50 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                              <div>
+                                <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher Penukaran</span>
+                                <span className="font-mono font-black text-primary text-lg uppercase tracking-wide">{red.code}</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(red.code);
+                                  toast.success(`Kode voucher ${red.code} berhasil disalin! Gunakan saat proses checkout.`);
+                                }}
+                                className="px-3 py-2 bg-primary/10 text-primary font-bold text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
+                              >
+                                Salin Kode
+                              </button>
                             </div>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(red.code);
-                                toast.success(`Kode voucher ${red.code} berhasil disalin! Gunakan saat proses checkout.`);
-                              }}
-                              className="px-3 py-2 bg-primary/10 text-primary font-bold text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
-                            >
-                              Salin Kode
-                            </button>
+                            {red.rewards?.category === 'food' && (
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50/50 dark:bg-emerald-950/10 p-2.5 rounded-xl border border-emerald-100/20">
+                                *Gunakan kode voucher diskon 100% ini saat melakukan pembayaran untuk memesan makanan/minuman secara gratis (Maksimal 5 item, sudah termasuk pajak).
+                              </p>
+                            )}
                           </div>
                         )}
 
@@ -455,51 +465,106 @@ export default function CustomerRewardsPage() {
                 </div>
               )
             ) : (
-              transactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
-                  <Clock className="w-12 h-12 text-muted/30 mb-3" />
-                  <span className="font-bold text-lg text-text-light dark:text-text-dark">Riwayat Poin Bersih</span>
-                  <span className="text-xs mt-1 max-w-sm">
-                    Anda belum memiliki transaksi poin pending, earned, maupun redeem.
-                  </span>
-                </div>
-              ) : (
-                <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
-                          <th className="px-6 py-4">Tanggal & Waktu</th>
-                          <th className="px-6 py-4">Keterangan</th>
-                          <th className="px-6 py-4">Status</th>
-                          <th className="px-6 py-4 text-right">Poin</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {transactions.map((tx, idx) => {
-                          const isAdd = tx.points > 0;
-                          return (
-                            <tr key={tx.id} className={`border-b border-border-light dark:border-border-dark text-xs ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-900/10" : ""}`}>
-                              <td className="px-6 py-4 text-muted">
-                                {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}
-                              </td>
-                              <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark">
-                                {tx.description || "Transaksi Point"}
-                              </td>
-                              <td className="px-6 py-4">
-                                {getStatusBadge(tx.status)}
-                              </td>
-                              <td className={`px-6 py-4 text-right font-black font-mono text-sm ${isAdd ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                                {isAdd ? `+${tx.points}` : tx.points}
-                              </td>
+              <div className="space-y-8">
+                {/* 1. Riwayat Transaksi Poin */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Riwayat Transaksi Poin</h3>
+                  {transactions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
+                      <Clock className="w-10 h-10 text-muted/30 mb-3" />
+                      <span className="font-bold text-sm text-text-light dark:text-text-dark">Riwayat Poin Bersih</span>
+                      <span className="text-xs mt-1">Anda belum memiliki transaksi poin pending, earned, maupun redeem.</span>
+                    </div>
+                  ) : (
+                    <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
+                              <th className="px-6 py-4">Tanggal & Waktu</th>
+                              <th className="px-6 py-4">Keterangan</th>
+                              <th className="px-6 py-4">Status</th>
+                              <th className="px-6 py-4 text-right">Poin</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          </thead>
+                          <tbody>
+                            {transactions.map((tx, idx) => {
+                              const isAdd = tx.points > 0;
+                              return (
+                                <tr key={tx.id} className={`border-b border-border-light dark:border-border-dark text-xs ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-900/10" : ""}`}>
+                                  <td className="px-6 py-4 text-muted">
+                                    {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}
+                                  </td>
+                                  <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark">
+                                    {tx.description || "Transaksi Point"}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    {getStatusBadge(tx.status)}
+                                  </td>
+                                  <td className={`px-6 py-4 text-right font-black font-mono text-sm ${isAdd ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                    {isAdd ? `+${tx.points}` : tx.points}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )
+
+                {/* 2. Riwayat Reward Telah Digunakan */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Riwayat Reward yang Telah Digunakan</h3>
+                  {usedRedemptions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-muted text-center bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-8">
+                      <Gift className="w-10 h-10 text-muted/30 mb-3" />
+                      <span className="font-bold text-sm text-text-light dark:text-text-dark">Belum Ada Riwayat Reward</span>
+                      <span className="text-xs mt-1">Belum ada reward voucher yang telah digunakan pada pesanan Anda.</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {usedRedemptions.map((red) => (
+                        <div
+                          key={red.id}
+                          className="bg-card-light/50 dark:bg-card-dark/50 border border-border-light/50 dark:border-border-dark/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 right-0 p-3">
+                            <span className="px-2.5 py-1 text-[9px] font-black uppercase rounded bg-gray-100 text-gray-500 border border-gray-200">
+                              Telah Digunakan
+                            </span>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-primary/5 p-3 rounded-2xl shrink-0 opacity-60">
+                                {getRewardIcon(red.rewards?.category || "custom")}
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-base text-muted line-through">{red.rewards?.title || "Reward Dihapus"}</h3>
+                                <p className="text-[9px] text-muted">Ditukar: {format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</p>
+                              </div>
+                            </div>
+
+                            {red.code && (
+                              <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3">
+                                <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher</span>
+                                <span className="font-mono font-black text-muted text-sm uppercase tracking-wide line-through">{red.code}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-border-light/30 dark:border-border-dark/30 flex justify-between items-center text-[9px] text-muted">
+                            <span>Penukaran ID: #{red.id.substring(0, 8).toUpperCase()}</span>
+                            <span>Biaya: {red.points_spent} Poin</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </>

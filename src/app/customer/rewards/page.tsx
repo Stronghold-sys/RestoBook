@@ -454,85 +454,135 @@ export default function CustomerRewardsPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {activeRedemptions.map((red) => (
-                        <motion.div
-                          key={red.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 right-0 p-3">
-                            <span className="px-2.5 py-1 text-[9px] font-black uppercase rounded bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20">
-                              {red.status === "success" ? "Berhasil" : red.status}
-                            </span>
-                          </div>
+                      {activeRedemptions.map((red) => {
+                        const isUsed = red.status === "used";
+                        const category = red.rewards?.category || "custom";
+                        const cashbackVal = Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0));
 
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-primary/5 p-3 rounded-2xl shrink-0">
-                                {getRewardIcon(red.rewards?.category || "custom")}
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-lg text-text-light dark:text-text-dark">{red.rewards?.title || "Reward Dihapus"}</h3>
-                                <p className="text-[10px] text-muted font-medium">Ditukar: {format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</p>
-                              </div>
+                        return (
+                          <motion.div
+                            key={red.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
+                          >
+                            <div className="absolute top-0 right-0 p-3">
+                              <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                                isUsed 
+                                  ? "bg-gray-100 text-gray-500 border border-gray-200" 
+                                  : "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20"
+                              }`}>
+                                {isUsed ? "Telah Digunakan" : "Belum Aktif"}
+                              </span>
                             </div>
 
-                            {red.code && (
-                              <div className="space-y-2">
-                                <div className="bg-gray-50 dark:bg-gray-800/40 border border-border-light/50 dark:border-border-dark/50 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-                                  <div>
-                                    <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher Penukaran</span>
-                                    <span className="font-mono font-black text-primary text-lg uppercase tracking-wide">{red.code}</span>
-                                  </div>
-                                  <span className="px-3.5 py-2 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-extrabold text-xs rounded-xl border border-green-200/50 dark:border-green-900/30 uppercase tracking-wide text-center shrink-0">
-                                    Tersimpan di Menu Voucher Saya
-                                  </span>
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-primary/5 p-3 rounded-2xl shrink-0">
+                                  {getRewardIcon(category)}
                                 </div>
-                                {red.rewards?.category === 'food' && (
-                                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50/50 dark:bg-emerald-950/10 p-2.5 rounded-xl border border-emerald-100/20">
-                                    *Gunakan voucher diskon 100% ini pada halaman pembayaran untuk memesan makanan/minuman secara gratis (Maksimal 5 item, sudah termasuk pajak).
-                                  </p>
-                                )}
+                                <div>
+                                  <h3 className={`font-bold text-lg text-text-light dark:text-text-dark ${isUsed ? "line-through text-muted" : ""}`}>
+                                    {red.rewards?.title || "Reward Dihapus"}
+                                  </h3>
+                                  <p className="text-[10px] text-muted font-medium">Ditukar: {format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</p>
+                                </div>
                               </div>
-                            )}
 
-                            {!red.code && red.rewards?.category === "cashback" && (
-                              red.status === "used" ? (
-                                <div className="p-4 bg-green-50 dark:bg-green-950/10 border border-green-200 dark:border-green-900/50 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
-                                  <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
-                                  Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
+                              {/* JIKA REWARD TELAH DIGUNAKAN (Masa tenggang 1 menit) */}
+                              {isUsed && (
+                                <div className="space-y-2">
+                                  {category === "cashback" ? (
+                                    <div className="p-4 bg-green-50 dark:bg-green-950/10 border border-green-200 dark:border-green-900/50 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
+                                      <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                                      Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
+                                    </div>
+                                  ) : category === "voucher" || category === "food" ? (
+                                    <div className="space-y-2">
+                                      <div className="p-4 bg-green-50 dark:bg-green-950/10 border border-green-200 dark:border-green-900/50 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                                        Voucher {red.rewards?.title} telah berhasil diaktifkan!
+                                      </div>
+                                      {red.code && (
+                                        <div className="bg-gray-50 dark:bg-gray-800/40 border border-border-light/50 dark:border-border-dark/50 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                                          <div>
+                                            <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher Penukaran</span>
+                                            <span className="font-mono font-black text-primary text-lg uppercase tracking-wide">{red.code}</span>
+                                          </div>
+                                          <span className="px-3.5 py-2 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-extrabold text-xs rounded-xl border border-green-200/50 dark:border-green-900/30 uppercase tracking-wide text-center shrink-0">
+                                            Tersimpan di Menu Voucher Saya
+                                          </span>
+                                        </div>
+                                      )}
+                                      {category === 'food' && (
+                                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50/50 dark:bg-emerald-950/10 p-2.5 rounded-xl border border-emerald-100/20">
+                                          *Gunakan voucher diskon 100% ini pada halaman pembayaran untuk memesan makanan/minuman secara gratis (Maksimal 5 item, sudah termasuk pajak).
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 bg-green-50 dark:bg-green-950/10 border border-green-100 dark:border-green-800 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
+                                      <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                                      Reward {red.rewards?.title} telah sukses diaktifkan dan digunakan.
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
+                              )}
+
+                              {/* JIKA REWARD BELUM AKTIF (Menampilkan tombol Gunakan) */}
+                              {!isUsed && (
                                 <div className="space-y-3">
-                                  <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
-                                    Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
-                                  </div>
-                                  <button
-                                    onClick={() => handleClaimCashback(red.id)}
-                                    disabled={submitting}
-                                    className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
-                                  >
-                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
-                                  </button>
+                                  {category === "cashback" ? (
+                                    <>
+                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                        Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
+                                      </div>
+                                      <button
+                                        onClick={() => handleClaimCashback(red.id)}
+                                        disabled={submitting}
+                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+                                      >
+                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
+                                      </button>
+                                    </>
+                                  ) : category === "voucher" || category === "food" ? (
+                                    <>
+                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                        Voucher &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan dan dimasukkan ke menu Voucher Saya Anda. Silakan klik tombol di bawah untuk menggunakan.
+                                      </div>
+                                      <button
+                                        onClick={() => handleClaimCashback(red.id)}
+                                        disabled={submitting}
+                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+                                      >
+                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Ticket className="w-4 h-4" /> Gunakan Reward</>}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
+                                        Reward &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan. Silakan tunjukkan ke kasir/pelayan atau klik tombol di bawah untuk mengaktifkan.
+                                      </div>
+                                      <button
+                                        onClick={() => handleClaimCashback(red.id)}
+                                        disabled={submitting}
+                                        className="w-full py-3 bg-primary text-white font-black text-xs rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+                                      >
+                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Gift className="w-4 h-4" /> Gunakan Reward</>}
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
-                              )
-                            )}
+                              )}
+                            </div>
 
-                            {!red.code && red.rewards?.category !== "cashback" && (
-                              <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 rounded-2xl text-xs text-muted font-bold flex items-center gap-2">
-                                <Clock className="w-4 h-4 shrink-0 text-orange-500" />
-                                Tunjukkan tanda terima ini ke pelayan/kasir untuk mengklaim {red.rewards?.title || 'reward'}.
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="mt-4 pt-3 border-t border-border-light dark:border-border-dark flex justify-between items-center text-[10px] text-muted">
-                            <span>Penukaran ID: #{red.id.substring(0, 8).toUpperCase()}</span>
-                            <span className="font-bold">Biaya: {red.points_spent} Poin</span>
-                          </div>
-                        </motion.div>
-                      ))}
+                            <div className="mt-4 pt-3 border-t border-border-light dark:border-border-dark flex justify-between items-center text-[10px] text-muted">
+                              <span>Penukaran ID: #{red.id.substring(0, 8).toUpperCase()}</span>
+                              <span className="font-bold">Biaya: {red.points_spent} Poin</span>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -550,54 +600,62 @@ export default function CustomerRewardsPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {usedRedemptions.map((red) => (
-                        <div
-                          key={red.id}
-                          className="bg-card-light/50 dark:bg-card-dark/50 border border-border-light/50 dark:border-border-dark/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 right-0 p-3">
-                            <span className="px-2.5 py-1 text-[9px] font-black uppercase rounded bg-gray-100 text-gray-500 border border-gray-200">
-                              Telah Digunakan
-                            </span>
-                          </div>
+                      {usedRedemptions.map((red) => {
+                        const category = red.rewards?.category || "custom";
+                        const cashbackVal = Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0));
 
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-primary/5 p-3 rounded-2xl shrink-0 opacity-60">
-                                {getRewardIcon(red.rewards?.category || "custom")}
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-base text-muted line-through">{red.rewards?.title || "Reward Dihapus"}</h3>
-                                <p className="text-[9px] text-muted">Ditukar: {format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</p>
-                              </div>
+                        return (
+                          <div
+                            key={red.id}
+                            className="bg-card-light/50 dark:bg-card-dark/50 border border-border-light/50 dark:border-border-dark/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
+                          >
+                            <div className="absolute top-0 right-0 p-3">
+                              <span className="px-2.5 py-1 text-[9px] font-black uppercase rounded bg-gray-100 text-gray-500 border border-gray-200">
+                                Telah Digunakan
+                              </span>
                             </div>
 
-                            {red.code && (
-                              <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3">
-                                <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher</span>
-                                <span className="font-mono font-black text-muted text-sm uppercase tracking-wide line-through">{red.code}</span>
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-primary/5 p-3 rounded-2xl shrink-0 opacity-60">
+                                  {getRewardIcon(category)}
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-base text-muted line-through">{red.rewards?.title || "Reward Dihapus"}</h3>
+                                  <p className="text-[9px] text-muted">Ditukar: {format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</p>
+                                </div>
                               </div>
-                            )}
 
-                            {!red.code && red.rewards?.category === "cashback" && (
-                              <div className="bg-green-50/30 dark:bg-green-950/10 border border-green-200/30 dark:border-green-900/30 rounded-2xl p-3 text-xs text-green-750 dark:text-green-400 font-bold leading-relaxed">
-                                Dana cashback sebesar Rp {Number(red.cashback_amount !== null && red.cashback_amount !== undefined ? red.cashback_amount : (red.rewards?.cashback_amount || 0)).toLocaleString("id-ID")} telah berhasil diklaim dan dikreditkan ke Saldo Dompet Anda.
-                              </div>
-                            )}
+                              {category === "cashback" ? (
+                                <div className="bg-green-50/30 dark:bg-green-950/10 border border-green-200/30 dark:border-green-900/30 rounded-2xl p-3 text-xs text-green-750 dark:text-green-400 font-bold leading-relaxed">
+                                  Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} telah berhasil diklaim dan dikreditkan ke Saldo Dompet Anda.
+                                </div>
+                              ) : category === "voucher" || category === "food" ? (
+                                <div className="space-y-2">
+                                  {red.code && (
+                                    <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3">
+                                      <span className="text-[9px] font-black text-muted uppercase block">Kode Voucher</span>
+                                      <span className="font-mono font-black text-muted text-sm uppercase tracking-wide line-through">{red.code}</span>
+                                    </div>
+                                  )}
+                                  <div className="p-3 bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl text-[10px] text-green-600 dark:text-green-400 font-bold leading-relaxed">
+                                    Voucher ini telah berhasil diaktifkan{red.code ? ` dengan kode ${red.code}` : ""} dan tersimpan di menu Voucher Saya untuk transaksi Anda.
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3 text-xs text-muted font-bold leading-relaxed">
+                                  Reward ini telah sukses diaktifkan dan digunakan.
+                                </div>
+                              )}
+                            </div>
 
-                            {!red.code && red.rewards?.category !== "cashback" && (
-                              <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3 text-xs text-muted font-bold leading-relaxed">
-                                Reward ini telah sukses diambil/digunakan langsung di outlet.
-                              </div>
-                            )}
+                            <div className="mt-4 pt-3 border-t border-border-light/30 dark:border-border-dark/30 flex justify-between items-center text-[9px] text-muted">
+                              <span>Penukaran ID: #{red.id.substring(0, 8).toUpperCase()}</span>
+                              <span>Biaya: {red.points_spent} Poin</span>
+                            </div>
                           </div>
-
-                          <div className="mt-4 pt-3 border-t border-border-light/30 dark:border-border-dark/30 flex justify-between items-center text-[9px] text-muted">
-                            <span>Penukaran ID: #{red.id.substring(0, 8).toUpperCase()}</span>
-                            <span>Biaya: {red.points_spent} Poin</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

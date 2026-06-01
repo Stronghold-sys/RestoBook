@@ -4,13 +4,16 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import DynamicFavicon from "@/components/DynamicFavicon";
 import Script from "next/script";
-import RestoBot from "@/components/RestoBot";
 import ConnectionDetector from "@/components/ConnectionDetector";
 import SessionStatusListener from "@/components/SessionStatusListener";
 import ScrollToTop from "@/components/ScrollToTop";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
-
 import AppSplashScreen from "@/components/AppSplashScreen";
+import dynamic from "next/dynamic";
+
+const RestoBot = dynamic(() => import("@/components/RestoBot"), {
+  ssr: false,
+});
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -85,10 +88,6 @@ export default function RootLayout({
           src={duitkuScript}
           strategy="lazyOnload"
           data-clearonload="false"
-        />
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="beforeInteractive"
         />
       </body>
     </html>

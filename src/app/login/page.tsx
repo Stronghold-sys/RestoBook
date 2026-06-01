@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
+import Script from "next/script";
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
@@ -544,7 +545,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
+    <>
+      <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+      <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1024,5 +1027,6 @@ export default function LoginPage() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
+import Script from "next/script";
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
@@ -214,7 +215,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
+    <>
+      <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+      <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
       <motion.div
         layout
         className="max-w-md w-full bg-card-light dark:bg-card-dark rounded-2xl shadow-xl overflow-hidden"
@@ -417,5 +420,6 @@ export default function RegisterPage() {
         </div>
       </motion.div>
     </div>
+    </>
   );
 }

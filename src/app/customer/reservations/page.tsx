@@ -209,7 +209,7 @@ export default function CustomerReservationsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="p-6 max-w-5xl mx-auto space-y-8">
         <div className="flex justify-between items-center mb-8 animate-pulse">
           <div className="space-y-2.5 w-64">
             <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-3/4" />
@@ -227,8 +227,8 @@ export default function CustomerReservationsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-8 pb-24">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark leading-tight">Observasi &amp; Reservasi Meja</h1>
           <p className="text-muted mt-1 text-sm sm:text-base">Ajukan reservasi meja bebas (bisa pilih banyak meja sekaligus)</p>

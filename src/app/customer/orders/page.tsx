@@ -151,7 +151,7 @@ export default function CustomerOrdersPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="p-6 max-w-5xl mx-auto space-y-8">
         <div className="mb-8 animate-pulse">
           <div className="h-8 bg-gray-250 dark:bg-gray-750 rounded-xl w-48 mb-2" />
           <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-64" />
@@ -181,8 +181,8 @@ export default function CustomerOrdersPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-8 pb-24">
+      <div>
         <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Pesanan Saya</h1>
         <p className="text-muted mt-1">Lacak status pesanan Anda secara real-time</p>
       </div>

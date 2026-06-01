@@ -20,6 +20,7 @@ export default function TablesPage() {
     seconds: "0",
   });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [nowTime, setNowTime] = useState(Date.now());
   const supabase = createClient();
 
   const cleanValue = (val: string, maxVal: number) => {
@@ -29,6 +30,38 @@ export default function TablesPage() {
     if (num > maxVal) return String(maxVal);
     return String(num);
   };
+
+  const getRemainingTime = (table: any) => {
+    if (table.status !== 'occupied' || !table.occupied_at) return null;
+    const totalTimeoutSeconds =
+      (Number(settings.hours) || 0) * 3600 +
+      (Number(settings.minutes) || 0) * 60 +
+      (Number(settings.seconds) || 0);
+
+    if (totalTimeoutSeconds <= 0) return null;
+
+    const occupiedMs = Date.parse(table.occupied_at);
+    if (isNaN(occupiedMs)) return null;
+
+    const elapsedSeconds = (nowTime - occupiedMs) / 1000;
+    const remainingSeconds = Math.max(0, Math.ceil(totalTimeoutSeconds - elapsedSeconds));
+
+    if (remainingSeconds <= 0) return "00:00:00";
+
+    const h = Math.floor(remainingSeconds / 3600);
+    const m = Math.floor((remainingSeconds % 3600) / 60);
+    const s = Math.floor(remainingSeconds % 60);
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchTables();
@@ -40,6 +73,16 @@ export default function TablesPage() {
       })
       .subscribe();
 
+    const settingsChannel = supabase.channel('settings_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_settings' }, (payload) => {
+        setSettings({
+          hours: payload.new.auto_empty_hours !== null && payload.new.auto_empty_hours !== undefined ? String(payload.new.auto_empty_hours) : "0",
+          minutes: payload.new.auto_empty_minutes !== null && payload.new.auto_empty_minutes !== undefined ? String(payload.new.auto_empty_minutes) : "0",
+          seconds: payload.new.auto_empty_seconds !== null && payload.new.auto_empty_seconds !== undefined ? String(payload.new.auto_empty_seconds) : "0",
+        });
+      })
+      .subscribe();
+
     // Fast backup sync poll (every 3 seconds) for instant table changes
     const interval = setInterval(() => {
       fetchTables();
@@ -47,6 +90,7 @@ export default function TablesPage() {
 
     return () => {
       supabase.removeChannel(tablesChannel);
+      supabase.removeChannel(settingsChannel);
       clearInterval(interval);
     };
   }, []);
@@ -194,6 +238,19 @@ export default function TablesPage() {
               <p className="font-black text-xl text-text-light dark:text-text-dark">Meja {table.table_number}</p>
               <p className="text-xs text-muted font-bold uppercase mt-1">Kapasitas: {table.capacity}</p>
             </div>
+            {table.status === 'occupied' && (
+              (() => {
+                const remaining = getRemainingTime(table);
+                if (remaining) {
+                  return (
+                    <div className="text-center bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono text-xs sm:text-sm font-black px-3 py-1.5 rounded-2xl tracking-widest animate-pulse">
+                      ⏳ {remaining}
+                    </div>
+                  );
+                }
+                return null;
+              })()
+            )}
             <div className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${table.status === 'available' ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
               {table.status === 'available' ? 'Tersedia' : 'Terisi'}
             </div>

@@ -1,12 +1,11 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AutoTableStatusManager() {
   const supabase = createClient();
   const [session, setSession] = useState<any>(null);
-  const [settings, setSettings] = useState<any>(null);
+  const settingsRef = useRef<any>(null);
   const occupiedTablesRef = useRef<Map<string, string>>(new Map()); // Map of tableId -> occupied_at
 
   useEffect(() => {
@@ -27,11 +26,12 @@ export default function AutoTableStatusManager() {
   useEffect(() => {
     if (!session?.user) {
       occupiedTablesRef.current.clear();
+      settingsRef.current = null;
       return;
     }
 
     // 2. Load restaurant settings once (auto-empty duration)
-    const loadSettingsAndTables = async () => {
+    const init = async () => {
       try {
         const { data: settingsData } = await supabase
           .from("restaurant_settings")
@@ -39,7 +39,7 @@ export default function AutoTableStatusManager() {
           .single();
 
         if (settingsData) {
-          setSettings(settingsData);
+          settingsRef.current = settingsData;
         }
 
         // 3. Load currently occupied tables
@@ -58,11 +58,11 @@ export default function AutoTableStatusManager() {
           occupiedTablesRef.current = map;
         }
       } catch (err) {
-        console.error("AutoTableStatusManager load error:", err);
+        console.error("AutoTableStatusManager init error:", err);
       }
     };
 
-    loadSettingsAndTables();
+    init();
 
     // 4. Subscribe to restaurant settings changes
     const settingsChannel = supabase
@@ -71,7 +71,7 @@ export default function AutoTableStatusManager() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "restaurant_settings" },
         (payload) => {
-          setSettings(payload.new);
+          settingsRef.current = payload.new;
         }
       )
       .subscribe();
@@ -98,14 +98,15 @@ export default function AutoTableStatusManager() {
       )
       .subscribe();
 
-    // 6. Setup checker interval (every 3 seconds)
+    // 6. Setup checker interval (every 1 second)
     const interval = setInterval(async () => {
-      if (!settings) return;
+      const currentSettings = settingsRef.current;
+      if (!currentSettings) return;
 
       const totalTimeoutSeconds =
-        (settings.auto_empty_hours || 0) * 3600 +
-        (settings.auto_empty_minutes || 0) * 60 +
-        (settings.auto_empty_seconds || 0);
+        (currentSettings.auto_empty_hours || 0) * 3600 +
+        (currentSettings.auto_empty_minutes || 0) * 60 +
+        (currentSettings.auto_empty_seconds || 0);
 
       // If duration is set to 0, it means auto-clear is disabled
       if (totalTimeoutSeconds <= 0) return;
@@ -137,14 +138,14 @@ export default function AutoTableStatusManager() {
           console.error("AutoTableStatusManager failed to clear tables:", error);
         }
       }
-    }, 3000);
+    }, 1000);
 
     return () => {
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(tablesChannel);
       clearInterval(interval);
     };
-  }, [session, settings]);
+  }, [session]);
 
   return null;
 }

@@ -433,7 +433,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsSidebarOpen(false)}
-                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
+                className="fixed inset-0 z-50 bg-black/60 lg:hidden"
               />
               <motion.aside
                 initial={{ x: "-100%" }}

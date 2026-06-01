@@ -31,6 +31,55 @@ export async function POST(req: Request) {
       const match = merchantOrderId.match(uuidRegex);
       const dbOrderId = match ? match[0] : merchantOrderId.split('-')[0]; // Fallback ke bagian pertama sebelum tanda hubung
 
+      if (String(merchantOrderId).startsWith('WLT-')) {
+        console.log("Wallet Callback Received for Tx ID:", dbOrderId);
+        // Fetch transaction
+        const { data: tx } = await supabaseAdmin
+          .from('wallet_transactions')
+          .select('*')
+          .eq('id', dbOrderId)
+          .single();
+
+        if (tx && tx.status === 'pending') {
+          // 1. Update wallet_transactions to success
+          const { error: txErr } = await supabaseAdmin
+            .from('wallet_transactions')
+            .update({ status: 'success', payment_reference: reference })
+            .eq('id', dbOrderId);
+
+          if (!txErr) {
+            // 2. Increment user wallet_balance
+            const { data: profile } = await supabaseAdmin
+              .from('profiles')
+              .select('wallet_balance')
+              .eq('id', tx.customer_id)
+              .single();
+
+            const currentBalance = Number(profile?.wallet_balance || 0);
+            const topupAmount = Number(tx.amount);
+            const newBalance = currentBalance + topupAmount;
+
+            await supabaseAdmin
+              .from('profiles')
+              .update({ wallet_balance: newBalance })
+              .eq('id', tx.customer_id);
+
+            // 3. Create wallet notification for the customer
+            await supabaseAdmin.from('notifications').insert({
+              user_id: tx.customer_id,
+              title: 'Top Up Berhasil',
+              message: `Top up sebesar Rp ${topupAmount.toLocaleString('id-ID')} berhasil masuk ke Dompetku.`,
+              type: 'point',
+              reference_id: dbOrderId,
+              status_badge: 'Sukses'
+            });
+
+            console.log(`Wallet Balance updated for customer ${tx.customer_id}: Rp ${newBalance}`);
+          }
+        }
+        return new NextResponse('OK', { status: 200 });
+      }
+
       console.log("Attempting to update Order ID:", dbOrderId);
 
       // 1. UPDATE DATABASE

@@ -40,12 +40,16 @@ export async function POST(req: NextRequest) {
       // Get customer profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
-        .select('id, wallet_balance')
+        .select('id, wallet_balance, is_wallet_blocked')
         .eq('id', orderData.customer_id)
         .single();
 
       if (profileErr || !profile) {
         return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      if (profile.is_wallet_blocked) {
+        return NextResponse.json({ error: 'Akses Dompetku Anda diblokir sementara oleh admin.' }, { status: 400 });
       }
 
       const balance = Number(profile.wallet_balance || 0);
@@ -98,6 +102,15 @@ export async function POST(req: NextRequest) {
         throw itemsError;
       }
 
+      // Log wallet transaction
+      await supabaseAdmin.from('wallet_transactions').insert({
+        customer_id: profile.id,
+        amount: total,
+        type: 'payment',
+        status: 'success',
+        description: `Pembayaran pesanan #${newOrder.id.substring(0, 8).toUpperCase()}`
+      });
+
       // Update table if dine_in
       if (newOrder.table_id) {
         await supabaseAdmin.from("tables").update({ status: "occupied" }).eq("id", newOrder.table_id);
@@ -114,6 +127,97 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, order: newOrder });
     }
+
+    if (action === 'pay_order_via_wallet') {
+      if (!orderId) {
+        return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+      }
+
+      // Fetch order
+      const { data: order, error: orderErr } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (orderErr || !order) {
+        return NextResponse.json({ error: 'Pesanan tidak ditemukan' }, { status: 404 });
+      }
+
+      if (order.payment_status === 'paid') {
+        return NextResponse.json({ error: 'Pesanan ini sudah lunas' }, { status: 400 });
+      }
+
+      if (order.status === 'cancelled') {
+        return NextResponse.json({ error: 'Pesanan ini sudah dibatalkan' }, { status: 400 });
+      }
+
+      // Fetch profile
+      const { data: profile, error: profileErr } = await supabaseAdmin
+        .from('profiles')
+        .select('id, wallet_balance, is_wallet_blocked')
+        .eq('id', order.customer_id)
+        .single();
+
+      if (profileErr || !profile) {
+        return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      if (profile.is_wallet_blocked) {
+        return NextResponse.json({ error: 'Akses Dompetku Anda diblokir sementara oleh admin.' }, { status: 400 });
+      }
+
+      const balance = Number(profile.wallet_balance || 0);
+      const total = Number(order.total_amount);
+
+      if (balance < total) {
+        return NextResponse.json({ error: 'Saldo dompet tidak mencukupi untuk melakukan pembayaran' }, { status: 400 });
+      }
+
+      // Deduct balance
+      const { error: deductErr } = await supabaseAdmin
+        .from('profiles')
+        .update({ wallet_balance: balance - total })
+        .eq('id', profile.id);
+
+      if (deductErr) throw deductErr;
+
+      // Update order
+      const { error: updateErr } = await supabaseAdmin
+        .from('orders')
+        .update({
+          payment_method: 'wallet',
+          payment_status: 'paid'
+        })
+        .eq('id', orderId);
+
+      if (updateErr) {
+        // Rollback balance
+        await supabaseAdmin.from('profiles').update({ wallet_balance: balance }).eq('id', profile.id);
+        throw updateErr;
+      }
+
+      // Log wallet transaction
+      await supabaseAdmin.from('wallet_transactions').insert({
+        customer_id: profile.id,
+        amount: total,
+        type: 'payment',
+        status: 'success',
+        description: `Pembayaran pesanan #${orderId.substring(0, 8).toUpperCase()}`
+      });
+
+      // Notification
+      await supabaseAdmin.from('notifications').insert({
+        user_id: order.customer_id,
+        title: 'Pembayaran Saldo Dompet Berhasil',
+        message: `Pembayaran sebesar Rp ${total.toLocaleString("id-ID")} untuk No. Pesanan #${orderId.substring(0, 8).toUpperCase()} telah berhasil didebet dari Saldo Dompet Anda.`,
+        type: 'order',
+        status_badge: 'Berhasil'
+      });
+
+      return NextResponse.json({ success: true, message: 'Pembayaran berhasil menggunakan Saldo Dompet' });
+    }
+
 
 
     if (!orderId) {
@@ -338,6 +442,15 @@ export async function POST(req: NextRequest) {
           .update({ wallet_balance: newBalance })
           .eq('id', order.customer_id);
         if (balErr) throw balErr;
+
+        // Log wallet transaction
+        await supabaseAdmin.from('wallet_transactions').insert({
+          customer_id: order.customer_id,
+          amount: Number(order.total_amount),
+          type: 'refund',
+          status: 'success',
+          description: `Refund pesanan #${order.id.substring(0, 8).toUpperCase()}`
+        });
       }
 
       let notifMessage = '';

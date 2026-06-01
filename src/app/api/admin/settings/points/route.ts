@@ -36,7 +36,13 @@ export async function POST(req: NextRequest) {
       bonusEventName,
       bonusEventPoints,
       bonusDayOfWeek,
-      bonusDayMultiplier
+      bonusDayMultiplier,
+      minTopup,
+      maxTopup,
+      isDuitkuEnabled,
+      isCashbackEnabled,
+      walletAdminFee,
+      isAutoRefundEnabled
     } = body;
 
     // Get the first setting row ID
@@ -45,23 +51,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pengaturan restoran belum diinisialisasi' }, { status: 404 });
     }
 
+    const updateFields: any = {
+      min_random_points: Number(minRandomPoints),
+      max_random_points: Number(maxRandomPoints),
+      is_points_enabled: !!isPointsEnabled,
+      points_expiry_days: Number(pointsExpiryDays),
+      max_points_per_transaction: Number(maxPointsPerTransaction),
+      bonus_new_customer: Number(bonusNewCustomer),
+      bonus_birthday: Number(bonusBirthday),
+      multiplier: Number(multiplier),
+      bonus_event_name: bonusEventName || '',
+      bonus_event_points: Number(bonusEventPoints),
+      bonus_day_of_week: Number(bonusDayOfWeek),
+      bonus_day_multiplier: Number(bonusDayMultiplier),
+      updated_at: new Date().toISOString()
+    };
+
+    // Add wallet settings if provided in payload
+    if (minTopup !== undefined) updateFields.min_topup = Number(minTopup);
+    if (maxTopup !== undefined) updateFields.max_topup = Number(maxTopup);
+    if (isDuitkuEnabled !== undefined) updateFields.is_duitku_enabled = !!isDuitkuEnabled;
+    if (isCashbackEnabled !== undefined) updateFields.is_cashback_enabled = !!isCashbackEnabled;
+    if (walletAdminFee !== undefined) updateFields.wallet_admin_fee = Number(walletAdminFee);
+    if (isAutoRefundEnabled !== undefined) updateFields.is_auto_refund_enabled = !!isAutoRefundEnabled;
+
     const { data: updatedSettings, error: updateError } = await supabaseAdmin
       .from('restaurant_settings')
-      .update({
-        min_random_points: Number(minRandomPoints),
-        max_random_points: Number(maxRandomPoints),
-        is_points_enabled: !!isPointsEnabled,
-        points_expiry_days: Number(pointsExpiryDays),
-        max_points_per_transaction: Number(maxPointsPerTransaction),
-        bonus_new_customer: Number(bonusNewCustomer),
-        bonus_birthday: Number(bonusBirthday),
-        multiplier: Number(multiplier),
-        bonus_event_name: bonusEventName || '',
-        bonus_event_points: Number(bonusEventPoints),
-        bonus_day_of_week: Number(bonusDayOfWeek),
-        bonus_day_multiplier: Number(bonusDayMultiplier),
-        updated_at: new Date().toISOString()
-      })
+      .update(updateFields)
       .eq('id', settings.id)
       .select()
       .single();
@@ -74,3 +90,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

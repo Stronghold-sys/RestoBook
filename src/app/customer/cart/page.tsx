@@ -1386,7 +1386,7 @@ export default function CartPage() {
               whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 0.98 } : {}} 
               onClick={() => totalAmount > 0 && paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
               disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)}
-              className={`w-full py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
+              className={`w-full py-4 rounded-2xl font-black text-sm lg:text-xs xl:text-sm flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 !isOpen 
                   ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
                   : (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
@@ -1396,7 +1396,7 @@ export default function CartPage() {
             >
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
               {totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
-                <><AlertTriangle className="w-5 h-5 shrink-0" /> Saldo Dompet Kurang</>
+                <><AlertTriangle className="w-4 h-4 shrink-0" /> Saldo Dompet Kurang</>
               ) : (
                 <>{isOpen ? (totalAmount === 0 ? "Konfirmasi Pesanan Gratis" : "Lanjut ke Pembayaran") : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}</>
               )}

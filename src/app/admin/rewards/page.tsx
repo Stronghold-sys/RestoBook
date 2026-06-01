@@ -226,7 +226,8 @@ export default function AdminRewardsPage() {
         discountPercent: !rewardForm.discountPercent ? 0 : Number(rewardForm.discountPercent),
         cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount),
         isAutoCashback: !!rewardForm.isAutoCashback,
-        expiryDays: rewardForm.expiryDays === "" ? null : Number(rewardForm.expiryDays)
+        expiryDays: rewardForm.expiryDays === "" ? null : Number(rewardForm.expiryDays),
+        isActive: currentReward ? currentReward.is_active : true
       };
       const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
 

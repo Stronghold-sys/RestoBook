@@ -306,7 +306,7 @@ export default function CashierTransactionsPage() {
       </div>
 
       {/* Filter Waktu & Stats */}
-      <div className="flex flex-col xl:flex-row gap-6">
+      <div className="flex flex-col xl:flex-row xl:items-start gap-6">
         <div className="xl:w-1/4 bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark p-6">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="w-5 h-5 text-primary" />
@@ -335,7 +335,7 @@ export default function CashierTransactionsPage() {
           </div>
         </div>
 
-        <div className="xl:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-5">
+        <div className="xl:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-5 h-fit">
           <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-primary to-primary-hover rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-primary/20 relative overflow-hidden">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
             <div className="flex items-center gap-2 mb-2 relative z-10">

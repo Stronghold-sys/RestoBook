@@ -110,6 +110,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         },
         (payload: any) => {
           fetchUnreadNotifCount();
+
+          if (payload.eventType === "INSERT") {
+            playSingleNotifSound();
+          }
         }
       )
       .subscribe();

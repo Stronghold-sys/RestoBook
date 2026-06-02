@@ -74,6 +74,15 @@ export default function CustomerNotificationsPage() {
       case "pending":
       case "pending reward":
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/50 uppercase">Pending</span>;
+      case "menunggu dikonfirmasi":
+      case "menunggu konfirmasi":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50 uppercase">Menunggu Konfirmasi</span>;
+      case "menunggu untuk dibayar":
+      case "menunggu dibayar":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/50 uppercase">Menunggu Dibayar</span>;
+      case "menunggu untuk dibayar ulang":
+      case "menunggu dibayar ulang":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-orange-50 text-orange-600 border border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/50 uppercase">Bayar Ulang</span>;
       case "berhasil":
       case "reward masuk":
       case "redeem berhasil":

@@ -1105,6 +1105,12 @@ export default function CartPage() {
                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
                clearCart();
                toast.error("Pembayaran gagal. Pesanan disimpan sebagai Belum Bayar.");
+               // Kirim notifikasi Duitku ditutup tanpa selesai bayar
+               await fetch('/api/orders', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: orderData.id, action: 'notify_duitku_closed' })
+               });
                router.push(`/customer/orders/${orderData.id}`);
              },
              closeEvent: async function() {
@@ -1112,6 +1118,21 @@ export default function CartPage() {
                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
                clearCart();
                toast.success("Pesanan disimpan. Silakan selesaikan pembayaran Anda.");
+               // Proaktif cek status ke Duitku saat popup ditutup
+               const res = await fetch('/api/payment/check-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: orderData.id })
+               });
+               const checkRes = await res.json();
+               if (checkRes.status !== 'paid') {
+                  // Kirim notifikasi Duitku ditutup tanpa selesai bayar
+                  await fetch('/api/orders', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ orderId: orderData.id, action: 'notify_duitku_closed' })
+                  });
+               }
                router.push(`/customer/orders/${orderData.id}`);
              }
           });

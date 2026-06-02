@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendReceiptEmail } from '@/lib/sendReceiptEmail';
+import { getPaidNotification } from '@/utils/notificationHelper';
 
 export async function POST(req: Request) {
   try {
@@ -111,13 +112,14 @@ export async function POST(req: Request) {
       }
 
       if (finalOrder && finalOrder.customer_id) {
+        const paidNotif = getPaidNotification(finalOrder, 'Duitku');
         await supabaseAdmin.from('notifications').insert({
           user_id: finalOrder.customer_id,
-          title: 'Pembayaran Berhasil',
-          message: `Pembayaran online sebesar Rp ${Number(finalOrder.total_amount).toLocaleString('id-ID')} untuk No. Pesanan #${dbOrderId.split('-')[0].toUpperCase()} telah berhasil dikonfirmasi.`,
+          title: paidNotif.title,
+          message: paidNotif.message,
           type: 'order',
           order_id: dbOrderId,
-          status_badge: 'Berhasil'
+          status_badge: paidNotif.status_badge
         });
       }
 

@@ -394,6 +394,12 @@ export default function OrderTrackingPage() {
                toast.error("Transaksi dibatalkan.");
                // Reset created_at to current timestamp in DB to reset countdown
                await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
+               // Kirim notifikasi Duitku ditutup tanpa selesai bayar
+               await fetch('/api/orders', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderId: id, action: 'notify_duitku_closed' })
+               });
                setTimeout(() => fetchOrderDetails(), 500);
             },
             closeEvent: async function() {
@@ -402,11 +408,20 @@ export default function OrderTrackingPage() {
                // Reset created_at to current timestamp in DB to reset countdown
                await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
                // Proaktif cek status ke Duitku saat popup ditutup
-               await fetch('/api/payment/check-status', {
+               const res = await fetch('/api/payment/check-status', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ orderId: id })
                });
+               const checkRes = await res.json();
+               if (checkRes.status !== 'paid') {
+                  // Kirim notifikasi Duitku ditutup tanpa selesai bayar
+                  await fetch('/api/orders', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ orderId: id, action: 'notify_duitku_closed' })
+                  });
+               }
                setTimeout(() => fetchOrderDetails(), 500);
             }
          });

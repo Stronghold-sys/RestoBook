@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
+import { getPaidNotification } from '@/utils/notificationHelper';
 
 function getStatusNotification(status: string, orderId: string, orderType: string, reason?: string) {
   const shortId = orderId.split('-')[0].toUpperCase();
@@ -212,22 +213,14 @@ export async function POST(req: NextRequest) {
       }
 
       // Notification
+      const paidNotif = getPaidNotification(newOrder, 'Dompetku');
       await supabaseAdmin.from('notifications').insert({
         user_id: newOrder.customer_id,
-        title: 'Pembayaran Saldo Dompet Berhasil',
-        message: `Pembayaran sebesar Rp ${total.toLocaleString("id-ID")} untuk No. Pesanan #${newOrder.id.split('-')[0]} telah didebet dari Saldo Dompet Anda.`,
-        type: 'order',
-        status_badge: 'Berhasil'
-      });
-
-      const pendingNotif = getStatusNotification('pending', newOrder.id, newOrder.order_type);
-      await supabaseAdmin.from('notifications').insert({
-        user_id: newOrder.customer_id,
-        title: pendingNotif.title,
-        message: pendingNotif.message,
+        title: paidNotif.title,
+        message: paidNotif.message,
         type: 'order',
         order_id: newOrder.id,
-        status_badge: pendingNotif.statusBadge
+        status_badge: paidNotif.status_badge
       });
 
       return NextResponse.json({ success: true, order: newOrder });
@@ -350,12 +343,14 @@ export async function POST(req: NextRequest) {
       });
 
       // Notification
+      const paidNotif = getPaidNotification(order, 'Dompetku');
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
-        title: 'Pembayaran Saldo Dompet Berhasil',
-        message: `Pembayaran sebesar Rp ${total.toLocaleString("id-ID")} untuk No. Pesanan #${orderId.substring(0, 8).toUpperCase()} telah berhasil didebet dari Saldo Dompet Anda.`,
+        title: paidNotif.title,
+        message: paidNotif.message,
         type: 'order',
-        status_badge: 'Berhasil'
+        order_id: orderId,
+        status_badge: paidNotif.status_badge
       });
 
       return NextResponse.json({ success: true, message: 'Pembayaran berhasil menggunakan Saldo Dompet' });
@@ -475,13 +470,15 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       if (pStatus === 'paid') {
+        const payMethodName = pMethod === 'cash' ? 'Tunai' : pMethod === 'wallet' ? 'Dompetku' : 'Duitku';
+        const paidNotif = getPaidNotification(order, payMethodName);
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
-          title: 'Pembayaran Berhasil',
-          message: `Pembayaran untuk No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
+          title: paidNotif.title,
+          message: paidNotif.message,
           type: 'order',
           order_id: orderId,
-          status_badge: 'Berhasil'
+          status_badge: paidNotif.status_badge
         });
 
         // Also add status update notification if it changed
@@ -520,11 +517,15 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       if (pStatus === 'paid') {
+        const payMethodName = order.payment_method === 'cash' ? 'Tunai' : order.payment_method === 'wallet' ? 'Dompetku' : 'Duitku';
+        const paidNotif = getPaidNotification(order, payMethodName);
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
-          title: 'Pembayaran Berhasil',
-          message: `Pembayaran untuk No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas.`,
-          type: 'order'
+          title: paidNotif.title,
+          message: paidNotif.message,
+          type: 'order',
+          order_id: orderId,
+          status_badge: paidNotif.status_badge
         });
       }
 
@@ -702,7 +703,18 @@ export async function POST(req: NextRequest) {
 
     // New action: notification for order created
     if (action === 'notify_created') {
-      const { title, message, statusBadge } = getStatusNotification('pending', orderId, order.order_type);
+      let title = 'Pesanan Menunggu Konfirmasi';
+      let message = order.order_type === 'delivery'
+        ? `Pesanan delivery #${orderId.split('-')[0].toUpperCase()} telah dibuat. Menunggu konfirmasi dan verifikasi dari kasir.`
+        : `Pesanan Anda #${orderId.split('-')[0].toUpperCase()} telah dibuat. Menunggu konfirmasi dari kasir.`;
+      let statusBadge = 'Menunggu dikonfirmasi';
+
+      if (order.payment_method === 'non_cash' && order.payment_status === 'unpaid') {
+        title = 'Menunggu Pembayaran';
+        message = `Pesanan Anda #${orderId.split('-')[0].toUpperCase()} telah dibuat. Silakan lakukan pembayaran online Duitku agar pesanan dapat segera dikonfirmasi dan diproses.`;
+        statusBadge = 'Menunggu untuk dibayar';
+      }
+
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
         title,
@@ -711,6 +723,40 @@ export async function POST(req: NextRequest) {
         order_id: orderId,
         status_badge: statusBadge
       });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'notify_duitku_closed') {
+      const shortId = orderId.split('-')[0].toUpperCase();
+      
+      // Check for a recent notification to avoid duplicate spamming
+      const { data: recentNotifs } = await supabaseAdmin
+        .from('notifications')
+        .select('id, created_at')
+        .eq('user_id', order.customer_id)
+        .eq('order_id', orderId)
+        .eq('status_badge', 'Menunggu untuk dibayar ulang')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      let skipInsert = false;
+      if (recentNotifs && recentNotifs.length > 0) {
+        const timeDiff = new Date().getTime() - new Date(recentNotifs[0].created_at).getTime();
+        if (timeDiff < 10000) {
+          skipInsert = true;
+        }
+      }
+
+      if (!skipInsert) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: order.customer_id,
+          title: 'Pembayaran Belum Selesai',
+          message: `Anda keluar dari portal pembayaran online Duitku sebelum menyelesaikan transaksi untuk No. Pesanan #${shortId}. Silakan lakukan pembayaran ulang.`,
+          type: 'order',
+          order_id: orderId,
+          status_badge: 'Menunggu untuk dibayar ulang'
+        });
+      }
       return NextResponse.json({ success: true });
     }
 

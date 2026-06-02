@@ -1407,9 +1407,6 @@ export default function CartPage() {
                             className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                           />
                         )}
-                        {postalCodes.length > 0 && (
-                          <span className="text-[8px] text-primary font-medium mt-1 block">Kode pos otomatis terisi setelah Kelurahan dipilih.</span>
-                        )}
                       </div>
                     </div>
                   </motion.div>

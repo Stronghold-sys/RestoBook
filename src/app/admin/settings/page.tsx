@@ -698,15 +698,15 @@ export default function AdminSettingsPage() {
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Jam", value: expiryHoursInput, onChange: (val: string) => { setExpiryHoursInput(val); const h = val === "" ? 0 : Number(val); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
-                { label: "Menit", value: expiryMinutesInput, onChange: (val: string) => { setExpiryMinutesInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = val === "" ? 0 : Number(val); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
-                { label: "Detik", value: expirySecondsInput, onChange: (val: string) => { setExpirySecondsInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = val === "" ? 0 : Number(val); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expiryHours", label: "Jam", value: expiryHoursInput, onChange: (val: string) => { setExpiryHoursInput(val); const h = val === "" ? 0 : Number(val); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expiryMinutes", label: "Menit", value: expiryMinutesInput, onChange: (val: string) => { setExpiryMinutesInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = val === "" ? 0 : Number(val); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expirySeconds", label: "Detik", value: expirySecondsInput, onChange: (val: string) => { setExpirySecondsInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = val === "" ? 0 : Number(val); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
               ].map(field => (
-                <div key={field.label}>
-                  <label className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">{field.label}</label>
+                <div key={field.id}>
+                  <label htmlFor={field.id} className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">{field.label}</label>
                   <div className="relative">
                     <Clock className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted" />
-                    <input type="number" min="0" max={field.label !== "Jam" ? "59" : undefined}
+                    <input id={field.id} type="number" min="0" max={field.label !== "Jam" ? "59" : undefined}
                       placeholder="0" value={field.value} onChange={e => field.onChange(e.target.value)}
                       className="w-full pl-8 pr-2 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-text-light dark:text-text-dark font-medium" />
                   </div>
@@ -752,8 +752,8 @@ export default function AdminSettingsPage() {
               <AnimatePresence>
                 {settings.auto_deduct_late_salary && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden pt-3 border-t border-amber-200 dark:border-amber-800 mt-1">
-                    <label className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-500 block mb-1.5">Total Menit Kerja Per Hari</label>
-                    <input type="number" value={settings.minutes_per_working_day}
+                    <label htmlFor="minutesPerWorkingDay" className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-500 block mb-1.5">Total Menit Kerja Per Hari</label>
+                    <input id="minutesPerWorkingDay" type="number" value={settings.minutes_per_working_day}
                       onChange={e => setSettings({ ...settings, minutes_per_working_day: Number(e.target.value) })}
                       className="w-full bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-sm font-bold text-amber-900 dark:text-amber-200 focus:ring-2 focus:ring-amber-500 outline-none" />
                     <p className="text-[9px] text-amber-600 mt-1 italic font-medium">Standar: 8 Jam Kerja = 480 Menit</p>

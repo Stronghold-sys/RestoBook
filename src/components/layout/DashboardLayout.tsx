@@ -79,7 +79,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   useEffect(() => {
     // Inisialisasi Audio Notifikasi
     // Inisialisasi Audio Notifikasi (Announcement Style)
-    audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+    audioRef.current = new Audio("/notification.mp3");
     audioRef.current.volume = 1.0;
     audioRef.current.loop = false;
     
@@ -144,6 +144,28 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(maintChannel);
+    };
+  }, []);
+
+  // Efek untuk mengaktifkan (unlock) audio pada interaksi pertama pengguna (mengikuti kebijakan browser)
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioRef.current) {
+        audioRef.current.play()
+          .then(() => {
+            audioRef.current?.pause();
+            if (audioRef.current) audioRef.current.currentTime = 0;
+            window.removeEventListener("click", unlockAudio);
+            window.removeEventListener("touchstart", unlockAudio);
+          })
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("click", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
     };
   }, []);
 
@@ -245,7 +267,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   const playSingleNotifSound = () => {
     try {
-      const notifAudio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+      const notifAudio = new Audio("/notification.mp3");
       notifAudio.volume = 0.7;
       notifAudio.play().catch(() => {
         playSingleFallbackBeep();

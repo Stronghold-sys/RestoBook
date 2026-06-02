@@ -152,6 +152,68 @@ export default function CustomerRewardsPage() {
     return { exceeded, count, limit, period, message, limitValue, periodLabel };
   };
 
+  const getQuotaResetCountdown = (reward: any) => {
+    if (!reward.redeem_limit || reward.redeem_limit <= 0) return null;
+    const limit = reward.redeem_limit;
+    const limitValue = reward.redeem_limit_value || 1;
+    const period = reward.redeem_limit_period || "all";
+    if (period === "all") return null;
+
+    const rewardRedemptions = redemptions.filter(
+      (r) => r.reward_id === reward.id && r.status !== "cancelled"
+    );
+
+    const now = new Date();
+    let activeRedemptions = rewardRedemptions;
+
+    let offsetMs = 0;
+    if (period === "minute") offsetMs = limitValue * 60 * 1000;
+    else if (period === "hour") offsetMs = limitValue * 60 * 60 * 1000;
+    else if (period === "day") offsetMs = limitValue * 24 * 60 * 60 * 1000;
+    else if (period === "week") offsetMs = limitValue * 7 * 24 * 60 * 60 * 1000;
+    else if (period === "month") {
+      const boundary = new Date(now);
+      boundary.setMonth(boundary.getMonth() - limitValue);
+      activeRedemptions = rewardRedemptions.filter((r) => new Date(r.created_at) >= boundary);
+    }
+
+    if (period !== "month") {
+      const boundaryTime = now.getTime() - offsetMs;
+      activeRedemptions = rewardRedemptions.filter((r) => new Date(r.created_at).getTime() >= boundaryTime);
+    }
+
+    if (activeRedemptions.length < limit) return null;
+
+    activeRedemptions.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    const targetRedemption = activeRedemptions[activeRedemptions.length - limit];
+    if (!targetRedemption) return null;
+
+    let resetTime = 0;
+    if (period === "month") {
+      const dateObj = new Date(targetRedemption.created_at);
+      dateObj.setMonth(dateObj.getMonth() + limitValue);
+      resetTime = dateObj.getTime();
+    } else {
+      resetTime = new Date(targetRedemption.created_at).getTime() + offsetMs;
+    }
+
+    const diff = resetTime - now.getTime();
+    if (diff <= 0) return null;
+
+    const seconds = Math.floor((diff / 1000) % 60);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    const pad = (num: number) => String(num).padStart(2, "0");
+
+    if (days > 0) {
+      return `${days} hari ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  };
+
   const handleRedeemClick = (reward: any) => {
     if (profile.is_redeem_blocked) {
       toast.error("Akses penukaran poin Anda sedang diblokir oleh admin.");
@@ -529,8 +591,13 @@ export default function CustomerRewardsPage() {
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex flex-col gap-0.5">
                               {reward.expires_at && (
-                                <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
-                                  Dapat ditukar s.d: {format(new Date(reward.expires_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
+                                <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 flex flex-wrap items-center gap-1">
+                                  <span>Dapat ditukar s.d: {format(new Date(reward.expires_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB</span>
+                                  {getCountdownString(reward.expires_at) && getCountdownString(reward.expires_at) !== "EXPIRED" && (
+                                    <span className="text-rose-500 font-black animate-pulse">
+                                      (Selesai dalam: {getCountdownString(reward.expires_at)})
+                                    </span>
+                                  )}
                                 </span>
                               )}
                               {reward.redeem_limit !== null && reward.redeem_limit > 0 && (
@@ -575,8 +642,14 @@ export default function CustomerRewardsPage() {
                           </div>
 
                           {limitCheck.exceeded && limitCheck.message && (
-                            <div className="text-[10px] font-extrabold text-rose-650 dark:text-rose-400 animate-pulse bg-rose-50/50 dark:bg-rose-950/10 border border-rose-200/20 rounded-xl p-2.5 leading-relaxed text-left">
-                              {limitCheck.message}
+                            <div className="text-[10px] font-extrabold text-rose-650 dark:text-rose-400 animate-pulse bg-rose-50/50 dark:bg-rose-950/10 border border-rose-200/20 rounded-xl p-2.5 leading-relaxed text-left space-y-1">
+                              <div>{limitCheck.message}</div>
+                              {getQuotaResetCountdown(reward) && (
+                                <div className="text-primary font-black mt-1 flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Dapat ditukar kembali dalam: {getQuotaResetCountdown(reward)}</span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

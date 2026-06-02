@@ -317,7 +317,7 @@ async function executeTool(name: string, args: any) {
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
               <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${atasNama}! </h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                Reservasi meja Anda di <strong>RestoBook</strong> telah **dibatalkan**.
+                Reservasi meja Anda di <strong>RestoBook</strong> telah <strong>dibatalkan</strong>.
               </p>
               <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0;">
                 <h3 style="color: #991b1b; margin: 0 0 8px 0; font-size: 14px; font-weight: 700; text-transform: uppercase;">Detail Reservasi Dibatalkan</h3>
@@ -453,7 +453,7 @@ async function executeTool(name: string, args: any) {
               <hr style="border: none; border-top: 1px solid #f3f4f6; margin-bottom: 24px;" />
               <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">Halo, ${oldAtasNama}! </h2>
               <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
-                Reservasi meja Anda di <strong>RestoBook</strong> telah berhasil **diperbarui**.
+                Reservasi meja Anda di <strong>RestoBook</strong> telah berhasil <strong>diperbarui</strong>.
               </p>
               <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; margin: 24px 0;">
                 <h3 style="color: #374151; margin: 0 0 12px 0; font-size: 13px; font-weight: 700; text-transform: uppercase;">Detail Perubahan Reservasi</h3>

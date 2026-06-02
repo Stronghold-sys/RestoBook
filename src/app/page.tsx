@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw } from "lucide-react";
+import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -68,6 +68,8 @@ export default function LandingPage() {
   const [temporaryClosedReopenTime, setTemporaryClosedReopenTime] = useState<string>("");
   const [is24Hours, setIs24Hours] = useState<boolean>(false);
   const [customerWarningMinutes, setCustomerWarningMinutes] = useState<number>(15);
+  const [isMaintenance, setIsMaintenance] = useState<boolean>(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>("Restoran sedang dalam perbaikan sistem. Layanan transaksi belum tersedia sementara waktu. Silakan kembali nanti.");
 
   // DYNAMIC CONTACT & ADDRESS IDENTITY
   const [resName, setResName] = useState<string>("RestoBook");
@@ -110,6 +112,8 @@ export default function LandingPage() {
       setTemporaryClosedReopenTime(data.temporary_closed_reopen_time || "12:00");
       setIs24Hours(!!data.is_24_hours);
       setCustomerWarningMinutes(data.customer_warning_minutes !== null && data.customer_warning_minutes !== undefined ? Number(data.customer_warning_minutes) : 15);
+      setIsMaintenance(!!data.is_maintenance_active);
+      if (data.maintenance_message) setMaintenanceMessage(data.maintenance_message);
       
       // Hydrate identity fields
       if (data.name) setResName(data.name);
@@ -226,6 +230,8 @@ export default function LandingPage() {
           setTemporaryClosedReopenTime(payload.new.temporary_closed_reopen_time || "12:00");
           setIs24Hours(!!payload.new.is_24_hours);
           setCustomerWarningMinutes(payload.new.customer_warning_minutes !== null && payload.new.customer_warning_minutes !== undefined ? Number(payload.new.customer_warning_minutes) : 15);
+          setIsMaintenance(!!payload.new.is_maintenance_active);
+          if (payload.new.maintenance_message) setMaintenanceMessage(payload.new.maintenance_message);
           
           if (payload.new.name) setResName(payload.new.name);
           if (payload.new.address) setResAddr(payload.new.address);
@@ -367,47 +373,84 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Operational Hours Banner */}
-      <div className={`fixed safe-top-banner w-full z-40 py-2.5 px-4 text-center text-sm font-semibold transition-all duration-300 border-b shadow-sm backdrop-blur-md ${
-        isClosingSoon
-          ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20"
-          : isOpen 
-            ? "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
-            : "bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20"
-      }`}>
-        <div className="flex items-center justify-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${isClosingSoon ? "bg-amber-500 animate-pulse" : isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-          <span>
-            {isClosingSoon 
-              ? `Pemberitahuan: Resto segera tutup dalam ${minsUntilClose} menit! Silakan segera selesaikan pemesanan Anda.`
-              : statusMessage
-            }
-          </span>
+      {/* Operational Hours Banner - Maintenance overrides normal status */}
+      {isMaintenance ? (
+        <div className="fixed safe-top-banner w-full z-40 py-2.5 px-4 text-center text-sm font-bold transition-all duration-300 border-b shadow-sm backdrop-blur-md bg-orange-500/15 dark:bg-orange-500/25 text-orange-700 dark:text-orange-400 border-orange-500/25">
+          <div className="flex items-center justify-center gap-2">
+            <ShieldAlert className="h-4 w-4 animate-pulse flex-shrink-0" />
+            <span>Restoran Sementara <strong>TUTUP</strong> — Sistem sedang dalam maintenance. Kami akan segera kembali!</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className={`fixed safe-top-banner w-full z-40 py-2.5 px-4 text-center text-sm font-semibold transition-all duration-300 border-b shadow-sm backdrop-blur-md ${
+          isClosingSoon
+            ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20"
+            : isOpen 
+              ? "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+              : "bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20"
+        }`}>
+          <div className="flex items-center justify-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${isClosingSoon ? "bg-amber-500 animate-pulse" : isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+            <span>
+              {isClosingSoon 
+                ? `Pemberitahuan: Resto segera tutup dalam ${minsUntilClose} menit! Silakan segera selesaikan pemesanan Anda.`
+                : statusMessage
+              }
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="relative safe-top-hero pb-20 lg:pt-48 lg:pb-28 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring", bounce: 0.4 }} className="text-center lg:text-left">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
-              <Star className="w-4 h-4 fill-primary" /> Restoran Pilihan No. 1
-            </motion.div>
+            {isMaintenance ? (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 font-bold text-sm mb-6 border border-orange-500/25">
+                <ShieldAlert className="w-4 h-4 animate-pulse" /> Sedang Maintenance — Sementara Tutup
+              </motion.div>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
+                <Star className="w-4 h-4 fill-primary" /> Restoran Pilihan No. 1
+              </motion.div>
+            )}
             <h1 className="text-5xl lg:text-6xl font-extrabold text-text-light dark:text-text-dark leading-tight mb-6">
-              Nikmati Hidangan Spesial, <span className="text-primary">Tanpa Antre.</span>
+              {isMaintenance ? (
+                <>Kami Sedang <span className="text-orange-500">Maintenance.</span></>
+              ) : (
+                <>Nikmati Hidangan Spesial, <span className="text-primary">Tanpa Antre.</span></>
+              )}
             </h1>
-            <p className="text-lg text-muted mb-8 max-w-xl mx-auto lg:mx-0">Pesan makanan favorit Anda atau reservasi meja secara online dengan mudah dan cepat.</p>
+            <p className="text-lg text-muted mb-8 max-w-xl mx-auto lg:mx-0">
+              {isMaintenance
+                ? maintenanceMessage
+                : "Pesan makanan favorit Anda atau reservasi meja secara online dengan mudah dan cepat."
+              }
+            </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href={user ? `/${user.role === 'customer' ? 'customer/menu' : user.role === 'kitchen' ? 'kitchen/queue' : user.role === 'cashier' ? 'cashier/transactions' : 'admin/dashboard'}` : "/login"}>
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2">
-                  {user ? "Masuk Dashboard" : "Pesan Sekarang"} <ArrowRight className="w-5 h-5" />
-                </motion.button>
-              </Link>
-              <a href="#menu">
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-white dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark px-8 py-4 rounded-full font-bold shadow-sm hover:border-primary transition-colors flex items-center justify-center">
-                  Lihat Menu
-                </motion.button>
-              </a>
+              {isMaintenance ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-3 px-6 py-4 bg-orange-500/10 border border-orange-500/25 rounded-full text-orange-700 dark:text-orange-400 font-bold text-sm"
+                >
+                  <ShieldAlert className="w-5 h-5 animate-pulse" />
+                  Transaksi tidak tersedia saat ini
+                </motion.div>
+              ) : (
+                <>
+                  <Link href={user ? `/${user.role === 'customer' ? 'customer/menu' : user.role === 'kitchen' ? 'kitchen/queue' : user.role === 'cashier' ? 'cashier/transactions' : 'admin/dashboard'}` : "/login"}>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2">
+                      {user ? "Masuk Dashboard" : "Pesan Sekarang"} <ArrowRight className="w-5 h-5" />
+                    </motion.button>
+                  </Link>
+                  <a href="#menu">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto bg-white dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark px-8 py-4 rounded-full font-bold shadow-sm hover:border-primary transition-colors flex items-center justify-center">
+                      Lihat Menu
+                    </motion.button>
+                  </a>
+                </>
+              )}
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2, type: "spring" }} className="relative h-[400px] lg:h-[550px] rounded-[2rem] overflow-hidden shadow-2xl">

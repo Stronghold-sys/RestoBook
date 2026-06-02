@@ -85,6 +85,27 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetchSettings();
     fetchMaintenanceLogs();
+
+    // Real-time listener for settings & logs updates
+    const settingsChannel = supabase
+      .channel('admin-settings-sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_settings' }, (payload: any) => {
+        if (payload.new) {
+          setSettings(prev => ({
+            ...prev,
+            is_maintenance_active: !!payload.new.is_maintenance_active,
+            maintenance_start_time: payload.new.maintenance_start_time ? new Date(payload.new.maintenance_start_time).toISOString().substring(0, 16) : "",
+            maintenance_end_time: payload.new.maintenance_end_time ? new Date(payload.new.maintenance_end_time).toISOString().substring(0, 16) : "",
+            maintenance_message: payload.new.maintenance_message || "",
+            maintenance_estimated_hours: payload.new.maintenance_estimated_hours || "2 Jam",
+          }));
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'maintenance_logs' }, () => {
+        fetchMaintenanceLogs();
+      })
+      .subscribe();
+
     // Load merchant settings from localStorage
     const savedMerchant = localStorage.getItem("restaurant_merchant_settings");
     if (savedMerchant) {
@@ -94,6 +115,10 @@ export default function AdminSettingsPage() {
         console.error(e);
       }
     }
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+    };
   }, []);
 
   const fetchSettings = async () => {

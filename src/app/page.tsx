@@ -296,10 +296,13 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-card-dark/80 backdrop-blur-md border-b border-border-light dark:border-border-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2 shrink-0">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-all focus:outline-none"
+            >
               <div className="p-2 bg-primary/10 rounded-xl"><Utensils className="w-6 h-6 text-primary" /></div>
               <span className="text-xl font-bold text-text-light dark:text-text-dark whitespace-nowrap">Resto<span className="text-primary">Book</span></span>
-            </div>
+            </button>
             <div className="flex gap-4 items-center">
               {user ? (
                 <div className="relative">

@@ -20,7 +20,17 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, role: initialRole }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [role, setRole] = useState<string | null>(initialRole || null);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsSidebarOpen(false);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
+  };
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
@@ -329,12 +339,15 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         {/* Desktop Sidebar */}
         <aside className="fixed left-0 top-0 hidden h-full w-72 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark lg:block z-40">
           <div className="flex h-full flex-col p-6">
-            <div className="mb-10 flex items-center gap-3 px-2">
+            <button
+              onClick={handleLogoClick}
+              className="mb-10 flex items-center gap-3 px-2 text-left hover:opacity-80 transition-all focus:outline-none w-fit"
+            >
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                 <UtensilsCrossed className="text-white h-6 w-6" />
               </div>
               <span className="text-2xl font-black tracking-tight text-primary">RestoBook</span>
-            </div>
+            </button>
 
             <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
               {getMenuLinks().map((link) => (
@@ -391,7 +404,12 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               >
                 <MenuIcon className="h-6 w-6" />
               </button>
-              <span className="text-xl font-black text-primary">RestoBook</span>
+              <button
+                onClick={handleLogoClick}
+                className="text-xl font-black text-primary hover:opacity-80 transition-all focus:outline-none"
+              >
+                RestoBook
+              </button>
             </div>
 
             <div className="hidden lg:block">
@@ -443,12 +461,15 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 className="fixed left-0 top-0 z-50 h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden"
               >
                 <div className="mb-10 flex items-center justify-between px-2">
-                  <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleLogoClick}
+                    className="flex items-center gap-3 text-left hover:opacity-80 transition-all focus:outline-none"
+                  >
                     <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
                       <UtensilsCrossed className="text-white h-6 w-6" />
                     </div>
                     <span className="text-2xl font-black tracking-tight text-primary">RestoBook</span>
-                  </div>
+                  </button>
                   <button 
                     onClick={() => setIsSidebarOpen(false)} 
                     aria-label="Tutup Menu"
@@ -500,6 +521,98 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           )}
         </AnimatePresence>
 
+        {/* Full Screen Loading Transition & Landing Page Skeleton */}
+        <AnimatePresence>
+          {isTransitioning && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[99999] bg-background-light dark:bg-background-dark overflow-y-auto"
+            >
+              {/* Navbar Skeleton */}
+              <div className="h-16 border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white dark:bg-card-dark">
+                <div className="flex items-center gap-2">
+                  <div className="skeleton w-8 h-8 rounded-xl" />
+                  <div className="skeleton w-24 h-6" />
+                </div>
+                <div className="skeleton w-28 h-8 rounded-full" />
+              </div>
+
+              {/* Banner Skeleton */}
+              <div className="w-full py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-center">
+                <div className="skeleton w-64 h-4" />
+              </div>
+
+              {/* Hero Section Skeleton */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                  <div className="skeleton w-40 h-6 rounded-full" />
+                  <div className="skeleton w-full h-12 rounded-xl" />
+                  <div className="skeleton w-5/6 h-12 rounded-xl" />
+                  <div className="skeleton w-2/3 h-6 mt-4" />
+                  <div className="flex gap-4 pt-2">
+                    <div className="skeleton w-36 h-12 rounded-full" />
+                    <div className="skeleton w-28 h-12 rounded-full" />
+                  </div>
+                </div>
+                <div className="skeleton w-full h-[350px] lg:h-[480px] rounded-[2rem] relative overflow-hidden bg-card-light dark:bg-card-dark">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                </div>
+              </div>
+
+              {/* Promo Banners Skeleton */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="skeleton w-full h-56 rounded-2xl" />
+                <div className="skeleton w-full h-56 rounded-2xl" />
+              </div>
+
+              {/* Categories Skeleton */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+                <div className="flex flex-col items-center mb-8">
+                  <div className="skeleton w-48 h-8" />
+                  <div className="skeleton w-64 h-4 mt-2" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="skeleton w-full h-32 rounded-2xl" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Menu Grid Skeleton */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <div className="skeleton w-48 h-8" />
+                    <div className="skeleton w-32 h-4 mt-2" />
+                  </div>
+                  <div className="skeleton w-24 h-6" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-card-light dark:bg-card-dark p-5 rounded-2xl border border-border-light dark:border-border-dark flex flex-col gap-4">
+                      <div className="skeleton w-full h-48 rounded-xl" />
+                      <div className="skeleton w-3/4 h-6" />
+                      <div className="skeleton w-full h-4" />
+                      <div className="skeleton w-5/6 h-4" />
+                      <div className="flex justify-between items-center mt-auto pt-3 border-t border-border-light/50">
+                        <div className="skeleton w-24 h-6" />
+                        <div className="skeleton w-16 h-8 rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Floating Loader */}
+              <div className="fixed bottom-8 right-8 z-[100000] bg-primary text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-3 font-bold text-sm">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Menuju Halaman Utama...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

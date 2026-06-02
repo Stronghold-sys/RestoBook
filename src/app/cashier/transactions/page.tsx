@@ -305,14 +305,45 @@ export default function CashierTransactionsPage() {
         </div>
       </div>
 
-      {/* Filter Waktu & Stats */}
-      <div className="flex flex-col xl:flex-row xl:items-start gap-6">
-        <div className="xl:w-1/4 bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-text-light dark:text-text-dark">Filter Waktu</h3>
+      {/* Kartu Statistik - Full Width */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-primary to-primary-hover rounded-2xl p-5 text-white shadow-lg shadow-primary/20 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="flex items-center gap-2 mb-2 relative z-10">
+            <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+            <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Pendapatan (Bulan Ini)</span>
           </div>
-          <div className="flex flex-col gap-2">
+          <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {totalRevenue.toLocaleString("id-ID")}</p>
+        </motion.div>
+
+        <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-500/20 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="flex items-center gap-2 mb-2 relative z-10">
+            <Banknote className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+            <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Pendapatan Hari Ini</span>
+          </div>
+          <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {todayRevenue.toLocaleString("id-ID")}</p>
+        </motion.div>
+
+        <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="flex items-center gap-2 mb-2 relative z-10">
+            <Receipt className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+            <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Transaksi</span>
+          </div>
+          <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">{orders.length} <span className="text-sm font-medium opacity-80">Pesanan</span></p>
+        </motion.div>
+      </div>
+
+      {/* Tabel Riwayat & Filter */}
+      <div className="bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
+        {/* Horizontal Filter Bar */}
+        <div className="p-5 border-b border-border-light dark:border-border-dark bg-gray-50/40 dark:bg-gray-800/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-muted">
+            <Filter className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-wider">Saring Periode:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'today', label: 'Hari Ini' },
               { id: 'week', label: '7 Hari Terakhir' },
@@ -323,10 +354,11 @@ export default function CashierTransactionsPage() {
               <button
                 key={filter.id}
                 onClick={() => setDateFilter(filter.id)}
-                className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${
+                title={`Saring data: ${filter.label}`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
                   dateFilter === filter.id 
-                    ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                    : 'bg-gray-50 text-muted hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800'
+                    ? 'bg-primary text-white border-primary shadow-md shadow-primary/20' 
+                    : 'bg-white dark:bg-gray-800 text-muted hover:bg-gray-100 dark:hover:bg-gray-700 border-border-light dark:border-border-dark'
                 }`}
               >
                 {filter.label}
@@ -334,38 +366,6 @@ export default function CashierTransactionsPage() {
             ))}
           </div>
         </div>
-
-        <div className="xl:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-5 h-fit">
-          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-primary to-primary-hover rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-primary/20 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-2 mb-2 relative z-10">
-              <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
-              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Pendapatan (Bulan Ini)</span>
-            </div>
-            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {totalRevenue.toLocaleString("id-ID")}</p>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-emerald-500/20 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-2 mb-2 relative z-10">
-              <Banknote className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
-              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Pendapatan Hari Ini</span>
-            </div>
-            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {todayRevenue.toLocaleString("id-ID")}</p>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-2 mb-2 relative z-10">
-              <Receipt className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
-              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Transaksi</span>
-            </div>
-            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">{orders.length} <span className="text-sm font-medium opacity-80">Pesanan</span></p>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-border-light dark:border-border-dark">

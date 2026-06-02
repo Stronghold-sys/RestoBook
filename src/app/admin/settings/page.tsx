@@ -286,9 +286,26 @@ export default function AdminSettingsPage() {
   );
 
   // Toggle component helper
-  const Toggle = ({ checked, onChange, colorClass = "peer-checked:bg-primary" }: { checked: boolean; onChange: (v: boolean) => void; colorClass?: string }) => (
+  const Toggle = ({ 
+    checked, 
+    onChange, 
+    colorClass = "peer-checked:bg-primary", 
+    title = "Aktifkan/Nonaktifkan" 
+  }: { 
+    checked: boolean; 
+    onChange: (v: boolean) => void; 
+    colorClass?: string; 
+    title?: string;
+  }) => (
     <label className="relative inline-flex items-center cursor-pointer shrink-0">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="sr-only peer" />
+      <input 
+        type="checkbox" 
+        checked={checked} 
+        onChange={e => onChange(e.target.checked)} 
+        className="sr-only peer" 
+        title={title}
+        aria-label={title}
+      />
       <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${colorClass}`} />
     </label>
   );
@@ -430,6 +447,7 @@ export default function AdminSettingsPage() {
                   checked={settings.is_maintenance_active}
                   onChange={v => setSettings({ ...settings, is_maintenance_active: v })}
                   colorClass="peer-checked:bg-red-500"
+                  title="Status Mode Maintenance"
                 />
               </div>
             </div>
@@ -562,6 +580,7 @@ export default function AdminSettingsPage() {
                   checked={settings.is_auto_close_shift_enabled}
                   onChange={v => setSettings({ ...settings, is_auto_close_shift_enabled: v })}
                   colorClass="peer-checked:bg-blue-600"
+                  title="Tutup Shift Otomatis"
                 />
               </div>
               <AnimatePresence>
@@ -599,7 +618,7 @@ export default function AdminSettingsPage() {
                 <p className="font-bold text-sm text-text-light dark:text-text-dark">Buka 24 Jam</p>
                 <p className="text-[11px] text-muted">Abaikan jam operasional, toko selalu buka</p>
               </div>
-              <Toggle checked={settings.is_24_hours || false} onChange={v => setSettings({ ...settings, is_24_hours: v })} />
+              <Toggle checked={settings.is_24_hours || false} onChange={v => setSettings({ ...settings, is_24_hours: v })} title="Buka 24 Jam" />
             </div>
 
             {/* Tutup sementara */}
@@ -609,7 +628,7 @@ export default function AdminSettingsPage() {
                   <p className="font-bold text-sm text-text-light dark:text-text-dark">Tutup Sementara Hari Ini</p>
                   <p className="text-[11px] text-muted">Override jam normal untuk tutup sementara</p>
                 </div>
-                <Toggle checked={settings.is_temporary_closed || false} onChange={v => setSettings({ ...settings, is_temporary_closed: v })} />
+                <Toggle checked={settings.is_temporary_closed || false} onChange={v => setSettings({ ...settings, is_temporary_closed: v })} title="Tutup Sementara Hari Ini" />
               </div>
               <AnimatePresence>
                 {settings.is_temporary_closed && (
@@ -633,7 +652,7 @@ export default function AdminSettingsPage() {
                   <p className="font-bold text-sm text-text-light dark:text-text-dark">Libur / Tutup Hari Ini</p>
                   <p className="text-[11px] text-muted">Tandai hari libur atau tutup seharian</p>
                 </div>
-                <Toggle checked={settings.is_holiday || false} onChange={v => setSettings({ ...settings, is_holiday: v })} />
+                <Toggle checked={settings.is_holiday || false} onChange={v => setSettings({ ...settings, is_holiday: v })} title="Libur / Tutup Hari Ini" />
               </div>
               <AnimatePresence>
                 {settings.is_holiday && (
@@ -728,7 +747,7 @@ export default function AdminSettingsPage() {
                   <p className="font-bold text-sm text-amber-800 dark:text-amber-400 flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> Potong Gaji Otomatis</p>
                   <p className="text-[11px] text-amber-700/70 dark:text-amber-500/70">Kalkulasi pemotongan gaji berdasarkan menit terlambat</p>
                 </div>
-                <Toggle checked={settings.auto_deduct_late_salary} onChange={v => setSettings({ ...settings, auto_deduct_late_salary: v })} colorClass="peer-checked:bg-amber-500" />
+                <Toggle checked={settings.auto_deduct_late_salary} onChange={v => setSettings({ ...settings, auto_deduct_late_salary: v })} colorClass="peer-checked:bg-amber-500" title="Potong Gaji Otomatis" />
               </div>
               <AnimatePresence>
                 {settings.auto_deduct_late_salary && (

@@ -876,11 +876,7 @@ export default function OrderTrackingPage() {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
                     <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
-                      {order.order_type === "delivery" ? (
-                        "Silakan lakukan pembayaran secara tunai kepada kurir saat pesanan sudah tiba di alamat pengiriman. Status pesanan akan otomatis terupdate setelah dikonfirmasi oleh kurir/staf."
-                      ) : (
-                        "Silakan lakukan pembayaran secara tunai di kasir utama. Status pesanan akan otomatis terupdate setelah dikonfirmasi oleh staf."
-                      )}
+                      Silakan lakukan pembayaran secara tunai kepada kurir saat pesanan sudah tiba di alamat pengiriman. Status pesanan akan otomatis terupdate setelah dikonfirmasi oleh kurir/staf.
                     </p>
                   </motion.div>
                 ) : (

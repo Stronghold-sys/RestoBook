@@ -1,0 +1,3909 @@
+{
+  "regencies": [
+    {
+      "id": "5101",
+      "name": "KABUPATEN JEMBRANA"
+    },
+    {
+      "id": "5102",
+      "name": "KABUPATEN TABANAN"
+    },
+    {
+      "id": "5103",
+      "name": "KABUPATEN BADUNG"
+    },
+    {
+      "id": "5104",
+      "name": "KABUPATEN GIANYAR"
+    },
+    {
+      "id": "5105",
+      "name": "KABUPATEN KLUNGKUNG"
+    },
+    {
+      "id": "5106",
+      "name": "KABUPATEN BANGLI"
+    },
+    {
+      "id": "5107",
+      "name": "KABUPATEN KARANGASEM"
+    },
+    {
+      "id": "5108",
+      "name": "KABUPATEN BULELENG"
+    },
+    {
+      "id": "5171",
+      "name": "KOTA DENPASAR"
+    }
+  ],
+  "districts": [
+    {
+      "id": "510101",
+      "regency_id": "5101",
+      "name": "NEGARA"
+    },
+    {
+      "id": "510102",
+      "regency_id": "5101",
+      "name": "MENDOYO"
+    },
+    {
+      "id": "510103",
+      "regency_id": "5101",
+      "name": "PEKUTATAN"
+    },
+    {
+      "id": "510104",
+      "regency_id": "5101",
+      "name": "MELAYA"
+    },
+    {
+      "id": "510105",
+      "regency_id": "5101",
+      "name": "JEMBRANA"
+    },
+    {
+      "id": "510201",
+      "regency_id": "5102",
+      "name": "SELEMADEG"
+    },
+    {
+      "id": "510202",
+      "regency_id": "5102",
+      "name": "SELEMADEG TIMUR"
+    },
+    {
+      "id": "510203",
+      "regency_id": "5102",
+      "name": "SELEMADEG BARAT"
+    },
+    {
+      "id": "510204",
+      "regency_id": "5102",
+      "name": "KERAMBITAN"
+    },
+    {
+      "id": "510205",
+      "regency_id": "5102",
+      "name": "TABANAN"
+    },
+    {
+      "id": "510206",
+      "regency_id": "5102",
+      "name": "KEDIRI"
+    },
+    {
+      "id": "510207",
+      "regency_id": "5102",
+      "name": "MARGA"
+    },
+    {
+      "id": "510208",
+      "regency_id": "5102",
+      "name": "PENEBEL"
+    },
+    {
+      "id": "510209",
+      "regency_id": "5102",
+      "name": "BATURITI"
+    },
+    {
+      "id": "510210",
+      "regency_id": "5102",
+      "name": "PUPUAN"
+    },
+    {
+      "id": "510301",
+      "regency_id": "5103",
+      "name": "KUTA"
+    },
+    {
+      "id": "510302",
+      "regency_id": "5103",
+      "name": "MENGWI"
+    },
+    {
+      "id": "510303",
+      "regency_id": "5103",
+      "name": "ABIANSEMAL"
+    },
+    {
+      "id": "510304",
+      "regency_id": "5103",
+      "name": "PETANG"
+    },
+    {
+      "id": "510305",
+      "regency_id": "5103",
+      "name": "KUTA SELATAN"
+    },
+    {
+      "id": "510306",
+      "regency_id": "5103",
+      "name": "KUTA UTARA"
+    },
+    {
+      "id": "510401",
+      "regency_id": "5104",
+      "name": "SUKAWATI"
+    },
+    {
+      "id": "510402",
+      "regency_id": "5104",
+      "name": "BLAHBATUH"
+    },
+    {
+      "id": "510403",
+      "regency_id": "5104",
+      "name": "GIANYAR"
+    },
+    {
+      "id": "510404",
+      "regency_id": "5104",
+      "name": "TAMPAKSIRING"
+    },
+    {
+      "id": "510405",
+      "regency_id": "5104",
+      "name": "UBUD"
+    },
+    {
+      "id": "510406",
+      "regency_id": "5104",
+      "name": "TEGALLALANG"
+    },
+    {
+      "id": "510407",
+      "regency_id": "5104",
+      "name": "PAYANGAN"
+    },
+    {
+      "id": "510501",
+      "regency_id": "5105",
+      "name": "NUSA PENIDA"
+    },
+    {
+      "id": "510502",
+      "regency_id": "5105",
+      "name": "BANJARANGKAN"
+    },
+    {
+      "id": "510503",
+      "regency_id": "5105",
+      "name": "KLUNGKUNG"
+    },
+    {
+      "id": "510504",
+      "regency_id": "5105",
+      "name": "DAWAN"
+    },
+    {
+      "id": "510601",
+      "regency_id": "5106",
+      "name": "SUSUT"
+    },
+    {
+      "id": "510602",
+      "regency_id": "5106",
+      "name": "BANGLI"
+    },
+    {
+      "id": "510603",
+      "regency_id": "5106",
+      "name": "TEMBUKU"
+    },
+    {
+      "id": "510604",
+      "regency_id": "5106",
+      "name": "KINTAMANI"
+    },
+    {
+      "id": "510701",
+      "regency_id": "5107",
+      "name": "RENDANG"
+    },
+    {
+      "id": "510702",
+      "regency_id": "5107",
+      "name": "SIDEMEN"
+    },
+    {
+      "id": "510703",
+      "regency_id": "5107",
+      "name": "MANGGIS"
+    },
+    {
+      "id": "510704",
+      "regency_id": "5107",
+      "name": "KARANGASEM"
+    },
+    {
+      "id": "510705",
+      "regency_id": "5107",
+      "name": "ABANG"
+    },
+    {
+      "id": "510706",
+      "regency_id": "5107",
+      "name": "BEBANDEM"
+    },
+    {
+      "id": "510707",
+      "regency_id": "5107",
+      "name": "SELAT"
+    },
+    {
+      "id": "510708",
+      "regency_id": "5107",
+      "name": "KUBU"
+    },
+    {
+      "id": "510801",
+      "regency_id": "5108",
+      "name": "GEROKGAK"
+    },
+    {
+      "id": "510802",
+      "regency_id": "5108",
+      "name": "SERIRIT"
+    },
+    {
+      "id": "510803",
+      "regency_id": "5108",
+      "name": "BUSUNGBIU"
+    },
+    {
+      "id": "510804",
+      "regency_id": "5108",
+      "name": "BANJAR"
+    },
+    {
+      "id": "510805",
+      "regency_id": "5108",
+      "name": "SUKASADA"
+    },
+    {
+      "id": "510806",
+      "regency_id": "5108",
+      "name": "BULELENG"
+    },
+    {
+      "id": "510807",
+      "regency_id": "5108",
+      "name": "SAWAN"
+    },
+    {
+      "id": "510808",
+      "regency_id": "5108",
+      "name": "KUBUTAMBAHAN"
+    },
+    {
+      "id": "510809",
+      "regency_id": "5108",
+      "name": "TEJAKULA"
+    },
+    {
+      "id": "517101",
+      "regency_id": "5171",
+      "name": "DENPASAR SELATAN"
+    },
+    {
+      "id": "517102",
+      "regency_id": "5171",
+      "name": "DENPASAR TIMUR"
+    },
+    {
+      "id": "517103",
+      "regency_id": "5171",
+      "name": "DENPASAR BARAT"
+    },
+    {
+      "id": "517104",
+      "regency_id": "5171",
+      "name": "DENPASAR UTARA"
+    }
+  ],
+  "villages": [
+    {
+      "id": "5101011006",
+      "district_id": "510101",
+      "name": "BALER BALE AGUNG"
+    },
+    {
+      "id": "5101011008",
+      "district_id": "510101",
+      "name": "BANJAR TENGAH"
+    },
+    {
+      "id": "5101011013",
+      "district_id": "510101",
+      "name": "LELATENG"
+    },
+    {
+      "id": "5101011014",
+      "district_id": "510101",
+      "name": "LOLOAN BARAT"
+    },
+    {
+      "id": "5101012001",
+      "district_id": "510101",
+      "name": "CUPEL"
+    },
+    {
+      "id": "5101012002",
+      "district_id": "510101",
+      "name": "BALUK"
+    },
+    {
+      "id": "5101012003",
+      "district_id": "510101",
+      "name": "BANYUBIRU"
+    },
+    {
+      "id": "5101012004",
+      "district_id": "510101",
+      "name": "KALIAKAH"
+    },
+    {
+      "id": "5101012005",
+      "district_id": "510101",
+      "name": "BERANGBANG"
+    },
+    {
+      "id": "5101012009",
+      "district_id": "510101",
+      "name": "TEGAL BADENG TIMUR"
+    },
+    {
+      "id": "5101012010",
+      "district_id": "510101",
+      "name": "TEGAL BADENG BARAT"
+    },
+    {
+      "id": "5101012011",
+      "district_id": "510101",
+      "name": "PENGAMBENGAN"
+    },
+    {
+      "id": "5101021006",
+      "district_id": "510102",
+      "name": "TEGALCANGKRING"
+    },
+    {
+      "id": "5101022001",
+      "district_id": "510102",
+      "name": "MENDOYO DAUH TUKAD"
+    },
+    {
+      "id": "5101022002",
+      "district_id": "510102",
+      "name": "POHSANTEN"
+    },
+    {
+      "id": "5101022003",
+      "district_id": "510102",
+      "name": "MENDOYO DANGIN TUKAD"
+    },
+    {
+      "id": "5101022004",
+      "district_id": "510102",
+      "name": "PERGUNG"
+    },
+    {
+      "id": "5101022005",
+      "district_id": "510102",
+      "name": "DELODBERAWAH"
+    },
+    {
+      "id": "5101022007",
+      "district_id": "510102",
+      "name": "PENYARINGAN"
+    },
+    {
+      "id": "5101022008",
+      "district_id": "510102",
+      "name": "YEHEMBANG"
+    },
+    {
+      "id": "5101022009",
+      "district_id": "510102",
+      "name": "YEH SUMBUL"
+    },
+    {
+      "id": "5101022010",
+      "district_id": "510102",
+      "name": "YEHEMBANG KAUH"
+    },
+    {
+      "id": "5101022011",
+      "district_id": "510102",
+      "name": "YEHEMBANG KANGIN"
+    },
+    {
+      "id": "5101032001",
+      "district_id": "510103",
+      "name": "MEDEWI"
+    },
+    {
+      "id": "5101032002",
+      "district_id": "510103",
+      "name": "PULUKAN"
+    },
+    {
+      "id": "5101032003",
+      "district_id": "510103",
+      "name": "ASAHDUREN"
+    },
+    {
+      "id": "5101032004",
+      "district_id": "510103",
+      "name": "PEKUTATAN"
+    },
+    {
+      "id": "5101032005",
+      "district_id": "510103",
+      "name": "PANGYANGAN"
+    },
+    {
+      "id": "5101032006",
+      "district_id": "510103",
+      "name": "GUMBRIH"
+    },
+    {
+      "id": "5101032007",
+      "district_id": "510103",
+      "name": "MANGGISSARI"
+    },
+    {
+      "id": "5101032008",
+      "district_id": "510103",
+      "name": "PENGERAGOAN"
+    },
+    {
+      "id": "5101041001",
+      "district_id": "510104",
+      "name": "GILIMANUK"
+    },
+    {
+      "id": "5101042002",
+      "district_id": "510104",
+      "name": "MELAYA"
+    },
+    {
+      "id": "5101042003",
+      "district_id": "510104",
+      "name": "BELIMBINGSARI"
+    },
+    {
+      "id": "5101042004",
+      "district_id": "510104",
+      "name": "EKASARI"
+    },
+    {
+      "id": "5101042005",
+      "district_id": "510104",
+      "name": "NUSASARI"
+    },
+    {
+      "id": "5101042006",
+      "district_id": "510104",
+      "name": "WARNASARI"
+    },
+    {
+      "id": "5101042007",
+      "district_id": "510104",
+      "name": "CANDIKUSUMA"
+    },
+    {
+      "id": "5101042008",
+      "district_id": "510104",
+      "name": "TUWED"
+    },
+    {
+      "id": "5101042009",
+      "district_id": "510104",
+      "name": "TUKADAYA"
+    },
+    {
+      "id": "5101042010",
+      "district_id": "510104",
+      "name": "MANISTUTU"
+    },
+    {
+      "id": "5101051001",
+      "district_id": "510105",
+      "name": "PENDEM"
+    },
+    {
+      "id": "5101051003",
+      "district_id": "510105",
+      "name": "LOLOAN TIMUR"
+    },
+    {
+      "id": "5101051005",
+      "district_id": "510105",
+      "name": "DAUHWARU"
+    },
+    {
+      "id": "5101051009",
+      "district_id": "510105",
+      "name": "SANGKARAGUNG"
+    },
+    {
+      "id": "5101052002",
+      "district_id": "510105",
+      "name": "PERANCAK"
+    },
+    {
+      "id": "5101052004",
+      "district_id": "510105",
+      "name": "BATU AGUNG"
+    },
+    {
+      "id": "5101052006",
+      "district_id": "510105",
+      "name": "BUDENG"
+    },
+    {
+      "id": "5101052007",
+      "district_id": "510105",
+      "name": "AIR KUNING"
+    },
+    {
+      "id": "5101052008",
+      "district_id": "510105",
+      "name": "YEHKUNING"
+    },
+    {
+      "id": "5101052010",
+      "district_id": "510105",
+      "name": "DANGINTUKADAYA"
+    },
+    {
+      "id": "5102012001",
+      "district_id": "510201",
+      "name": "BAJERA"
+    },
+    {
+      "id": "5102012002",
+      "district_id": "510201",
+      "name": "WANAGIRI"
+    },
+    {
+      "id": "5102012003",
+      "district_id": "510201",
+      "name": "PUPUAN SAWAH"
+    },
+    {
+      "id": "5102012004",
+      "district_id": "510201",
+      "name": "BEREMBENG"
+    },
+    {
+      "id": "5102012005",
+      "district_id": "510201",
+      "name": "SELEMADEG"
+    },
+    {
+      "id": "5102012006",
+      "district_id": "510201",
+      "name": "SERAMPINGAN"
+    },
+    {
+      "id": "5102012007",
+      "district_id": "510201",
+      "name": "ANTAP"
+    },
+    {
+      "id": "5102012008",
+      "district_id": "510201",
+      "name": "WANAGIRI KAUH"
+    },
+    {
+      "id": "5102012009",
+      "district_id": "510201",
+      "name": "MANIKYANG"
+    },
+    {
+      "id": "5102012010",
+      "district_id": "510201",
+      "name": "BAJERA UTARA"
+    },
+    {
+      "id": "5102022001",
+      "district_id": "510202",
+      "name": "GUNUNG SALAK"
+    },
+    {
+      "id": "5102022002",
+      "district_id": "510202",
+      "name": "GADUNGAN"
+    },
+    {
+      "id": "5102022003",
+      "district_id": "510202",
+      "name": "BANTAS"
+    },
+    {
+      "id": "5102022004",
+      "district_id": "510202",
+      "name": "MAMBANG"
+    },
+    {
+      "id": "5102022005",
+      "district_id": "510202",
+      "name": "MEGATI"
+    },
+    {
+      "id": "5102022006",
+      "district_id": "510202",
+      "name": "TANGGUNTITI"
+    },
+    {
+      "id": "5102022007",
+      "district_id": "510202",
+      "name": "BERABAN"
+    },
+    {
+      "id": "5102022008",
+      "district_id": "510202",
+      "name": "TEGAL MENGKEB"
+    },
+    {
+      "id": "5102022009",
+      "district_id": "510202",
+      "name": "DALANG"
+    },
+    {
+      "id": "5102022010",
+      "district_id": "510202",
+      "name": "GADUNGSARI"
+    },
+    {
+      "id": "5102032001",
+      "district_id": "510203",
+      "name": "MUNDEH"
+    },
+    {
+      "id": "5102032002",
+      "district_id": "510203",
+      "name": "MUNDEH KANGIN"
+    },
+    {
+      "id": "5102032003",
+      "district_id": "510203",
+      "name": "LALANGLINGGAH"
+    },
+    {
+      "id": "5102032004",
+      "district_id": "510203",
+      "name": "ANTOSARI"
+    },
+    {
+      "id": "5102032005",
+      "district_id": "510203",
+      "name": "LUMBUNG"
+    },
+    {
+      "id": "5102032006",
+      "district_id": "510203",
+      "name": "LUMBUNG KAUH"
+    },
+    {
+      "id": "5102032007",
+      "district_id": "510203",
+      "name": "TIYING GADING"
+    },
+    {
+      "id": "5102032008",
+      "district_id": "510203",
+      "name": "MUNDEH KAUH"
+    },
+    {
+      "id": "5102032009",
+      "district_id": "510203",
+      "name": "ANGKAH"
+    },
+    {
+      "id": "5102032010",
+      "district_id": "510203",
+      "name": "SELABIH"
+    },
+    {
+      "id": "5102032011",
+      "district_id": "510203",
+      "name": "BENGKEL SARI"
+    },
+    {
+      "id": "5102042001",
+      "district_id": "510204",
+      "name": "TIBUBIU"
+    },
+    {
+      "id": "5102042002",
+      "district_id": "510204",
+      "name": "KELATING"
+    },
+    {
+      "id": "5102042003",
+      "district_id": "510204",
+      "name": "PENARUKAN"
+    },
+    {
+      "id": "5102042004",
+      "district_id": "510204",
+      "name": "BELUMBANG"
+    },
+    {
+      "id": "5102042005",
+      "district_id": "510204",
+      "name": "TISTA"
+    },
+    {
+      "id": "5102042006",
+      "district_id": "510204",
+      "name": "KERAMBITAN"
+    },
+    {
+      "id": "5102042007",
+      "district_id": "510204",
+      "name": "PANGKUNG KARUNG"
+    },
+    {
+      "id": "5102042008",
+      "district_id": "510204",
+      "name": "SAMSAM"
+    },
+    {
+      "id": "5102042009",
+      "district_id": "510204",
+      "name": "KUKUH"
+    },
+    {
+      "id": "5102042010",
+      "district_id": "510204",
+      "name": "BATURITI"
+    },
+    {
+      "id": "5102042011",
+      "district_id": "510204",
+      "name": "MELILING"
+    },
+    {
+      "id": "5102042012",
+      "district_id": "510204",
+      "name": "SEMBUNG GEDE"
+    },
+    {
+      "id": "5102042013",
+      "district_id": "510204",
+      "name": "BATUAJI"
+    },
+    {
+      "id": "5102042014",
+      "district_id": "510204",
+      "name": "KESIUT"
+    },
+    {
+      "id": "5102042015",
+      "district_id": "510204",
+      "name": "TIMPAG"
+    },
+    {
+      "id": "5102052001",
+      "district_id": "510205",
+      "name": "SUDIMARA"
+    },
+    {
+      "id": "5102052002",
+      "district_id": "510205",
+      "name": "GUBUG"
+    },
+    {
+      "id": "5102052003",
+      "district_id": "510205",
+      "name": "BONGAN"
+    },
+    {
+      "id": "5102052004",
+      "district_id": "510205",
+      "name": "DELOD PEKEN"
+    },
+    {
+      "id": "5102052005",
+      "district_id": "510205",
+      "name": "DAUH PEKEN"
+    },
+    {
+      "id": "5102052006",
+      "district_id": "510205",
+      "name": "DAJAN PEKEN"
+    },
+    {
+      "id": "5102052007",
+      "district_id": "510205",
+      "name": "DENBANTAS"
+    },
+    {
+      "id": "5102052008",
+      "district_id": "510205",
+      "name": "SUBAMIA"
+    },
+    {
+      "id": "5102052009",
+      "district_id": "510205",
+      "name": "WANASARI"
+    },
+    {
+      "id": "5102052010",
+      "district_id": "510205",
+      "name": "TUNJUK"
+    },
+    {
+      "id": "5102052011",
+      "district_id": "510205",
+      "name": "BUAHAN"
+    },
+    {
+      "id": "5102052012",
+      "district_id": "510205",
+      "name": "SESANDAN"
+    },
+    {
+      "id": "5102062001",
+      "district_id": "510206",
+      "name": "BENGKEL"
+    },
+    {
+      "id": "5102062002",
+      "district_id": "510206",
+      "name": "PANGKUNG TIBAH"
+    },
+    {
+      "id": "5102062003",
+      "district_id": "510206",
+      "name": "BELALANG"
+    },
+    {
+      "id": "5102062004",
+      "district_id": "510206",
+      "name": "BERABAN"
+    },
+    {
+      "id": "5102062005",
+      "district_id": "510206",
+      "name": "BUWIT"
+    },
+    {
+      "id": "5102062006",
+      "district_id": "510206",
+      "name": "CEPAKA"
+    },
+    {
+      "id": "5102062007",
+      "district_id": "510206",
+      "name": "KABA-KABA"
+    },
+    {
+      "id": "5102062008",
+      "district_id": "510206",
+      "name": "NYAMBU"
+    },
+    {
+      "id": "5102062009",
+      "district_id": "510206",
+      "name": "PANDAK BANDUNG"
+    },
+    {
+      "id": "5102062010",
+      "district_id": "510206",
+      "name": "PANDAK GEDE"
+    },
+    {
+      "id": "5102062011",
+      "district_id": "510206",
+      "name": "NYITDAH"
+    },
+    {
+      "id": "5102062012",
+      "district_id": "510206",
+      "name": "PEJATEN"
+    },
+    {
+      "id": "5102062013",
+      "district_id": "510206",
+      "name": "KEDIRI"
+    },
+    {
+      "id": "5102062014",
+      "district_id": "510206",
+      "name": "ABIAN TUWUNG"
+    },
+    {
+      "id": "5102062015",
+      "district_id": "510206",
+      "name": "BANJAR ANYAR"
+    },
+    {
+      "id": "5102072001",
+      "district_id": "510207",
+      "name": "KUKUH"
+    },
+    {
+      "id": "5102072002",
+      "district_id": "510207",
+      "name": "BERINGKIT BELAYU"
+    },
+    {
+      "id": "5102072003",
+      "district_id": "510207",
+      "name": "PEKEN BELAYU"
+    },
+    {
+      "id": "5102072004",
+      "district_id": "510207",
+      "name": "BATANNYUH"
+    },
+    {
+      "id": "5102072005",
+      "district_id": "510207",
+      "name": "TEGALJADI"
+    },
+    {
+      "id": "5102072006",
+      "district_id": "510207",
+      "name": "KUWUM"
+    },
+    {
+      "id": "5102072007",
+      "district_id": "510207",
+      "name": "SELANBAWAK"
+    },
+    {
+      "id": "5102072008",
+      "district_id": "510207",
+      "name": "MARGA"
+    },
+    {
+      "id": "5102072009",
+      "district_id": "510207",
+      "name": "PETIGA"
+    },
+    {
+      "id": "5102072010",
+      "district_id": "510207",
+      "name": "CAU BELAYU"
+    },
+    {
+      "id": "5102072011",
+      "district_id": "510207",
+      "name": "TUA"
+    },
+    {
+      "id": "5102072012",
+      "district_id": "510207",
+      "name": "PAYANGAN"
+    },
+    {
+      "id": "5102072013",
+      "district_id": "510207",
+      "name": "MARGA DAJAN PURI"
+    },
+    {
+      "id": "5102072014",
+      "district_id": "510207",
+      "name": "MARGA DAUH PURI"
+    },
+    {
+      "id": "5102072015",
+      "district_id": "510207",
+      "name": "GELUNTUNG"
+    },
+    {
+      "id": "5102072016",
+      "district_id": "510207",
+      "name": "BARU"
+    },
+    {
+      "id": "5102082001",
+      "district_id": "510208",
+      "name": "REJASA"
+    },
+    {
+      "id": "5102082002",
+      "district_id": "510208",
+      "name": "JEGU"
+    },
+    {
+      "id": "5102082003",
+      "district_id": "510208",
+      "name": "RIANG GEDE"
+    },
+    {
+      "id": "5102082004",
+      "district_id": "510208",
+      "name": "BURUAN"
+    },
+    {
+      "id": "5102082005",
+      "district_id": "510208",
+      "name": "BIAUNG"
+    },
+    {
+      "id": "5102082006",
+      "district_id": "510208",
+      "name": "PITRA"
+    },
+    {
+      "id": "5102082007",
+      "district_id": "510208",
+      "name": "PENATAHAN"
+    },
+    {
+      "id": "5102082008",
+      "district_id": "510208",
+      "name": "TENGKUDAK"
+    },
+    {
+      "id": "5102082009",
+      "district_id": "510208",
+      "name": "MENGESTA"
+    },
+    {
+      "id": "5102082010",
+      "district_id": "510208",
+      "name": "PENEBEL"
+    },
+    {
+      "id": "5102082011",
+      "district_id": "510208",
+      "name": "BABAHAN"
+    },
+    {
+      "id": "5102082012",
+      "district_id": "510208",
+      "name": "SENGANAN"
+    },
+    {
+      "id": "5102082013",
+      "district_id": "510208",
+      "name": "JATILUWIH"
+    },
+    {
+      "id": "5102082014",
+      "district_id": "510208",
+      "name": "WONGAYA GEDE"
+    },
+    {
+      "id": "5102082015",
+      "district_id": "510208",
+      "name": "TAJEN"
+    },
+    {
+      "id": "5102082016",
+      "district_id": "510208",
+      "name": "TEGALLINGGAH"
+    },
+    {
+      "id": "5102082017",
+      "district_id": "510208",
+      "name": "PESAGI"
+    },
+    {
+      "id": "5102082018",
+      "district_id": "510208",
+      "name": "SANGKETAN"
+    },
+    {
+      "id": "5102092001",
+      "district_id": "510209",
+      "name": "PEREAN"
+    },
+    {
+      "id": "5102092002",
+      "district_id": "510209",
+      "name": "LUWUS"
+    },
+    {
+      "id": "5102092003",
+      "district_id": "510209",
+      "name": "APUAN"
+    },
+    {
+      "id": "5102092004",
+      "district_id": "510209",
+      "name": "ANGSERI"
+    },
+    {
+      "id": "5102092005",
+      "district_id": "510209",
+      "name": "BANGLI"
+    },
+    {
+      "id": "5102092006",
+      "district_id": "510209",
+      "name": "BATURITI"
+    },
+    {
+      "id": "5102092007",
+      "district_id": "510209",
+      "name": "ANTAPAN"
+    },
+    {
+      "id": "5102092008",
+      "district_id": "510209",
+      "name": "CANDIKUNING"
+    },
+    {
+      "id": "5102092009",
+      "district_id": "510209",
+      "name": "MEKARSARI"
+    },
+    {
+      "id": "5102092010",
+      "district_id": "510209",
+      "name": "BATUNYA"
+    },
+    {
+      "id": "5102092011",
+      "district_id": "510209",
+      "name": "PEREAN TENGAH"
+    },
+    {
+      "id": "5102092012",
+      "district_id": "510209",
+      "name": "PEREAN KANGIN"
+    },
+    {
+      "id": "5102102001",
+      "district_id": "510210",
+      "name": "BELIMBING"
+    },
+    {
+      "id": "5102102002",
+      "district_id": "510210",
+      "name": "SANDA"
+    },
+    {
+      "id": "5102102003",
+      "district_id": "510210",
+      "name": "BATUNGSEL"
+    },
+    {
+      "id": "5102102004",
+      "district_id": "510210",
+      "name": "KEBON PADANGAN"
+    },
+    {
+      "id": "5102102005",
+      "district_id": "510210",
+      "name": "MUNDUKTEMU"
+    },
+    {
+      "id": "5102102006",
+      "district_id": "510210",
+      "name": "PUJUNGAN"
+    },
+    {
+      "id": "5102102007",
+      "district_id": "510210",
+      "name": "PUPUAN"
+    },
+    {
+      "id": "5102102008",
+      "district_id": "510210",
+      "name": "BANTIRAN"
+    },
+    {
+      "id": "5102102009",
+      "district_id": "510210",
+      "name": "PADANGAN"
+    },
+    {
+      "id": "5102102010",
+      "district_id": "510210",
+      "name": "JELIJIH PUNGGANG"
+    },
+    {
+      "id": "5102102011",
+      "district_id": "510210",
+      "name": "BELATUNGAN"
+    },
+    {
+      "id": "5102102012",
+      "district_id": "510210",
+      "name": "PAJAHAN"
+    },
+    {
+      "id": "5102102013",
+      "district_id": "510210",
+      "name": "KARYASARI"
+    },
+    {
+      "id": "5102102014",
+      "district_id": "510210",
+      "name": "SAI"
+    },
+    {
+      "id": "5103011001",
+      "district_id": "510301",
+      "name": "TUBAN"
+    },
+    {
+      "id": "5103011002",
+      "district_id": "510301",
+      "name": "KUTA"
+    },
+    {
+      "id": "5103011003",
+      "district_id": "510301",
+      "name": "KEDONGANAN"
+    },
+    {
+      "id": "5103011004",
+      "district_id": "510301",
+      "name": "LEGIAN"
+    },
+    {
+      "id": "5103011005",
+      "district_id": "510301",
+      "name": "SEMINYAK"
+    },
+    {
+      "id": "5103021004",
+      "district_id": "510302",
+      "name": "KAPAL"
+    },
+    {
+      "id": "5103021005",
+      "district_id": "510302",
+      "name": "SEMPIDI"
+    },
+    {
+      "id": "5103021014",
+      "district_id": "510302",
+      "name": "ABIANBASE"
+    },
+    {
+      "id": "5103021015",
+      "district_id": "510302",
+      "name": "SADING"
+    },
+    {
+      "id": "5103021016",
+      "district_id": "510302",
+      "name": "LUKLUK"
+    },
+    {
+      "id": "5103022001",
+      "district_id": "510302",
+      "name": "MUNGGU"
+    },
+    {
+      "id": "5103022002",
+      "district_id": "510302",
+      "name": "BUDUK"
+    },
+    {
+      "id": "5103022003",
+      "district_id": "510302",
+      "name": "MENGWITANI"
+    },
+    {
+      "id": "5103022006",
+      "district_id": "510302",
+      "name": "PENARUNGAN"
+    },
+    {
+      "id": "5103022007",
+      "district_id": "510302",
+      "name": "SEMBUNG"
+    },
+    {
+      "id": "5103022008",
+      "district_id": "510302",
+      "name": "BAHA"
+    },
+    {
+      "id": "5103022009",
+      "district_id": "510302",
+      "name": "MENGWI"
+    },
+    {
+      "id": "5103022010",
+      "district_id": "510302",
+      "name": "KEKERAN"
+    },
+    {
+      "id": "5103022011",
+      "district_id": "510302",
+      "name": "SOBANGAN"
+    },
+    {
+      "id": "5103022012",
+      "district_id": "510302",
+      "name": "GULINGAN"
+    },
+    {
+      "id": "5103022013",
+      "district_id": "510302",
+      "name": "WERDI BHUWANA"
+    },
+    {
+      "id": "5103022017",
+      "district_id": "510302",
+      "name": "CEMAGI"
+    },
+    {
+      "id": "5103022018",
+      "district_id": "510302",
+      "name": "PERERENAN"
+    },
+    {
+      "id": "5103022019",
+      "district_id": "510302",
+      "name": "TUMBAKBAYUH"
+    },
+    {
+      "id": "5103022020",
+      "district_id": "510302",
+      "name": "KUWUM"
+    },
+    {
+      "id": "5103032001",
+      "district_id": "510303",
+      "name": "DARMASABA"
+    },
+    {
+      "id": "5103032002",
+      "district_id": "510303",
+      "name": "SIBANGKAJA"
+    },
+    {
+      "id": "5103032003",
+      "district_id": "510303",
+      "name": "SIBANGGEDE"
+    },
+    {
+      "id": "5103032004",
+      "district_id": "510303",
+      "name": "JAGAPATI"
+    },
+    {
+      "id": "5103032005",
+      "district_id": "510303",
+      "name": "ANGANTAKA"
+    },
+    {
+      "id": "5103032006",
+      "district_id": "510303",
+      "name": "SEDANG"
+    },
+    {
+      "id": "5103032007",
+      "district_id": "510303",
+      "name": "MAMBAL"
+    },
+    {
+      "id": "5103032008",
+      "district_id": "510303",
+      "name": "ABIANSEMAL"
+    },
+    {
+      "id": "5103032009",
+      "district_id": "510303",
+      "name": "BONGKASA"
+    },
+    {
+      "id": "5103032010",
+      "district_id": "510303",
+      "name": "TAMAN"
+    },
+    {
+      "id": "5103032011",
+      "district_id": "510303",
+      "name": "BLAHKIUH"
+    },
+    {
+      "id": "5103032012",
+      "district_id": "510303",
+      "name": "AYUNAN"
+    },
+    {
+      "id": "5103032013",
+      "district_id": "510303",
+      "name": "SANGEH"
+    },
+    {
+      "id": "5103032014",
+      "district_id": "510303",
+      "name": "PUNGGUL"
+    },
+    {
+      "id": "5103032015",
+      "district_id": "510303",
+      "name": "MEKAR BHUWANA"
+    },
+    {
+      "id": "5103032016",
+      "district_id": "510303",
+      "name": "ABIANSEMAL DAUH YEH CANI"
+    },
+    {
+      "id": "5103032017",
+      "district_id": "510303",
+      "name": "SELAT"
+    },
+    {
+      "id": "5103032018",
+      "district_id": "510303",
+      "name": "BONGKASA PERTIWI"
+    },
+    {
+      "id": "5103042001",
+      "district_id": "510304",
+      "name": "CARANGSARI"
+    },
+    {
+      "id": "5103042002",
+      "district_id": "510304",
+      "name": "PETANG"
+    },
+    {
+      "id": "5103042003",
+      "district_id": "510304",
+      "name": "BELOK/SIDAN"
+    },
+    {
+      "id": "5103042004",
+      "district_id": "510304",
+      "name": "PELAGA"
+    },
+    {
+      "id": "5103042005",
+      "district_id": "510304",
+      "name": "GETASAN"
+    },
+    {
+      "id": "5103042006",
+      "district_id": "510304",
+      "name": "PANGSAN"
+    },
+    {
+      "id": "5103042007",
+      "district_id": "510304",
+      "name": "SULANGAI"
+    },
+    {
+      "id": "5103051004",
+      "district_id": "510305",
+      "name": "BENOA"
+    },
+    {
+      "id": "5103051005",
+      "district_id": "510305",
+      "name": "TANJUNG BENOA"
+    },
+    {
+      "id": "5103051006",
+      "district_id": "510305",
+      "name": "JIMBARAN"
+    },
+    {
+      "id": "5103052001",
+      "district_id": "510305",
+      "name": "PECATU"
+    },
+    {
+      "id": "5103052002",
+      "district_id": "510305",
+      "name": "UNGASAN"
+    },
+    {
+      "id": "5103052003",
+      "district_id": "510305",
+      "name": "KUTUH"
+    },
+    {
+      "id": "5103061001",
+      "district_id": "510306",
+      "name": "KEROBOKAN KELOD"
+    },
+    {
+      "id": "5103061002",
+      "district_id": "510306",
+      "name": "KEROBOKAN"
+    },
+    {
+      "id": "5103061003",
+      "district_id": "510306",
+      "name": "KEROBOKAN KAJA"
+    },
+    {
+      "id": "5103062004",
+      "district_id": "510306",
+      "name": "TIBUBENENG"
+    },
+    {
+      "id": "5103062005",
+      "district_id": "510306",
+      "name": "CANGGU"
+    },
+    {
+      "id": "5103062006",
+      "district_id": "510306",
+      "name": "DALUNG"
+    },
+    {
+      "id": "5104012001",
+      "district_id": "510401",
+      "name": "BATUBULAN"
+    },
+    {
+      "id": "5104012002",
+      "district_id": "510401",
+      "name": "KETEWEL"
+    },
+    {
+      "id": "5104012003",
+      "district_id": "510401",
+      "name": "GUWANG"
+    },
+    {
+      "id": "5104012004",
+      "district_id": "510401",
+      "name": "SUKAWATI"
+    },
+    {
+      "id": "5104012005",
+      "district_id": "510401",
+      "name": "CELUK"
+    },
+    {
+      "id": "5104012006",
+      "district_id": "510401",
+      "name": "SINGAPADU"
+    },
+    {
+      "id": "5104012007",
+      "district_id": "510401",
+      "name": "BATUAN"
+    },
+    {
+      "id": "5104012008",
+      "district_id": "510401",
+      "name": "KEMENUH"
+    },
+    {
+      "id": "5104012009",
+      "district_id": "510401",
+      "name": "BATUBULAN KANGIN"
+    },
+    {
+      "id": "5104012010",
+      "district_id": "510401",
+      "name": "SINGAPADU TENGAH"
+    },
+    {
+      "id": "5104012011",
+      "district_id": "510401",
+      "name": "SINGAPADU KALER"
+    },
+    {
+      "id": "5104012012",
+      "district_id": "510401",
+      "name": "BATUAN KALER"
+    },
+    {
+      "id": "5104022001",
+      "district_id": "510402",
+      "name": "SABA"
+    },
+    {
+      "id": "5104022002",
+      "district_id": "510402",
+      "name": "PERING"
+    },
+    {
+      "id": "5104022003",
+      "district_id": "510402",
+      "name": "KERAMAS"
+    },
+    {
+      "id": "5104022004",
+      "district_id": "510402",
+      "name": "BELEGA"
+    },
+    {
+      "id": "5104022005",
+      "district_id": "510402",
+      "name": "BLAHBATUH"
+    },
+    {
+      "id": "5104022006",
+      "district_id": "510402",
+      "name": "BURUAN"
+    },
+    {
+      "id": "5104022007",
+      "district_id": "510402",
+      "name": "BEDULU"
+    },
+    {
+      "id": "5104022008",
+      "district_id": "510402",
+      "name": "MEDAHAN"
+    },
+    {
+      "id": "5104022009",
+      "district_id": "510402",
+      "name": "BONA"
+    },
+    {
+      "id": "5104031003",
+      "district_id": "510403",
+      "name": "SAMPLANGAN"
+    },
+    {
+      "id": "5104031005",
+      "district_id": "510403",
+      "name": "ABIANBASE"
+    },
+    {
+      "id": "5104031006",
+      "district_id": "510403",
+      "name": "GIANYAR"
+    },
+    {
+      "id": "5104031007",
+      "district_id": "510403",
+      "name": "BITERA"
+    },
+    {
+      "id": "5104031008",
+      "district_id": "510403",
+      "name": "BENG"
+    },
+    {
+      "id": "5104032001",
+      "district_id": "510403",
+      "name": "TULIKUP"
+    },
+    {
+      "id": "5104032002",
+      "district_id": "510403",
+      "name": "SIDAN"
+    },
+    {
+      "id": "5104032004",
+      "district_id": "510403",
+      "name": "LEBIH"
+    },
+    {
+      "id": "5104032009",
+      "district_id": "510403",
+      "name": "BAKBAKAN"
+    },
+    {
+      "id": "5104032010",
+      "district_id": "510403",
+      "name": "SIANGAN"
+    },
+    {
+      "id": "5104032011",
+      "district_id": "510403",
+      "name": "SUWAT"
+    },
+    {
+      "id": "5104032012",
+      "district_id": "510403",
+      "name": "PETAK"
+    },
+    {
+      "id": "5104032013",
+      "district_id": "510403",
+      "name": "SERONGGA"
+    },
+    {
+      "id": "5104032014",
+      "district_id": "510403",
+      "name": "PETAK KAJA"
+    },
+    {
+      "id": "5104032015",
+      "district_id": "510403",
+      "name": "TEMESI"
+    },
+    {
+      "id": "5104032016",
+      "district_id": "510403",
+      "name": "SUMITA"
+    },
+    {
+      "id": "5104032017",
+      "district_id": "510403",
+      "name": "TEGAL TUGU"
+    },
+    {
+      "id": "5104042001",
+      "district_id": "510404",
+      "name": "PEJENG"
+    },
+    {
+      "id": "5104042002",
+      "district_id": "510404",
+      "name": "SANDING"
+    },
+    {
+      "id": "5104042003",
+      "district_id": "510404",
+      "name": "TAMPAKSIRING"
+    },
+    {
+      "id": "5104042004",
+      "district_id": "510404",
+      "name": "MANUKAYA"
+    },
+    {
+      "id": "5104042005",
+      "district_id": "510404",
+      "name": "PEJENG KAWAN"
+    },
+    {
+      "id": "5104042006",
+      "district_id": "510404",
+      "name": "PEJENG KAJA"
+    },
+    {
+      "id": "5104042007",
+      "district_id": "510404",
+      "name": "PEJENG KANGIN"
+    },
+    {
+      "id": "5104042008",
+      "district_id": "510404",
+      "name": "PEJENG KELOD"
+    },
+    {
+      "id": "5104051005",
+      "district_id": "510405",
+      "name": "UBUD"
+    },
+    {
+      "id": "5104052001",
+      "district_id": "510405",
+      "name": "LODTUNDUH"
+    },
+    {
+      "id": "5104052002",
+      "district_id": "510405",
+      "name": "MAS"
+    },
+    {
+      "id": "5104052003",
+      "district_id": "510405",
+      "name": "SINGAKERTA"
+    },
+    {
+      "id": "5104052004",
+      "district_id": "510405",
+      "name": "KEDEWATAN"
+    },
+    {
+      "id": "5104052006",
+      "district_id": "510405",
+      "name": "PELIATAN"
+    },
+    {
+      "id": "5104052007",
+      "district_id": "510405",
+      "name": "PETULU"
+    },
+    {
+      "id": "5104052008",
+      "district_id": "510405",
+      "name": "SAYAN"
+    },
+    {
+      "id": "5104062001",
+      "district_id": "510406",
+      "name": "KELIKI"
+    },
+    {
+      "id": "5104062002",
+      "district_id": "510406",
+      "name": "TEGALLALANG"
+    },
+    {
+      "id": "5104062003",
+      "district_id": "510406",
+      "name": "KENDERAN"
+    },
+    {
+      "id": "5104062004",
+      "district_id": "510406",
+      "name": "KEDISAN"
+    },
+    {
+      "id": "5104062005",
+      "district_id": "510406",
+      "name": "PUPUAN"
+    },
+    {
+      "id": "5104062006",
+      "district_id": "510406",
+      "name": "SEBATU"
+    },
+    {
+      "id": "5104062007",
+      "district_id": "510406",
+      "name": "TARO"
+    },
+    {
+      "id": "5104072001",
+      "district_id": "510407",
+      "name": "MELINGGIH"
+    },
+    {
+      "id": "5104072002",
+      "district_id": "510407",
+      "name": "KELUSA"
+    },
+    {
+      "id": "5104072003",
+      "district_id": "510407",
+      "name": "BUKIAN"
+    },
+    {
+      "id": "5104072004",
+      "district_id": "510407",
+      "name": "PUHU"
+    },
+    {
+      "id": "5104072005",
+      "district_id": "510407",
+      "name": "BUAHAN"
+    },
+    {
+      "id": "5104072006",
+      "district_id": "510407",
+      "name": "KERTA"
+    },
+    {
+      "id": "5104072007",
+      "district_id": "510407",
+      "name": "MELINGGIH KELOD"
+    },
+    {
+      "id": "5104072008",
+      "district_id": "510407",
+      "name": "BUAHAN KAJA"
+    },
+    {
+      "id": "5104072009",
+      "district_id": "510407",
+      "name": "BRESELA"
+    },
+    {
+      "id": "5105012001",
+      "district_id": "510501",
+      "name": "SAKTI"
+    },
+    {
+      "id": "5105012002",
+      "district_id": "510501",
+      "name": "BATUMADEG"
+    },
+    {
+      "id": "5105012003",
+      "district_id": "510501",
+      "name": "KLUMPU"
+    },
+    {
+      "id": "5105012004",
+      "district_id": "510501",
+      "name": "BATUKANDIK"
+    },
+    {
+      "id": "5105012005",
+      "district_id": "510501",
+      "name": "SEKARTAJI"
+    },
+    {
+      "id": "5105012006",
+      "district_id": "510501",
+      "name": "TANGLAD"
+    },
+    {
+      "id": "5105012007",
+      "district_id": "510501",
+      "name": "SUANA"
+    },
+    {
+      "id": "5105012008",
+      "district_id": "510501",
+      "name": "BATUNUNGGUL"
+    },
+    {
+      "id": "5105012009",
+      "district_id": "510501",
+      "name": "KUTAMPI"
+    },
+    {
+      "id": "5105012010",
+      "district_id": "510501",
+      "name": "PED"
+    },
+    {
+      "id": "5105012011",
+      "district_id": "510501",
+      "name": "KAMPUNG TOYAPAKEH"
+    },
+    {
+      "id": "5105012012",
+      "district_id": "510501",
+      "name": "LEMBONGAN"
+    },
+    {
+      "id": "5105012013",
+      "district_id": "510501",
+      "name": "JUNGUTBATU"
+    },
+    {
+      "id": "5105012014",
+      "district_id": "510501",
+      "name": "PEJUKUTAN"
+    },
+    {
+      "id": "5105012015",
+      "district_id": "510501",
+      "name": "KUTAMPI KALER"
+    },
+    {
+      "id": "5105012016",
+      "district_id": "510501",
+      "name": "BUNGA MEKAR"
+    },
+    {
+      "id": "5105022001",
+      "district_id": "510502",
+      "name": "NEGARI"
+    },
+    {
+      "id": "5105022002",
+      "district_id": "510502",
+      "name": "TAKMUNG"
+    },
+    {
+      "id": "5105022003",
+      "district_id": "510502",
+      "name": "BANJARANGKAN"
+    },
+    {
+      "id": "5105022004",
+      "district_id": "510502",
+      "name": "TUSAN"
+    },
+    {
+      "id": "5105022005",
+      "district_id": "510502",
+      "name": "BAKAS"
+    },
+    {
+      "id": "5105022006",
+      "district_id": "510502",
+      "name": "GETAKAN"
+    },
+    {
+      "id": "5105022007",
+      "district_id": "510502",
+      "name": "TIHINGAN"
+    },
+    {
+      "id": "5105022008",
+      "district_id": "510502",
+      "name": "AAN"
+    },
+    {
+      "id": "5105022009",
+      "district_id": "510502",
+      "name": "NYALIAN"
+    },
+    {
+      "id": "5105022010",
+      "district_id": "510502",
+      "name": "BUNGBUNGAN"
+    },
+    {
+      "id": "5105022011",
+      "district_id": "510502",
+      "name": "TIMUHUN"
+    },
+    {
+      "id": "5105022012",
+      "district_id": "510502",
+      "name": "NYANGLAN"
+    },
+    {
+      "id": "5105022013",
+      "district_id": "510502",
+      "name": "TOHPATI"
+    },
+    {
+      "id": "5105031008",
+      "district_id": "510503",
+      "name": "SEMARAPURA KAJA"
+    },
+    {
+      "id": "5105031009",
+      "district_id": "510503",
+      "name": "SEMARAPURA KAUH"
+    },
+    {
+      "id": "5105031010",
+      "district_id": "510503",
+      "name": "SEMARAPURA TENGAH"
+    },
+    {
+      "id": "5105031011",
+      "district_id": "510503",
+      "name": "SEMARAPURA KANGIN"
+    },
+    {
+      "id": "5105031012",
+      "district_id": "510503",
+      "name": "SEMARAPURA KLOD KANGIN"
+    },
+    {
+      "id": "5105031013",
+      "district_id": "510503",
+      "name": "SEMARAPURA KLOD"
+    },
+    {
+      "id": "5105032001",
+      "district_id": "510503",
+      "name": "SATRA"
+    },
+    {
+      "id": "5105032002",
+      "district_id": "510503",
+      "name": "TOJAN"
+    },
+    {
+      "id": "5105032003",
+      "district_id": "510503",
+      "name": "GELGEL"
+    },
+    {
+      "id": "5105032004",
+      "district_id": "510503",
+      "name": "KAMPUNG GELGEL"
+    },
+    {
+      "id": "5105032005",
+      "district_id": "510503",
+      "name": "JUMPAI"
+    },
+    {
+      "id": "5105032006",
+      "district_id": "510503",
+      "name": "TANGKAS"
+    },
+    {
+      "id": "5105032007",
+      "district_id": "510503",
+      "name": "KAMASAN"
+    },
+    {
+      "id": "5105032014",
+      "district_id": "510503",
+      "name": "AKAH"
+    },
+    {
+      "id": "5105032015",
+      "district_id": "510503",
+      "name": "MANDUANG"
+    },
+    {
+      "id": "5105032016",
+      "district_id": "510503",
+      "name": "SELAT"
+    },
+    {
+      "id": "5105032017",
+      "district_id": "510503",
+      "name": "TEGAK"
+    },
+    {
+      "id": "5105032018",
+      "district_id": "510503",
+      "name": "SELISIHAN"
+    },
+    {
+      "id": "5105042001",
+      "district_id": "510504",
+      "name": "PAKSEBALI"
+    },
+    {
+      "id": "5105042002",
+      "district_id": "510504",
+      "name": "SAMPALAN TENGAH"
+    },
+    {
+      "id": "5105042003",
+      "district_id": "510504",
+      "name": "SAMPALAN KLOD"
+    },
+    {
+      "id": "5105042004",
+      "district_id": "510504",
+      "name": "SULANG"
+    },
+    {
+      "id": "5105042005",
+      "district_id": "510504",
+      "name": "GUNAKSA"
+    },
+    {
+      "id": "5105042006",
+      "district_id": "510504",
+      "name": "KUSAMBA"
+    },
+    {
+      "id": "5105042007",
+      "district_id": "510504",
+      "name": "KAMPUNG KUSAMBA"
+    },
+    {
+      "id": "5105042008",
+      "district_id": "510504",
+      "name": "PESINGGAHAN"
+    },
+    {
+      "id": "5105042009",
+      "district_id": "510504",
+      "name": "DAWAN KLOD"
+    },
+    {
+      "id": "5105042010",
+      "district_id": "510504",
+      "name": "PIKAT"
+    },
+    {
+      "id": "5105042011",
+      "district_id": "510504",
+      "name": "DAWAN KALER"
+    },
+    {
+      "id": "5105042012",
+      "district_id": "510504",
+      "name": "BESAN"
+    },
+    {
+      "id": "5106012001",
+      "district_id": "510601",
+      "name": "APUAN"
+    },
+    {
+      "id": "5106012002",
+      "district_id": "510601",
+      "name": "DEMULIH"
+    },
+    {
+      "id": "5106012003",
+      "district_id": "510601",
+      "name": "ABUAN"
+    },
+    {
+      "id": "5106012004",
+      "district_id": "510601",
+      "name": "SUSUT"
+    },
+    {
+      "id": "5106012005",
+      "district_id": "510601",
+      "name": "SULAHAN"
+    },
+    {
+      "id": "5106012006",
+      "district_id": "510601",
+      "name": "PENGLUMBARAN"
+    },
+    {
+      "id": "5106012007",
+      "district_id": "510601",
+      "name": "TIGA"
+    },
+    {
+      "id": "5106012008",
+      "district_id": "510601",
+      "name": "SELAT"
+    },
+    {
+      "id": "5106012009",
+      "district_id": "510601",
+      "name": "PENGIANGAN"
+    },
+    {
+      "id": "5106021003",
+      "district_id": "510602",
+      "name": "BEBALANG"
+    },
+    {
+      "id": "5106021004",
+      "district_id": "510602",
+      "name": "KAWAN"
+    },
+    {
+      "id": "5106021005",
+      "district_id": "510602",
+      "name": "CEMPAGA"
+    },
+    {
+      "id": "5106021006",
+      "district_id": "510602",
+      "name": "KUBU"
+    },
+    {
+      "id": "5106022001",
+      "district_id": "510602",
+      "name": "BUNUTIN"
+    },
+    {
+      "id": "5106022002",
+      "district_id": "510602",
+      "name": "TAMANBALI"
+    },
+    {
+      "id": "5106022007",
+      "district_id": "510602",
+      "name": "KAYUBIHI"
+    },
+    {
+      "id": "5106022008",
+      "district_id": "510602",
+      "name": "PENGOTAN"
+    },
+    {
+      "id": "5106022009",
+      "district_id": "510602",
+      "name": "LANDIH"
+    },
+    {
+      "id": "5106032001",
+      "district_id": "510603",
+      "name": "JEHEM"
+    },
+    {
+      "id": "5106032002",
+      "district_id": "510603",
+      "name": "TEMBUKU"
+    },
+    {
+      "id": "5106032003",
+      "district_id": "510603",
+      "name": "YANGAPI"
+    },
+    {
+      "id": "5106032004",
+      "district_id": "510603",
+      "name": "UNDISAN"
+    },
+    {
+      "id": "5106032005",
+      "district_id": "510603",
+      "name": "BANGBANG"
+    },
+    {
+      "id": "5106032006",
+      "district_id": "510603",
+      "name": "PENINJOAN"
+    },
+    {
+      "id": "5106042001",
+      "district_id": "510604",
+      "name": "MENGANI"
+    },
+    {
+      "id": "5106042002",
+      "district_id": "510604",
+      "name": "BINYAN"
+    },
+    {
+      "id": "5106042003",
+      "district_id": "510604",
+      "name": "ULIAN"
+    },
+    {
+      "id": "5106042004",
+      "district_id": "510604",
+      "name": "BUNUTIN"
+    },
+    {
+      "id": "5106042005",
+      "district_id": "510604",
+      "name": "LANGGAHAN"
+    },
+    {
+      "id": "5106042006",
+      "district_id": "510604",
+      "name": "LEMBEAN"
+    },
+    {
+      "id": "5106042007",
+      "district_id": "510604",
+      "name": "MANIKLIYU"
+    },
+    {
+      "id": "5106042008",
+      "district_id": "510604",
+      "name": "BAYUNG CERIK"
+    },
+    {
+      "id": "5106042009",
+      "district_id": "510604",
+      "name": "MANGGUH"
+    },
+    {
+      "id": "5106042010",
+      "district_id": "510604",
+      "name": "BELANCAN"
+    },
+    {
+      "id": "5106042011",
+      "district_id": "510604",
+      "name": "KATUNG"
+    },
+    {
+      "id": "5106042012",
+      "district_id": "510604",
+      "name": "BANUA"
+    },
+    {
+      "id": "5106042013",
+      "district_id": "510604",
+      "name": "ABUAN"
+    },
+    {
+      "id": "5106042014",
+      "district_id": "510604",
+      "name": "BONYOH"
+    },
+    {
+      "id": "5106042015",
+      "district_id": "510604",
+      "name": "SEKAAN"
+    },
+    {
+      "id": "5106042016",
+      "district_id": "510604",
+      "name": "BAYUNG GEDE"
+    },
+    {
+      "id": "5106042017",
+      "district_id": "510604",
+      "name": "SEKARDADI"
+    },
+    {
+      "id": "5106042018",
+      "district_id": "510604",
+      "name": "KEDISAN"
+    },
+    {
+      "id": "5106042019",
+      "district_id": "510604",
+      "name": "BUAHAN"
+    },
+    {
+      "id": "5106042020",
+      "district_id": "510604",
+      "name": "ABANGSONGAN"
+    },
+    {
+      "id": "5106042021",
+      "district_id": "510604",
+      "name": "SUTER"
+    },
+    {
+      "id": "5106042022",
+      "district_id": "510604",
+      "name": "ABANG BATUDINDING"
+    },
+    {
+      "id": "5106042023",
+      "district_id": "510604",
+      "name": "TERUNYAN"
+    },
+    {
+      "id": "5106042024",
+      "district_id": "510604",
+      "name": "SONGAN A"
+    },
+    {
+      "id": "5106042025",
+      "district_id": "510604",
+      "name": "SONGAN B"
+    },
+    {
+      "id": "5106042026",
+      "district_id": "510604",
+      "name": "BATUR SELATAN"
+    },
+    {
+      "id": "5106042027",
+      "district_id": "510604",
+      "name": "BATUR TENGAH"
+    },
+    {
+      "id": "5106042028",
+      "district_id": "510604",
+      "name": "BATUR UTARA"
+    },
+    {
+      "id": "5106042029",
+      "district_id": "510604",
+      "name": "KINTAMANI"
+    },
+    {
+      "id": "5106042030",
+      "district_id": "510604",
+      "name": "SERAI"
+    },
+    {
+      "id": "5106042031",
+      "district_id": "510604",
+      "name": "DAUP"
+    },
+    {
+      "id": "5106042032",
+      "district_id": "510604",
+      "name": "AWAN"
+    },
+    {
+      "id": "5106042033",
+      "district_id": "510604",
+      "name": "GUNUNGBAU"
+    },
+    {
+      "id": "5106042034",
+      "district_id": "510604",
+      "name": "BELANGA"
+    },
+    {
+      "id": "5106042035",
+      "district_id": "510604",
+      "name": "BATUKAANG"
+    },
+    {
+      "id": "5106042036",
+      "district_id": "510604",
+      "name": "BELANTIH"
+    },
+    {
+      "id": "5106042037",
+      "district_id": "510604",
+      "name": "CATUR"
+    },
+    {
+      "id": "5106042038",
+      "district_id": "510604",
+      "name": "PENGEJARAN"
+    },
+    {
+      "id": "5106042039",
+      "district_id": "510604",
+      "name": "SELULUNG"
+    },
+    {
+      "id": "5106042040",
+      "district_id": "510604",
+      "name": "SATRA"
+    },
+    {
+      "id": "5106042041",
+      "district_id": "510604",
+      "name": "DAUSA"
+    },
+    {
+      "id": "5106042042",
+      "district_id": "510604",
+      "name": "BANTANG"
+    },
+    {
+      "id": "5106042043",
+      "district_id": "510604",
+      "name": "SUKAWANA"
+    },
+    {
+      "id": "5106042044",
+      "district_id": "510604",
+      "name": "KUTUH"
+    },
+    {
+      "id": "5106042045",
+      "district_id": "510604",
+      "name": "SUBAYA"
+    },
+    {
+      "id": "5106042046",
+      "district_id": "510604",
+      "name": "SIAKIN"
+    },
+    {
+      "id": "5106042047",
+      "district_id": "510604",
+      "name": "PINGGAN"
+    },
+    {
+      "id": "5106042048",
+      "district_id": "510604",
+      "name": "BELANDINGAN"
+    },
+    {
+      "id": "5107012001",
+      "district_id": "510701",
+      "name": "NONGAN"
+    },
+    {
+      "id": "5107012002",
+      "district_id": "510701",
+      "name": "RENDANG"
+    },
+    {
+      "id": "5107012003",
+      "district_id": "510701",
+      "name": "MENANGA"
+    },
+    {
+      "id": "5107012004",
+      "district_id": "510701",
+      "name": "BESAKIH"
+    },
+    {
+      "id": "5107012005",
+      "district_id": "510701",
+      "name": "PEMPATAN"
+    },
+    {
+      "id": "5107012006",
+      "district_id": "510701",
+      "name": "PESABAN"
+    },
+    {
+      "id": "5107022001",
+      "district_id": "510702",
+      "name": "TANGKUP"
+    },
+    {
+      "id": "5107022002",
+      "district_id": "510702",
+      "name": "TALIBENG"
+    },
+    {
+      "id": "5107022003",
+      "district_id": "510702",
+      "name": "SIDEMEN"
+    },
+    {
+      "id": "5107022004",
+      "district_id": "510702",
+      "name": "SANGKAN GUNUNG"
+    },
+    {
+      "id": "5107022005",
+      "district_id": "510702",
+      "name": "TELAGATAWANG"
+    },
+    {
+      "id": "5107022006",
+      "district_id": "510702",
+      "name": "SINDUWATI"
+    },
+    {
+      "id": "5107022007",
+      "district_id": "510702",
+      "name": "TRI EKA BUANA"
+    },
+    {
+      "id": "5107022008",
+      "district_id": "510702",
+      "name": "KERTHA BUANA"
+    },
+    {
+      "id": "5107022009",
+      "district_id": "510702",
+      "name": "LOKASARI"
+    },
+    {
+      "id": "5107022010",
+      "district_id": "510702",
+      "name": "WISMA KERTA"
+    },
+    {
+      "id": "5107032001",
+      "district_id": "510703",
+      "name": "GEGELANG"
+    },
+    {
+      "id": "5107032002",
+      "district_id": "510703",
+      "name": "ANTIGA"
+    },
+    {
+      "id": "5107032003",
+      "district_id": "510703",
+      "name": "ULAKAN"
+    },
+    {
+      "id": "5107032004",
+      "district_id": "510703",
+      "name": "MANGGIS"
+    },
+    {
+      "id": "5107032005",
+      "district_id": "510703",
+      "name": "NYUH TEBEL"
+    },
+    {
+      "id": "5107032006",
+      "district_id": "510703",
+      "name": "TENGANAN"
+    },
+    {
+      "id": "5107032007",
+      "district_id": "510703",
+      "name": "NGIS"
+    },
+    {
+      "id": "5107032008",
+      "district_id": "510703",
+      "name": "SELUMBUNG"
+    },
+    {
+      "id": "5107032009",
+      "district_id": "510703",
+      "name": "PADANGBAI"
+    },
+    {
+      "id": "5107032010",
+      "district_id": "510703",
+      "name": "ANTIGA KELOD"
+    },
+    {
+      "id": "5107032011",
+      "district_id": "510703",
+      "name": "PESEDAHAN"
+    },
+    {
+      "id": "5107032012",
+      "district_id": "510703",
+      "name": "SENGKIDU"
+    },
+    {
+      "id": "5107041002",
+      "district_id": "510704",
+      "name": "SUBAGAN"
+    },
+    {
+      "id": "5107041003",
+      "district_id": "510704",
+      "name": "PADANGKERTA"
+    },
+    {
+      "id": "5107041004",
+      "district_id": "510704",
+      "name": "KARANGASEM"
+    },
+    {
+      "id": "5107042001",
+      "district_id": "510704",
+      "name": "BUGBUG"
+    },
+    {
+      "id": "5107042005",
+      "district_id": "510704",
+      "name": "TUMBU"
+    },
+    {
+      "id": "5107042006",
+      "district_id": "510704",
+      "name": "SERAYA"
+    },
+    {
+      "id": "5107042007",
+      "district_id": "510704",
+      "name": "SERAYA BARAT"
+    },
+    {
+      "id": "5107042008",
+      "district_id": "510704",
+      "name": "SERAYA TIMUR"
+    },
+    {
+      "id": "5107042009",
+      "district_id": "510704",
+      "name": "PERTIMA"
+    },
+    {
+      "id": "5107042010",
+      "district_id": "510704",
+      "name": "TEGALINGGAH"
+    },
+    {
+      "id": "5107042011",
+      "district_id": "510704",
+      "name": "BUKIT"
+    },
+    {
+      "id": "5107052001",
+      "district_id": "510705",
+      "name": "ABABI"
+    },
+    {
+      "id": "5107052002",
+      "district_id": "510705",
+      "name": "TIYINGTALI"
+    },
+    {
+      "id": "5107052003",
+      "district_id": "510705",
+      "name": "BUNUTAN"
+    },
+    {
+      "id": "5107052004",
+      "district_id": "510705",
+      "name": "TISTA"
+    },
+    {
+      "id": "5107052005",
+      "district_id": "510705",
+      "name": "ABANG"
+    },
+    {
+      "id": "5107052006",
+      "district_id": "510705",
+      "name": "PIDPID"
+    },
+    {
+      "id": "5107052007",
+      "district_id": "510705",
+      "name": "DATAH"
+    },
+    {
+      "id": "5107052008",
+      "district_id": "510705",
+      "name": "CULIK"
+    },
+    {
+      "id": "5107052009",
+      "district_id": "510705",
+      "name": "PURWA KERTHI"
+    },
+    {
+      "id": "5107052010",
+      "district_id": "510705",
+      "name": "KERTHA MANDALA"
+    },
+    {
+      "id": "5107052011",
+      "district_id": "510705",
+      "name": "LABA SARI"
+    },
+    {
+      "id": "5107052012",
+      "district_id": "510705",
+      "name": "NAWA KERTI"
+    },
+    {
+      "id": "5107052013",
+      "district_id": "510705",
+      "name": "KESIMPAR"
+    },
+    {
+      "id": "5107052014",
+      "district_id": "510705",
+      "name": "TRI BUANA"
+    },
+    {
+      "id": "5107062001",
+      "district_id": "510706",
+      "name": "BUNGAYA"
+    },
+    {
+      "id": "5107062002",
+      "district_id": "510706",
+      "name": "BUDAKELING"
+    },
+    {
+      "id": "5107062003",
+      "district_id": "510706",
+      "name": "BEBANDEM"
+    },
+    {
+      "id": "5107062004",
+      "district_id": "510706",
+      "name": "SIBETAN"
+    },
+    {
+      "id": "5107062005",
+      "district_id": "510706",
+      "name": "JUNGUTAN"
+    },
+    {
+      "id": "5107062006",
+      "district_id": "510706",
+      "name": "BUNGAYA KANGIN"
+    },
+    {
+      "id": "5107062007",
+      "district_id": "510706",
+      "name": "BHUANA GIRI"
+    },
+    {
+      "id": "5107062008",
+      "district_id": "510706",
+      "name": "MACANG"
+    },
+    {
+      "id": "5107072001",
+      "district_id": "510707",
+      "name": "MUNCAN"
+    },
+    {
+      "id": "5107072002",
+      "district_id": "510707",
+      "name": "SELAT"
+    },
+    {
+      "id": "5107072003",
+      "district_id": "510707",
+      "name": "DUDA"
+    },
+    {
+      "id": "5107072004",
+      "district_id": "510707",
+      "name": "SEBUDI"
+    },
+    {
+      "id": "5107072005",
+      "district_id": "510707",
+      "name": "DUDA UTARA"
+    },
+    {
+      "id": "5107072006",
+      "district_id": "510707",
+      "name": "DUDA TIMUR"
+    },
+    {
+      "id": "5107072007",
+      "district_id": "510707",
+      "name": "PERINGSARI"
+    },
+    {
+      "id": "5107072008",
+      "district_id": "510707",
+      "name": "AMERTA BHUANA"
+    },
+    {
+      "id": "5107082001",
+      "district_id": "510708",
+      "name": "BAN"
+    },
+    {
+      "id": "5107082002",
+      "district_id": "510708",
+      "name": "DUKUH"
+    },
+    {
+      "id": "5107082003",
+      "district_id": "510708",
+      "name": "KUBU"
+    },
+    {
+      "id": "5107082004",
+      "district_id": "510708",
+      "name": "TIANYAR"
+    },
+    {
+      "id": "5107082005",
+      "district_id": "510708",
+      "name": "TIANYAR BARAT"
+    },
+    {
+      "id": "5107082006",
+      "district_id": "510708",
+      "name": "TIANYAR TENGAH"
+    },
+    {
+      "id": "5107082007",
+      "district_id": "510708",
+      "name": "TULAMBEN"
+    },
+    {
+      "id": "5107082008",
+      "district_id": "510708",
+      "name": "BATURINGGIT"
+    },
+    {
+      "id": "5107082009",
+      "district_id": "510708",
+      "name": "SUKADANA"
+    },
+    {
+      "id": "5108012001",
+      "district_id": "510801",
+      "name": "SUMBERKLAMPOK"
+    },
+    {
+      "id": "5108012002",
+      "district_id": "510801",
+      "name": "PEJARAKAN"
+    },
+    {
+      "id": "5108012003",
+      "district_id": "510801",
+      "name": "SUMBERKIMA"
+    },
+    {
+      "id": "5108012004",
+      "district_id": "510801",
+      "name": "PEMUTERAN"
+    },
+    {
+      "id": "5108012005",
+      "district_id": "510801",
+      "name": "BANYUPOH"
+    },
+    {
+      "id": "5108012006",
+      "district_id": "510801",
+      "name": "PENYABANGAN"
+    },
+    {
+      "id": "5108012007",
+      "district_id": "510801",
+      "name": "MUSI"
+    },
+    {
+      "id": "5108012008",
+      "district_id": "510801",
+      "name": "SANGGALANGIT"
+    },
+    {
+      "id": "5108012009",
+      "district_id": "510801",
+      "name": "GEROKGAK"
+    },
+    {
+      "id": "5108012010",
+      "district_id": "510801",
+      "name": "PATAS"
+    },
+    {
+      "id": "5108012011",
+      "district_id": "510801",
+      "name": "PENGULON"
+    },
+    {
+      "id": "5108012012",
+      "district_id": "510801",
+      "name": "TINGA-TINGA"
+    },
+    {
+      "id": "5108012013",
+      "district_id": "510801",
+      "name": "CELUKANBAWANG"
+    },
+    {
+      "id": "5108012014",
+      "district_id": "510801",
+      "name": "TUKADSUMAGA"
+    },
+    {
+      "id": "5108021015",
+      "district_id": "510802",
+      "name": "SERIRIT"
+    },
+    {
+      "id": "5108022001",
+      "district_id": "510802",
+      "name": "UNGGAHAN"
+    },
+    {
+      "id": "5108022002",
+      "district_id": "510802",
+      "name": "ULARAN"
+    },
+    {
+      "id": "5108022003",
+      "district_id": "510802",
+      "name": "RINGDIKIT"
+    },
+    {
+      "id": "5108022004",
+      "district_id": "510802",
+      "name": "RANGDU"
+    },
+    {
+      "id": "5108022005",
+      "district_id": "510802",
+      "name": "MAYONG"
+    },
+    {
+      "id": "5108022006",
+      "district_id": "510802",
+      "name": "GUNUNGSARI"
+    },
+    {
+      "id": "5108022007",
+      "district_id": "510802",
+      "name": "MUNDUK BESTALA"
+    },
+    {
+      "id": "5108022008",
+      "district_id": "510802",
+      "name": "BESTALA"
+    },
+    {
+      "id": "5108022009",
+      "district_id": "510802",
+      "name": "KALIANGET"
+    },
+    {
+      "id": "5108022010",
+      "district_id": "510802",
+      "name": "JOANYAR"
+    },
+    {
+      "id": "5108022011",
+      "district_id": "510802",
+      "name": "TANGGUWISIA"
+    },
+    {
+      "id": "5108022012",
+      "district_id": "510802",
+      "name": "SULANYAH"
+    },
+    {
+      "id": "5108022013",
+      "district_id": "510802",
+      "name": "BUBUNAN"
+    },
+    {
+      "id": "5108022014",
+      "district_id": "510802",
+      "name": "PATEMON"
+    },
+    {
+      "id": "5108022016",
+      "district_id": "510802",
+      "name": "PENGASTULAN"
+    },
+    {
+      "id": "5108022017",
+      "district_id": "510802",
+      "name": "LOKAPAKSA"
+    },
+    {
+      "id": "5108022018",
+      "district_id": "510802",
+      "name": "PANGKUNGPARUK"
+    },
+    {
+      "id": "5108022019",
+      "district_id": "510802",
+      "name": "BANJARASEM"
+    },
+    {
+      "id": "5108022020",
+      "district_id": "510802",
+      "name": "KALISADA"
+    },
+    {
+      "id": "5108022021",
+      "district_id": "510802",
+      "name": "UMEANYAR"
+    },
+    {
+      "id": "5108032001",
+      "district_id": "510803",
+      "name": "SEPANG"
+    },
+    {
+      "id": "5108032002",
+      "district_id": "510803",
+      "name": "DAPDAP PUTIH"
+    },
+    {
+      "id": "5108032003",
+      "district_id": "510803",
+      "name": "BONGANCINA"
+    },
+    {
+      "id": "5108032004",
+      "district_id": "510803",
+      "name": "PUCAKSARI"
+    },
+    {
+      "id": "5108032005",
+      "district_id": "510803",
+      "name": "TELAGA"
+    },
+    {
+      "id": "5108032006",
+      "district_id": "510803",
+      "name": "TITAB"
+    },
+    {
+      "id": "5108032007",
+      "district_id": "510803",
+      "name": "SUBUK"
+    },
+    {
+      "id": "5108032008",
+      "district_id": "510803",
+      "name": "TINGGARSARI"
+    },
+    {
+      "id": "5108032009",
+      "district_id": "510803",
+      "name": "KEDIS"
+    },
+    {
+      "id": "5108032010",
+      "district_id": "510803",
+      "name": "KEKERAN"
+    },
+    {
+      "id": "5108032011",
+      "district_id": "510803",
+      "name": "BUSUNGBIU"
+    },
+    {
+      "id": "5108032012",
+      "district_id": "510803",
+      "name": "PELAPUAN"
+    },
+    {
+      "id": "5108032013",
+      "district_id": "510803",
+      "name": "BENGKEL"
+    },
+    {
+      "id": "5108032014",
+      "district_id": "510803",
+      "name": "UMEJERO"
+    },
+    {
+      "id": "5108032015",
+      "district_id": "510803",
+      "name": "SEPANG KELOD"
+    },
+    {
+      "id": "5108042001",
+      "district_id": "510804",
+      "name": "BANYUSERI"
+    },
+    {
+      "id": "5108042002",
+      "district_id": "510804",
+      "name": "TIRTASARI"
+    },
+    {
+      "id": "5108042003",
+      "district_id": "510804",
+      "name": "KAYUPUTIH"
+    },
+    {
+      "id": "5108042004",
+      "district_id": "510804",
+      "name": "BANYUATIS"
+    },
+    {
+      "id": "5108042005",
+      "district_id": "510804",
+      "name": "GESING"
+    },
+    {
+      "id": "5108042006",
+      "district_id": "510804",
+      "name": "MUNDUK"
+    },
+    {
+      "id": "5108042007",
+      "district_id": "510804",
+      "name": "GOBLEG"
+    },
+    {
+      "id": "5108042008",
+      "district_id": "510804",
+      "name": "PEDAWA"
+    },
+    {
+      "id": "5108042009",
+      "district_id": "510804",
+      "name": "CEMPAGA"
+    },
+    {
+      "id": "5108042010",
+      "district_id": "510804",
+      "name": "SIDETAPA"
+    },
+    {
+      "id": "5108042011",
+      "district_id": "510804",
+      "name": "TAMPEKAN"
+    },
+    {
+      "id": "5108042012",
+      "district_id": "510804",
+      "name": "BANJAR TEGEHA"
+    },
+    {
+      "id": "5108042013",
+      "district_id": "510804",
+      "name": "BANJAR"
+    },
+    {
+      "id": "5108042014",
+      "district_id": "510804",
+      "name": "DENCARIK"
+    },
+    {
+      "id": "5108042015",
+      "district_id": "510804",
+      "name": "TEMUKUS"
+    },
+    {
+      "id": "5108042016",
+      "district_id": "510804",
+      "name": "TIGAWASA"
+    },
+    {
+      "id": "5108042017",
+      "district_id": "510804",
+      "name": "KALIASEM"
+    },
+    {
+      "id": "5108051009",
+      "district_id": "510805",
+      "name": "SUKASADA"
+    },
+    {
+      "id": "5108052001",
+      "district_id": "510805",
+      "name": "PANCASARI"
+    },
+    {
+      "id": "5108052002",
+      "district_id": "510805",
+      "name": "WANAGIRI"
+    },
+    {
+      "id": "5108052003",
+      "district_id": "510805",
+      "name": "AMBENGAN"
+    },
+    {
+      "id": "5108052004",
+      "district_id": "510805",
+      "name": "GITGIT"
+    },
+    {
+      "id": "5108052005",
+      "district_id": "510805",
+      "name": "PEGAYAMAN"
+    },
+    {
+      "id": "5108052006",
+      "district_id": "510805",
+      "name": "SILANGJANA"
+    },
+    {
+      "id": "5108052007",
+      "district_id": "510805",
+      "name": "PEGADUNGAN"
+    },
+    {
+      "id": "5108052008",
+      "district_id": "510805",
+      "name": "PADANGBULIA"
+    },
+    {
+      "id": "5108052010",
+      "district_id": "510805",
+      "name": "SAMBANGAN"
+    },
+    {
+      "id": "5108052011",
+      "district_id": "510805",
+      "name": "PANJI"
+    },
+    {
+      "id": "5108052012",
+      "district_id": "510805",
+      "name": "PANJI ANOM"
+    },
+    {
+      "id": "5108052013",
+      "district_id": "510805",
+      "name": "TEGALLINGGAH"
+    },
+    {
+      "id": "5108052014",
+      "district_id": "510805",
+      "name": "SELAT"
+    },
+    {
+      "id": "5108052015",
+      "district_id": "510805",
+      "name": "KAYUPUTIH"
+    },
+    {
+      "id": "5108061006",
+      "district_id": "510806",
+      "name": "BANYUASRI"
+    },
+    {
+      "id": "5108061007",
+      "district_id": "510806",
+      "name": "BANJAR TEGAL"
+    },
+    {
+      "id": "5108061008",
+      "district_id": "510806",
+      "name": "KENDRAN"
+    },
+    {
+      "id": "5108061009",
+      "district_id": "510806",
+      "name": "PAKET AGUNG"
+    },
+    {
+      "id": "5108061010",
+      "district_id": "510806",
+      "name": "KAMPUNG SINGARAJA"
+    },
+    {
+      "id": "5108061011",
+      "district_id": "510806",
+      "name": "LILIGUNDI"
+    },
+    {
+      "id": "5108061012",
+      "district_id": "510806",
+      "name": "BERATAN"
+    },
+    {
+      "id": "5108061019",
+      "district_id": "510806",
+      "name": "BANYUNING"
+    },
+    {
+      "id": "5108061020",
+      "district_id": "510806",
+      "name": "PENARUKAN"
+    },
+    {
+      "id": "5108061021",
+      "district_id": "510806",
+      "name": "KAMPUNG KAJANAN"
+    },
+    {
+      "id": "5108061022",
+      "district_id": "510806",
+      "name": "ASTINA"
+    },
+    {
+      "id": "5108061023",
+      "district_id": "510806",
+      "name": "BANJAR JAWA"
+    },
+    {
+      "id": "5108061024",
+      "district_id": "510806",
+      "name": "KALIUNTU"
+    },
+    {
+      "id": "5108061025",
+      "district_id": "510806",
+      "name": "KAMPUNG ANYAR"
+    },
+    {
+      "id": "5108061026",
+      "district_id": "510806",
+      "name": "KAMPUNG BUGIS"
+    },
+    {
+      "id": "5108061027",
+      "district_id": "510806",
+      "name": "BANJAR BALI"
+    },
+    {
+      "id": "5108061029",
+      "district_id": "510806",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "5108062001",
+      "district_id": "510806",
+      "name": "KALIBUKBUK"
+    },
+    {
+      "id": "5108062002",
+      "district_id": "510806",
+      "name": "ANTURAN"
+    },
+    {
+      "id": "5108062003",
+      "district_id": "510806",
+      "name": "TUKADMUNGGA"
+    },
+    {
+      "id": "5108062004",
+      "district_id": "510806",
+      "name": "PEMARON"
+    },
+    {
+      "id": "5108062005",
+      "district_id": "510806",
+      "name": "BAKTISERAGA"
+    },
+    {
+      "id": "5108062013",
+      "district_id": "510806",
+      "name": "SARIMEKAR"
+    },
+    {
+      "id": "5108062014",
+      "district_id": "510806",
+      "name": "NAGASEPAHA"
+    },
+    {
+      "id": "5108062015",
+      "district_id": "510806",
+      "name": "PETANDAKAN"
+    },
+    {
+      "id": "5108062016",
+      "district_id": "510806",
+      "name": "ALASANGKER"
+    },
+    {
+      "id": "5108062017",
+      "district_id": "510806",
+      "name": "POH BERGONG"
+    },
+    {
+      "id": "5108062018",
+      "district_id": "510806",
+      "name": "JINENGDALEM"
+    },
+    {
+      "id": "5108062028",
+      "district_id": "510806",
+      "name": "PENGLATAN"
+    },
+    {
+      "id": "5108072001",
+      "district_id": "510807",
+      "name": "LEMUKIH"
+    },
+    {
+      "id": "5108072002",
+      "district_id": "510807",
+      "name": "GALUNGAN"
+    },
+    {
+      "id": "5108072003",
+      "district_id": "510807",
+      "name": "SEKUMPUL"
+    },
+    {
+      "id": "5108072004",
+      "district_id": "510807",
+      "name": "BEBETIN"
+    },
+    {
+      "id": "5108072005",
+      "district_id": "510807",
+      "name": "SUDAJI"
+    },
+    {
+      "id": "5108072006",
+      "district_id": "510807",
+      "name": "SAWAN"
+    },
+    {
+      "id": "5108072007",
+      "district_id": "510807",
+      "name": "MENYALI"
+    },
+    {
+      "id": "5108072008",
+      "district_id": "510807",
+      "name": "SUWUG"
+    },
+    {
+      "id": "5108072009",
+      "district_id": "510807",
+      "name": "JAGARAGA"
+    },
+    {
+      "id": "5108072010",
+      "district_id": "510807",
+      "name": "SINABUN"
+    },
+    {
+      "id": "5108072011",
+      "district_id": "510807",
+      "name": "KEROBOKAN"
+    },
+    {
+      "id": "5108072012",
+      "district_id": "510807",
+      "name": "SANGSIT"
+    },
+    {
+      "id": "5108072013",
+      "district_id": "510807",
+      "name": "BUNGKULAN"
+    },
+    {
+      "id": "5108072014",
+      "district_id": "510807",
+      "name": "GIRI EMAS"
+    },
+    {
+      "id": "5108082001",
+      "district_id": "510808",
+      "name": "TAMBAKAN"
+    },
+    {
+      "id": "5108082002",
+      "district_id": "510808",
+      "name": "PAKISAN"
+    },
+    {
+      "id": "5108082003",
+      "district_id": "510808",
+      "name": "BONTIHING"
+    },
+    {
+      "id": "5108082004",
+      "district_id": "510808",
+      "name": "TAJUN"
+    },
+    {
+      "id": "5108082005",
+      "district_id": "510808",
+      "name": "TUNJUNG"
+    },
+    {
+      "id": "5108082006",
+      "district_id": "510808",
+      "name": "DEPEHA"
+    },
+    {
+      "id": "5108082007",
+      "district_id": "510808",
+      "name": "TAMBLANG"
+    },
+    {
+      "id": "5108082008",
+      "district_id": "510808",
+      "name": "BULIAN"
+    },
+    {
+      "id": "5108082009",
+      "district_id": "510808",
+      "name": "BILA"
+    },
+    {
+      "id": "5108082010",
+      "district_id": "510808",
+      "name": "BENGKALA"
+    },
+    {
+      "id": "5108082011",
+      "district_id": "510808",
+      "name": "KUBUTAMBAHAN"
+    },
+    {
+      "id": "5108082012",
+      "district_id": "510808",
+      "name": "BUKTI"
+    },
+    {
+      "id": "5108082013",
+      "district_id": "510808",
+      "name": "MENGENING"
+    },
+    {
+      "id": "5108092001",
+      "district_id": "510809",
+      "name": "SEMBIRAN"
+    },
+    {
+      "id": "5108092002",
+      "district_id": "510809",
+      "name": "PACUNG"
+    },
+    {
+      "id": "5108092003",
+      "district_id": "510809",
+      "name": "JULAH"
+    },
+    {
+      "id": "5108092004",
+      "district_id": "510809",
+      "name": "MADENAN"
+    },
+    {
+      "id": "5108092005",
+      "district_id": "510809",
+      "name": "BONDALEM"
+    },
+    {
+      "id": "5108092006",
+      "district_id": "510809",
+      "name": "TEJAKULA"
+    },
+    {
+      "id": "5108092007",
+      "district_id": "510809",
+      "name": "LES"
+    },
+    {
+      "id": "5108092008",
+      "district_id": "510809",
+      "name": "PENUKTUKAN"
+    },
+    {
+      "id": "5108092009",
+      "district_id": "510809",
+      "name": "SAMBIRENTENG"
+    },
+    {
+      "id": "5108092010",
+      "district_id": "510809",
+      "name": "TEMBOK"
+    },
+    {
+      "id": "5171011001",
+      "district_id": "517101",
+      "name": "SERANGAN"
+    },
+    {
+      "id": "5171011002",
+      "district_id": "517101",
+      "name": "PEDUNGAN"
+    },
+    {
+      "id": "5171011003",
+      "district_id": "517101",
+      "name": "SESETAN"
+    },
+    {
+      "id": "5171011004",
+      "district_id": "517101",
+      "name": "PANJER"
+    },
+    {
+      "id": "5171011005",
+      "district_id": "517101",
+      "name": "RENON"
+    },
+    {
+      "id": "5171011006",
+      "district_id": "517101",
+      "name": "SANUR"
+    },
+    {
+      "id": "5171012007",
+      "district_id": "517101",
+      "name": "SIDAKARYA"
+    },
+    {
+      "id": "5171012008",
+      "district_id": "517101",
+      "name": "PEMOGAN"
+    },
+    {
+      "id": "5171012009",
+      "district_id": "517101",
+      "name": "SANUR KAJA"
+    },
+    {
+      "id": "5171012010",
+      "district_id": "517101",
+      "name": "SANUR KAUH"
+    },
+    {
+      "id": "5171021003",
+      "district_id": "517102",
+      "name": "KESIMAN"
+    },
+    {
+      "id": "5171021006",
+      "district_id": "517102",
+      "name": "SUMERTA"
+    },
+    {
+      "id": "5171021010",
+      "district_id": "517102",
+      "name": "DANGIN PURI"
+    },
+    {
+      "id": "5171021014",
+      "district_id": "517102",
+      "name": "PENATIH"
+    },
+    {
+      "id": "5171022001",
+      "district_id": "517102",
+      "name": "DANGIN PURI KELOD"
+    },
+    {
+      "id": "5171022002",
+      "district_id": "517102",
+      "name": "SUMERTA KELOD"
+    },
+    {
+      "id": "5171022004",
+      "district_id": "517102",
+      "name": "KESIMAN PETILAN"
+    },
+    {
+      "id": "5171022005",
+      "district_id": "517102",
+      "name": "KESIMAN KERTALANGU"
+    },
+    {
+      "id": "5171022007",
+      "district_id": "517102",
+      "name": "SUMERTA KAJA"
+    },
+    {
+      "id": "5171022008",
+      "district_id": "517102",
+      "name": "SUMERTA KAUH"
+    },
+    {
+      "id": "5171022015",
+      "district_id": "517102",
+      "name": "PENATIH DANGIN PURI"
+    },
+    {
+      "id": "5171031005",
+      "district_id": "517103",
+      "name": "DAUH PURI"
+    },
+    {
+      "id": "5171031007",
+      "district_id": "517103",
+      "name": "PEMECUTAN"
+    },
+    {
+      "id": "5171031010",
+      "district_id": "517103",
+      "name": "PADANGSAMBIAN"
+    },
+    {
+      "id": "5171032001",
+      "district_id": "517103",
+      "name": "PADANGSAMBIAN KELOD"
+    },
+    {
+      "id": "5171032002",
+      "district_id": "517103",
+      "name": "PEMECUTAN KELOD"
+    },
+    {
+      "id": "5171032003",
+      "district_id": "517103",
+      "name": "DAUH PURI KAUH"
+    },
+    {
+      "id": "5171032004",
+      "district_id": "517103",
+      "name": "DAUH PURI KELOD"
+    },
+    {
+      "id": "5171032006",
+      "district_id": "517103",
+      "name": "DAUH PURI KANGIN"
+    },
+    {
+      "id": "5171032008",
+      "district_id": "517103",
+      "name": "TEGAL HARUM"
+    },
+    {
+      "id": "5171032009",
+      "district_id": "517103",
+      "name": "TEGAL KERTHA"
+    },
+    {
+      "id": "5171032011",
+      "district_id": "517103",
+      "name": "PADANG SAMBIAN KAJA"
+    },
+    {
+      "id": "5171041004",
+      "district_id": "517104",
+      "name": "TONJA"
+    },
+    {
+      "id": "5171041007",
+      "district_id": "517104",
+      "name": "UBUNG"
+    },
+    {
+      "id": "5171041009",
+      "district_id": "517104",
+      "name": "PEGUYANGAN"
+    },
+    {
+      "id": "5171042001",
+      "district_id": "517104",
+      "name": "DANGIN PURI KANGIN"
+    },
+    {
+      "id": "5171042002",
+      "district_id": "517104",
+      "name": "DANGIN PURI KAUH"
+    },
+    {
+      "id": "5171042003",
+      "district_id": "517104",
+      "name": "DANGIN PURI KAJA"
+    },
+    {
+      "id": "5171042005",
+      "district_id": "517104",
+      "name": "PEMECUTAN KAJA"
+    },
+    {
+      "id": "5171042006",
+      "district_id": "517104",
+      "name": "DAUH PURI KAJA"
+    },
+    {
+      "id": "5171042008",
+      "district_id": "517104",
+      "name": "UBUNG KAJA"
+    },
+    {
+      "id": "5171042010",
+      "district_id": "517104",
+      "name": "PEGUYANGAN KAJA"
+    },
+    {
+      "id": "5171042011",
+      "district_id": "517104",
+      "name": "PEGUYANGAN KANGIN"
+    }
+  ]
+}

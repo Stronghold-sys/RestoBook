@@ -1,0 +1,1587 @@
+{
+  "regencies": [
+    {
+      "id": "3101",
+      "name": "KABUPATEN ADMINISTRASI KEPULAUAN SERIBU"
+    },
+    {
+      "id": "3171",
+      "name": "KOTA ADMINISTRASI JAKARTA PUSAT"
+    },
+    {
+      "id": "3172",
+      "name": "KOTA ADMINISTRASI JAKARTA UTARA"
+    },
+    {
+      "id": "3173",
+      "name": "KOTA ADMINISTRASI JAKARTA BARAT"
+    },
+    {
+      "id": "3174",
+      "name": "KOTA ADMINISTRASI JAKARTA SELATAN"
+    },
+    {
+      "id": "3175",
+      "name": "KOTA ADMINISTRASI JAKARTA TIMUR"
+    }
+  ],
+  "districts": [
+    {
+      "id": "310101",
+      "regency_id": "3101",
+      "name": "KEPULAUAN SERIBU UTARA"
+    },
+    {
+      "id": "310102",
+      "regency_id": "3101",
+      "name": "KEPULAUAN SERIBU SELATAN"
+    },
+    {
+      "id": "317101",
+      "regency_id": "3171",
+      "name": "GAMBIR"
+    },
+    {
+      "id": "317102",
+      "regency_id": "3171",
+      "name": "SAWAH BESAR"
+    },
+    {
+      "id": "317103",
+      "regency_id": "3171",
+      "name": "KEMAYORAN"
+    },
+    {
+      "id": "317104",
+      "regency_id": "3171",
+      "name": "SENEN"
+    },
+    {
+      "id": "317105",
+      "regency_id": "3171",
+      "name": "CEMPAKA PUTIH"
+    },
+    {
+      "id": "317106",
+      "regency_id": "3171",
+      "name": "MENTENG"
+    },
+    {
+      "id": "317107",
+      "regency_id": "3171",
+      "name": "TANAH ABANG"
+    },
+    {
+      "id": "317108",
+      "regency_id": "3171",
+      "name": "JOHAR BARU"
+    },
+    {
+      "id": "317201",
+      "regency_id": "3172",
+      "name": "PENJARINGAN"
+    },
+    {
+      "id": "317202",
+      "regency_id": "3172",
+      "name": "TANJUNG PRIOK"
+    },
+    {
+      "id": "317203",
+      "regency_id": "3172",
+      "name": "KOJA"
+    },
+    {
+      "id": "317204",
+      "regency_id": "3172",
+      "name": "CILINCING"
+    },
+    {
+      "id": "317205",
+      "regency_id": "3172",
+      "name": "PADEMANGAN"
+    },
+    {
+      "id": "317206",
+      "regency_id": "3172",
+      "name": "KELAPA GADING"
+    },
+    {
+      "id": "317301",
+      "regency_id": "3173",
+      "name": "CENGKARENG"
+    },
+    {
+      "id": "317302",
+      "regency_id": "3173",
+      "name": "GROGOL PETAMBURAN"
+    },
+    {
+      "id": "317303",
+      "regency_id": "3173",
+      "name": "TAMAN SARI"
+    },
+    {
+      "id": "317304",
+      "regency_id": "3173",
+      "name": "TAMBORA"
+    },
+    {
+      "id": "317305",
+      "regency_id": "3173",
+      "name": "KEBON JERUK"
+    },
+    {
+      "id": "317306",
+      "regency_id": "3173",
+      "name": "KALIDERES"
+    },
+    {
+      "id": "317307",
+      "regency_id": "3173",
+      "name": "PAL MERAH"
+    },
+    {
+      "id": "317308",
+      "regency_id": "3173",
+      "name": "KEMBANGAN"
+    },
+    {
+      "id": "317401",
+      "regency_id": "3174",
+      "name": "TEBET"
+    },
+    {
+      "id": "317402",
+      "regency_id": "3174",
+      "name": "SETIABUDI"
+    },
+    {
+      "id": "317403",
+      "regency_id": "3174",
+      "name": "MAMPANG PRAPATAN"
+    },
+    {
+      "id": "317404",
+      "regency_id": "3174",
+      "name": "PASAR MINGGU"
+    },
+    {
+      "id": "317405",
+      "regency_id": "3174",
+      "name": "KEBAYORAN LAMA"
+    },
+    {
+      "id": "317406",
+      "regency_id": "3174",
+      "name": "CILANDAK"
+    },
+    {
+      "id": "317407",
+      "regency_id": "3174",
+      "name": "KEBAYORAN BARU"
+    },
+    {
+      "id": "317408",
+      "regency_id": "3174",
+      "name": "PANCORAN"
+    },
+    {
+      "id": "317409",
+      "regency_id": "3174",
+      "name": "JAGAKARSA"
+    },
+    {
+      "id": "317410",
+      "regency_id": "3174",
+      "name": "PESANGGRAHAN"
+    },
+    {
+      "id": "317501",
+      "regency_id": "3175",
+      "name": "MATRAMAN"
+    },
+    {
+      "id": "317502",
+      "regency_id": "3175",
+      "name": "PULOGADUNG"
+    },
+    {
+      "id": "317503",
+      "regency_id": "3175",
+      "name": "JATINEGARA"
+    },
+    {
+      "id": "317504",
+      "regency_id": "3175",
+      "name": "KRAMATJATI"
+    },
+    {
+      "id": "317505",
+      "regency_id": "3175",
+      "name": "PASAR REBO"
+    },
+    {
+      "id": "317506",
+      "regency_id": "3175",
+      "name": "CAKUNG"
+    },
+    {
+      "id": "317507",
+      "regency_id": "3175",
+      "name": "DUREN SAWIT"
+    },
+    {
+      "id": "317508",
+      "regency_id": "3175",
+      "name": "MAKASAR"
+    },
+    {
+      "id": "317509",
+      "regency_id": "3175",
+      "name": "CIRACAS"
+    },
+    {
+      "id": "317510",
+      "regency_id": "3175",
+      "name": "CIPAYUNG"
+    }
+  ],
+  "villages": [
+    {
+      "id": "3101011001",
+      "district_id": "310101",
+      "name": "PULAU PANGGANG"
+    },
+    {
+      "id": "3101011002",
+      "district_id": "310101",
+      "name": "PULAU KELAPA"
+    },
+    {
+      "id": "3101011003",
+      "district_id": "310101",
+      "name": "PULAU HARAPAN"
+    },
+    {
+      "id": "3101021001",
+      "district_id": "310102",
+      "name": "PULAU UNTUNG JAWA"
+    },
+    {
+      "id": "3101021002",
+      "district_id": "310102",
+      "name": "PULAU TIDUNG"
+    },
+    {
+      "id": "3101021003",
+      "district_id": "310102",
+      "name": "PULAU PARI"
+    },
+    {
+      "id": "3171011001",
+      "district_id": "317101",
+      "name": "GAMBIR"
+    },
+    {
+      "id": "3171011002",
+      "district_id": "317101",
+      "name": "CIDENG"
+    },
+    {
+      "id": "3171011003",
+      "district_id": "317101",
+      "name": "PETOJO UTARA"
+    },
+    {
+      "id": "3171011004",
+      "district_id": "317101",
+      "name": "PETOJO SELATAN"
+    },
+    {
+      "id": "3171011005",
+      "district_id": "317101",
+      "name": "KEBON KELAPA"
+    },
+    {
+      "id": "3171011006",
+      "district_id": "317101",
+      "name": "DURI PULO"
+    },
+    {
+      "id": "3171021001",
+      "district_id": "317102",
+      "name": "PASAR BARU"
+    },
+    {
+      "id": "3171021002",
+      "district_id": "317102",
+      "name": "KARANG ANYAR"
+    },
+    {
+      "id": "3171021003",
+      "district_id": "317102",
+      "name": "KARTINI"
+    },
+    {
+      "id": "3171021004",
+      "district_id": "317102",
+      "name": "GUNUNG SAHARI UTARA"
+    },
+    {
+      "id": "3171021005",
+      "district_id": "317102",
+      "name": "MANGGA DUA SELATAN"
+    },
+    {
+      "id": "3171031001",
+      "district_id": "317103",
+      "name": "KEMAYORAN"
+    },
+    {
+      "id": "3171031002",
+      "district_id": "317103",
+      "name": "KEBON KOSONG"
+    },
+    {
+      "id": "3171031003",
+      "district_id": "317103",
+      "name": "HARAPAN MULIA"
+    },
+    {
+      "id": "3171031004",
+      "district_id": "317103",
+      "name": "SERDANG"
+    },
+    {
+      "id": "3171031005",
+      "district_id": "317103",
+      "name": "GUNUNG SAHARI SELATAN"
+    },
+    {
+      "id": "3171031006",
+      "district_id": "317103",
+      "name": "CEMPAKA BARU"
+    },
+    {
+      "id": "3171031007",
+      "district_id": "317103",
+      "name": "SUMUR BATU"
+    },
+    {
+      "id": "3171031008",
+      "district_id": "317103",
+      "name": "UTAN PANJANG"
+    },
+    {
+      "id": "3171041001",
+      "district_id": "317104",
+      "name": "SENEN"
+    },
+    {
+      "id": "3171041002",
+      "district_id": "317104",
+      "name": "KENARI"
+    },
+    {
+      "id": "3171041003",
+      "district_id": "317104",
+      "name": "PASEBAN"
+    },
+    {
+      "id": "3171041004",
+      "district_id": "317104",
+      "name": "KRAMAT"
+    },
+    {
+      "id": "3171041005",
+      "district_id": "317104",
+      "name": "KWITANG"
+    },
+    {
+      "id": "3171041006",
+      "district_id": "317104",
+      "name": "BUNGUR"
+    },
+    {
+      "id": "3171051001",
+      "district_id": "317105",
+      "name": "CEMPAKA PUTIH TIMUR"
+    },
+    {
+      "id": "3171051002",
+      "district_id": "317105",
+      "name": "CEMPAKA PUTIH BARAT"
+    },
+    {
+      "id": "3171051003",
+      "district_id": "317105",
+      "name": "RAWASARI"
+    },
+    {
+      "id": "3171061001",
+      "district_id": "317106",
+      "name": "MENTENG"
+    },
+    {
+      "id": "3171061002",
+      "district_id": "317106",
+      "name": "PEGANGSAAN"
+    },
+    {
+      "id": "3171061003",
+      "district_id": "317106",
+      "name": "CIKINI"
+    },
+    {
+      "id": "3171061004",
+      "district_id": "317106",
+      "name": "GONDANGDIA"
+    },
+    {
+      "id": "3171061005",
+      "district_id": "317106",
+      "name": "KEBON SIRIH"
+    },
+    {
+      "id": "3171071001",
+      "district_id": "317107",
+      "name": "GELORA"
+    },
+    {
+      "id": "3171071002",
+      "district_id": "317107",
+      "name": "BENDUNGAN HILIR"
+    },
+    {
+      "id": "3171071003",
+      "district_id": "317107",
+      "name": "KARET TENGSIN"
+    },
+    {
+      "id": "3171071004",
+      "district_id": "317107",
+      "name": "PETAMBURAN"
+    },
+    {
+      "id": "3171071005",
+      "district_id": "317107",
+      "name": "KEBON MELATI"
+    },
+    {
+      "id": "3171071006",
+      "district_id": "317107",
+      "name": "KEBON KACANG"
+    },
+    {
+      "id": "3171071007",
+      "district_id": "317107",
+      "name": "KAMPUNG BALI"
+    },
+    {
+      "id": "3171081001",
+      "district_id": "317108",
+      "name": "JOHAR BARU"
+    },
+    {
+      "id": "3171081002",
+      "district_id": "317108",
+      "name": "KAMPUNG RAWA"
+    },
+    {
+      "id": "3171081003",
+      "district_id": "317108",
+      "name": "GALUR"
+    },
+    {
+      "id": "3171081004",
+      "district_id": "317108",
+      "name": "TANAH TINGGI"
+    },
+    {
+      "id": "3172011001",
+      "district_id": "317201",
+      "name": "PENJARINGAN"
+    },
+    {
+      "id": "3172011002",
+      "district_id": "317201",
+      "name": "KAMAL MUARA"
+    },
+    {
+      "id": "3172011003",
+      "district_id": "317201",
+      "name": "KAPUK MUARA"
+    },
+    {
+      "id": "3172011004",
+      "district_id": "317201",
+      "name": "PEJAGALAN"
+    },
+    {
+      "id": "3172011005",
+      "district_id": "317201",
+      "name": "PLUIT"
+    },
+    {
+      "id": "3172021001",
+      "district_id": "317202",
+      "name": "TANJUNG PRIOK"
+    },
+    {
+      "id": "3172021002",
+      "district_id": "317202",
+      "name": "SUNTER JAYA"
+    },
+    {
+      "id": "3172021003",
+      "district_id": "317202",
+      "name": "PAPANGGO"
+    },
+    {
+      "id": "3172021004",
+      "district_id": "317202",
+      "name": "SUNGAI BAMBU"
+    },
+    {
+      "id": "3172021005",
+      "district_id": "317202",
+      "name": "KEBON BAWANG"
+    },
+    {
+      "id": "3172021006",
+      "district_id": "317202",
+      "name": "SUNTER AGUNG"
+    },
+    {
+      "id": "3172021007",
+      "district_id": "317202",
+      "name": "WARAKAS"
+    },
+    {
+      "id": "3172031001",
+      "district_id": "317203",
+      "name": "KOJA"
+    },
+    {
+      "id": "3172031002",
+      "district_id": "317203",
+      "name": "TUGU UTARA"
+    },
+    {
+      "id": "3172031003",
+      "district_id": "317203",
+      "name": "LAGOA"
+    },
+    {
+      "id": "3172031004",
+      "district_id": "317203",
+      "name": "RAWA BADAK UTARA"
+    },
+    {
+      "id": "3172031005",
+      "district_id": "317203",
+      "name": "TUGU SELATAN"
+    },
+    {
+      "id": "3172031006",
+      "district_id": "317203",
+      "name": "RAWA BADAK SELATAN"
+    },
+    {
+      "id": "3172041001",
+      "district_id": "317204",
+      "name": "CILINCING"
+    },
+    {
+      "id": "3172041002",
+      "district_id": "317204",
+      "name": "SUKAPURA"
+    },
+    {
+      "id": "3172041003",
+      "district_id": "317204",
+      "name": "MARUNDA"
+    },
+    {
+      "id": "3172041004",
+      "district_id": "317204",
+      "name": "KALIBARU"
+    },
+    {
+      "id": "3172041005",
+      "district_id": "317204",
+      "name": "SEMPER TIMUR"
+    },
+    {
+      "id": "3172041006",
+      "district_id": "317204",
+      "name": "ROROTAN"
+    },
+    {
+      "id": "3172041007",
+      "district_id": "317204",
+      "name": "SEMPER BARAT"
+    },
+    {
+      "id": "3172051001",
+      "district_id": "317205",
+      "name": "PADEMANGAN TIMUR"
+    },
+    {
+      "id": "3172051002",
+      "district_id": "317205",
+      "name": "PADEMANGAN BARAT"
+    },
+    {
+      "id": "3172051003",
+      "district_id": "317205",
+      "name": "ANCOL"
+    },
+    {
+      "id": "3172061001",
+      "district_id": "317206",
+      "name": "KELAPA GADING TIMUR"
+    },
+    {
+      "id": "3172061002",
+      "district_id": "317206",
+      "name": "PEGANGSAAN DUA"
+    },
+    {
+      "id": "3172061003",
+      "district_id": "317206",
+      "name": "KELAPA GADING BARAT"
+    },
+    {
+      "id": "3173011001",
+      "district_id": "317301",
+      "name": "CENGKARENG BARAT"
+    },
+    {
+      "id": "3173011002",
+      "district_id": "317301",
+      "name": "DURI KOSAMBI"
+    },
+    {
+      "id": "3173011003",
+      "district_id": "317301",
+      "name": "RAWA BUAYA"
+    },
+    {
+      "id": "3173011004",
+      "district_id": "317301",
+      "name": "KEDAUNG KALI ANGKE"
+    },
+    {
+      "id": "3173011005",
+      "district_id": "317301",
+      "name": "KAPUK"
+    },
+    {
+      "id": "3173011006",
+      "district_id": "317301",
+      "name": "CENGKARENG TIMUR"
+    },
+    {
+      "id": "3173021001",
+      "district_id": "317302",
+      "name": "GROGOL"
+    },
+    {
+      "id": "3173021002",
+      "district_id": "317302",
+      "name": "TANJUNG DUREN UTARA"
+    },
+    {
+      "id": "3173021003",
+      "district_id": "317302",
+      "name": "TOMANG"
+    },
+    {
+      "id": "3173021004",
+      "district_id": "317302",
+      "name": "JELAMBAR"
+    },
+    {
+      "id": "3173021005",
+      "district_id": "317302",
+      "name": "TANJUNG DUREN SELATAN"
+    },
+    {
+      "id": "3173021006",
+      "district_id": "317302",
+      "name": "JELAMBAR BARU"
+    },
+    {
+      "id": "3173021007",
+      "district_id": "317302",
+      "name": "WIJAYA KUSUMA"
+    },
+    {
+      "id": "3173031001",
+      "district_id": "317303",
+      "name": "TAMAN SARI"
+    },
+    {
+      "id": "3173031002",
+      "district_id": "317303",
+      "name": "KRUKUT"
+    },
+    {
+      "id": "3173031003",
+      "district_id": "317303",
+      "name": "MAPHAR"
+    },
+    {
+      "id": "3173031004",
+      "district_id": "317303",
+      "name": "TANGKI"
+    },
+    {
+      "id": "3173031005",
+      "district_id": "317303",
+      "name": "MANGGA BESAR"
+    },
+    {
+      "id": "3173031006",
+      "district_id": "317303",
+      "name": "KEAGUNGAN"
+    },
+    {
+      "id": "3173031007",
+      "district_id": "317303",
+      "name": "GLODOK"
+    },
+    {
+      "id": "3173031008",
+      "district_id": "317303",
+      "name": "PINANGSIA"
+    },
+    {
+      "id": "3173041001",
+      "district_id": "317304",
+      "name": "TAMBORA"
+    },
+    {
+      "id": "3173041002",
+      "district_id": "317304",
+      "name": "KALI ANYAR"
+    },
+    {
+      "id": "3173041003",
+      "district_id": "317304",
+      "name": "DURI UTARA"
+    },
+    {
+      "id": "3173041004",
+      "district_id": "317304",
+      "name": "TANAH SEREAL"
+    },
+    {
+      "id": "3173041005",
+      "district_id": "317304",
+      "name": "KRENDANG"
+    },
+    {
+      "id": "3173041006",
+      "district_id": "317304",
+      "name": "JEMBATAN BESI"
+    },
+    {
+      "id": "3173041007",
+      "district_id": "317304",
+      "name": "ANGKE"
+    },
+    {
+      "id": "3173041008",
+      "district_id": "317304",
+      "name": "JEMBATAN LIMA"
+    },
+    {
+      "id": "3173041009",
+      "district_id": "317304",
+      "name": "PEKOJAN"
+    },
+    {
+      "id": "3173041010",
+      "district_id": "317304",
+      "name": "ROA MALAKA"
+    },
+    {
+      "id": "3173041011",
+      "district_id": "317304",
+      "name": "DURI SELATAN"
+    },
+    {
+      "id": "3173051001",
+      "district_id": "317305",
+      "name": "KEBON JERUK"
+    },
+    {
+      "id": "3173051002",
+      "district_id": "317305",
+      "name": "SUKABUMI UTARA"
+    },
+    {
+      "id": "3173051003",
+      "district_id": "317305",
+      "name": "SUKABUMI SELATAN"
+    },
+    {
+      "id": "3173051004",
+      "district_id": "317305",
+      "name": "KELAPA DUA"
+    },
+    {
+      "id": "3173051005",
+      "district_id": "317305",
+      "name": "DURI KEPA"
+    },
+    {
+      "id": "3173051006",
+      "district_id": "317305",
+      "name": "KEDOYA UTARA"
+    },
+    {
+      "id": "3173051007",
+      "district_id": "317305",
+      "name": "KEDOYA SELATAN"
+    },
+    {
+      "id": "3173061001",
+      "district_id": "317306",
+      "name": "KALIDERES"
+    },
+    {
+      "id": "3173061002",
+      "district_id": "317306",
+      "name": "SEMANAN"
+    },
+    {
+      "id": "3173061003",
+      "district_id": "317306",
+      "name": "TEGAL ALUR"
+    },
+    {
+      "id": "3173061004",
+      "district_id": "317306",
+      "name": "KAMAL"
+    },
+    {
+      "id": "3173061005",
+      "district_id": "317306",
+      "name": "PEGADUNGAN"
+    },
+    {
+      "id": "3173071001",
+      "district_id": "317307",
+      "name": "PALMERAH"
+    },
+    {
+      "id": "3173071002",
+      "district_id": "317307",
+      "name": "SLIPI"
+    },
+    {
+      "id": "3173071003",
+      "district_id": "317307",
+      "name": "KOTA BAMBU UTARA"
+    },
+    {
+      "id": "3173071004",
+      "district_id": "317307",
+      "name": "JATIPULO"
+    },
+    {
+      "id": "3173071005",
+      "district_id": "317307",
+      "name": "KEMANGGISAN"
+    },
+    {
+      "id": "3173071006",
+      "district_id": "317307",
+      "name": "KOTA BAMBU SELATAN"
+    },
+    {
+      "id": "3173081001",
+      "district_id": "317308",
+      "name": "KEMBANGAN UTARA"
+    },
+    {
+      "id": "3173081002",
+      "district_id": "317308",
+      "name": "MERUYA UTARA"
+    },
+    {
+      "id": "3173081003",
+      "district_id": "317308",
+      "name": "MERUYA SELATAN"
+    },
+    {
+      "id": "3173081004",
+      "district_id": "317308",
+      "name": "SRENGSENG"
+    },
+    {
+      "id": "3173081005",
+      "district_id": "317308",
+      "name": "JOGLO"
+    },
+    {
+      "id": "3173081006",
+      "district_id": "317308",
+      "name": "KEMBANGAN SELATAN"
+    },
+    {
+      "id": "3174011001",
+      "district_id": "317401",
+      "name": "TEBET TIMUR"
+    },
+    {
+      "id": "3174011002",
+      "district_id": "317401",
+      "name": "TEBET BARAT"
+    },
+    {
+      "id": "3174011003",
+      "district_id": "317401",
+      "name": "MENTENG DALAM"
+    },
+    {
+      "id": "3174011004",
+      "district_id": "317401",
+      "name": "KEBON BARU"
+    },
+    {
+      "id": "3174011005",
+      "district_id": "317401",
+      "name": "BUKIT DURI"
+    },
+    {
+      "id": "3174011006",
+      "district_id": "317401",
+      "name": "MANGGARAI SELATAN"
+    },
+    {
+      "id": "3174011007",
+      "district_id": "317401",
+      "name": "MANGGARAI"
+    },
+    {
+      "id": "3174021001",
+      "district_id": "317402",
+      "name": "SETIA BUDI"
+    },
+    {
+      "id": "3174021002",
+      "district_id": "317402",
+      "name": "KARET SEMANGGI"
+    },
+    {
+      "id": "3174021003",
+      "district_id": "317402",
+      "name": "KARET KUNINGAN"
+    },
+    {
+      "id": "3174021004",
+      "district_id": "317402",
+      "name": "KARET"
+    },
+    {
+      "id": "3174021005",
+      "district_id": "317402",
+      "name": "MENTENG ATAS"
+    },
+    {
+      "id": "3174021006",
+      "district_id": "317402",
+      "name": "PASAR MANGGIS"
+    },
+    {
+      "id": "3174021007",
+      "district_id": "317402",
+      "name": "GUNTUR"
+    },
+    {
+      "id": "3174021008",
+      "district_id": "317402",
+      "name": "KUNINGAN TIMUR"
+    },
+    {
+      "id": "3174031001",
+      "district_id": "317403",
+      "name": "MAMPANG PRAPATAN"
+    },
+    {
+      "id": "3174031002",
+      "district_id": "317403",
+      "name": "BANGKA"
+    },
+    {
+      "id": "3174031003",
+      "district_id": "317403",
+      "name": "PELA MAMPANG"
+    },
+    {
+      "id": "3174031004",
+      "district_id": "317403",
+      "name": "TEGAL PARANG"
+    },
+    {
+      "id": "3174031005",
+      "district_id": "317403",
+      "name": "KUNINGAN BARAT"
+    },
+    {
+      "id": "3174041001",
+      "district_id": "317404",
+      "name": "PASAR MINGGU"
+    },
+    {
+      "id": "3174041002",
+      "district_id": "317404",
+      "name": "JATI PADANG"
+    },
+    {
+      "id": "3174041003",
+      "district_id": "317404",
+      "name": "CILANDAK TIMUR"
+    },
+    {
+      "id": "3174041004",
+      "district_id": "317404",
+      "name": "RAGUNAN"
+    },
+    {
+      "id": "3174041005",
+      "district_id": "317404",
+      "name": "PEJATEN TIMUR"
+    },
+    {
+      "id": "3174041006",
+      "district_id": "317404",
+      "name": "PEJATEN BARAT"
+    },
+    {
+      "id": "3174041007",
+      "district_id": "317404",
+      "name": "KEBAGUSAN"
+    },
+    {
+      "id": "3174051001",
+      "district_id": "317405",
+      "name": "KEBAYORAN LAMA UTARA"
+    },
+    {
+      "id": "3174051002",
+      "district_id": "317405",
+      "name": "PONDOK PINANG"
+    },
+    {
+      "id": "3174051003",
+      "district_id": "317405",
+      "name": "CIPULIR"
+    },
+    {
+      "id": "3174051004",
+      "district_id": "317405",
+      "name": "GROGOL UTARA"
+    },
+    {
+      "id": "3174051005",
+      "district_id": "317405",
+      "name": "GROGOL SELATAN"
+    },
+    {
+      "id": "3174051006",
+      "district_id": "317405",
+      "name": "KEBAYORAN LAMA SELATAN"
+    },
+    {
+      "id": "3174061001",
+      "district_id": "317406",
+      "name": "CILANDAK BARAT"
+    },
+    {
+      "id": "3174061002",
+      "district_id": "317406",
+      "name": "LEBAK BULUS"
+    },
+    {
+      "id": "3174061003",
+      "district_id": "317406",
+      "name": "PONDOK LABU"
+    },
+    {
+      "id": "3174061004",
+      "district_id": "317406",
+      "name": "GANDARIA SELATAN"
+    },
+    {
+      "id": "3174061005",
+      "district_id": "317406",
+      "name": "CIPETE SELATAN"
+    },
+    {
+      "id": "3174071001",
+      "district_id": "317407",
+      "name": "MELAWAI"
+    },
+    {
+      "id": "3174071002",
+      "district_id": "317407",
+      "name": "GUNUNG"
+    },
+    {
+      "id": "3174071003",
+      "district_id": "317407",
+      "name": "KRAMAT PELA"
+    },
+    {
+      "id": "3174071004",
+      "district_id": "317407",
+      "name": "SELONG"
+    },
+    {
+      "id": "3174071005",
+      "district_id": "317407",
+      "name": "RAWA BARAT"
+    },
+    {
+      "id": "3174071006",
+      "district_id": "317407",
+      "name": "SENAYAN"
+    },
+    {
+      "id": "3174071007",
+      "district_id": "317407",
+      "name": "PULO"
+    },
+    {
+      "id": "3174071008",
+      "district_id": "317407",
+      "name": "PETOGOGAN"
+    },
+    {
+      "id": "3174071009",
+      "district_id": "317407",
+      "name": "GANDARIA UTARA"
+    },
+    {
+      "id": "3174071010",
+      "district_id": "317407",
+      "name": "CIPETE UTARA"
+    },
+    {
+      "id": "3174081001",
+      "district_id": "317408",
+      "name": "PANCORAN"
+    },
+    {
+      "id": "3174081002",
+      "district_id": "317408",
+      "name": "KALIBATA"
+    },
+    {
+      "id": "3174081003",
+      "district_id": "317408",
+      "name": "RAWAJATI"
+    },
+    {
+      "id": "3174081004",
+      "district_id": "317408",
+      "name": "DUREN TIGA"
+    },
+    {
+      "id": "3174081005",
+      "district_id": "317408",
+      "name": "PENGADEGAN"
+    },
+    {
+      "id": "3174081006",
+      "district_id": "317408",
+      "name": "CIKOKO"
+    },
+    {
+      "id": "3174091001",
+      "district_id": "317409",
+      "name": "JAGAKARSA"
+    },
+    {
+      "id": "3174091002",
+      "district_id": "317409",
+      "name": "SRENGSENG SAWAH"
+    },
+    {
+      "id": "3174091003",
+      "district_id": "317409",
+      "name": "CIGANJUR"
+    },
+    {
+      "id": "3174091004",
+      "district_id": "317409",
+      "name": "LENTENG AGUNG"
+    },
+    {
+      "id": "3174091005",
+      "district_id": "317409",
+      "name": "TANJUNG BARAT"
+    },
+    {
+      "id": "3174091006",
+      "district_id": "317409",
+      "name": "CIPEDAK"
+    },
+    {
+      "id": "3174101001",
+      "district_id": "317410",
+      "name": "PESANGGRAHAN"
+    },
+    {
+      "id": "3174101002",
+      "district_id": "317410",
+      "name": "BINTARO"
+    },
+    {
+      "id": "3174101003",
+      "district_id": "317410",
+      "name": "PETUKANGAN UTARA"
+    },
+    {
+      "id": "3174101004",
+      "district_id": "317410",
+      "name": "PETUKANGAN SELATAN"
+    },
+    {
+      "id": "3174101005",
+      "district_id": "317410",
+      "name": "ULUJAMI"
+    },
+    {
+      "id": "3175011001",
+      "district_id": "317501",
+      "name": "PISANGAN BARU"
+    },
+    {
+      "id": "3175011002",
+      "district_id": "317501",
+      "name": "UTAN KAYU UTARA"
+    },
+    {
+      "id": "3175011003",
+      "district_id": "317501",
+      "name": "KAYU MANIS"
+    },
+    {
+      "id": "3175011004",
+      "district_id": "317501",
+      "name": "PALMERIAM"
+    },
+    {
+      "id": "3175011005",
+      "district_id": "317501",
+      "name": "KEBON MANGGIS"
+    },
+    {
+      "id": "3175011006",
+      "district_id": "317501",
+      "name": "UTAN KAYU SELATAN"
+    },
+    {
+      "id": "3175021001",
+      "district_id": "317502",
+      "name": "PULO GADUNG"
+    },
+    {
+      "id": "3175021002",
+      "district_id": "317502",
+      "name": "PISANGAN TIMUR"
+    },
+    {
+      "id": "3175021003",
+      "district_id": "317502",
+      "name": "CIPINANG"
+    },
+    {
+      "id": "3175021004",
+      "district_id": "317502",
+      "name": "JATINEGARA KAUM"
+    },
+    {
+      "id": "3175021005",
+      "district_id": "317502",
+      "name": "RAWAMANGUN"
+    },
+    {
+      "id": "3175021006",
+      "district_id": "317502",
+      "name": "KAYU PUTIH"
+    },
+    {
+      "id": "3175021007",
+      "district_id": "317502",
+      "name": "JATI"
+    },
+    {
+      "id": "3175031001",
+      "district_id": "317503",
+      "name": "KAMPUNG MELAYU"
+    },
+    {
+      "id": "3175031002",
+      "district_id": "317503",
+      "name": "BIDARA CINA"
+    },
+    {
+      "id": "3175031003",
+      "district_id": "317503",
+      "name": "BALI MESTER"
+    },
+    {
+      "id": "3175031004",
+      "district_id": "317503",
+      "name": "RAWA BUNGA"
+    },
+    {
+      "id": "3175031005",
+      "district_id": "317503",
+      "name": "CIPINANG CEMPEDAK"
+    },
+    {
+      "id": "3175031006",
+      "district_id": "317503",
+      "name": "CIPINANG MUARA"
+    },
+    {
+      "id": "3175031007",
+      "district_id": "317503",
+      "name": "CIPINANG BESAR SELATAN"
+    },
+    {
+      "id": "3175031008",
+      "district_id": "317503",
+      "name": "CIPINANG BESAR UTARA"
+    },
+    {
+      "id": "3175041001",
+      "district_id": "317504",
+      "name": "KRAMATJATI"
+    },
+    {
+      "id": "3175041002",
+      "district_id": "317504",
+      "name": "TENGAH"
+    },
+    {
+      "id": "3175041003",
+      "district_id": "317504",
+      "name": "DUKUH"
+    },
+    {
+      "id": "3175041004",
+      "district_id": "317504",
+      "name": "BATU AMPAR"
+    },
+    {
+      "id": "3175041005",
+      "district_id": "317504",
+      "name": "BALEKAMBANG"
+    },
+    {
+      "id": "3175041006",
+      "district_id": "317504",
+      "name": "CILILITAN"
+    },
+    {
+      "id": "3175041007",
+      "district_id": "317504",
+      "name": "CAWANG"
+    },
+    {
+      "id": "3175051001",
+      "district_id": "317505",
+      "name": "GEDONG"
+    },
+    {
+      "id": "3175051002",
+      "district_id": "317505",
+      "name": "BARU"
+    },
+    {
+      "id": "3175051003",
+      "district_id": "317505",
+      "name": "CIJANTUNG"
+    },
+    {
+      "id": "3175051004",
+      "district_id": "317505",
+      "name": "KALISARI"
+    },
+    {
+      "id": "3175051005",
+      "district_id": "317505",
+      "name": "PEKAYON"
+    },
+    {
+      "id": "3175061001",
+      "district_id": "317506",
+      "name": "JATINEGARA"
+    },
+    {
+      "id": "3175061002",
+      "district_id": "317506",
+      "name": "RAWA TERATE"
+    },
+    {
+      "id": "3175061003",
+      "district_id": "317506",
+      "name": "PENGGILINGAN"
+    },
+    {
+      "id": "3175061004",
+      "district_id": "317506",
+      "name": "CAKUNG TIMUR"
+    },
+    {
+      "id": "3175061005",
+      "district_id": "317506",
+      "name": "PULO GEBANG"
+    },
+    {
+      "id": "3175061006",
+      "district_id": "317506",
+      "name": "UJUNG MENTENG"
+    },
+    {
+      "id": "3175061007",
+      "district_id": "317506",
+      "name": "CAKUNG BARAT"
+    },
+    {
+      "id": "3175071001",
+      "district_id": "317507",
+      "name": "DUREN SAWIT"
+    },
+    {
+      "id": "3175071002",
+      "district_id": "317507",
+      "name": "PONDOK BAMBU"
+    },
+    {
+      "id": "3175071003",
+      "district_id": "317507",
+      "name": "KLENDER"
+    },
+    {
+      "id": "3175071004",
+      "district_id": "317507",
+      "name": "PONDOK KELAPA"
+    },
+    {
+      "id": "3175071005",
+      "district_id": "317507",
+      "name": "MALAKA SARI"
+    },
+    {
+      "id": "3175071006",
+      "district_id": "317507",
+      "name": "MALAKA JAYA"
+    },
+    {
+      "id": "3175071007",
+      "district_id": "317507",
+      "name": "PONDOK KOPI"
+    },
+    {
+      "id": "3175081001",
+      "district_id": "317508",
+      "name": "MAKASAR"
+    },
+    {
+      "id": "3175081002",
+      "district_id": "317508",
+      "name": "PINANGRANTI"
+    },
+    {
+      "id": "3175081003",
+      "district_id": "317508",
+      "name": "KEBON PALA"
+    },
+    {
+      "id": "3175081004",
+      "district_id": "317508",
+      "name": "HALIM PERDANA KUSUMA"
+    },
+    {
+      "id": "3175081005",
+      "district_id": "317508",
+      "name": "CIPINANG MELAYU"
+    },
+    {
+      "id": "3175091001",
+      "district_id": "317509",
+      "name": "CIRACAS"
+    },
+    {
+      "id": "3175091002",
+      "district_id": "317509",
+      "name": "CIBUBUR"
+    },
+    {
+      "id": "3175091003",
+      "district_id": "317509",
+      "name": "KELAPA DUA WETAN"
+    },
+    {
+      "id": "3175091004",
+      "district_id": "317509",
+      "name": "SUSUKAN"
+    },
+    {
+      "id": "3175091005",
+      "district_id": "317509",
+      "name": "RAMBUTAN"
+    },
+    {
+      "id": "3175101001",
+      "district_id": "317510",
+      "name": "CIPAYUNG"
+    },
+    {
+      "id": "3175101002",
+      "district_id": "317510",
+      "name": "CILANGKAP"
+    },
+    {
+      "id": "3175101003",
+      "district_id": "317510",
+      "name": "PONDOK RANGGON"
+    },
+    {
+      "id": "3175101004",
+      "district_id": "317510",
+      "name": "MUNJUL"
+    },
+    {
+      "id": "3175101005",
+      "district_id": "317510",
+      "name": "SETU"
+    },
+    {
+      "id": "3175101006",
+      "district_id": "317510",
+      "name": "BAMBU APUS"
+    },
+    {
+      "id": "3175101007",
+      "district_id": "317510",
+      "name": "LUBANG BUAYA"
+    },
+    {
+      "id": "3175101008",
+      "district_id": "317510",
+      "name": "CEGER"
+    }
+  ]
+}

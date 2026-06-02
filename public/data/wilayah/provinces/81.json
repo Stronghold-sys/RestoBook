@@ -1,0 +1,6822 @@
+{
+  "regencies": [
+    {
+      "id": "8101",
+      "name": "KABUPATEN MALUKU TENGAH"
+    },
+    {
+      "id": "8102",
+      "name": "KABUPATEN MALUKU TENGGARA"
+    },
+    {
+      "id": "8103",
+      "name": "KABUPATEN KEPULAUAN TANIMBAR"
+    },
+    {
+      "id": "8104",
+      "name": "KABUPATEN BURU"
+    },
+    {
+      "id": "8105",
+      "name": "KABUPATEN SERAM BAGIAN TIMUR"
+    },
+    {
+      "id": "8106",
+      "name": "KABUPATEN SERAM BAGIAN BARAT"
+    },
+    {
+      "id": "8107",
+      "name": "KABUPATEN KEPULAUAN ARU"
+    },
+    {
+      "id": "8108",
+      "name": "KABUPATEN MALUKU BARAT DAYA"
+    },
+    {
+      "id": "8109",
+      "name": "KABUPATEN BURU SELATAN"
+    },
+    {
+      "id": "8171",
+      "name": "KOTA AMBON"
+    },
+    {
+      "id": "8172",
+      "name": "KOTA TUAL"
+    }
+  ],
+  "districts": [
+    {
+      "id": "810101",
+      "regency_id": "8101",
+      "name": "AMAHAI"
+    },
+    {
+      "id": "810102",
+      "regency_id": "8101",
+      "name": "TEON NILA SERUA"
+    },
+    {
+      "id": "810106",
+      "regency_id": "8101",
+      "name": "SERAM UTARA"
+    },
+    {
+      "id": "810109",
+      "regency_id": "8101",
+      "name": "BANDA"
+    },
+    {
+      "id": "810111",
+      "regency_id": "8101",
+      "name": "TEHORU"
+    },
+    {
+      "id": "810112",
+      "regency_id": "8101",
+      "name": "SAPARUA"
+    },
+    {
+      "id": "810113",
+      "regency_id": "8101",
+      "name": "PULAU HARUKU"
+    },
+    {
+      "id": "810114",
+      "regency_id": "8101",
+      "name": "SALAHUTU"
+    },
+    {
+      "id": "810115",
+      "regency_id": "8101",
+      "name": "LEIHITU"
+    },
+    {
+      "id": "810116",
+      "regency_id": "8101",
+      "name": "NUSA LAUT"
+    },
+    {
+      "id": "810117",
+      "regency_id": "8101",
+      "name": "KOTA MASOHI"
+    },
+    {
+      "id": "810120",
+      "regency_id": "8101",
+      "name": "SERAM UTARA BARAT"
+    },
+    {
+      "id": "810121",
+      "regency_id": "8101",
+      "name": "TELUK ELPAPUTIH"
+    },
+    {
+      "id": "810122",
+      "regency_id": "8101",
+      "name": "LEIHITU BARAT"
+    },
+    {
+      "id": "810123",
+      "regency_id": "8101",
+      "name": "TELUTIH"
+    },
+    {
+      "id": "810124",
+      "regency_id": "8101",
+      "name": "SERAM UTARA TIMUR SETI"
+    },
+    {
+      "id": "810125",
+      "regency_id": "8101",
+      "name": "SERAM UTARA TIMUR KOBI"
+    },
+    {
+      "id": "810126",
+      "regency_id": "8101",
+      "name": "SAPARUA TIMUR"
+    },
+    {
+      "id": "810201",
+      "regency_id": "8102",
+      "name": "KEI KECIL"
+    },
+    {
+      "id": "810203",
+      "regency_id": "8102",
+      "name": "KEI BESAR"
+    },
+    {
+      "id": "810204",
+      "regency_id": "8102",
+      "name": "KEI BESAR SELATAN"
+    },
+    {
+      "id": "810205",
+      "regency_id": "8102",
+      "name": "KEI BESAR UTARA TIMUR"
+    },
+    {
+      "id": "810213",
+      "regency_id": "8102",
+      "name": "KEI KECIL TIMUR"
+    },
+    {
+      "id": "810214",
+      "regency_id": "8102",
+      "name": "KEI KECIL BARAT"
+    },
+    {
+      "id": "810215",
+      "regency_id": "8102",
+      "name": "MANYEUW"
+    },
+    {
+      "id": "810216",
+      "regency_id": "8102",
+      "name": "HOAT SORBAY"
+    },
+    {
+      "id": "810217",
+      "regency_id": "8102",
+      "name": "KEI BESAR UTARA BARAT"
+    },
+    {
+      "id": "810218",
+      "regency_id": "8102",
+      "name": "KEI BESAR SELATAN BARAT"
+    },
+    {
+      "id": "810219",
+      "regency_id": "8102",
+      "name": "KEI KECIL TIMUR SELATAN"
+    },
+    {
+      "id": "810301",
+      "regency_id": "8103",
+      "name": "TANIMBAR SELATAN"
+    },
+    {
+      "id": "810302",
+      "regency_id": "8103",
+      "name": "SELARU"
+    },
+    {
+      "id": "810303",
+      "regency_id": "8103",
+      "name": "WERTAMRIAN"
+    },
+    {
+      "id": "810304",
+      "regency_id": "8103",
+      "name": "WERMAKTIAN"
+    },
+    {
+      "id": "810305",
+      "regency_id": "8103",
+      "name": "TANIMBAR UTARA"
+    },
+    {
+      "id": "810306",
+      "regency_id": "8103",
+      "name": "FORDATA"
+    },
+    {
+      "id": "810307",
+      "regency_id": "8103",
+      "name": "WUAR LABOBAR"
+    },
+    {
+      "id": "810308",
+      "regency_id": "8103",
+      "name": "KORMOMOLIN"
+    },
+    {
+      "id": "810309",
+      "regency_id": "8103",
+      "name": "NIRUNMAS"
+    },
+    {
+      "id": "810318",
+      "regency_id": "8103",
+      "name": "MOLU MARU"
+    },
+    {
+      "id": "810401",
+      "regency_id": "8104",
+      "name": "NAMLEA"
+    },
+    {
+      "id": "810402",
+      "regency_id": "8104",
+      "name": "AIR BUAYA"
+    },
+    {
+      "id": "810403",
+      "regency_id": "8104",
+      "name": "WAEAPO"
+    },
+    {
+      "id": "810406",
+      "regency_id": "8104",
+      "name": "WAPLAU"
+    },
+    {
+      "id": "810410",
+      "regency_id": "8104",
+      "name": "BATABUAL"
+    },
+    {
+      "id": "810411",
+      "regency_id": "8104",
+      "name": "LOLONG GUBA"
+    },
+    {
+      "id": "810412",
+      "regency_id": "8104",
+      "name": "WAELATA"
+    },
+    {
+      "id": "810413",
+      "regency_id": "8104",
+      "name": "FENA LEISELA"
+    },
+    {
+      "id": "810414",
+      "regency_id": "8104",
+      "name": "TELUK KAIELY"
+    },
+    {
+      "id": "810415",
+      "regency_id": "8104",
+      "name": "LILIALY"
+    },
+    {
+      "id": "810501",
+      "regency_id": "8105",
+      "name": "BULA"
+    },
+    {
+      "id": "810502",
+      "regency_id": "8105",
+      "name": "SERAM TIMUR"
+    },
+    {
+      "id": "810503",
+      "regency_id": "8105",
+      "name": "WERINAMA"
+    },
+    {
+      "id": "810504",
+      "regency_id": "8105",
+      "name": "PULAU GOROM"
+    },
+    {
+      "id": "810505",
+      "regency_id": "8105",
+      "name": "WAKATE"
+    },
+    {
+      "id": "810506",
+      "regency_id": "8105",
+      "name": "TUTUK TOLU"
+    },
+    {
+      "id": "810507",
+      "regency_id": "8105",
+      "name": "SIWALALAT"
+    },
+    {
+      "id": "810508",
+      "regency_id": "8105",
+      "name": "KILMURY"
+    },
+    {
+      "id": "810509",
+      "regency_id": "8105",
+      "name": "PULAU PANJANG"
+    },
+    {
+      "id": "810510",
+      "regency_id": "8105",
+      "name": "TEOR"
+    },
+    {
+      "id": "810511",
+      "regency_id": "8105",
+      "name": "GOROM TIMUR"
+    },
+    {
+      "id": "810512",
+      "regency_id": "8105",
+      "name": "BULA BARAT"
+    },
+    {
+      "id": "810513",
+      "regency_id": "8105",
+      "name": "KIAN DARAT"
+    },
+    {
+      "id": "810514",
+      "regency_id": "8105",
+      "name": "SIRITAUN WIDA TIMUR"
+    },
+    {
+      "id": "810515",
+      "regency_id": "8105",
+      "name": "TELUK WARU"
+    },
+    {
+      "id": "810516",
+      "regency_id": "8105",
+      "name": "UKAR SENGAN"
+    },
+    {
+      "id": "810601",
+      "regency_id": "8106",
+      "name": "KAIRATU"
+    },
+    {
+      "id": "810602",
+      "regency_id": "8106",
+      "name": "SERAM BARAT"
+    },
+    {
+      "id": "810603",
+      "regency_id": "8106",
+      "name": "TANIWEL"
+    },
+    {
+      "id": "810604",
+      "regency_id": "8106",
+      "name": "HUAMUAL BELAKANG"
+    },
+    {
+      "id": "810605",
+      "regency_id": "8106",
+      "name": "AMALATU"
+    },
+    {
+      "id": "810606",
+      "regency_id": "8106",
+      "name": "INAMOSOL"
+    },
+    {
+      "id": "810607",
+      "regency_id": "8106",
+      "name": "KAIRATU BARAT"
+    },
+    {
+      "id": "810608",
+      "regency_id": "8106",
+      "name": "HUAMUAL"
+    },
+    {
+      "id": "810609",
+      "regency_id": "8106",
+      "name": "KEPULAUAN MANIPA"
+    },
+    {
+      "id": "810610",
+      "regency_id": "8106",
+      "name": "TANIWEL TIMUR"
+    },
+    {
+      "id": "810611",
+      "regency_id": "8106",
+      "name": "ELPAPUTIH"
+    },
+    {
+      "id": "810701",
+      "regency_id": "8107",
+      "name": "PULAU-PULAU ARU"
+    },
+    {
+      "id": "810702",
+      "regency_id": "8107",
+      "name": "ARU SELATAN"
+    },
+    {
+      "id": "810703",
+      "regency_id": "8107",
+      "name": "ARU TENGAH"
+    },
+    {
+      "id": "810704",
+      "regency_id": "8107",
+      "name": "ARU UTARA"
+    },
+    {
+      "id": "810705",
+      "regency_id": "8107",
+      "name": "ARU UTARA TIMUR BATULEY"
+    },
+    {
+      "id": "810706",
+      "regency_id": "8107",
+      "name": "SIR-SIR"
+    },
+    {
+      "id": "810707",
+      "regency_id": "8107",
+      "name": "ARU TENGAH TIMUR"
+    },
+    {
+      "id": "810708",
+      "regency_id": "8107",
+      "name": "ARU TENGAH SELATAN"
+    },
+    {
+      "id": "810709",
+      "regency_id": "8107",
+      "name": "ARU SELATAN TIMUR"
+    },
+    {
+      "id": "810710",
+      "regency_id": "8107",
+      "name": "ARU SELATAN UTARA"
+    },
+    {
+      "id": "810801",
+      "regency_id": "8108",
+      "name": "MOA"
+    },
+    {
+      "id": "810802",
+      "regency_id": "8108",
+      "name": "DAMER"
+    },
+    {
+      "id": "810803",
+      "regency_id": "8108",
+      "name": "KEPULAUAN LUANG SERMATA"
+    },
+    {
+      "id": "810804",
+      "regency_id": "8108",
+      "name": "BABAR BARAT"
+    },
+    {
+      "id": "810805",
+      "regency_id": "8108",
+      "name": "PULAU-PULAU BABAR TIMUR"
+    },
+    {
+      "id": "810806",
+      "regency_id": "8108",
+      "name": "WETAR SELATAN"
+    },
+    {
+      "id": "810807",
+      "regency_id": "8108",
+      "name": "KISAR SELATAN"
+    },
+    {
+      "id": "810808",
+      "regency_id": "8108",
+      "name": "PULAU LETI"
+    },
+    {
+      "id": "810809",
+      "regency_id": "8108",
+      "name": "PULAU MASELA"
+    },
+    {
+      "id": "810810",
+      "regency_id": "8108",
+      "name": "DAWELOR DAWERA"
+    },
+    {
+      "id": "810811",
+      "regency_id": "8108",
+      "name": "PULAU WETANG"
+    },
+    {
+      "id": "810812",
+      "regency_id": "8108",
+      "name": "PULAU LAKOR"
+    },
+    {
+      "id": "810813",
+      "regency_id": "8108",
+      "name": "WETAR UTARA"
+    },
+    {
+      "id": "810814",
+      "regency_id": "8108",
+      "name": "WETAR BARAT"
+    },
+    {
+      "id": "810815",
+      "regency_id": "8108",
+      "name": "WETAR TIMUR"
+    },
+    {
+      "id": "810816",
+      "regency_id": "8108",
+      "name": "KEPULAUAN ROMA"
+    },
+    {
+      "id": "810817",
+      "regency_id": "8108",
+      "name": "KISAR UTARA"
+    },
+    {
+      "id": "810901",
+      "regency_id": "8109",
+      "name": "NAMROLE"
+    },
+    {
+      "id": "810902",
+      "regency_id": "8109",
+      "name": "WAESAMA"
+    },
+    {
+      "id": "810903",
+      "regency_id": "8109",
+      "name": "AMBALAU"
+    },
+    {
+      "id": "810904",
+      "regency_id": "8109",
+      "name": "KEPALA MADAN"
+    },
+    {
+      "id": "810905",
+      "regency_id": "8109",
+      "name": "LEKSULA"
+    },
+    {
+      "id": "810906",
+      "regency_id": "8109",
+      "name": "FENA FAFAN"
+    },
+    {
+      "id": "817101",
+      "regency_id": "8171",
+      "name": "NUSANIWE"
+    },
+    {
+      "id": "817102",
+      "regency_id": "8171",
+      "name": "SIRIMAU"
+    },
+    {
+      "id": "817103",
+      "regency_id": "8171",
+      "name": "BAGUALA"
+    },
+    {
+      "id": "817104",
+      "regency_id": "8171",
+      "name": "TELUK AMBON"
+    },
+    {
+      "id": "817105",
+      "regency_id": "8171",
+      "name": "LEITIMUR SELATAN"
+    },
+    {
+      "id": "817201",
+      "regency_id": "8172",
+      "name": "PULAU DULLAH UTARA"
+    },
+    {
+      "id": "817202",
+      "regency_id": "8172",
+      "name": "PULAU DULLAH SELATAN"
+    },
+    {
+      "id": "817203",
+      "regency_id": "8172",
+      "name": "TAYANDO TAM"
+    },
+    {
+      "id": "817204",
+      "regency_id": "8172",
+      "name": "PULAU-PULAU KUR"
+    },
+    {
+      "id": "817205",
+      "regency_id": "8172",
+      "name": "KUR SELATAN"
+    }
+  ],
+  "villages": [
+    {
+      "id": "8101011009",
+      "district_id": "810101",
+      "name": "HOLLO"
+    },
+    {
+      "id": "8101012001",
+      "district_id": "810101",
+      "name": "TAMILOUW"
+    },
+    {
+      "id": "8101012002",
+      "district_id": "810101",
+      "name": "SEPA"
+    },
+    {
+      "id": "8101012003",
+      "district_id": "810101",
+      "name": "RUTAH"
+    },
+    {
+      "id": "8101012004",
+      "district_id": "810101",
+      "name": "SOAHUKU"
+    },
+    {
+      "id": "8101012005",
+      "district_id": "810101",
+      "name": "AMAHAI"
+    },
+    {
+      "id": "8101012006",
+      "district_id": "810101",
+      "name": "HARURU"
+    },
+    {
+      "id": "8101012007",
+      "district_id": "810101",
+      "name": "SEHATI"
+    },
+    {
+      "id": "8101012008",
+      "district_id": "810101",
+      "name": "MAKARIKI"
+    },
+    {
+      "id": "8101012010",
+      "district_id": "810101",
+      "name": "YAFILA"
+    },
+    {
+      "id": "8101012011",
+      "district_id": "810101",
+      "name": "BANDA BARU"
+    },
+    {
+      "id": "8101012020",
+      "district_id": "810101",
+      "name": "YAINUELO"
+    },
+    {
+      "id": "8101012021",
+      "district_id": "810101",
+      "name": "NUA NEA"
+    },
+    {
+      "id": "8101012022",
+      "district_id": "810101",
+      "name": "HATUHENU"
+    },
+    {
+      "id": "8101012023",
+      "district_id": "810101",
+      "name": "NUWELETETU"
+    },
+    {
+      "id": "8101022001",
+      "district_id": "810102",
+      "name": "USLIAPAN"
+    },
+    {
+      "id": "8101022002",
+      "district_id": "810102",
+      "name": "KURALELE"
+    },
+    {
+      "id": "8101022003",
+      "district_id": "810102",
+      "name": "KOKROMAN"
+    },
+    {
+      "id": "8101022004",
+      "district_id": "810102",
+      "name": "MESSA"
+    },
+    {
+      "id": "8101022005",
+      "district_id": "810102",
+      "name": "AMETH"
+    },
+    {
+      "id": "8101022006",
+      "district_id": "810102",
+      "name": "WARU"
+    },
+    {
+      "id": "8101022007",
+      "district_id": "810102",
+      "name": "BUMEY"
+    },
+    {
+      "id": "8101022008",
+      "district_id": "810102",
+      "name": "SIFLURU"
+    },
+    {
+      "id": "8101022009",
+      "district_id": "810102",
+      "name": "LAYENI"
+    },
+    {
+      "id": "8101022010",
+      "district_id": "810102",
+      "name": "WOTAY"
+    },
+    {
+      "id": "8101022011",
+      "district_id": "810102",
+      "name": "ISSU"
+    },
+    {
+      "id": "8101022012",
+      "district_id": "810102",
+      "name": "LESLURU"
+    },
+    {
+      "id": "8101022013",
+      "district_id": "810102",
+      "name": "WATLUDAN"
+    },
+    {
+      "id": "8101022014",
+      "district_id": "810102",
+      "name": "TRANA"
+    },
+    {
+      "id": "8101022015",
+      "district_id": "810102",
+      "name": "JERILI"
+    },
+    {
+      "id": "8101022016",
+      "district_id": "810102",
+      "name": "NAKUPIA"
+    },
+    {
+      "id": "8101062001",
+      "district_id": "810106",
+      "name": "WAHAI"
+    },
+    {
+      "id": "8101062002",
+      "district_id": "810106",
+      "name": "AIR BESAR"
+    },
+    {
+      "id": "8101062003",
+      "district_id": "810106",
+      "name": "PASAHARI"
+    },
+    {
+      "id": "8101062007",
+      "district_id": "810106",
+      "name": "MANUSELA"
+    },
+    {
+      "id": "8101062009",
+      "district_id": "810106",
+      "name": "KALOA"
+    },
+    {
+      "id": "8101062010",
+      "district_id": "810106",
+      "name": "KANIKEH"
+    },
+    {
+      "id": "8101062011",
+      "district_id": "810106",
+      "name": "ROHO"
+    },
+    {
+      "id": "8101062012",
+      "district_id": "810106",
+      "name": "HUAULU"
+    },
+    {
+      "id": "8101062021",
+      "district_id": "810106",
+      "name": "RUMAHSOKAT"
+    },
+    {
+      "id": "8101062022",
+      "district_id": "810106",
+      "name": "SAWAI"
+    },
+    {
+      "id": "8101062044",
+      "district_id": "810106",
+      "name": "BESI"
+    },
+    {
+      "id": "8101062045",
+      "district_id": "810106",
+      "name": "MALAKU"
+    },
+    {
+      "id": "8101062046",
+      "district_id": "810106",
+      "name": "MARAINA"
+    },
+    {
+      "id": "8101062047",
+      "district_id": "810106",
+      "name": "SOLEA"
+    },
+    {
+      "id": "8101062048",
+      "district_id": "810106",
+      "name": "ELEMATA"
+    },
+    {
+      "id": "8101062049",
+      "district_id": "810106",
+      "name": "HATUOLO"
+    },
+    {
+      "id": "8101062050",
+      "district_id": "810106",
+      "name": "SIATELE"
+    },
+    {
+      "id": "8101062051",
+      "district_id": "810106",
+      "name": "MASIHULAN"
+    },
+    {
+      "id": "8101062052",
+      "district_id": "810106",
+      "name": "OPING"
+    },
+    {
+      "id": "8101062053",
+      "district_id": "810106",
+      "name": "OLONG"
+    },
+    {
+      "id": "8101092001",
+      "district_id": "810109",
+      "name": "NUSANTARA"
+    },
+    {
+      "id": "8101092002",
+      "district_id": "810109",
+      "name": "DWIWARNA"
+    },
+    {
+      "id": "8101092003",
+      "district_id": "810109",
+      "name": "MERDEKA"
+    },
+    {
+      "id": "8101092004",
+      "district_id": "810109",
+      "name": "RAJAWALI"
+    },
+    {
+      "id": "8101092005",
+      "district_id": "810109",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "8101092006",
+      "district_id": "810109",
+      "name": "PULAU HATTA"
+    },
+    {
+      "id": "8101092007",
+      "district_id": "810109",
+      "name": "SELAMON"
+    },
+    {
+      "id": "8101092008",
+      "district_id": "810109",
+      "name": "LONTHOIR"
+    },
+    {
+      "id": "8101092009",
+      "district_id": "810109",
+      "name": "PULAU AY"
+    },
+    {
+      "id": "8101092010",
+      "district_id": "810109",
+      "name": "PULAU RHUN"
+    },
+    {
+      "id": "8101092011",
+      "district_id": "810109",
+      "name": "TANAH RATA"
+    },
+    {
+      "id": "8101092012",
+      "district_id": "810109",
+      "name": "WAER"
+    },
+    {
+      "id": "8101092013",
+      "district_id": "810109",
+      "name": "BOIYAUW"
+    },
+    {
+      "id": "8101092014",
+      "district_id": "810109",
+      "name": "DENDER"
+    },
+    {
+      "id": "8101092015",
+      "district_id": "810109",
+      "name": "LAUTANG"
+    },
+    {
+      "id": "8101092016",
+      "district_id": "810109",
+      "name": "URING TUTRA"
+    },
+    {
+      "id": "8101092017",
+      "district_id": "810109",
+      "name": "WALLING SPANCIBY"
+    },
+    {
+      "id": "8101092018",
+      "district_id": "810109",
+      "name": "COMBIR KASESTOREN"
+    },
+    {
+      "id": "8101112011",
+      "district_id": "810111",
+      "name": "TELUTIH BARU"
+    },
+    {
+      "id": "8101112012",
+      "district_id": "810111",
+      "name": "MOSSO"
+    },
+    {
+      "id": "8101112013",
+      "district_id": "810111",
+      "name": "HATUMETE"
+    },
+    {
+      "id": "8101112014",
+      "district_id": "810111",
+      "name": "HATU"
+    },
+    {
+      "id": "8101112015",
+      "district_id": "810111",
+      "name": "PILIANA"
+    },
+    {
+      "id": "8101112016",
+      "district_id": "810111",
+      "name": "YAPUTIH"
+    },
+    {
+      "id": "8101112017",
+      "district_id": "810111",
+      "name": "SAUNULU"
+    },
+    {
+      "id": "8101112018",
+      "district_id": "810111",
+      "name": "TEHORU"
+    },
+    {
+      "id": "8101112019",
+      "district_id": "810111",
+      "name": "HAYA"
+    },
+    {
+      "id": "8101112020",
+      "district_id": "810111",
+      "name": "SALAMAHU"
+    },
+    {
+      "id": "8101122001",
+      "district_id": "810112",
+      "name": "BOOI"
+    },
+    {
+      "id": "8101122002",
+      "district_id": "810112",
+      "name": "PAPERU"
+    },
+    {
+      "id": "8101122003",
+      "district_id": "810112",
+      "name": "TIOUW"
+    },
+    {
+      "id": "8101122004",
+      "district_id": "810112",
+      "name": "HARIA"
+    },
+    {
+      "id": "8101122005",
+      "district_id": "810112",
+      "name": "PORTO"
+    },
+    {
+      "id": "8101122006",
+      "district_id": "810112",
+      "name": "KULUR"
+    },
+    {
+      "id": "8101122012",
+      "district_id": "810112",
+      "name": "SAPARUA"
+    },
+    {
+      "id": "8101132001",
+      "district_id": "810113",
+      "name": "ABORU"
+    },
+    {
+      "id": "8101132002",
+      "district_id": "810113",
+      "name": "WASSU"
+    },
+    {
+      "id": "8101132003",
+      "district_id": "810113",
+      "name": "OMA"
+    },
+    {
+      "id": "8101132004",
+      "district_id": "810113",
+      "name": "HARUKU"
+    },
+    {
+      "id": "8101132005",
+      "district_id": "810113",
+      "name": "SAMETH"
+    },
+    {
+      "id": "8101132006",
+      "district_id": "810113",
+      "name": "ROHOMONI"
+    },
+    {
+      "id": "8101132007",
+      "district_id": "810113",
+      "name": "KABAUW"
+    },
+    {
+      "id": "8101132008",
+      "district_id": "810113",
+      "name": "KAILOLO"
+    },
+    {
+      "id": "8101132009",
+      "district_id": "810113",
+      "name": "PELAUW"
+    },
+    {
+      "id": "8101132010",
+      "district_id": "810113",
+      "name": "KARIU"
+    },
+    {
+      "id": "8101132011",
+      "district_id": "810113",
+      "name": "HULALIU"
+    },
+    {
+      "id": "8101142001",
+      "district_id": "810114",
+      "name": "LIANG"
+    },
+    {
+      "id": "8101142002",
+      "district_id": "810114",
+      "name": "WAAI"
+    },
+    {
+      "id": "8101142003",
+      "district_id": "810114",
+      "name": "TULEHU"
+    },
+    {
+      "id": "8101142004",
+      "district_id": "810114",
+      "name": "TIAL"
+    },
+    {
+      "id": "8101142005",
+      "district_id": "810114",
+      "name": "TENGAH TENGAH"
+    },
+    {
+      "id": "8101142006",
+      "district_id": "810114",
+      "name": "SULI"
+    },
+    {
+      "id": "8101152006",
+      "district_id": "810115",
+      "name": "ASILULU"
+    },
+    {
+      "id": "8101152007",
+      "district_id": "810115",
+      "name": "URENG"
+    },
+    {
+      "id": "8101152008",
+      "district_id": "810115",
+      "name": "NEGERI LIMA"
+    },
+    {
+      "id": "8101152009",
+      "district_id": "810115",
+      "name": "SEITH"
+    },
+    {
+      "id": "8101152010",
+      "district_id": "810115",
+      "name": "KAITETU"
+    },
+    {
+      "id": "8101152011",
+      "district_id": "810115",
+      "name": "HILA"
+    },
+    {
+      "id": "8101152012",
+      "district_id": "810115",
+      "name": "WAKAL"
+    },
+    {
+      "id": "8101152013",
+      "district_id": "810115",
+      "name": "HITULAMA"
+    },
+    {
+      "id": "8101152014",
+      "district_id": "810115",
+      "name": "HITUMESSING"
+    },
+    {
+      "id": "8101152015",
+      "district_id": "810115",
+      "name": "MAMALA"
+    },
+    {
+      "id": "8101152016",
+      "district_id": "810115",
+      "name": "MORELLA"
+    },
+    {
+      "id": "8101162001",
+      "district_id": "810116",
+      "name": "AMETH"
+    },
+    {
+      "id": "8101162002",
+      "district_id": "810116",
+      "name": "TITAWAAI"
+    },
+    {
+      "id": "8101162003",
+      "district_id": "810116",
+      "name": "ABUBU"
+    },
+    {
+      "id": "8101162004",
+      "district_id": "810116",
+      "name": "AKOON"
+    },
+    {
+      "id": "8101162005",
+      "district_id": "810116",
+      "name": "NALAHIA"
+    },
+    {
+      "id": "8101162006",
+      "district_id": "810116",
+      "name": "SILA"
+    },
+    {
+      "id": "8101162007",
+      "district_id": "810116",
+      "name": "LEINITU"
+    },
+    {
+      "id": "8101171001",
+      "district_id": "810117",
+      "name": "NAMAELO"
+    },
+    {
+      "id": "8101171002",
+      "district_id": "810117",
+      "name": "NAMASINA"
+    },
+    {
+      "id": "8101171003",
+      "district_id": "810117",
+      "name": "AMPERA"
+    },
+    {
+      "id": "8101171004",
+      "district_id": "810117",
+      "name": "LESANE"
+    },
+    {
+      "id": "8101171005",
+      "district_id": "810117",
+      "name": "LETWARU"
+    },
+    {
+      "id": "8101202001",
+      "district_id": "810120",
+      "name": "SALEMAN"
+    },
+    {
+      "id": "8101202002",
+      "district_id": "810120",
+      "name": "HORALE"
+    },
+    {
+      "id": "8101202003",
+      "district_id": "810120",
+      "name": "WAILULU"
+    },
+    {
+      "id": "8101202004",
+      "district_id": "810120",
+      "name": "PAA"
+    },
+    {
+      "id": "8101202005",
+      "district_id": "810120",
+      "name": "KARLUTU KARA"
+    },
+    {
+      "id": "8101202006",
+      "district_id": "810120",
+      "name": "PASANEA"
+    },
+    {
+      "id": "8101202007",
+      "district_id": "810120",
+      "name": "LABUAN"
+    },
+    {
+      "id": "8101202008",
+      "district_id": "810120",
+      "name": "GALE-GALE"
+    },
+    {
+      "id": "8101202009",
+      "district_id": "810120",
+      "name": "LATEA"
+    },
+    {
+      "id": "8101202010",
+      "district_id": "810120",
+      "name": "LISABATA TIMUR"
+    },
+    {
+      "id": "8101202011",
+      "district_id": "810120",
+      "name": "RUMAHWEY"
+    },
+    {
+      "id": "8101202012",
+      "district_id": "810120",
+      "name": "WARASIWA"
+    },
+    {
+      "id": "8101202013",
+      "district_id": "810120",
+      "name": "HERLAU PAUNI"
+    },
+    {
+      "id": "8101212001",
+      "district_id": "810121",
+      "name": "WARAKA"
+    },
+    {
+      "id": "8101212002",
+      "district_id": "810121",
+      "name": "TANANAHU"
+    },
+    {
+      "id": "8101212003",
+      "district_id": "810121",
+      "name": "LIANG"
+    },
+    {
+      "id": "8101212004",
+      "district_id": "810121",
+      "name": "SAHULAUW"
+    },
+    {
+      "id": "8101222001",
+      "district_id": "810122",
+      "name": "LARIKE"
+    },
+    {
+      "id": "8101222002",
+      "district_id": "810122",
+      "name": "WAKASIHU"
+    },
+    {
+      "id": "8101222003",
+      "district_id": "810122",
+      "name": "ALLANG"
+    },
+    {
+      "id": "8101222004",
+      "district_id": "810122",
+      "name": "LILIBOY"
+    },
+    {
+      "id": "8101222005",
+      "district_id": "810122",
+      "name": "HATU"
+    },
+    {
+      "id": "8101232001",
+      "district_id": "810123",
+      "name": "ULAHAHAN"
+    },
+    {
+      "id": "8101232002",
+      "district_id": "810123",
+      "name": "LAHA KABA"
+    },
+    {
+      "id": "8101232003",
+      "district_id": "810123",
+      "name": "LAFA"
+    },
+    {
+      "id": "8101232004",
+      "district_id": "810123",
+      "name": "YAMALATU"
+    },
+    {
+      "id": "8101232005",
+      "district_id": "810123",
+      "name": "HUNISI"
+    },
+    {
+      "id": "8101232006",
+      "district_id": "810123",
+      "name": "LAIMU"
+    },
+    {
+      "id": "8101232007",
+      "district_id": "810123",
+      "name": "MANEORATU"
+    },
+    {
+      "id": "8101232008",
+      "district_id": "810123",
+      "name": "TEHUA"
+    },
+    {
+      "id": "8101232009",
+      "district_id": "810123",
+      "name": "LAHA"
+    },
+    {
+      "id": "8101232010",
+      "district_id": "810123",
+      "name": "WOLU"
+    },
+    {
+      "id": "8101242001",
+      "district_id": "810124",
+      "name": "SETI"
+    },
+    {
+      "id": "8101242002",
+      "district_id": "810124",
+      "name": "KOBISONTA"
+    },
+    {
+      "id": "8101242003",
+      "district_id": "810124",
+      "name": "WAILOPING"
+    },
+    {
+      "id": "8101242004",
+      "district_id": "810124",
+      "name": "TIHUANA"
+    },
+    {
+      "id": "8101242005",
+      "district_id": "810124",
+      "name": "WAITILA"
+    },
+    {
+      "id": "8101242006",
+      "district_id": "810124",
+      "name": "WAIPUTIH"
+    },
+    {
+      "id": "8101242007",
+      "district_id": "810124",
+      "name": "WAIMUSAL"
+    },
+    {
+      "id": "8101242008",
+      "district_id": "810124",
+      "name": "TANAH MERAH"
+    },
+    {
+      "id": "8101242009",
+      "district_id": "810124",
+      "name": "AKETERNATE"
+    },
+    {
+      "id": "8101242010",
+      "district_id": "810124",
+      "name": "NAMTO"
+    },
+    {
+      "id": "8101242011",
+      "district_id": "810124",
+      "name": "LOPING MULYO"
+    },
+    {
+      "id": "8101242012",
+      "district_id": "810124",
+      "name": "WONOSARI"
+    },
+    {
+      "id": "8101252001",
+      "district_id": "810125",
+      "name": "KOBI"
+    },
+    {
+      "id": "8101252002",
+      "district_id": "810125",
+      "name": "SARIPUTIH"
+    },
+    {
+      "id": "8101252003",
+      "district_id": "810125",
+      "name": "MANEO RENDAH"
+    },
+    {
+      "id": "8101252004",
+      "district_id": "810125",
+      "name": "KOBIMUKTI"
+    },
+    {
+      "id": "8101252005",
+      "district_id": "810125",
+      "name": "LEAWAY"
+    },
+    {
+      "id": "8101252006",
+      "district_id": "810125",
+      "name": "SAMAL"
+    },
+    {
+      "id": "8101252007",
+      "district_id": "810125",
+      "name": "MOROKAI"
+    },
+    {
+      "id": "8101252008",
+      "district_id": "810125",
+      "name": "WAIMUSI"
+    },
+    {
+      "id": "8101252009",
+      "district_id": "810125",
+      "name": "WAY ASIH"
+    },
+    {
+      "id": "8101252010",
+      "district_id": "810125",
+      "name": "WAITONIPA"
+    },
+    {
+      "id": "8101252011",
+      "district_id": "810125",
+      "name": "MARASAHUA"
+    },
+    {
+      "id": "8101252012",
+      "district_id": "810125",
+      "name": "KABAUHARI"
+    },
+    {
+      "id": "8101262001",
+      "district_id": "810126",
+      "name": "OUW"
+    },
+    {
+      "id": "8101262002",
+      "district_id": "810126",
+      "name": "ULLATH"
+    },
+    {
+      "id": "8101262003",
+      "district_id": "810126",
+      "name": "SIRI SORI ISLAM"
+    },
+    {
+      "id": "8101262004",
+      "district_id": "810126",
+      "name": "SIRI SORI AMALATU"
+    },
+    {
+      "id": "8101262005",
+      "district_id": "810126",
+      "name": "MAHU"
+    },
+    {
+      "id": "8101262006",
+      "district_id": "810126",
+      "name": "TUHAHA"
+    },
+    {
+      "id": "8101262007",
+      "district_id": "810126",
+      "name": "IHAMAHU"
+    },
+    {
+      "id": "8101262008",
+      "district_id": "810126",
+      "name": "IHA"
+    },
+    {
+      "id": "8101262009",
+      "district_id": "810126",
+      "name": "NOLLOTH"
+    },
+    {
+      "id": "8101262010",
+      "district_id": "810126",
+      "name": "ITAWAKA"
+    },
+    {
+      "id": "8102011013",
+      "district_id": "810201",
+      "name": "OHOIJANG WATDEK"
+    },
+    {
+      "id": "8102012014",
+      "district_id": "810201",
+      "name": "LANGGUR"
+    },
+    {
+      "id": "8102012015",
+      "district_id": "810201",
+      "name": "FAAN"
+    },
+    {
+      "id": "8102012016",
+      "district_id": "810201",
+      "name": "SATHEAN"
+    },
+    {
+      "id": "8102012017",
+      "district_id": "810201",
+      "name": "IBRA"
+    },
+    {
+      "id": "8102012018",
+      "district_id": "810201",
+      "name": "NGABUB"
+    },
+    {
+      "id": "8102012048",
+      "district_id": "810201",
+      "name": "OHOIDERTAWUN"
+    },
+    {
+      "id": "8102012049",
+      "district_id": "810201",
+      "name": "KELANIT"
+    },
+    {
+      "id": "8102012051",
+      "district_id": "810201",
+      "name": "KOLSER"
+    },
+    {
+      "id": "8102012052",
+      "district_id": "810201",
+      "name": "LETMAN"
+    },
+    {
+      "id": "8102012057",
+      "district_id": "810201",
+      "name": "WEARLILIR"
+    },
+    {
+      "id": "8102012067",
+      "district_id": "810201",
+      "name": "OHOIDER ATAS"
+    },
+    {
+      "id": "8102012068",
+      "district_id": "810201",
+      "name": "DUDUNWAHAN"
+    },
+    {
+      "id": "8102012069",
+      "district_id": "810201",
+      "name": "LOON"
+    },
+    {
+      "id": "8102012071",
+      "district_id": "810201",
+      "name": "SITNIOHOI"
+    },
+    {
+      "id": "8102032001",
+      "district_id": "810203",
+      "name": "WERKA"
+    },
+    {
+      "id": "8102032002",
+      "district_id": "810203",
+      "name": "WAUR"
+    },
+    {
+      "id": "8102032003",
+      "district_id": "810203",
+      "name": "OHOINANGAN"
+    },
+    {
+      "id": "8102032004",
+      "district_id": "810203",
+      "name": "LER OHOILIM"
+    },
+    {
+      "id": "8102032005",
+      "district_id": "810203",
+      "name": "RAHARENG"
+    },
+    {
+      "id": "8102032006",
+      "district_id": "810203",
+      "name": "ELAT"
+    },
+    {
+      "id": "8102032007",
+      "district_id": "810203",
+      "name": "DEPUR"
+    },
+    {
+      "id": "8102032008",
+      "district_id": "810203",
+      "name": "OHOILIM"
+    },
+    {
+      "id": "8102032009",
+      "district_id": "810203",
+      "name": "EL RALANG"
+    },
+    {
+      "id": "8102032015",
+      "district_id": "810203",
+      "name": "REYAMRU"
+    },
+    {
+      "id": "8102032016",
+      "district_id": "810203",
+      "name": "FAKO"
+    },
+    {
+      "id": "8102032017",
+      "district_id": "810203",
+      "name": "YAMTEL"
+    },
+    {
+      "id": "8102032018",
+      "district_id": "810203",
+      "name": "WAUR TAHIT"
+    },
+    {
+      "id": "8102032019",
+      "district_id": "810203",
+      "name": "NGEFUIT"
+    },
+    {
+      "id": "8102032020",
+      "district_id": "810203",
+      "name": "OHOIEL"
+    },
+    {
+      "id": "8102032021",
+      "district_id": "810203",
+      "name": "OHOIWAIT"
+    },
+    {
+      "id": "8102032022",
+      "district_id": "810203",
+      "name": "OHOIWANG"
+    },
+    {
+      "id": "8102032023",
+      "district_id": "810203",
+      "name": "FANGAMAS"
+    },
+    {
+      "id": "8102032024",
+      "district_id": "810203",
+      "name": "OHOINANGAN ATAS"
+    },
+    {
+      "id": "8102032025",
+      "district_id": "810203",
+      "name": "HARANGUR"
+    },
+    {
+      "id": "8102032026",
+      "district_id": "810203",
+      "name": "UDAR"
+    },
+    {
+      "id": "8102032027",
+      "district_id": "810203",
+      "name": "DAFTEL"
+    },
+    {
+      "id": "8102032028",
+      "district_id": "810203",
+      "name": "KARKARIT"
+    },
+    {
+      "id": "8102032029",
+      "district_id": "810203",
+      "name": "RAHARENG ATAS"
+    },
+    {
+      "id": "8102032030",
+      "district_id": "810203",
+      "name": "WULURAT"
+    },
+    {
+      "id": "8102032031",
+      "district_id": "810203",
+      "name": "WAKOL"
+    },
+    {
+      "id": "8102032032",
+      "district_id": "810203",
+      "name": "NGURDU"
+    },
+    {
+      "id": "8102032033",
+      "district_id": "810203",
+      "name": "SOINRAT"
+    },
+    {
+      "id": "8102032034",
+      "district_id": "810203",
+      "name": "WERMAF"
+    },
+    {
+      "id": "8102032035",
+      "district_id": "810203",
+      "name": "BOMBAY"
+    },
+    {
+      "id": "8102032036",
+      "district_id": "810203",
+      "name": "WATSIN"
+    },
+    {
+      "id": "8102032037",
+      "district_id": "810203",
+      "name": "SIRBANTE"
+    },
+    {
+      "id": "8102032038",
+      "district_id": "810203",
+      "name": "NGAT"
+    },
+    {
+      "id": "8102032039",
+      "district_id": "810203",
+      "name": "NABAHENG"
+    },
+    {
+      "id": "8102032040",
+      "district_id": "810203",
+      "name": "NGEFUIT ATAS"
+    },
+    {
+      "id": "8102032041",
+      "district_id": "810203",
+      "name": "WATUAR"
+    },
+    {
+      "id": "8102032042",
+      "district_id": "810203",
+      "name": "MATAHOLAT"
+    },
+    {
+      "id": "8102042001",
+      "district_id": "810204",
+      "name": "WEDUAR"
+    },
+    {
+      "id": "8102042003",
+      "district_id": "810204",
+      "name": "NERONG"
+    },
+    {
+      "id": "8102042004",
+      "district_id": "810204",
+      "name": "LARAT"
+    },
+    {
+      "id": "8102042005",
+      "district_id": "810204",
+      "name": "TAMANGIL NUHUTEN"
+    },
+    {
+      "id": "8102042006",
+      "district_id": "810204",
+      "name": "TAMANGIL NUHUYANAT"
+    },
+    {
+      "id": "8102042012",
+      "district_id": "810204",
+      "name": "KILWAT"
+    },
+    {
+      "id": "8102042013",
+      "district_id": "810204",
+      "name": "SATHER"
+    },
+    {
+      "id": "8102042014",
+      "district_id": "810204",
+      "name": "TUTREAN"
+    },
+    {
+      "id": "8102042015",
+      "district_id": "810204",
+      "name": "OHOIRENAN"
+    },
+    {
+      "id": "8102042016",
+      "district_id": "810204",
+      "name": "SOINDAT"
+    },
+    {
+      "id": "8102052001",
+      "district_id": "810205",
+      "name": "HOLLAT"
+    },
+    {
+      "id": "8102052002",
+      "district_id": "810205",
+      "name": "OHOIRAUT"
+    },
+    {
+      "id": "8102052003",
+      "district_id": "810205",
+      "name": "HAAR OHOIMEL"
+    },
+    {
+      "id": "8102052004",
+      "district_id": "810205",
+      "name": "LANGGIAR HAAR"
+    },
+    {
+      "id": "8102052005",
+      "district_id": "810205",
+      "name": "BANDA ELI"
+    },
+    {
+      "id": "8102052006",
+      "district_id": "810205",
+      "name": "WATLAAR"
+    },
+    {
+      "id": "8102052007",
+      "district_id": "810205",
+      "name": "OHOIFAU"
+    },
+    {
+      "id": "8102052008",
+      "district_id": "810205",
+      "name": "KILWAIR"
+    },
+    {
+      "id": "8102052009",
+      "district_id": "810205",
+      "name": "RENFAN"
+    },
+    {
+      "id": "8102052010",
+      "district_id": "810205",
+      "name": "HOLLAT SOLAIR"
+    },
+    {
+      "id": "8102052011",
+      "district_id": "810205",
+      "name": "HOKO"
+    },
+    {
+      "id": "8102052012",
+      "district_id": "810205",
+      "name": "HOLLAY"
+    },
+    {
+      "id": "8102052013",
+      "district_id": "810205",
+      "name": "SOIN"
+    },
+    {
+      "id": "8102052014",
+      "district_id": "810205",
+      "name": "HAAR OHOIMUR GPM"
+    },
+    {
+      "id": "8102052015",
+      "district_id": "810205",
+      "name": "HAAR OHOIMUR RK"
+    },
+    {
+      "id": "8102052016",
+      "district_id": "810205",
+      "name": "HAAR OHOIWAIT"
+    },
+    {
+      "id": "8102052017",
+      "district_id": "810205",
+      "name": "HAAR WASSAR"
+    },
+    {
+      "id": "8102052018",
+      "district_id": "810205",
+      "name": "HAAR RENRAHANTEL"
+    },
+    {
+      "id": "8102052019",
+      "district_id": "810205",
+      "name": "UR"
+    },
+    {
+      "id": "8102052020",
+      "district_id": "810205",
+      "name": "OHOIMAJANG"
+    },
+    {
+      "id": "8102052021",
+      "district_id": "810205",
+      "name": "BANDA EFRUAN"
+    },
+    {
+      "id": "8102052022",
+      "district_id": "810205",
+      "name": "BANDA SUKU TIGAPULUH"
+    },
+    {
+      "id": "8102052023",
+      "district_id": "810205",
+      "name": "TUBURLAY"
+    },
+    {
+      "id": "8102052024",
+      "district_id": "810205",
+      "name": "OHOIFARUAN"
+    },
+    {
+      "id": "8102052025",
+      "district_id": "810205",
+      "name": "OHOIWIRIN"
+    },
+    {
+      "id": "8102052026",
+      "district_id": "810205",
+      "name": "TUBURNGIL"
+    },
+    {
+      "id": "8102052027",
+      "district_id": "810205",
+      "name": "YAMTIMUR"
+    },
+    {
+      "id": "8102052028",
+      "district_id": "810205",
+      "name": "RENFAAN ISLAM"
+    },
+    {
+      "id": "8102052029",
+      "district_id": "810205",
+      "name": "RENFAAN GPM"
+    },
+    {
+      "id": "8102052030",
+      "district_id": "810205",
+      "name": "FANWAV"
+    },
+    {
+      "id": "8102132001",
+      "district_id": "810213",
+      "name": "WAIN"
+    },
+    {
+      "id": "8102132002",
+      "district_id": "810213",
+      "name": "REWAV"
+    },
+    {
+      "id": "8102132003",
+      "district_id": "810213",
+      "name": "RUMAAT"
+    },
+    {
+      "id": "8102132004",
+      "district_id": "810213",
+      "name": "RAT"
+    },
+    {
+      "id": "8102132005",
+      "district_id": "810213",
+      "name": "ABEAN"
+    },
+    {
+      "id": "8102132006",
+      "district_id": "810213",
+      "name": "MASTUR"
+    },
+    {
+      "id": "8102132013",
+      "district_id": "810213",
+      "name": "OHOINOL"
+    },
+    {
+      "id": "8102132014",
+      "district_id": "810213",
+      "name": "SEMAWI"
+    },
+    {
+      "id": "8102132015",
+      "district_id": "810213",
+      "name": "ISO"
+    },
+    {
+      "id": "8102132016",
+      "district_id": "810213",
+      "name": "DISUK"
+    },
+    {
+      "id": "8102132017",
+      "district_id": "810213",
+      "name": "WAIN BARU"
+    },
+    {
+      "id": "8102132018",
+      "district_id": "810213",
+      "name": "MARFUN"
+    },
+    {
+      "id": "8102132019",
+      "district_id": "810213",
+      "name": "WATNGON"
+    },
+    {
+      "id": "8102132020",
+      "district_id": "810213",
+      "name": "YAFAVUN"
+    },
+    {
+      "id": "8102132021",
+      "district_id": "810213",
+      "name": "MASTUR BARU"
+    },
+    {
+      "id": "8102132022",
+      "district_id": "810213",
+      "name": "OHOILUS"
+    },
+    {
+      "id": "8102132023",
+      "district_id": "810213",
+      "name": "TENBUK"
+    },
+    {
+      "id": "8102132024",
+      "district_id": "810213",
+      "name": "DENWET"
+    },
+    {
+      "id": "8102142001",
+      "district_id": "810214",
+      "name": "OHOIDERTUTU"
+    },
+    {
+      "id": "8102142002",
+      "district_id": "810214",
+      "name": "MATWAIR"
+    },
+    {
+      "id": "8102142003",
+      "district_id": "810214",
+      "name": "SOMLAIN"
+    },
+    {
+      "id": "8102142004",
+      "district_id": "810214",
+      "name": "OHOIREN"
+    },
+    {
+      "id": "8102142005",
+      "district_id": "810214",
+      "name": "OHOIRA"
+    },
+    {
+      "id": "8102142006",
+      "district_id": "810214",
+      "name": "WARBAL"
+    },
+    {
+      "id": "8102142007",
+      "district_id": "810214",
+      "name": "UR PULAU"
+    },
+    {
+      "id": "8102142008",
+      "district_id": "810214",
+      "name": "TANIMBAR KEI"
+    },
+    {
+      "id": "8102142009",
+      "district_id": "810214",
+      "name": "OHOIDERTOM"
+    },
+    {
+      "id": "8102142010",
+      "district_id": "810214",
+      "name": "YATWAV"
+    },
+    {
+      "id": "8102152001",
+      "district_id": "810215",
+      "name": "RUMADIAN"
+    },
+    {
+      "id": "8102152002",
+      "district_id": "810215",
+      "name": "DEBUT"
+    },
+    {
+      "id": "8102152003",
+      "district_id": "810215",
+      "name": "NAMAR"
+    },
+    {
+      "id": "8102152004",
+      "district_id": "810215",
+      "name": "NGILNGOF"
+    },
+    {
+      "id": "8102152005",
+      "district_id": "810215",
+      "name": "SELAYAR"
+    },
+    {
+      "id": "8102152006",
+      "district_id": "810215",
+      "name": "LAIRNGANGAS"
+    },
+    {
+      "id": "8102152007",
+      "district_id": "810215",
+      "name": "OHOILUK"
+    },
+    {
+      "id": "8102152008",
+      "district_id": "810215",
+      "name": "OHOILILIR"
+    },
+    {
+      "id": "8102152009",
+      "district_id": "810215",
+      "name": "NGAYUB"
+    },
+    {
+      "id": "8102162001",
+      "district_id": "810216",
+      "name": "TETOAT"
+    },
+    {
+      "id": "8102162002",
+      "district_id": "810216",
+      "name": "DIAN PULAU"
+    },
+    {
+      "id": "8102162003",
+      "district_id": "810216",
+      "name": "LETVUAN"
+    },
+    {
+      "id": "8102162004",
+      "district_id": "810216",
+      "name": "EVU"
+    },
+    {
+      "id": "8102162005",
+      "district_id": "810216",
+      "name": "WARWUT"
+    },
+    {
+      "id": "8102162006",
+      "district_id": "810216",
+      "name": "WAB"
+    },
+    {
+      "id": "8102162007",
+      "district_id": "810216",
+      "name": "DIAN DARAT"
+    },
+    {
+      "id": "8102162008",
+      "district_id": "810216",
+      "name": "WIRIN"
+    },
+    {
+      "id": "8102162009",
+      "district_id": "810216",
+      "name": "NGURSIT"
+    },
+    {
+      "id": "8102162010",
+      "district_id": "810216",
+      "name": "MADWAT"
+    },
+    {
+      "id": "8102162011",
+      "district_id": "810216",
+      "name": "OHOIBADAR"
+    },
+    {
+      "id": "8102162012",
+      "district_id": "810216",
+      "name": "WATNGIL"
+    },
+    {
+      "id": "8102162013",
+      "district_id": "810216",
+      "name": "ARSO"
+    },
+    {
+      "id": "8102172001",
+      "district_id": "810217",
+      "name": "WEER OHOINAM"
+    },
+    {
+      "id": "8102172002",
+      "district_id": "810217",
+      "name": "WEER OHOIKER"
+    },
+    {
+      "id": "8102172003",
+      "district_id": "810217",
+      "name": "WEER FRAWAF"
+    },
+    {
+      "id": "8102172004",
+      "district_id": "810217",
+      "name": "FAA"
+    },
+    {
+      "id": "8102172005",
+      "district_id": "810217",
+      "name": "DANGARAT"
+    },
+    {
+      "id": "8102172006",
+      "district_id": "810217",
+      "name": "OHOITUF"
+    },
+    {
+      "id": "8102172007",
+      "district_id": "810217",
+      "name": "HANGUR"
+    },
+    {
+      "id": "8102172008",
+      "district_id": "810217",
+      "name": "NGURWALEK"
+    },
+    {
+      "id": "8102172009",
+      "district_id": "810217",
+      "name": "UWAT"
+    },
+    {
+      "id": "8102172010",
+      "district_id": "810217",
+      "name": "UWAT WEAR"
+    },
+    {
+      "id": "8102172011",
+      "district_id": "810217",
+      "name": "UWAT REYAAN"
+    },
+    {
+      "id": "8102172012",
+      "district_id": "810217",
+      "name": "MUN OHOIIR"
+    },
+    {
+      "id": "8102172013",
+      "district_id": "810217",
+      "name": "MUN ESSOY"
+    },
+    {
+      "id": "8102172014",
+      "district_id": "810217",
+      "name": "MUN KAHAR"
+    },
+    {
+      "id": "8102172015",
+      "district_id": "810217",
+      "name": "MUN NGURDITWAIN"
+    },
+    {
+      "id": "8102172016",
+      "district_id": "810217",
+      "name": "MUN WERFAN"
+    },
+    {
+      "id": "8102172017",
+      "district_id": "810217",
+      "name": "AD NGURWUL"
+    },
+    {
+      "id": "8102172018",
+      "district_id": "810217",
+      "name": "AD OHOIWAF"
+    },
+    {
+      "id": "8102172019",
+      "district_id": "810217",
+      "name": "LAAR"
+    },
+    {
+      "id": "8102172020",
+      "district_id": "810217",
+      "name": "HOOR ISLAM"
+    },
+    {
+      "id": "8102172021",
+      "district_id": "810217",
+      "name": "HOOR KRISTEN"
+    },
+    {
+      "id": "8102172022",
+      "district_id": "810217",
+      "name": "WAER"
+    },
+    {
+      "id": "8102172023",
+      "district_id": "810217",
+      "name": "WAERAT"
+    },
+    {
+      "id": "8102172024",
+      "district_id": "810217",
+      "name": "MUN OHOITADIUN"
+    },
+    {
+      "id": "8102172025",
+      "district_id": "810217",
+      "name": "AD WEAR AUR"
+    },
+    {
+      "id": "8102182001",
+      "district_id": "810218",
+      "name": "HOAT"
+    },
+    {
+      "id": "8102182002",
+      "district_id": "810218",
+      "name": "NGAFAN"
+    },
+    {
+      "id": "8102182003",
+      "district_id": "810218",
+      "name": "FEER"
+    },
+    {
+      "id": "8102182004",
+      "district_id": "810218",
+      "name": "REREAN"
+    },
+    {
+      "id": "8102182005",
+      "district_id": "810218",
+      "name": "NGURKO"
+    },
+    {
+      "id": "8102182006",
+      "district_id": "810218",
+      "name": "HOKO"
+    },
+    {
+      "id": "8102182007",
+      "district_id": "810218",
+      "name": "WEDUAR FER"
+    },
+    {
+      "id": "8102182008",
+      "district_id": "810218",
+      "name": "UAT"
+    },
+    {
+      "id": "8102182009",
+      "district_id": "810218",
+      "name": "NGAN"
+    },
+    {
+      "id": "8102182010",
+      "district_id": "810218",
+      "name": "WATKIDAT"
+    },
+    {
+      "id": "8102182011",
+      "district_id": "810218",
+      "name": "OHOILEAN"
+    },
+    {
+      "id": "8102182012",
+      "district_id": "810218",
+      "name": "WAFOL"
+    },
+    {
+      "id": "8102182013",
+      "district_id": "810218",
+      "name": "RAHANGIAR"
+    },
+    {
+      "id": "8102192001",
+      "district_id": "810219",
+      "name": "DANAR OHOISEB"
+    },
+    {
+      "id": "8102192002",
+      "district_id": "810219",
+      "name": "DANAR TERNATE"
+    },
+    {
+      "id": "8102192003",
+      "district_id": "810219",
+      "name": "DANAR LUMEFAR"
+    },
+    {
+      "id": "8102192004",
+      "district_id": "810219",
+      "name": "ELAAR NGURSOIN"
+    },
+    {
+      "id": "8102192005",
+      "district_id": "810219",
+      "name": "ELAAR LAMAGORANG"
+    },
+    {
+      "id": "8102192006",
+      "district_id": "810219",
+      "name": "ELAAR LET"
+    },
+    {
+      "id": "8102192007",
+      "district_id": "810219",
+      "name": "SARE"
+    },
+    {
+      "id": "8102192008",
+      "district_id": "810219",
+      "name": "MAAR"
+    },
+    {
+      "id": "8102192009",
+      "district_id": "810219",
+      "name": "UF"
+    },
+    {
+      "id": "8102192010",
+      "district_id": "810219",
+      "name": "NGURWUL"
+    },
+    {
+      "id": "8102192011",
+      "district_id": "810219",
+      "name": "GARARA"
+    },
+    {
+      "id": "8103011001",
+      "district_id": "810301",
+      "name": "SAUMLAKI"
+    },
+    {
+      "id": "8103011002",
+      "district_id": "810301",
+      "name": "SAUMLAKI UTARA"
+    },
+    {
+      "id": "8103012002",
+      "district_id": "810301",
+      "name": "WOWONDA"
+    },
+    {
+      "id": "8103012003",
+      "district_id": "810301",
+      "name": "ILNGEI"
+    },
+    {
+      "id": "8103012004",
+      "district_id": "810301",
+      "name": "KABIARAT"
+    },
+    {
+      "id": "8103012005",
+      "district_id": "810301",
+      "name": "LAURAN"
+    },
+    {
+      "id": "8103012006",
+      "district_id": "810301",
+      "name": "SIFNANA"
+    },
+    {
+      "id": "8103012007",
+      "district_id": "810301",
+      "name": "OLILIT RAYA"
+    },
+    {
+      "id": "8103012008",
+      "district_id": "810301",
+      "name": "LERMATANG"
+    },
+    {
+      "id": "8103012009",
+      "district_id": "810301",
+      "name": "LATDALAM"
+    },
+    {
+      "id": "8103012010",
+      "district_id": "810301",
+      "name": "BOMAKI"
+    },
+    {
+      "id": "8103012011",
+      "district_id": "810301",
+      "name": "MATAKUS"
+    },
+    {
+      "id": "8103022001",
+      "district_id": "810302",
+      "name": "ADAUT"
+    },
+    {
+      "id": "8103022002",
+      "district_id": "810302",
+      "name": "NAMTABUNG"
+    },
+    {
+      "id": "8103022003",
+      "district_id": "810302",
+      "name": "KANDAR"
+    },
+    {
+      "id": "8103022004",
+      "district_id": "810302",
+      "name": "LINGAT"
+    },
+    {
+      "id": "8103022005",
+      "district_id": "810302",
+      "name": "FURSUY"
+    },
+    {
+      "id": "8103022006",
+      "district_id": "810302",
+      "name": "WERAIN"
+    },
+    {
+      "id": "8103022007",
+      "district_id": "810302",
+      "name": "ELIASA"
+    },
+    {
+      "id": "8103032001",
+      "district_id": "810303",
+      "name": "TUMBUR"
+    },
+    {
+      "id": "8103032002",
+      "district_id": "810303",
+      "name": "LORULUN"
+    },
+    {
+      "id": "8103032003",
+      "district_id": "810303",
+      "name": "ATUBUL DOL"
+    },
+    {
+      "id": "8103032004",
+      "district_id": "810303",
+      "name": "AMDASA"
+    },
+    {
+      "id": "8103032005",
+      "district_id": "810303",
+      "name": "SANGLIAT KRAWAIN"
+    },
+    {
+      "id": "8103032006",
+      "district_id": "810303",
+      "name": "ARUI BAB"
+    },
+    {
+      "id": "8103032007",
+      "district_id": "810303",
+      "name": "ARUI DAS"
+    },
+    {
+      "id": "8103032008",
+      "district_id": "810303",
+      "name": "SANGLIAT DOL"
+    },
+    {
+      "id": "8103032009",
+      "district_id": "810303",
+      "name": "ATUBUL DA"
+    },
+    {
+      "id": "8103042001",
+      "district_id": "810304",
+      "name": "KAMATUBUN"
+    },
+    {
+      "id": "8103042002",
+      "district_id": "810304",
+      "name": "RUMAH SALUT"
+    },
+    {
+      "id": "8103042003",
+      "district_id": "810304",
+      "name": "WELUTU"
+    },
+    {
+      "id": "8103042004",
+      "district_id": "810304",
+      "name": "THEMIN"
+    },
+    {
+      "id": "8103042005",
+      "district_id": "810304",
+      "name": "WERATAN"
+    },
+    {
+      "id": "8103042006",
+      "district_id": "810304",
+      "name": "WERMATANG"
+    },
+    {
+      "id": "8103042007",
+      "district_id": "810304",
+      "name": "OTEMER"
+    },
+    {
+      "id": "8103042008",
+      "district_id": "810304",
+      "name": "MAKATIAN"
+    },
+    {
+      "id": "8103042009",
+      "district_id": "810304",
+      "name": "MARANTUTUL"
+    },
+    {
+      "id": "8103052001",
+      "district_id": "810305",
+      "name": "LELINGLUAN"
+    },
+    {
+      "id": "8103052002",
+      "district_id": "810305",
+      "name": "RITABEL"
+    },
+    {
+      "id": "8103052003",
+      "district_id": "810305",
+      "name": "RIDOOL"
+    },
+    {
+      "id": "8103052004",
+      "district_id": "810305",
+      "name": "WATIDAL"
+    },
+    {
+      "id": "8103052005",
+      "district_id": "810305",
+      "name": "KELIOBAR"
+    },
+    {
+      "id": "8103052006",
+      "district_id": "810305",
+      "name": "KELAAN"
+    },
+    {
+      "id": "8103052007",
+      "district_id": "810305",
+      "name": "LAMDESAR BARAT"
+    },
+    {
+      "id": "8103052008",
+      "district_id": "810305",
+      "name": "LAMDESAR TIMUR"
+    },
+    {
+      "id": "8103062001",
+      "district_id": "810306",
+      "name": "ROMEAN"
+    },
+    {
+      "id": "8103062002",
+      "district_id": "810306",
+      "name": "RUMNGEUR"
+    },
+    {
+      "id": "8103062003",
+      "district_id": "810306",
+      "name": "AWEAR"
+    },
+    {
+      "id": "8103062004",
+      "district_id": "810306",
+      "name": "SOFYANIN"
+    },
+    {
+      "id": "8103062005",
+      "district_id": "810306",
+      "name": "WALERANG"
+    },
+    {
+      "id": "8103062006",
+      "district_id": "810306",
+      "name": "ADODO FORDATA"
+    },
+    {
+      "id": "8103072001",
+      "district_id": "810307",
+      "name": "ABAT"
+    },
+    {
+      "id": "8103072002",
+      "district_id": "810307",
+      "name": "LABOBAR"
+    },
+    {
+      "id": "8103072008",
+      "district_id": "810307",
+      "name": "WATMASA"
+    },
+    {
+      "id": "8103072009",
+      "district_id": "810307",
+      "name": "AWEAR RUMNGEUR"
+    },
+    {
+      "id": "8103072010",
+      "district_id": "810307",
+      "name": "KARATAT"
+    },
+    {
+      "id": "8103072011",
+      "district_id": "810307",
+      "name": "WUNLAH"
+    },
+    {
+      "id": "8103072012",
+      "district_id": "810307",
+      "name": "KILOON"
+    },
+    {
+      "id": "8103072013",
+      "district_id": "810307",
+      "name": "LINGADA"
+    },
+    {
+      "id": "8103072014",
+      "district_id": "810307",
+      "name": "TEINEMAN"
+    },
+    {
+      "id": "8103072015",
+      "district_id": "810307",
+      "name": "WABAR"
+    },
+    {
+      "id": "8103072016",
+      "district_id": "810307",
+      "name": "ROMNUS"
+    },
+    {
+      "id": "8103082001",
+      "district_id": "810308",
+      "name": "LUMASEBU"
+    },
+    {
+      "id": "8103082002",
+      "district_id": "810308",
+      "name": "KILMASA"
+    },
+    {
+      "id": "8103082003",
+      "district_id": "810308",
+      "name": "MEYANO BAB"
+    },
+    {
+      "id": "8103082004",
+      "district_id": "810308",
+      "name": "ALUSI KRAWAIN"
+    },
+    {
+      "id": "8103082005",
+      "district_id": "810308",
+      "name": "ALUSI KELAAN"
+    },
+    {
+      "id": "8103082006",
+      "district_id": "810308",
+      "name": "ALUSI BUKJALIM"
+    },
+    {
+      "id": "8103082007",
+      "district_id": "810308",
+      "name": "ALUSI TAMRIAN"
+    },
+    {
+      "id": "8103082008",
+      "district_id": "810308",
+      "name": "ALUSI BATJAS"
+    },
+    {
+      "id": "8103082009",
+      "district_id": "810308",
+      "name": "LORWEMBUN"
+    },
+    {
+      "id": "8103082010",
+      "district_id": "810308",
+      "name": "MEYANO DAS"
+    },
+    {
+      "id": "8103092001",
+      "district_id": "810309",
+      "name": "ARMA"
+    },
+    {
+      "id": "8103092002",
+      "district_id": "810309",
+      "name": "WATMURI"
+    },
+    {
+      "id": "8103092003",
+      "district_id": "810309",
+      "name": "MANGLUSI"
+    },
+    {
+      "id": "8103092004",
+      "district_id": "810309",
+      "name": "TUTUKEMBONG"
+    },
+    {
+      "id": "8103092005",
+      "district_id": "810309",
+      "name": "WATURU"
+    },
+    {
+      "id": "8103182001",
+      "district_id": "810318",
+      "name": "WEDANGKOU"
+    },
+    {
+      "id": "8103182002",
+      "district_id": "810318",
+      "name": "ADODO MOLU"
+    },
+    {
+      "id": "8103182003",
+      "district_id": "810318",
+      "name": "WULMASA"
+    },
+    {
+      "id": "8103182004",
+      "district_id": "810318",
+      "name": "TUTUNAMETAL"
+    },
+    {
+      "id": "8103182005",
+      "district_id": "810318",
+      "name": "NURKAT"
+    },
+    {
+      "id": "8104012001",
+      "district_id": "810401",
+      "name": "NAMLEA"
+    },
+    {
+      "id": "8104012002",
+      "district_id": "810401",
+      "name": "LALA"
+    },
+    {
+      "id": "8104012003",
+      "district_id": "810401",
+      "name": "KARANG JAYA"
+    },
+    {
+      "id": "8104012009",
+      "district_id": "810401",
+      "name": "SIAHONI"
+    },
+    {
+      "id": "8104012010",
+      "district_id": "810401",
+      "name": "JAMILU"
+    },
+    {
+      "id": "8104012011",
+      "district_id": "810401",
+      "name": "SANLEKO"
+    },
+    {
+      "id": "8104012012",
+      "district_id": "810401",
+      "name": "BATU BOY"
+    },
+    {
+      "id": "8104022004",
+      "district_id": "810402",
+      "name": "WAEPURE"
+    },
+    {
+      "id": "8104022005",
+      "district_id": "810402",
+      "name": "WAEMANGIT"
+    },
+    {
+      "id": "8104022006",
+      "district_id": "810402",
+      "name": "AIR BUAYA"
+    },
+    {
+      "id": "8104022007",
+      "district_id": "810402",
+      "name": "TANJUNG KARANG"
+    },
+    {
+      "id": "8104022008",
+      "district_id": "810402",
+      "name": "BARA"
+    },
+    {
+      "id": "8104022014",
+      "district_id": "810402",
+      "name": "SELWADU"
+    },
+    {
+      "id": "8104022018",
+      "district_id": "810402",
+      "name": "WASBAKA"
+    },
+    {
+      "id": "8104022019",
+      "district_id": "810402",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "8104022020",
+      "district_id": "810402",
+      "name": "BATLALE"
+    },
+    {
+      "id": "8104022023",
+      "district_id": "810402",
+      "name": "AWILINAN"
+    },
+    {
+      "id": "8104032001",
+      "district_id": "810403",
+      "name": "SAVANA JAYA"
+    },
+    {
+      "id": "8104032002",
+      "district_id": "810403",
+      "name": "WAETELE"
+    },
+    {
+      "id": "8104032003",
+      "district_id": "810403",
+      "name": "WAEKASAR"
+    },
+    {
+      "id": "8104032004",
+      "district_id": "810403",
+      "name": "WAENETAT"
+    },
+    {
+      "id": "8104032016",
+      "district_id": "810403",
+      "name": "WAEKERTA"
+    },
+    {
+      "id": "8104032019",
+      "district_id": "810403",
+      "name": "WANAREJA"
+    },
+    {
+      "id": "8104032027",
+      "district_id": "810403",
+      "name": "GOGOREA"
+    },
+    {
+      "id": "8104062001",
+      "district_id": "810406",
+      "name": "LAMAHANG"
+    },
+    {
+      "id": "8104062002",
+      "district_id": "810406",
+      "name": "WAPLAU"
+    },
+    {
+      "id": "8104062003",
+      "district_id": "810406",
+      "name": "WAEURA"
+    },
+    {
+      "id": "8104062004",
+      "district_id": "810406",
+      "name": "SAMALAGI"
+    },
+    {
+      "id": "8104062005",
+      "district_id": "810406",
+      "name": "NAMSINA"
+    },
+    {
+      "id": "8104062006",
+      "district_id": "810406",
+      "name": "HATAWANO"
+    },
+    {
+      "id": "8104062007",
+      "district_id": "810406",
+      "name": "WAELIHANG"
+    },
+    {
+      "id": "8104062008",
+      "district_id": "810406",
+      "name": "WAPREA"
+    },
+    {
+      "id": "8104062009",
+      "district_id": "810406",
+      "name": "WAEPOTIH"
+    },
+    {
+      "id": "8104062010",
+      "district_id": "810406",
+      "name": "SKIKILALE"
+    },
+    {
+      "id": "8104102001",
+      "district_id": "810410",
+      "name": "ILATH"
+    },
+    {
+      "id": "8104102002",
+      "district_id": "810410",
+      "name": "BATU JUNGKU"
+    },
+    {
+      "id": "8104102003",
+      "district_id": "810410",
+      "name": "PELA"
+    },
+    {
+      "id": "8104102004",
+      "district_id": "810410",
+      "name": "WAEMORAT"
+    },
+    {
+      "id": "8104102006",
+      "district_id": "810410",
+      "name": "NAMLEA ILATH"
+    },
+    {
+      "id": "8104112001",
+      "district_id": "810411",
+      "name": "KUBALAHIN"
+    },
+    {
+      "id": "8104112002",
+      "district_id": "810411",
+      "name": "WAEGEREN"
+    },
+    {
+      "id": "8104112003",
+      "district_id": "810411",
+      "name": "GRANDENG"
+    },
+    {
+      "id": "8104112004",
+      "district_id": "810411",
+      "name": "LELE"
+    },
+    {
+      "id": "8104112005",
+      "district_id": "810411",
+      "name": "WANAKARTA"
+    },
+    {
+      "id": "8104112006",
+      "district_id": "810411",
+      "name": "WABLOY"
+    },
+    {
+      "id": "8104112007",
+      "district_id": "810411",
+      "name": "OHILAHIN"
+    },
+    {
+      "id": "8104112008",
+      "district_id": "810411",
+      "name": "TIFU"
+    },
+    {
+      "id": "8104112009",
+      "district_id": "810411",
+      "name": "WAPSALIT"
+    },
+    {
+      "id": "8104112010",
+      "district_id": "810411",
+      "name": "NAFRUA"
+    },
+    {
+      "id": "8104122001",
+      "district_id": "810412",
+      "name": "WAELO"
+    },
+    {
+      "id": "8104122002",
+      "district_id": "810412",
+      "name": "DEBOWAE"
+    },
+    {
+      "id": "8104122003",
+      "district_id": "810412",
+      "name": "PARBULU"
+    },
+    {
+      "id": "8104122004",
+      "district_id": "810412",
+      "name": "WAETINA"
+    },
+    {
+      "id": "8104122005",
+      "district_id": "810412",
+      "name": "WAELEMAN"
+    },
+    {
+      "id": "8104122006",
+      "district_id": "810412",
+      "name": "BASALALE"
+    },
+    {
+      "id": "8104122007",
+      "district_id": "810412",
+      "name": "WAFLAN"
+    },
+    {
+      "id": "8104122008",
+      "district_id": "810412",
+      "name": "DAVA"
+    },
+    {
+      "id": "8104122009",
+      "district_id": "810412",
+      "name": "WAEHATA"
+    },
+    {
+      "id": "8104122010",
+      "district_id": "810412",
+      "name": "WIDIT"
+    },
+    {
+      "id": "8104132001",
+      "district_id": "810413",
+      "name": "WAMLANA"
+    },
+    {
+      "id": "8104132002",
+      "district_id": "810413",
+      "name": "BALBALU"
+    },
+    {
+      "id": "8104132003",
+      "district_id": "810413",
+      "name": "WASPAIT"
+    },
+    {
+      "id": "8104132004",
+      "district_id": "810413",
+      "name": "WAEDANGA"
+    },
+    {
+      "id": "8104132005",
+      "district_id": "810413",
+      "name": "LEMANPOLI"
+    },
+    {
+      "id": "8104132006",
+      "district_id": "810413",
+      "name": "WAELANA-LANA"
+    },
+    {
+      "id": "8104132007",
+      "district_id": "810413",
+      "name": "WAEREMAN"
+    },
+    {
+      "id": "8104132008",
+      "district_id": "810413",
+      "name": "WAEMITE"
+    },
+    {
+      "id": "8104132009",
+      "district_id": "810413",
+      "name": "WASI"
+    },
+    {
+      "id": "8104132010",
+      "district_id": "810413",
+      "name": "WAEKOSE"
+    },
+    {
+      "id": "8104132011",
+      "district_id": "810413",
+      "name": "WAMANA BARU"
+    },
+    {
+      "id": "8104132012",
+      "district_id": "810413",
+      "name": "RAHERIAT"
+    },
+    {
+      "id": "8104132013",
+      "district_id": "810413",
+      "name": "WAENIBE"
+    },
+    {
+      "id": "8104142001",
+      "district_id": "810414",
+      "name": "KAIELY"
+    },
+    {
+      "id": "8104142002",
+      "district_id": "810414",
+      "name": "MASARETE"
+    },
+    {
+      "id": "8104142003",
+      "district_id": "810414",
+      "name": "WAELAPIA"
+    },
+    {
+      "id": "8104142004",
+      "district_id": "810414",
+      "name": "KAKI AIR"
+    },
+    {
+      "id": "8104142005",
+      "district_id": "810414",
+      "name": "SEITH"
+    },
+    {
+      "id": "8104152001",
+      "district_id": "810415",
+      "name": "UBUNG"
+    },
+    {
+      "id": "8104152002",
+      "district_id": "810415",
+      "name": "JIKUMERASA"
+    },
+    {
+      "id": "8104152003",
+      "district_id": "810415",
+      "name": "WAEMITING"
+    },
+    {
+      "id": "8104152004",
+      "district_id": "810415",
+      "name": "SAWA"
+    },
+    {
+      "id": "8104152005",
+      "district_id": "810415",
+      "name": "WAEPERANG"
+    },
+    {
+      "id": "8105012003",
+      "district_id": "810501",
+      "name": "BULA"
+    },
+    {
+      "id": "8105012004",
+      "district_id": "810501",
+      "name": "SALAS"
+    },
+    {
+      "id": "8105012010",
+      "district_id": "810501",
+      "name": "ENGLAS"
+    },
+    {
+      "id": "8105012011",
+      "district_id": "810501",
+      "name": "BULA AIR FATOLO"
+    },
+    {
+      "id": "8105012012",
+      "district_id": "810501",
+      "name": "SESAR"
+    },
+    {
+      "id": "8105012022",
+      "district_id": "810501",
+      "name": "TANSI AMBON"
+    },
+    {
+      "id": "8105012023",
+      "district_id": "810501",
+      "name": "KAMPUNG WAILOLA"
+    },
+    {
+      "id": "8105012024",
+      "district_id": "810501",
+      "name": "KAMPUNG GOROM"
+    },
+    {
+      "id": "8105012025",
+      "district_id": "810501",
+      "name": "LIMUMIR"
+    },
+    {
+      "id": "8105012026",
+      "district_id": "810501",
+      "name": "FATTOLO"
+    },
+    {
+      "id": "8105022001",
+      "district_id": "810502",
+      "name": "GESER"
+    },
+    {
+      "id": "8105022002",
+      "district_id": "810502",
+      "name": "KILTAY"
+    },
+    {
+      "id": "8105022003",
+      "district_id": "810502",
+      "name": "KILWARU"
+    },
+    {
+      "id": "8105022004",
+      "district_id": "810502",
+      "name": "KELLU"
+    },
+    {
+      "id": "8105022005",
+      "district_id": "810502",
+      "name": "KEFFING"
+    },
+    {
+      "id": "8105022028",
+      "district_id": "810502",
+      "name": "KILFURA"
+    },
+    {
+      "id": "8105032001",
+      "district_id": "810503",
+      "name": "BATUASA"
+    },
+    {
+      "id": "8105032002",
+      "district_id": "810503",
+      "name": "HATUIMETEN"
+    },
+    {
+      "id": "8105032003",
+      "district_id": "810503",
+      "name": "WERINAMA"
+    },
+    {
+      "id": "8105032004",
+      "district_id": "810503",
+      "name": "BEMO"
+    },
+    {
+      "id": "8105032015",
+      "district_id": "810503",
+      "name": "TUM"
+    },
+    {
+      "id": "8105032016",
+      "district_id": "810503",
+      "name": "GUSALAUT"
+    },
+    {
+      "id": "8105032017",
+      "district_id": "810503",
+      "name": "OSONG"
+    },
+    {
+      "id": "8105032018",
+      "district_id": "810503",
+      "name": "TOBO"
+    },
+    {
+      "id": "8105032021",
+      "district_id": "810503",
+      "name": "BEMO PERAK"
+    },
+    {
+      "id": "8105032022",
+      "district_id": "810503",
+      "name": "FUNA NAIBAYA"
+    },
+    {
+      "id": "8105042001",
+      "district_id": "810504",
+      "name": "KATALOKA"
+    },
+    {
+      "id": "8105042003",
+      "district_id": "810504",
+      "name": "AMARSEKARU"
+    },
+    {
+      "id": "8105042004",
+      "district_id": "810504",
+      "name": "ONDOR"
+    },
+    {
+      "id": "8105042005",
+      "district_id": "810504",
+      "name": "DAY"
+    },
+    {
+      "id": "8105042006",
+      "district_id": "810504",
+      "name": "MIDA"
+    },
+    {
+      "id": "8105042021",
+      "district_id": "810504",
+      "name": "LOKO"
+    },
+    {
+      "id": "8105042022",
+      "district_id": "810504",
+      "name": "SERA"
+    },
+    {
+      "id": "8105042023",
+      "district_id": "810504",
+      "name": "KULUGOWA"
+    },
+    {
+      "id": "8105042024",
+      "district_id": "810504",
+      "name": "RUMEON"
+    },
+    {
+      "id": "8105042031",
+      "district_id": "810504",
+      "name": "KELIBINGAN"
+    },
+    {
+      "id": "8105042032",
+      "district_id": "810504",
+      "name": "ILILI"
+    },
+    {
+      "id": "8105042042",
+      "district_id": "810504",
+      "name": "NAMALEAN"
+    },
+    {
+      "id": "8105042043",
+      "district_id": "810504",
+      "name": "DULAK"
+    },
+    {
+      "id": "8105042044",
+      "district_id": "810504",
+      "name": "KILALIR KILWOUW"
+    },
+    {
+      "id": "8105042045",
+      "district_id": "810504",
+      "name": "KILOTAK"
+    },
+    {
+      "id": "8105042046",
+      "district_id": "810504",
+      "name": "KILEAN"
+    },
+    {
+      "id": "8105042047",
+      "district_id": "810504",
+      "name": "KAFORING"
+    },
+    {
+      "id": "8105042048",
+      "district_id": "810504",
+      "name": "AREWANG"
+    },
+    {
+      "id": "8105042049",
+      "district_id": "810504",
+      "name": "USUN KATALOKA"
+    },
+    {
+      "id": "8105042050",
+      "district_id": "810504",
+      "name": "BUAN KATALOKA"
+    },
+    {
+      "id": "8105042051",
+      "district_id": "810504",
+      "name": "RUMANAMA KOTAWOUW KATALOKA"
+    },
+    {
+      "id": "8105042052",
+      "district_id": "810504",
+      "name": "SIKARO KATALOKA"
+    },
+    {
+      "id": "8105042053",
+      "district_id": "810504",
+      "name": "AROA KATALOKA"
+    },
+    {
+      "id": "8105042054",
+      "district_id": "810504",
+      "name": "DADA KATALOKA"
+    },
+    {
+      "id": "8105052001",
+      "district_id": "810505",
+      "name": "ILILI"
+    },
+    {
+      "id": "8105052002",
+      "district_id": "810505",
+      "name": "EFFA"
+    },
+    {
+      "id": "8105052003",
+      "district_id": "810505",
+      "name": "LAHEMA"
+    },
+    {
+      "id": "8105052004",
+      "district_id": "810505",
+      "name": "UTTA"
+    },
+    {
+      "id": "8105052005",
+      "district_id": "810505",
+      "name": "KELANGAN"
+    },
+    {
+      "id": "8105052006",
+      "district_id": "810505",
+      "name": "AMARLAUT"
+    },
+    {
+      "id": "8105052007",
+      "district_id": "810505",
+      "name": "TAMHER WARAT"
+    },
+    {
+      "id": "8105052008",
+      "district_id": "810505",
+      "name": "TAMHER TIMUR"
+    },
+    {
+      "id": "8105052010",
+      "district_id": "810505",
+      "name": "WUNIN ELDEDORA"
+    },
+    {
+      "id": "8105052011",
+      "district_id": "810505",
+      "name": "KELDOR"
+    },
+    {
+      "id": "8105052021",
+      "district_id": "810505",
+      "name": "TANAH BARU"
+    },
+    {
+      "id": "8105052022",
+      "district_id": "810505",
+      "name": "GULIAR"
+    },
+    {
+      "id": "8105052023",
+      "district_id": "810505",
+      "name": "KARLOMIN"
+    },
+    {
+      "id": "8105052024",
+      "district_id": "810505",
+      "name": "OTADEMAN"
+    },
+    {
+      "id": "8105052025",
+      "district_id": "810505",
+      "name": "KURWARA"
+    },
+    {
+      "id": "8105052026",
+      "district_id": "810505",
+      "name": "KILBUTAK"
+    },
+    {
+      "id": "8105052027",
+      "district_id": "810505",
+      "name": "RUMA DURUN"
+    },
+    {
+      "id": "8105052028",
+      "district_id": "810505",
+      "name": "TANA SOA"
+    },
+    {
+      "id": "8105062001",
+      "district_id": "810506",
+      "name": "DANAMA"
+    },
+    {
+      "id": "8105062002",
+      "district_id": "810506",
+      "name": "KILMOY"
+    },
+    {
+      "id": "8105062003",
+      "district_id": "810506",
+      "name": "KILBAT"
+    },
+    {
+      "id": "8105062004",
+      "district_id": "810506",
+      "name": "SESAR"
+    },
+    {
+      "id": "8105062005",
+      "district_id": "810506",
+      "name": "AIRKASAR"
+    },
+    {
+      "id": "8105062006",
+      "district_id": "810506",
+      "name": "WARAS-WARAS"
+    },
+    {
+      "id": "8105062007",
+      "district_id": "810506",
+      "name": "GAH"
+    },
+    {
+      "id": "8105062008",
+      "district_id": "810506",
+      "name": "WALANG TENGA"
+    },
+    {
+      "id": "8105062009",
+      "district_id": "810506",
+      "name": "BATI KILWOUW"
+    },
+    {
+      "id": "8105062010",
+      "district_id": "810506",
+      "name": "TARUY"
+    },
+    {
+      "id": "8105062011",
+      "district_id": "810506",
+      "name": "KUFAR"
+    },
+    {
+      "id": "8105072001",
+      "district_id": "810507",
+      "name": "DIHIL"
+    },
+    {
+      "id": "8105072002",
+      "district_id": "810507",
+      "name": "LILIAMA"
+    },
+    {
+      "id": "8105072003",
+      "district_id": "810507",
+      "name": "NAIWEL AHINULIN"
+    },
+    {
+      "id": "8105072004",
+      "district_id": "810507",
+      "name": "POLIN"
+    },
+    {
+      "id": "8105072005",
+      "district_id": "810507",
+      "name": "TUNSAI"
+    },
+    {
+      "id": "8105072006",
+      "district_id": "810507",
+      "name": "LAPELA"
+    },
+    {
+      "id": "8105072007",
+      "district_id": "810507",
+      "name": "NAYET"
+    },
+    {
+      "id": "8105072008",
+      "district_id": "810507",
+      "name": "ELNUSA"
+    },
+    {
+      "id": "8105072009",
+      "district_id": "810507",
+      "name": "ATIAHU"
+    },
+    {
+      "id": "8105072010",
+      "district_id": "810507",
+      "name": "SABUAI"
+    },
+    {
+      "id": "8105072011",
+      "district_id": "810507",
+      "name": "ABULATE"
+    },
+    {
+      "id": "8105072012",
+      "district_id": "810507",
+      "name": "ADABAI"
+    },
+    {
+      "id": "8105082001",
+      "district_id": "810508",
+      "name": "SELOR"
+    },
+    {
+      "id": "8105082002",
+      "district_id": "810508",
+      "name": "NEKAN"
+    },
+    {
+      "id": "8105082003",
+      "district_id": "810508",
+      "name": "AFANG KOTA"
+    },
+    {
+      "id": "8105082004",
+      "district_id": "810508",
+      "name": "AFANG DEFOL"
+    },
+    {
+      "id": "8105082005",
+      "district_id": "810508",
+      "name": "KUMELANG"
+    },
+    {
+      "id": "8105082006",
+      "district_id": "810508",
+      "name": "UNDUR"
+    },
+    {
+      "id": "8105082007",
+      "district_id": "810508",
+      "name": "KAMAR"
+    },
+    {
+      "id": "8105082008",
+      "district_id": "810508",
+      "name": "GUNAK"
+    },
+    {
+      "id": "8105082009",
+      "district_id": "810508",
+      "name": "SUMBAWA"
+    },
+    {
+      "id": "8105082010",
+      "district_id": "810508",
+      "name": "KILMURY"
+    },
+    {
+      "id": "8105082011",
+      "district_id": "810508",
+      "name": "KILBON KWAY"
+    },
+    {
+      "id": "8105082012",
+      "district_id": "810508",
+      "name": "MISING"
+    },
+    {
+      "id": "8105082013",
+      "district_id": "810508",
+      "name": "BITORIK"
+    },
+    {
+      "id": "8105082014",
+      "district_id": "810508",
+      "name": "TAA"
+    },
+    {
+      "id": "8105092001",
+      "district_id": "810509",
+      "name": "PULAU PANJANG"
+    },
+    {
+      "id": "8105092002",
+      "district_id": "810509",
+      "name": "ARGAM"
+    },
+    {
+      "id": "8105092003",
+      "district_id": "810509",
+      "name": "LALASA"
+    },
+    {
+      "id": "8105092004",
+      "district_id": "810509",
+      "name": "MAGAT"
+    },
+    {
+      "id": "8105092005",
+      "district_id": "810509",
+      "name": "RUKU RUKU"
+    },
+    {
+      "id": "8105092006",
+      "district_id": "810509",
+      "name": "PERIK BASARANGGI"
+    },
+    {
+      "id": "8105102001",
+      "district_id": "810510",
+      "name": "TEOR"
+    },
+    {
+      "id": "8105102002",
+      "district_id": "810510",
+      "name": "KARTUTIN KARTENGA"
+    },
+    {
+      "id": "8105102003",
+      "district_id": "810510",
+      "name": "KER KER"
+    },
+    {
+      "id": "8105102004",
+      "district_id": "810510",
+      "name": "DURYAR RUMOY"
+    },
+    {
+      "id": "8105102005",
+      "district_id": "810510",
+      "name": "LAPANG KAMPUNG JAWA"
+    },
+    {
+      "id": "8105102006",
+      "district_id": "810510",
+      "name": "KAMPUNG TENGAH WERMAF"
+    },
+    {
+      "id": "8105102007",
+      "district_id": "810510",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "8105102008",
+      "district_id": "810510",
+      "name": "MAMUR"
+    },
+    {
+      "id": "8105102009",
+      "district_id": "810510",
+      "name": "KILIWOUW"
+    },
+    {
+      "id": "8105102010",
+      "district_id": "810510",
+      "name": "KARLOKIN"
+    },
+    {
+      "id": "8105112001",
+      "district_id": "810511",
+      "name": "KILKODA"
+    },
+    {
+      "id": "8105112002",
+      "district_id": "810511",
+      "name": "MIRAN"
+    },
+    {
+      "id": "8105112003",
+      "district_id": "810511",
+      "name": "KOTA SIRIH"
+    },
+    {
+      "id": "8105112004",
+      "district_id": "810511",
+      "name": "AMARWATU"
+    },
+    {
+      "id": "8105112005",
+      "district_id": "810511",
+      "name": "ARAN"
+    },
+    {
+      "id": "8105112006",
+      "district_id": "810511",
+      "name": "TUHA"
+    },
+    {
+      "id": "8105112007",
+      "district_id": "810511",
+      "name": "BAS"
+    },
+    {
+      "id": "8105112008",
+      "district_id": "810511",
+      "name": "TUNAS ILUR"
+    },
+    {
+      "id": "8105112009",
+      "district_id": "810511",
+      "name": "SAGEY"
+    },
+    {
+      "id": "8105112010",
+      "district_id": "810511",
+      "name": "ARMADA"
+    },
+    {
+      "id": "8105112011",
+      "district_id": "810511",
+      "name": "WAISALAN"
+    },
+    {
+      "id": "8105112012",
+      "district_id": "810511",
+      "name": "BASARIN"
+    },
+    {
+      "id": "8105112013",
+      "district_id": "810511",
+      "name": "GOHA"
+    },
+    {
+      "id": "8105112014",
+      "district_id": "810511",
+      "name": "RARAT"
+    },
+    {
+      "id": "8105112015",
+      "district_id": "810511",
+      "name": "MIRAN GOTA"
+    },
+    {
+      "id": "8105112016",
+      "district_id": "810511",
+      "name": "ADAR"
+    },
+    {
+      "id": "8105112017",
+      "district_id": "810511",
+      "name": "TINARIN"
+    },
+    {
+      "id": "8105112018",
+      "district_id": "810511",
+      "name": "ETARALU"
+    },
+    {
+      "id": "8105112019",
+      "district_id": "810511",
+      "name": "KILTUFA"
+    },
+    {
+      "id": "8105112020",
+      "district_id": "810511",
+      "name": "MIRAN KILIAN"
+    },
+    {
+      "id": "8105112021",
+      "district_id": "810511",
+      "name": "MIRAN KELEDAR"
+    },
+    {
+      "id": "8105112022",
+      "district_id": "810511",
+      "name": "MIRAN MANABAN"
+    },
+    {
+      "id": "8105112023",
+      "district_id": "810511",
+      "name": "MIRAN RUMUAR"
+    },
+    {
+      "id": "8105122001",
+      "district_id": "810512",
+      "name": "HOTE"
+    },
+    {
+      "id": "8105122002",
+      "district_id": "810512",
+      "name": "BANGGOI"
+    },
+    {
+      "id": "8105122003",
+      "district_id": "810512",
+      "name": "WAEMATAKABO"
+    },
+    {
+      "id": "8105122004",
+      "district_id": "810512",
+      "name": "WAIKETAM BARU"
+    },
+    {
+      "id": "8105122005",
+      "district_id": "810512",
+      "name": "WAISAMET"
+    },
+    {
+      "id": "8105122006",
+      "district_id": "810512",
+      "name": "AKI JAYA"
+    },
+    {
+      "id": "8105122007",
+      "district_id": "810512",
+      "name": "JAKARTA BARU"
+    },
+    {
+      "id": "8105122008",
+      "district_id": "810512",
+      "name": "SILOHAN"
+    },
+    {
+      "id": "8105122009",
+      "district_id": "810512",
+      "name": "SUMBER AGUNG"
+    },
+    {
+      "id": "8105122010",
+      "district_id": "810512",
+      "name": "RUKUN JAYA"
+    },
+    {
+      "id": "8105122011",
+      "district_id": "810512",
+      "name": "JEMBATAN BASAH"
+    },
+    {
+      "id": "8105122012",
+      "district_id": "810512",
+      "name": "DREAMLAND HILLS"
+    },
+    {
+      "id": "8105122013",
+      "district_id": "810512",
+      "name": "BANGGOI PANCORANG"
+    },
+    {
+      "id": "8105132001",
+      "district_id": "810513",
+      "name": "KIAN DARAT"
+    },
+    {
+      "id": "8105132002",
+      "district_id": "810513",
+      "name": "ARTAFELA"
+    },
+    {
+      "id": "8105132003",
+      "district_id": "810513",
+      "name": "ANGAR"
+    },
+    {
+      "id": "8105132004",
+      "district_id": "810513",
+      "name": "WATU WATU"
+    },
+    {
+      "id": "8105132005",
+      "district_id": "810513",
+      "name": "KELABA"
+    },
+    {
+      "id": "8105132006",
+      "district_id": "810513",
+      "name": "KILGA KILWOUW"
+    },
+    {
+      "id": "8105132007",
+      "district_id": "810513",
+      "name": "KILGA WATUBAU"
+    },
+    {
+      "id": "8105132008",
+      "district_id": "810513",
+      "name": "RUMFAKAR"
+    },
+    {
+      "id": "8105132009",
+      "district_id": "810513",
+      "name": "KILESER"
+    },
+    {
+      "id": "8105132010",
+      "district_id": "810513",
+      "name": "RUMOGA"
+    },
+    {
+      "id": "8105142001",
+      "district_id": "810514",
+      "name": "KIAN LAUT"
+    },
+    {
+      "id": "8105142002",
+      "district_id": "810514",
+      "name": "KUWAOS"
+    },
+    {
+      "id": "8105142003",
+      "district_id": "810514",
+      "name": "SALAGOR AIR"
+    },
+    {
+      "id": "8105142004",
+      "district_id": "810514",
+      "name": "SALAGOR KOTA"
+    },
+    {
+      "id": "8105142005",
+      "district_id": "810514",
+      "name": "ARUAN GAUR"
+    },
+    {
+      "id": "8105142006",
+      "district_id": "810514",
+      "name": "KETA RUMADAN"
+    },
+    {
+      "id": "8105142007",
+      "district_id": "810514",
+      "name": "LIAN TASIK"
+    },
+    {
+      "id": "8105142008",
+      "district_id": "810514",
+      "name": "KETA"
+    },
+    {
+      "id": "8105142009",
+      "district_id": "810514",
+      "name": "AIR NANANG"
+    },
+    {
+      "id": "8105142010",
+      "district_id": "810514",
+      "name": "SURU"
+    },
+    {
+      "id": "8105152001",
+      "district_id": "810515",
+      "name": "WARU"
+    },
+    {
+      "id": "8105152002",
+      "district_id": "810515",
+      "name": "BELLIS"
+    },
+    {
+      "id": "8105152003",
+      "district_id": "810515",
+      "name": "DAWANG"
+    },
+    {
+      "id": "8105152004",
+      "district_id": "810515",
+      "name": "SOLANG"
+    },
+    {
+      "id": "8105152005",
+      "district_id": "810515",
+      "name": "KARAY"
+    },
+    {
+      "id": "8105152006",
+      "district_id": "810515",
+      "name": "NAMA LENA"
+    },
+    {
+      "id": "8105152007",
+      "district_id": "810515",
+      "name": "NAMA ANDAN"
+    },
+    {
+      "id": "8105152008",
+      "district_id": "810515",
+      "name": "TUBIR WASIWANG"
+    },
+    {
+      "id": "8105152009",
+      "district_id": "810515",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "8105152010",
+      "district_id": "810515",
+      "name": "BOINFIA"
+    },
+    {
+      "id": "8105152011",
+      "district_id": "810515",
+      "name": "MADAK"
+    },
+    {
+      "id": "8105162001",
+      "district_id": "810516",
+      "name": "URUNG"
+    },
+    {
+      "id": "8105162002",
+      "district_id": "810516",
+      "name": "KWAMOR KECIL MATA ATA"
+    },
+    {
+      "id": "8105162003",
+      "district_id": "810516",
+      "name": "KWAMOR KECIL MATA WAWA"
+    },
+    {
+      "id": "8105162004",
+      "district_id": "810516",
+      "name": "KWAMOR BESAR ENA"
+    },
+    {
+      "id": "8105162005",
+      "district_id": "810516",
+      "name": "KWAMOR BESAR WITAU"
+    },
+    {
+      "id": "8105162006",
+      "district_id": "810516",
+      "name": "GULI-GULI"
+    },
+    {
+      "id": "8105162007",
+      "district_id": "810516",
+      "name": "MANGGIS"
+    },
+    {
+      "id": "8105162008",
+      "district_id": "810516",
+      "name": "AINENA"
+    },
+    {
+      "id": "8105162009",
+      "district_id": "810516",
+      "name": "MUGUSINIS"
+    },
+    {
+      "id": "8105162010",
+      "district_id": "810516",
+      "name": "AKAT FADEDO"
+    },
+    {
+      "id": "8106012008",
+      "district_id": "810601",
+      "name": "KAMARIAN"
+    },
+    {
+      "id": "8106012009",
+      "district_id": "810601",
+      "name": "SERUAWAN"
+    },
+    {
+      "id": "8106012010",
+      "district_id": "810601",
+      "name": "KAIRATU"
+    },
+    {
+      "id": "8106012011",
+      "district_id": "810601",
+      "name": "WAIMITAL"
+    },
+    {
+      "id": "8106012012",
+      "district_id": "810601",
+      "name": "HATUSUA"
+    },
+    {
+      "id": "8106012014",
+      "district_id": "810601",
+      "name": "WAIPIRIT"
+    },
+    {
+      "id": "8106012015",
+      "district_id": "810601",
+      "name": "URAUR"
+    },
+    {
+      "id": "8106022002",
+      "district_id": "810602",
+      "name": "KAWA"
+    },
+    {
+      "id": "8106022003",
+      "district_id": "810602",
+      "name": "PIRU"
+    },
+    {
+      "id": "8106022004",
+      "district_id": "810602",
+      "name": "NENIARI"
+    },
+    {
+      "id": "8106022005",
+      "district_id": "810602",
+      "name": "MOREKAU"
+    },
+    {
+      "id": "8106022006",
+      "district_id": "810602",
+      "name": "LUMOLI"
+    },
+    {
+      "id": "8106022007",
+      "district_id": "810602",
+      "name": "ETI"
+    },
+    {
+      "id": "8106022008",
+      "district_id": "810602",
+      "name": "KAIBOBO"
+    },
+    {
+      "id": "8106032001",
+      "district_id": "810603",
+      "name": "MURNATEN"
+    },
+    {
+      "id": "8106032002",
+      "district_id": "810603",
+      "name": "NIKULUKAN"
+    },
+    {
+      "id": "8106032003",
+      "district_id": "810603",
+      "name": "NIWELEHU"
+    },
+    {
+      "id": "8106032004",
+      "district_id": "810603",
+      "name": "NUNIALI"
+    },
+    {
+      "id": "8106032005",
+      "district_id": "810603",
+      "name": "LISABATA"
+    },
+    {
+      "id": "8106032006",
+      "district_id": "810603",
+      "name": "WAKOLO"
+    },
+    {
+      "id": "8106032007",
+      "district_id": "810603",
+      "name": "PATAHUWE"
+    },
+    {
+      "id": "8106032008",
+      "district_id": "810603",
+      "name": "TANIWEL"
+    },
+    {
+      "id": "8106032009",
+      "district_id": "810603",
+      "name": "HULUNG"
+    },
+    {
+      "id": "8106032010",
+      "district_id": "810603",
+      "name": "KASIEH"
+    },
+    {
+      "id": "8106032011",
+      "district_id": "810603",
+      "name": "NUKUHAI"
+    },
+    {
+      "id": "8106032012",
+      "district_id": "810603",
+      "name": "PASINALO"
+    },
+    {
+      "id": "8106032028",
+      "district_id": "810603",
+      "name": "UWETH"
+    },
+    {
+      "id": "8106032029",
+      "district_id": "810603",
+      "name": "LATURAKE"
+    },
+    {
+      "id": "8106032030",
+      "district_id": "810603",
+      "name": "BURIA"
+    },
+    {
+      "id": "8106032031",
+      "district_id": "810603",
+      "name": "RIRING"
+    },
+    {
+      "id": "8106032032",
+      "district_id": "810603",
+      "name": "RUMAHSOAL"
+    },
+    {
+      "id": "8106032033",
+      "district_id": "810603",
+      "name": "LOHIASAPALEWA"
+    },
+    {
+      "id": "8106032034",
+      "district_id": "810603",
+      "name": "NINIARI"
+    },
+    {
+      "id": "8106042001",
+      "district_id": "810604",
+      "name": "WAESALA"
+    },
+    {
+      "id": "8106042002",
+      "district_id": "810604",
+      "name": "ALLANG ASAUDE"
+    },
+    {
+      "id": "8106042003",
+      "district_id": "810604",
+      "name": "SOLE"
+    },
+    {
+      "id": "8106042004",
+      "district_id": "810604",
+      "name": "TONU JAYA"
+    },
+    {
+      "id": "8106042005",
+      "district_id": "810604",
+      "name": "TAHALUPU"
+    },
+    {
+      "id": "8106042006",
+      "district_id": "810604",
+      "name": "BUANO UTARA"
+    },
+    {
+      "id": "8106042007",
+      "district_id": "810604",
+      "name": "BUANO SELATAN"
+    },
+    {
+      "id": "8106052001",
+      "district_id": "810605",
+      "name": "TIHULALE"
+    },
+    {
+      "id": "8106052002",
+      "district_id": "810605",
+      "name": "RUMAHKAY"
+    },
+    {
+      "id": "8106052003",
+      "district_id": "810605",
+      "name": "LATU"
+    },
+    {
+      "id": "8106052004",
+      "district_id": "810605",
+      "name": "TOMALEHU"
+    },
+    {
+      "id": "8106052005",
+      "district_id": "810605",
+      "name": "HUALOY"
+    },
+    {
+      "id": "8106052006",
+      "district_id": "810605",
+      "name": "SERIHOLO"
+    },
+    {
+      "id": "8106052007",
+      "district_id": "810605",
+      "name": "TALA"
+    },
+    {
+      "id": "8106062001",
+      "district_id": "810606",
+      "name": "MANUSA"
+    },
+    {
+      "id": "8106062002",
+      "district_id": "810606",
+      "name": "RAMBATU"
+    },
+    {
+      "id": "8106062003",
+      "district_id": "810606",
+      "name": "RUMBERU"
+    },
+    {
+      "id": "8106062004",
+      "district_id": "810606",
+      "name": "HONITETU"
+    },
+    {
+      "id": "8106062005",
+      "district_id": "810606",
+      "name": "HUKUANAKOTA"
+    },
+    {
+      "id": "8106072001",
+      "district_id": "810607",
+      "name": "WAIHATU"
+    },
+    {
+      "id": "8106072002",
+      "district_id": "810607",
+      "name": "LOHIATALA"
+    },
+    {
+      "id": "8106072003",
+      "district_id": "810607",
+      "name": "WAISAMU"
+    },
+    {
+      "id": "8106072004",
+      "district_id": "810607",
+      "name": "NURUWE"
+    },
+    {
+      "id": "8106072005",
+      "district_id": "810607",
+      "name": "KAMAL"
+    },
+    {
+      "id": "8106072006",
+      "district_id": "810607",
+      "name": "WAISARISA"
+    },
+    {
+      "id": "8106082001",
+      "district_id": "810608",
+      "name": "ARIATE"
+    },
+    {
+      "id": "8106082002",
+      "district_id": "810608",
+      "name": "LOKKI"
+    },
+    {
+      "id": "8106082003",
+      "district_id": "810608",
+      "name": "LUHU"
+    },
+    {
+      "id": "8106082004",
+      "district_id": "810608",
+      "name": "IHA"
+    },
+    {
+      "id": "8106082005",
+      "district_id": "810608",
+      "name": "KULUR"
+    },
+    {
+      "id": "8106092001",
+      "district_id": "810609",
+      "name": "LUHUTUBAN"
+    },
+    {
+      "id": "8106092002",
+      "district_id": "810609",
+      "name": "MASAWOY"
+    },
+    {
+      "id": "8106092003",
+      "district_id": "810609",
+      "name": "TUNIWARA"
+    },
+    {
+      "id": "8106092004",
+      "district_id": "810609",
+      "name": "KELANG ASAUDE"
+    },
+    {
+      "id": "8106092005",
+      "district_id": "810609",
+      "name": "TOMALEHU BARAT"
+    },
+    {
+      "id": "8106092006",
+      "district_id": "810609",
+      "name": "TOMALEHU TIMUR"
+    },
+    {
+      "id": "8106092007",
+      "district_id": "810609",
+      "name": "BUANO HATUPUTIH"
+    },
+    {
+      "id": "8106102001",
+      "district_id": "810610",
+      "name": "SOHUWE"
+    },
+    {
+      "id": "8106102002",
+      "district_id": "810610",
+      "name": "MALOANG"
+    },
+    {
+      "id": "8106102003",
+      "district_id": "810610",
+      "name": "LUMAHLATAL"
+    },
+    {
+      "id": "8106102004",
+      "district_id": "810610",
+      "name": "MATAPA"
+    },
+    {
+      "id": "8106102005",
+      "district_id": "810610",
+      "name": "SEAKASALE"
+    },
+    {
+      "id": "8106102006",
+      "district_id": "810610",
+      "name": "MAKUBUBUI"
+    },
+    {
+      "id": "8106102007",
+      "district_id": "810610",
+      "name": "SUKARAJA"
+    },
+    {
+      "id": "8106102008",
+      "district_id": "810610",
+      "name": "UWEN PANTAI"
+    },
+    {
+      "id": "8106102009",
+      "district_id": "810610",
+      "name": "TOUNUSSA"
+    },
+    {
+      "id": "8106102010",
+      "district_id": "810610",
+      "name": "MUSIHUWEY"
+    },
+    {
+      "id": "8106102011",
+      "district_id": "810610",
+      "name": "SOLEA"
+    },
+    {
+      "id": "8106102012",
+      "district_id": "810610",
+      "name": "WARALOIN"
+    },
+    {
+      "id": "8106102013",
+      "district_id": "810610",
+      "name": "WALAKONE"
+    },
+    {
+      "id": "8106102014",
+      "district_id": "810610",
+      "name": "HATUNURU"
+    },
+    {
+      "id": "8106102015",
+      "district_id": "810610",
+      "name": "LUMAHPELU"
+    },
+    {
+      "id": "8106112002",
+      "district_id": "810611",
+      "name": "SANAHU"
+    },
+    {
+      "id": "8106112003",
+      "district_id": "810611",
+      "name": "WASIA"
+    },
+    {
+      "id": "8106112004",
+      "district_id": "810611",
+      "name": "SUMEITH PASINARO"
+    },
+    {
+      "id": "8106112005",
+      "district_id": "810611",
+      "name": "WATUI"
+    },
+    {
+      "id": "8106112006",
+      "district_id": "810611",
+      "name": "ABIO AHIOLO"
+    },
+    {
+      "id": "8106112007",
+      "district_id": "810611",
+      "name": "HUKU KECIL"
+    },
+    {
+      "id": "8106112008",
+      "district_id": "810611",
+      "name": "ELPAPUTIH"
+    },
+    {
+      "id": "8107011012",
+      "district_id": "810701",
+      "name": "GALAI DUBU"
+    },
+    {
+      "id": "8107011013",
+      "district_id": "810701",
+      "name": "SIWA LIMA"
+    },
+    {
+      "id": "8107012001",
+      "district_id": "810701",
+      "name": "UJIR"
+    },
+    {
+      "id": "8107012002",
+      "district_id": "810701",
+      "name": "NAFAR"
+    },
+    {
+      "id": "8107012003",
+      "district_id": "810701",
+      "name": "KOBRAUR"
+    },
+    {
+      "id": "8107012004",
+      "district_id": "810701",
+      "name": "LAU-LAU"
+    },
+    {
+      "id": "8107012005",
+      "district_id": "810701",
+      "name": "GORAR"
+    },
+    {
+      "id": "8107012006",
+      "district_id": "810701",
+      "name": "TUNGU"
+    },
+    {
+      "id": "8107012007",
+      "district_id": "810701",
+      "name": "TUNGUWATU"
+    },
+    {
+      "id": "8107012008",
+      "district_id": "810701",
+      "name": "JABULENGA"
+    },
+    {
+      "id": "8107012009",
+      "district_id": "810701",
+      "name": "WOKAM"
+    },
+    {
+      "id": "8107012010",
+      "district_id": "810701",
+      "name": "KARANGGULI"
+    },
+    {
+      "id": "8107012011",
+      "district_id": "810701",
+      "name": "DURJELA"
+    },
+    {
+      "id": "8107012014",
+      "district_id": "810701",
+      "name": "WANGEL"
+    },
+    {
+      "id": "8107012015",
+      "district_id": "810701",
+      "name": "SAMANG"
+    },
+    {
+      "id": "8107022001",
+      "district_id": "810702",
+      "name": "JEROL"
+    },
+    {
+      "id": "8107022002",
+      "district_id": "810702",
+      "name": "MARFENFEN"
+    },
+    {
+      "id": "8107022003",
+      "district_id": "810702",
+      "name": "KABALUKIN"
+    },
+    {
+      "id": "8107022004",
+      "district_id": "810702",
+      "name": "KALAR-KALAR"
+    },
+    {
+      "id": "8107022005",
+      "district_id": "810702",
+      "name": "FERUNI"
+    },
+    {
+      "id": "8107022006",
+      "district_id": "810702",
+      "name": "NGAIGULI"
+    },
+    {
+      "id": "8107022007",
+      "district_id": "810702",
+      "name": "FATURAL"
+    },
+    {
+      "id": "8107022008",
+      "district_id": "810702",
+      "name": "NGAIBOR"
+    },
+    {
+      "id": "8107022010",
+      "district_id": "810702",
+      "name": "POPJETUR"
+    },
+    {
+      "id": "8107022026",
+      "district_id": "810702",
+      "name": "LOR-LOR"
+    },
+    {
+      "id": "8107022027",
+      "district_id": "810702",
+      "name": "GAIMAR"
+    },
+    {
+      "id": "8107022028",
+      "district_id": "810702",
+      "name": "LAININIR"
+    },
+    {
+      "id": "8107022029",
+      "district_id": "810702",
+      "name": "DOKA BARAT"
+    },
+    {
+      "id": "8107022030",
+      "district_id": "810702",
+      "name": "DOKA TIMUR"
+    },
+    {
+      "id": "8107022031",
+      "district_id": "810702",
+      "name": "JELIA"
+    },
+    {
+      "id": "8107032001",
+      "district_id": "810703",
+      "name": "BENJINA"
+    },
+    {
+      "id": "8107032003",
+      "district_id": "810703",
+      "name": "GARDAKAU"
+    },
+    {
+      "id": "8107032004",
+      "district_id": "810703",
+      "name": "IRLOY"
+    },
+    {
+      "id": "8107032005",
+      "district_id": "810703",
+      "name": "ALGADANG"
+    },
+    {
+      "id": "8107032006",
+      "district_id": "810703",
+      "name": "LORANG"
+    },
+    {
+      "id": "8107032007",
+      "district_id": "810703",
+      "name": "MURAI"
+    },
+    {
+      "id": "8107032008",
+      "district_id": "810703",
+      "name": "MANJAU"
+    },
+    {
+      "id": "8107032009",
+      "district_id": "810703",
+      "name": "KWARBOLA"
+    },
+    {
+      "id": "8107032028",
+      "district_id": "810703",
+      "name": "KOBADANGAR"
+    },
+    {
+      "id": "8107032029",
+      "district_id": "810703",
+      "name": "KOBASEL FARA"
+    },
+    {
+      "id": "8107032030",
+      "district_id": "810703",
+      "name": "KOBASEL TIMUR"
+    },
+    {
+      "id": "8107032031",
+      "district_id": "810703",
+      "name": "FATLABATA"
+    },
+    {
+      "id": "8107032033",
+      "district_id": "810703",
+      "name": "WAKUA"
+    },
+    {
+      "id": "8107032034",
+      "district_id": "810703",
+      "name": "JIRLAY"
+    },
+    {
+      "id": "8107032035",
+      "district_id": "810703",
+      "name": "MARIRIMAR"
+    },
+    {
+      "id": "8107032036",
+      "district_id": "810703",
+      "name": "PAPAKULA"
+    },
+    {
+      "id": "8107032037",
+      "district_id": "810703",
+      "name": "TANAH MIRING"
+    },
+    {
+      "id": "8107032038",
+      "district_id": "810703",
+      "name": "GULILI"
+    },
+    {
+      "id": "8107032039",
+      "district_id": "810703",
+      "name": "NAMARA"
+    },
+    {
+      "id": "8107032040",
+      "district_id": "810703",
+      "name": "SELILAU"
+    },
+    {
+      "id": "8107032043",
+      "district_id": "810703",
+      "name": "MAIJURING"
+    },
+    {
+      "id": "8107032045",
+      "district_id": "810703",
+      "name": "SELIBATA-BATA"
+    },
+    {
+      "id": "8107042001",
+      "district_id": "810704",
+      "name": "MARLASI"
+    },
+    {
+      "id": "8107042002",
+      "district_id": "810704",
+      "name": "KOLAMAR"
+    },
+    {
+      "id": "8107042003",
+      "district_id": "810704",
+      "name": "KABUFIN"
+    },
+    {
+      "id": "8107042004",
+      "district_id": "810704",
+      "name": "TASINWAHA"
+    },
+    {
+      "id": "8107042005",
+      "district_id": "810704",
+      "name": "FOKET"
+    },
+    {
+      "id": "8107042006",
+      "district_id": "810704",
+      "name": "KAIBOLAFIN"
+    },
+    {
+      "id": "8107042007",
+      "district_id": "810704",
+      "name": "WAHANGULA-NGULA"
+    },
+    {
+      "id": "8107042008",
+      "district_id": "810704",
+      "name": "WAHAYUM"
+    },
+    {
+      "id": "8107042009",
+      "district_id": "810704",
+      "name": "WARIALAU"
+    },
+    {
+      "id": "8107042010",
+      "district_id": "810704",
+      "name": "JERWATU"
+    },
+    {
+      "id": "8107042013",
+      "district_id": "810704",
+      "name": "SELMONA"
+    },
+    {
+      "id": "8107042014",
+      "district_id": "810704",
+      "name": "MESIDANG"
+    },
+    {
+      "id": "8107052001",
+      "district_id": "810705",
+      "name": "KABALSIANG"
+    },
+    {
+      "id": "8107052002",
+      "district_id": "810705",
+      "name": "BENJURING"
+    },
+    {
+      "id": "8107052003",
+      "district_id": "810705",
+      "name": "BATULEY"
+    },
+    {
+      "id": "8107052004",
+      "district_id": "810705",
+      "name": "KUMUL"
+    },
+    {
+      "id": "8107052005",
+      "district_id": "810705",
+      "name": "WARIA"
+    },
+    {
+      "id": "8107052006",
+      "district_id": "810705",
+      "name": "SEWER"
+    },
+    {
+      "id": "8107052007",
+      "district_id": "810705",
+      "name": "JURSIANG"
+    },
+    {
+      "id": "8107052008",
+      "district_id": "810705",
+      "name": "KOMPANE"
+    },
+    {
+      "id": "8107052009",
+      "district_id": "810705",
+      "name": "KOBAMAR"
+    },
+    {
+      "id": "8107062002",
+      "district_id": "810706",
+      "name": "WAIFUAL"
+    },
+    {
+      "id": "8107062003",
+      "district_id": "810706",
+      "name": "WAFAN"
+    },
+    {
+      "id": "8107062004",
+      "district_id": "810706",
+      "name": "LANGHALAU"
+    },
+    {
+      "id": "8107062005",
+      "district_id": "810706",
+      "name": "GOMSEY"
+    },
+    {
+      "id": "8107062006",
+      "district_id": "810706",
+      "name": "LEITING"
+    },
+    {
+      "id": "8107062007",
+      "district_id": "810706",
+      "name": "BARDEFAN"
+    },
+    {
+      "id": "8107062008",
+      "district_id": "810706",
+      "name": "MOHONGSEL"
+    },
+    {
+      "id": "8107062009",
+      "district_id": "810706",
+      "name": "KOLAHA"
+    },
+    {
+      "id": "8107062010",
+      "district_id": "810706",
+      "name": "GODA-GODA"
+    },
+    {
+      "id": "8107072001",
+      "district_id": "810707",
+      "name": "KOIJABI"
+    },
+    {
+      "id": "8107072002",
+      "district_id": "810707",
+      "name": "BALATAN"
+    },
+    {
+      "id": "8107072003",
+      "district_id": "810707",
+      "name": "WARLOY"
+    },
+    {
+      "id": "8107072004",
+      "district_id": "810707",
+      "name": "WARJUKUR"
+    },
+    {
+      "id": "8107072005",
+      "district_id": "810707",
+      "name": "KOBROR"
+    },
+    {
+      "id": "8107072006",
+      "district_id": "810707",
+      "name": "BASADA"
+    },
+    {
+      "id": "8107072007",
+      "district_id": "810707",
+      "name": "WAILAY"
+    },
+    {
+      "id": "8107072008",
+      "district_id": "810707",
+      "name": "KAIWABAR"
+    },
+    {
+      "id": "8107072009",
+      "district_id": "810707",
+      "name": "PONOM"
+    },
+    {
+      "id": "8107072010",
+      "district_id": "810707",
+      "name": "LOLA"
+    },
+    {
+      "id": "8107072011",
+      "district_id": "810707",
+      "name": "MARIRI"
+    },
+    {
+      "id": "8107072012",
+      "district_id": "810707",
+      "name": "DOSINAMALAU"
+    },
+    {
+      "id": "8107072013",
+      "district_id": "810707",
+      "name": "KARAWAI"
+    },
+    {
+      "id": "8107082001",
+      "district_id": "810708",
+      "name": "LONGGAR"
+    },
+    {
+      "id": "8107082002",
+      "district_id": "810708",
+      "name": "APARA"
+    },
+    {
+      "id": "8107082003",
+      "district_id": "810708",
+      "name": "BEMUN"
+    },
+    {
+      "id": "8107082004",
+      "district_id": "810708",
+      "name": "MESIANG"
+    },
+    {
+      "id": "8107082005",
+      "district_id": "810708",
+      "name": "GOMO-GOMO"
+    },
+    {
+      "id": "8107082006",
+      "district_id": "810708",
+      "name": "JAMBU AIR"
+    },
+    {
+      "id": "8107082007",
+      "district_id": "810708",
+      "name": "WARABAL"
+    },
+    {
+      "id": "8107092001",
+      "district_id": "810709",
+      "name": "MEROR"
+    },
+    {
+      "id": "8107092002",
+      "district_id": "810709",
+      "name": "DOSIMAR"
+    },
+    {
+      "id": "8107092003",
+      "district_id": "810709",
+      "name": "BATUGOYANG"
+    },
+    {
+      "id": "8107092004",
+      "district_id": "810709",
+      "name": "SALAREM"
+    },
+    {
+      "id": "8107092005",
+      "district_id": "810709",
+      "name": "SIYA"
+    },
+    {
+      "id": "8107092006",
+      "district_id": "810709",
+      "name": "BELTUBUR"
+    },
+    {
+      "id": "8107092007",
+      "district_id": "810709",
+      "name": "KAREY"
+    },
+    {
+      "id": "8107092008",
+      "district_id": "810709",
+      "name": "JORANG"
+    },
+    {
+      "id": "8107092009",
+      "district_id": "810709",
+      "name": "GOMAR SUNGAI"
+    },
+    {
+      "id": "8107092010",
+      "district_id": "810709",
+      "name": "GOMAR METI"
+    },
+    {
+      "id": "8107102001",
+      "district_id": "810710",
+      "name": "TABARFANE"
+    },
+    {
+      "id": "8107102002",
+      "district_id": "810710",
+      "name": "REBI"
+    },
+    {
+      "id": "8107102003",
+      "district_id": "810710",
+      "name": "LUTUR"
+    },
+    {
+      "id": "8107102004",
+      "district_id": "810710",
+      "name": "HOKMAR"
+    },
+    {
+      "id": "8107102005",
+      "district_id": "810710",
+      "name": "JURING"
+    },
+    {
+      "id": "8107102006",
+      "district_id": "810710",
+      "name": "ERERSIN"
+    },
+    {
+      "id": "8107102007",
+      "district_id": "810710",
+      "name": "MAEKOR"
+    },
+    {
+      "id": "8108011001",
+      "district_id": "810801",
+      "name": "TIAKUR"
+    },
+    {
+      "id": "8108012001",
+      "district_id": "810801",
+      "name": "KLIS"
+    },
+    {
+      "id": "8108012002",
+      "district_id": "810801",
+      "name": "PATTI"
+    },
+    {
+      "id": "8108012003",
+      "district_id": "810801",
+      "name": "WAKARLELI"
+    },
+    {
+      "id": "8108012004",
+      "district_id": "810801",
+      "name": "KAIWATU"
+    },
+    {
+      "id": "8108012005",
+      "district_id": "810801",
+      "name": "WERWARU"
+    },
+    {
+      "id": "8108012006",
+      "district_id": "810801",
+      "name": "TOUNWAWAN"
+    },
+    {
+      "id": "8108012007",
+      "district_id": "810801",
+      "name": "MOAIN"
+    },
+    {
+      "id": "8108022001",
+      "district_id": "810802",
+      "name": "WULUR"
+    },
+    {
+      "id": "8108022002",
+      "district_id": "810802",
+      "name": "BATU MERAH"
+    },
+    {
+      "id": "8108022003",
+      "district_id": "810802",
+      "name": "KUAIMELU"
+    },
+    {
+      "id": "8108022004",
+      "district_id": "810802",
+      "name": "KUMUR"
+    },
+    {
+      "id": "8108022005",
+      "district_id": "810802",
+      "name": "BEBAR TIMUR"
+    },
+    {
+      "id": "8108022006",
+      "district_id": "810802",
+      "name": "ILIH"
+    },
+    {
+      "id": "8108022007",
+      "district_id": "810802",
+      "name": "KEHLI"
+    },
+    {
+      "id": "8108032001",
+      "district_id": "810803",
+      "name": "LUANG BARAT"
+    },
+    {
+      "id": "8108032002",
+      "district_id": "810803",
+      "name": "LUANG TIMUR"
+    },
+    {
+      "id": "8108032003",
+      "district_id": "810803",
+      "name": "ELO"
+    },
+    {
+      "id": "8108032004",
+      "district_id": "810803",
+      "name": "RUMKISAR"
+    },
+    {
+      "id": "8108032005",
+      "district_id": "810803",
+      "name": "LELANG"
+    },
+    {
+      "id": "8108032006",
+      "district_id": "810803",
+      "name": "MAHALETA"
+    },
+    {
+      "id": "8108032007",
+      "district_id": "810803",
+      "name": "ROMDARA"
+    },
+    {
+      "id": "8108032008",
+      "district_id": "810803",
+      "name": "ROTNAMA"
+    },
+    {
+      "id": "8108032009",
+      "district_id": "810803",
+      "name": "BATUGAJAH"
+    },
+    {
+      "id": "8108032010",
+      "district_id": "810803",
+      "name": "PUPLIORA"
+    },
+    {
+      "id": "8108032011",
+      "district_id": "810803",
+      "name": "REGOHA"
+    },
+    {
+      "id": "8108042001",
+      "district_id": "810804",
+      "name": "TEPA"
+    },
+    {
+      "id": "8108042002",
+      "district_id": "810804",
+      "name": "IMROING"
+    },
+    {
+      "id": "8108042003",
+      "district_id": "810804",
+      "name": "TELA"
+    },
+    {
+      "id": "8108042004",
+      "district_id": "810804",
+      "name": "YALTUBUNG"
+    },
+    {
+      "id": "8108042005",
+      "district_id": "810804",
+      "name": "WANUWUI"
+    },
+    {
+      "id": "8108042006",
+      "district_id": "810804",
+      "name": "LETSIARA"
+    },
+    {
+      "id": "8108042015",
+      "district_id": "810804",
+      "name": "LEWAH"
+    },
+    {
+      "id": "8108042016",
+      "district_id": "810804",
+      "name": "HERTUTI"
+    },
+    {
+      "id": "8108042017",
+      "district_id": "810804",
+      "name": "SINAIRUSI"
+    },
+    {
+      "id": "8108052001",
+      "district_id": "810805",
+      "name": "LETWURUNG"
+    },
+    {
+      "id": "8108052002",
+      "district_id": "810805",
+      "name": "YATOKE"
+    },
+    {
+      "id": "8108052003",
+      "district_id": "810805",
+      "name": "KROING"
+    },
+    {
+      "id": "8108052004",
+      "district_id": "810805",
+      "name": "NAKARHAMTO"
+    },
+    {
+      "id": "8108052005",
+      "district_id": "810805",
+      "name": "EMPLAWAS"
+    },
+    {
+      "id": "8108052006",
+      "district_id": "810805",
+      "name": "KOKWARI"
+    },
+    {
+      "id": "8108052007",
+      "district_id": "810805",
+      "name": "AHANARI"
+    },
+    {
+      "id": "8108052008",
+      "district_id": "810805",
+      "name": "WAKPAPAPI"
+    },
+    {
+      "id": "8108052009",
+      "district_id": "810805",
+      "name": "ANALUTUR"
+    },
+    {
+      "id": "8108052010",
+      "district_id": "810805",
+      "name": "MANUWERI"
+    },
+    {
+      "id": "8108052011",
+      "district_id": "810805",
+      "name": "TUTUWAWANG"
+    },
+    {
+      "id": "8108062001",
+      "district_id": "810806",
+      "name": "ILWAKI"
+    },
+    {
+      "id": "8108062002",
+      "district_id": "810806",
+      "name": "ILPUTIH"
+    },
+    {
+      "id": "8108062003",
+      "district_id": "810806",
+      "name": "MAHUAN"
+    },
+    {
+      "id": "8108062004",
+      "district_id": "810806",
+      "name": "MASAPUN"
+    },
+    {
+      "id": "8108062021",
+      "district_id": "810806",
+      "name": "ARNAU"
+    },
+    {
+      "id": "8108062023",
+      "district_id": "810806",
+      "name": "HIAY"
+    },
+    {
+      "id": "8108072001",
+      "district_id": "810807",
+      "name": "WONRELI"
+    },
+    {
+      "id": "8108072002",
+      "district_id": "810807",
+      "name": "LEKLOOR"
+    },
+    {
+      "id": "8108072003",
+      "district_id": "810807",
+      "name": "KOTA LAMA"
+    },
+    {
+      "id": "8108072004",
+      "district_id": "810807",
+      "name": "ABUSUR"
+    },
+    {
+      "id": "8108072005",
+      "district_id": "810807",
+      "name": "OIRATA TIMUR"
+    },
+    {
+      "id": "8108072006",
+      "district_id": "810807",
+      "name": "OIRATA BARAT"
+    },
+    {
+      "id": "8108082001",
+      "district_id": "810808",
+      "name": "LAITUTUN"
+    },
+    {
+      "id": "8108082002",
+      "district_id": "810808",
+      "name": "BATUMIAU"
+    },
+    {
+      "id": "8108082003",
+      "district_id": "810808",
+      "name": "TUTUKEY"
+    },
+    {
+      "id": "8108082004",
+      "district_id": "810808",
+      "name": "TOMRA"
+    },
+    {
+      "id": "8108082005",
+      "district_id": "810808",
+      "name": "NUWEWANG"
+    },
+    {
+      "id": "8108082006",
+      "district_id": "810808",
+      "name": "TUTUWARU"
+    },
+    {
+      "id": "8108082007",
+      "district_id": "810808",
+      "name": "LUHUELY"
+    },
+    {
+      "id": "8108092001",
+      "district_id": "810809",
+      "name": "LATALOLA BESAR"
+    },
+    {
+      "id": "8108092002",
+      "district_id": "810809",
+      "name": "SERILI"
+    },
+    {
+      "id": "8108092003",
+      "district_id": "810809",
+      "name": "LATALOLA KECIL"
+    },
+    {
+      "id": "8108092004",
+      "district_id": "810809",
+      "name": "TELALORA"
+    },
+    {
+      "id": "8108092005",
+      "district_id": "810809",
+      "name": "MARSELA"
+    },
+    {
+      "id": "8108092006",
+      "district_id": "810809",
+      "name": "BABIOTANG"
+    },
+    {
+      "id": "8108092007",
+      "district_id": "810809",
+      "name": "IBLATMUNTAH"
+    },
+    {
+      "id": "8108092008",
+      "district_id": "810809",
+      "name": "ILBUTUNG"
+    },
+    {
+      "id": "8108092009",
+      "district_id": "810809",
+      "name": "LAWAWANG"
+    },
+    {
+      "id": "8108092010",
+      "district_id": "810809",
+      "name": "NURA"
+    },
+    {
+      "id": "8108092011",
+      "district_id": "810809",
+      "name": "BULULORA"
+    },
+    {
+      "id": "8108102001",
+      "district_id": "810810",
+      "name": "WATUWEI"
+    },
+    {
+      "id": "8108102002",
+      "district_id": "810810",
+      "name": "ILMARANG"
+    },
+    {
+      "id": "8108102003",
+      "district_id": "810810",
+      "name": "LETMASA"
+    },
+    {
+      "id": "8108102004",
+      "district_id": "810810",
+      "name": "WELORA"
+    },
+    {
+      "id": "8108102005",
+      "district_id": "810810",
+      "name": "WIRATAN"
+    },
+    {
+      "id": "8108102006",
+      "district_id": "810810",
+      "name": "NURNYAMAN"
+    },
+    {
+      "id": "8108112001",
+      "district_id": "810811",
+      "name": "HERLEY"
+    },
+    {
+      "id": "8108112002",
+      "district_id": "810811",
+      "name": "UPUHUPUN"
+    },
+    {
+      "id": "8108112003",
+      "district_id": "810811",
+      "name": "POTA BESAR"
+    },
+    {
+      "id": "8108112004",
+      "district_id": "810811",
+      "name": "POTA KECIL"
+    },
+    {
+      "id": "8108112005",
+      "district_id": "810811",
+      "name": "WASARILI"
+    },
+    {
+      "id": "8108112006",
+      "district_id": "810811",
+      "name": "RUMAHLEWANG KECIL"
+    },
+    {
+      "id": "8108112007",
+      "district_id": "810811",
+      "name": "RUMAHLEWANG BESAR"
+    },
+    {
+      "id": "8108112008",
+      "district_id": "810811",
+      "name": "NUSIATA"
+    },
+    {
+      "id": "8108122001",
+      "district_id": "810812",
+      "name": "KETTY"
+    },
+    {
+      "id": "8108122002",
+      "district_id": "810812",
+      "name": "LETODA"
+    },
+    {
+      "id": "8108122003",
+      "district_id": "810812",
+      "name": "SERA"
+    },
+    {
+      "id": "8108122004",
+      "district_id": "810812",
+      "name": "YAMLULI"
+    },
+    {
+      "id": "8108122005",
+      "district_id": "810812",
+      "name": "LOLOTUARA"
+    },
+    {
+      "id": "8108132001",
+      "district_id": "810813",
+      "name": "NABAR"
+    },
+    {
+      "id": "8108132002",
+      "district_id": "810813",
+      "name": "ELSULITH"
+    },
+    {
+      "id": "8108132003",
+      "district_id": "810813",
+      "name": "NAUMATANG"
+    },
+    {
+      "id": "8108132004",
+      "district_id": "810813",
+      "name": "LURANG"
+    },
+    {
+      "id": "8108132005",
+      "district_id": "810813",
+      "name": "UHAK"
+    },
+    {
+      "id": "8108132006",
+      "district_id": "810813",
+      "name": "ERAY"
+    },
+    {
+      "id": "8108142001",
+      "district_id": "810814",
+      "name": "TELEMAR"
+    },
+    {
+      "id": "8108142002",
+      "district_id": "810814",
+      "name": "KARBUBU"
+    },
+    {
+      "id": "8108142003",
+      "district_id": "810814",
+      "name": "USTUTUN"
+    },
+    {
+      "id": "8108142004",
+      "district_id": "810814",
+      "name": "KLISHATU"
+    },
+    {
+      "id": "8108142005",
+      "district_id": "810814",
+      "name": "ILMAMAU"
+    },
+    {
+      "id": "8108152001",
+      "district_id": "810815",
+      "name": "MONING"
+    },
+    {
+      "id": "8108152002",
+      "district_id": "810815",
+      "name": "ARWALA"
+    },
+    {
+      "id": "8108152003",
+      "district_id": "810815",
+      "name": "ILWAY"
+    },
+    {
+      "id": "8108152004",
+      "district_id": "810815",
+      "name": "KAHILIN"
+    },
+    {
+      "id": "8108152005",
+      "district_id": "810815",
+      "name": "ILPOKIL"
+    },
+    {
+      "id": "8108152006",
+      "district_id": "810815",
+      "name": "TOMLIAPAT"
+    },
+    {
+      "id": "8108162001",
+      "district_id": "810816",
+      "name": "HILA"
+    },
+    {
+      "id": "8108162002",
+      "district_id": "810816",
+      "name": "JERUSU"
+    },
+    {
+      "id": "8108162003",
+      "district_id": "810816",
+      "name": "SOLATH"
+    },
+    {
+      "id": "8108172001",
+      "district_id": "810817",
+      "name": "PURPURA"
+    },
+    {
+      "id": "8108172002",
+      "district_id": "810817",
+      "name": "NOMAHA"
+    },
+    {
+      "id": "8108172003",
+      "district_id": "810817",
+      "name": "LABELAU"
+    },
+    {
+      "id": "8109012001",
+      "district_id": "810901",
+      "name": "WAMKANA"
+    },
+    {
+      "id": "8109012002",
+      "district_id": "810901",
+      "name": "WAENALUT"
+    },
+    {
+      "id": "8109012003",
+      "district_id": "810901",
+      "name": "LEKTAMA"
+    },
+    {
+      "id": "8109012004",
+      "district_id": "810901",
+      "name": "FATMITE"
+    },
+    {
+      "id": "8109012005",
+      "district_id": "810901",
+      "name": "ELFULE"
+    },
+    {
+      "id": "8109012006",
+      "district_id": "810901",
+      "name": "LEKU"
+    },
+    {
+      "id": "8109012007",
+      "district_id": "810901",
+      "name": "OKI BARU"
+    },
+    {
+      "id": "8109012008",
+      "district_id": "810901",
+      "name": "OKI LAMA"
+    },
+    {
+      "id": "8109012009",
+      "district_id": "810901",
+      "name": "LABUANG"
+    },
+    {
+      "id": "8109012010",
+      "district_id": "810901",
+      "name": "WALI"
+    },
+    {
+      "id": "8109012011",
+      "district_id": "810901",
+      "name": "TIKBARY"
+    },
+    {
+      "id": "8109012012",
+      "district_id": "810901",
+      "name": "MASNANA"
+    },
+    {
+      "id": "8109012013",
+      "district_id": "810901",
+      "name": "KAMLANGLALE"
+    },
+    {
+      "id": "8109012014",
+      "district_id": "810901",
+      "name": "WAENONO"
+    },
+    {
+      "id": "8109012015",
+      "district_id": "810901",
+      "name": "NAMRINAT"
+    },
+    {
+      "id": "8109012016",
+      "district_id": "810901",
+      "name": "WAEFUSI"
+    },
+    {
+      "id": "8109012017",
+      "district_id": "810901",
+      "name": "BATU TULIS"
+    },
+    {
+      "id": "8109022001",
+      "district_id": "810902",
+      "name": "WAETAWA"
+    },
+    {
+      "id": "8109022002",
+      "district_id": "810902",
+      "name": "WAESILI"
+    },
+    {
+      "id": "8109022003",
+      "district_id": "810902",
+      "name": "LENA"
+    },
+    {
+      "id": "8109022004",
+      "district_id": "810902",
+      "name": "SIMI"
+    },
+    {
+      "id": "8109022005",
+      "district_id": "810902",
+      "name": "WAELIKUT"
+    },
+    {
+      "id": "8109022006",
+      "district_id": "810902",
+      "name": "WAMSISI"
+    },
+    {
+      "id": "8109022007",
+      "district_id": "810902",
+      "name": "POHON BATU"
+    },
+    {
+      "id": "8109022008",
+      "district_id": "810902",
+      "name": "WAETEBA"
+    },
+    {
+      "id": "8109022009",
+      "district_id": "810902",
+      "name": "HOTE"
+    },
+    {
+      "id": "8109022010",
+      "district_id": "810902",
+      "name": "WAEMASING"
+    },
+    {
+      "id": "8109022011",
+      "district_id": "810902",
+      "name": "BATU KASA"
+    },
+    {
+      "id": "8109032001",
+      "district_id": "810903",
+      "name": "LUMOY"
+    },
+    {
+      "id": "8109032002",
+      "district_id": "810903",
+      "name": "MASAWOY"
+    },
+    {
+      "id": "8109032003",
+      "district_id": "810903",
+      "name": "ULIMA"
+    },
+    {
+      "id": "8109032004",
+      "district_id": "810903",
+      "name": "KAMPUNG BARU"
+    },
+    {
+      "id": "8109032005",
+      "district_id": "810903",
+      "name": "SIWAR"
+    },
+    {
+      "id": "8109032006",
+      "district_id": "810903",
+      "name": "SELASI"
+    },
+    {
+      "id": "8109032007",
+      "district_id": "810903",
+      "name": "ELARA"
+    },
+    {
+      "id": "8109042001",
+      "district_id": "810904",
+      "name": "BALPETU"
+    },
+    {
+      "id": "8109042002",
+      "district_id": "810904",
+      "name": "WAEKEKA"
+    },
+    {
+      "id": "8109042003",
+      "district_id": "810904",
+      "name": "BILORO"
+    },
+    {
+      "id": "8109042004",
+      "district_id": "810904",
+      "name": "NANALI"
+    },
+    {
+      "id": "8109042005",
+      "district_id": "810904",
+      "name": "PASIR PUTIH"
+    },
+    {
+      "id": "8109042006",
+      "district_id": "810904",
+      "name": "FOGI"
+    },
+    {
+      "id": "8109042007",
+      "district_id": "810904",
+      "name": "WAEPANDAN"
+    },
+    {
+      "id": "8109042008",
+      "district_id": "810904",
+      "name": "WALBELE"
+    },
+    {
+      "id": "8109042009",
+      "district_id": "810904",
+      "name": "AIR TERNATE"
+    },
+    {
+      "id": "8109042010",
+      "district_id": "810904",
+      "name": "SEKAT"
+    },
+    {
+      "id": "8109042011",
+      "district_id": "810904",
+      "name": "WAEHA"
+    },
+    {
+      "id": "8109042012",
+      "district_id": "810904",
+      "name": "BALA-BALA"
+    },
+    {
+      "id": "8109042013",
+      "district_id": "810904",
+      "name": "BATU LAYAR"
+    },
+    {
+      "id": "8109042014",
+      "district_id": "810904",
+      "name": "SIOPOT"
+    },
+    {
+      "id": "8109042015",
+      "district_id": "810904",
+      "name": "EMGUHEN"
+    },
+    {
+      "id": "8109042016",
+      "district_id": "810904",
+      "name": "WAEHOTONG"
+    },
+    {
+      "id": "8109052001",
+      "district_id": "810905",
+      "name": "WAEMULANG"
+    },
+    {
+      "id": "8109052002",
+      "district_id": "810905",
+      "name": "WAETUREN"
+    },
+    {
+      "id": "8109052003",
+      "district_id": "810905",
+      "name": "WAEHAKA"
+    },
+    {
+      "id": "8109052004",
+      "district_id": "810905",
+      "name": "WAEMALA"
+    },
+    {
+      "id": "8109052005",
+      "district_id": "810905",
+      "name": "ERWIRI"
+    },
+    {
+      "id": "8109052006",
+      "district_id": "810905",
+      "name": "TIFU"
+    },
+    {
+      "id": "8109052007",
+      "district_id": "810905",
+      "name": "MEPA"
+    },
+    {
+      "id": "8109052008",
+      "district_id": "810905",
+      "name": "LEKSULA"
+    },
+    {
+      "id": "8109052009",
+      "district_id": "810905",
+      "name": "NALBESSY"
+    },
+    {
+      "id": "8109052010",
+      "district_id": "810905",
+      "name": "KASE"
+    },
+    {
+      "id": "8109052015",
+      "district_id": "810905",
+      "name": "NEATH"
+    },
+    {
+      "id": "8109052016",
+      "district_id": "810905",
+      "name": "LIANG"
+    },
+    {
+      "id": "8109052018",
+      "district_id": "810905",
+      "name": "SLEALALE"
+    },
+    {
+      "id": "8109052023",
+      "district_id": "810905",
+      "name": "WALUNHELAT"
+    },
+    {
+      "id": "8109052024",
+      "district_id": "810905",
+      "name": "WAHAOLON"
+    },
+    {
+      "id": "8109052025",
+      "district_id": "810905",
+      "name": "WAEWALI"
+    },
+    {
+      "id": "8109052026",
+      "district_id": "810905",
+      "name": "WAENAMAOLON"
+    },
+    {
+      "id": "8109052029",
+      "district_id": "810905",
+      "name": "GRAHWAEN"
+    },
+    {
+      "id": "8109052030",
+      "district_id": "810905",
+      "name": "TERKURI"
+    },
+    {
+      "id": "8109062001",
+      "district_id": "810906",
+      "name": "NUSARUA"
+    },
+    {
+      "id": "8109062002",
+      "district_id": "810906",
+      "name": "MANGESWAEN"
+    },
+    {
+      "id": "8109062003",
+      "district_id": "810906",
+      "name": "WAEKATIN"
+    },
+    {
+      "id": "8109062004",
+      "district_id": "810906",
+      "name": "FAKAL"
+    },
+    {
+      "id": "8109062005",
+      "district_id": "810906",
+      "name": "UNETH"
+    },
+    {
+      "id": "8109062006",
+      "district_id": "810906",
+      "name": "WAERAMAN"
+    },
+    {
+      "id": "8109062007",
+      "district_id": "810906",
+      "name": "WAELO"
+    },
+    {
+      "id": "8109062008",
+      "district_id": "810906",
+      "name": "SIWATLAHIN"
+    },
+    {
+      "id": "8109062009",
+      "district_id": "810906",
+      "name": "TRUKAT"
+    },
+    {
+      "id": "8109062010",
+      "district_id": "810906",
+      "name": "WAEKEN"
+    },
+    {
+      "id": "8109062011",
+      "district_id": "810906",
+      "name": "BATU KARANG"
+    },
+    {
+      "id": "8171011006",
+      "district_id": "817101",
+      "name": "NUSANIWE"
+    },
+    {
+      "id": "8171011007",
+      "district_id": "817101",
+      "name": "WAINITU"
+    },
+    {
+      "id": "8171011008",
+      "district_id": "817101",
+      "name": "BENTENG"
+    },
+    {
+      "id": "8171011009",
+      "district_id": "817101",
+      "name": "KUDAMATI"
+    },
+    {
+      "id": "8171011010",
+      "district_id": "817101",
+      "name": "MANGGA DUA"
+    },
+    {
+      "id": "8171011011",
+      "district_id": "817101",
+      "name": "URIMESSING"
+    },
+    {
+      "id": "8171011012",
+      "district_id": "817101",
+      "name": "WAIHAONG"
+    },
+    {
+      "id": "8171011013",
+      "district_id": "817101",
+      "name": "SILALE"
+    },
+    {
+      "id": "8171012001",
+      "district_id": "817101",
+      "name": "LATUHALAT"
+    },
+    {
+      "id": "8171012002",
+      "district_id": "817101",
+      "name": "SEILALE"
+    },
+    {
+      "id": "8171012003",
+      "district_id": "817101",
+      "name": "NUSANIWE"
+    },
+    {
+      "id": "8171012004",
+      "district_id": "817101",
+      "name": "AMAHUSU"
+    },
+    {
+      "id": "8171012005",
+      "district_id": "817101",
+      "name": "URIMESSING"
+    },
+    {
+      "id": "8171021010",
+      "district_id": "817102",
+      "name": "PANDAN KASTURI"
+    },
+    {
+      "id": "8171021011",
+      "district_id": "817102",
+      "name": "RIJALI"
+    },
+    {
+      "id": "8171021012",
+      "district_id": "817102",
+      "name": "AMANTELU"
+    },
+    {
+      "id": "8171021013",
+      "district_id": "817102",
+      "name": "KARANG PANJANG"
+    },
+    {
+      "id": "8171021014",
+      "district_id": "817102",
+      "name": "WAIHOKA"
+    },
+    {
+      "id": "8171021015",
+      "district_id": "817102",
+      "name": "BATU MEJA"
+    },
+    {
+      "id": "8171021016",
+      "district_id": "817102",
+      "name": "BATU GAJAH"
+    },
+    {
+      "id": "8171021017",
+      "district_id": "817102",
+      "name": "URITETU"
+    },
+    {
+      "id": "8171021018",
+      "district_id": "817102",
+      "name": "HONIPOPU"
+    },
+    {
+      "id": "8171021019",
+      "district_id": "817102",
+      "name": "AHUSEN"
+    },
+    {
+      "id": "8171022001",
+      "district_id": "817102",
+      "name": "HATIVE KECIL"
+    },
+    {
+      "id": "8171022002",
+      "district_id": "817102",
+      "name": "GALALA"
+    },
+    {
+      "id": "8171022003",
+      "district_id": "817102",
+      "name": "BATU MERAH"
+    },
+    {
+      "id": "8171022009",
+      "district_id": "817102",
+      "name": "SOYA"
+    },
+    {
+      "id": "8171031018",
+      "district_id": "817103",
+      "name": "LATERI"
+    },
+    {
+      "id": "8171032001",
+      "district_id": "817103",
+      "name": "PASSO"
+    },
+    {
+      "id": "8171032002",
+      "district_id": "817103",
+      "name": "HALONG"
+    },
+    {
+      "id": "8171032003",
+      "district_id": "817103",
+      "name": "LATTA"
+    },
+    {
+      "id": "8171032004",
+      "district_id": "817103",
+      "name": "NEGERI LAMA"
+    },
+    {
+      "id": "8171032005",
+      "district_id": "817103",
+      "name": "NANIA"
+    },
+    {
+      "id": "8171032006",
+      "district_id": "817103",
+      "name": "WAIHERU"
+    },
+    {
+      "id": "8171041008",
+      "district_id": "817104",
+      "name": "TIHU"
+    },
+    {
+      "id": "8171042001",
+      "district_id": "817104",
+      "name": "HUNUTH/DURIAN PATAH"
+    },
+    {
+      "id": "8171042002",
+      "district_id": "817104",
+      "name": "POKA"
+    },
+    {
+      "id": "8171042003",
+      "district_id": "817104",
+      "name": "RUMAH TIGA"
+    },
+    {
+      "id": "8171042004",
+      "district_id": "817104",
+      "name": "WAYAME"
+    },
+    {
+      "id": "8171042005",
+      "district_id": "817104",
+      "name": "TAWIRI"
+    },
+    {
+      "id": "8171042006",
+      "district_id": "817104",
+      "name": "HATIVE BESAR"
+    },
+    {
+      "id": "8171042007",
+      "district_id": "817104",
+      "name": "LAHA"
+    },
+    {
+      "id": "8171052001",
+      "district_id": "817105",
+      "name": "HUKURILA"
+    },
+    {
+      "id": "8171052002",
+      "district_id": "817105",
+      "name": "EMA"
+    },
+    {
+      "id": "8171052003",
+      "district_id": "817105",
+      "name": "KILANG"
+    },
+    {
+      "id": "8171052004",
+      "district_id": "817105",
+      "name": "NAKU"
+    },
+    {
+      "id": "8171052005",
+      "district_id": "817105",
+      "name": "HATALAI"
+    },
+    {
+      "id": "8171052006",
+      "district_id": "817105",
+      "name": "HUTUMURY"
+    },
+    {
+      "id": "8171052007",
+      "district_id": "817105",
+      "name": "RUTONG"
+    },
+    {
+      "id": "8171052008",
+      "district_id": "817105",
+      "name": "LEAHARI"
+    },
+    {
+      "id": "8172012001",
+      "district_id": "817201",
+      "name": "FIDITAN"
+    },
+    {
+      "id": "8172012002",
+      "district_id": "817201",
+      "name": "NGADI"
+    },
+    {
+      "id": "8172012003",
+      "district_id": "817201",
+      "name": "DULLAH"
+    },
+    {
+      "id": "8172012004",
+      "district_id": "817201",
+      "name": "LABETAWI"
+    },
+    {
+      "id": "8172012005",
+      "district_id": "817201",
+      "name": "TAMEDAN"
+    },
+    {
+      "id": "8172012006",
+      "district_id": "817201",
+      "name": "OHOITAHIT"
+    },
+    {
+      "id": "8172012007",
+      "district_id": "817201",
+      "name": "OHOITEL"
+    },
+    {
+      "id": "8172012008",
+      "district_id": "817201",
+      "name": "DULLAH LAUT"
+    },
+    {
+      "id": "8172021003",
+      "district_id": "817202",
+      "name": "KETSOBLAK"
+    },
+    {
+      "id": "8172021004",
+      "district_id": "817202",
+      "name": "MASRUM"
+    },
+    {
+      "id": "8172021005",
+      "district_id": "817202",
+      "name": "LODAR EL"
+    },
+    {
+      "id": "8172022001",
+      "district_id": "817202",
+      "name": "TUAL"
+    },
+    {
+      "id": "8172022002",
+      "district_id": "817202",
+      "name": "TAAR"
+    },
+    {
+      "id": "8172032001",
+      "district_id": "817203",
+      "name": "TAM NGURHIR"
+    },
+    {
+      "id": "8172032002",
+      "district_id": "817203",
+      "name": "TAYANDO LANGGIAR"
+    },
+    {
+      "id": "8172032003",
+      "district_id": "817203",
+      "name": "TAYANDO YAMTEL"
+    },
+    {
+      "id": "8172032004",
+      "district_id": "817203",
+      "name": "TAYANDO OHOIEL"
+    },
+    {
+      "id": "8172032005",
+      "district_id": "817203",
+      "name": "TAYANDO YAMRU"
+    },
+    {
+      "id": "8172042001",
+      "district_id": "817204",
+      "name": "TUBYAL"
+    },
+    {
+      "id": "8172042002",
+      "district_id": "817204",
+      "name": "KAIMEAR"
+    },
+    {
+      "id": "8172042004",
+      "district_id": "817204",
+      "name": "LOKWIRIN"
+    },
+    {
+      "id": "8172042005",
+      "district_id": "817204",
+      "name": "FINUALEN"
+    },
+    {
+      "id": "8172042012",
+      "district_id": "817204",
+      "name": "SERMAF"
+    },
+    {
+      "id": "8172052001",
+      "district_id": "817205",
+      "name": "KANARA"
+    },
+    {
+      "id": "8172052002",
+      "district_id": "817205",
+      "name": "WARKAR"
+    },
+    {
+      "id": "8172052003",
+      "district_id": "817205",
+      "name": "YAPAS"
+    },
+    {
+      "id": "8172052004",
+      "district_id": "817205",
+      "name": "RUMOIN"
+    },
+    {
+      "id": "8172052005",
+      "district_id": "817205",
+      "name": "HIRIT"
+    },
+    {
+      "id": "8172052006",
+      "district_id": "817205",
+      "name": "TIFLEN"
+    },
+    {
+      "id": "8172052007",
+      "district_id": "817205",
+      "name": "NIELA"
+    }
+  ]
+}

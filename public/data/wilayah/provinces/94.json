@@ -1,0 +1,6735 @@
+{
+  "regencies": [
+    {
+      "id": "9401",
+      "name": "KABUPATEN NABIRE"
+    },
+    {
+      "id": "9402",
+      "name": "KABUPATEN PUNCAK JAYA"
+    },
+    {
+      "id": "9403",
+      "name": "KABUPATEN PANIAI"
+    },
+    {
+      "id": "9404",
+      "name": "KABUPATEN MIMIKA"
+    },
+    {
+      "id": "9405",
+      "name": "KABUPATEN PUNCAK"
+    },
+    {
+      "id": "9406",
+      "name": "KABUPATEN DOGIYAI"
+    },
+    {
+      "id": "9407",
+      "name": "KABUPATEN INTAN JAYA"
+    },
+    {
+      "id": "9408",
+      "name": "KABUPATEN DEIYAI"
+    }
+  ],
+  "districts": [
+    {
+      "id": "940101",
+      "regency_id": "9401",
+      "name": "NABIRE"
+    },
+    {
+      "id": "940102",
+      "regency_id": "9401",
+      "name": "NAPAN"
+    },
+    {
+      "id": "940103",
+      "regency_id": "9401",
+      "name": "YAUR"
+    },
+    {
+      "id": "940104",
+      "regency_id": "9401",
+      "name": "UWAPA"
+    },
+    {
+      "id": "940105",
+      "regency_id": "9401",
+      "name": "WANGGAR"
+    },
+    {
+      "id": "940106",
+      "regency_id": "9401",
+      "name": "SIRIWO"
+    },
+    {
+      "id": "940107",
+      "regency_id": "9401",
+      "name": "MAKIMI"
+    },
+    {
+      "id": "940108",
+      "regency_id": "9401",
+      "name": "TELUK UMAR"
+    },
+    {
+      "id": "940109",
+      "regency_id": "9401",
+      "name": "TELUK KIMI"
+    },
+    {
+      "id": "940110",
+      "regency_id": "9401",
+      "name": "YARO"
+    },
+    {
+      "id": "940111",
+      "regency_id": "9401",
+      "name": "WAPOGA"
+    },
+    {
+      "id": "940112",
+      "regency_id": "9401",
+      "name": "NABIRE BARAT"
+    },
+    {
+      "id": "940113",
+      "regency_id": "9401",
+      "name": "MOORA"
+    },
+    {
+      "id": "940114",
+      "regency_id": "9401",
+      "name": "DIPA"
+    },
+    {
+      "id": "940115",
+      "regency_id": "9401",
+      "name": "MENOU"
+    },
+    {
+      "id": "940201",
+      "regency_id": "9402",
+      "name": "MULIA"
+    },
+    {
+      "id": "940202",
+      "regency_id": "9402",
+      "name": "ILU"
+    },
+    {
+      "id": "940203",
+      "regency_id": "9402",
+      "name": "FAWI"
+    },
+    {
+      "id": "940204",
+      "regency_id": "9402",
+      "name": "MEWOLUK"
+    },
+    {
+      "id": "940205",
+      "regency_id": "9402",
+      "name": "YAMO"
+    },
+    {
+      "id": "940206",
+      "regency_id": "9402",
+      "name": "NUME"
+    },
+    {
+      "id": "940207",
+      "regency_id": "9402",
+      "name": "TORERE"
+    },
+    {
+      "id": "940208",
+      "regency_id": "9402",
+      "name": "TINGGINAMBUT"
+    },
+    {
+      "id": "940209",
+      "regency_id": "9402",
+      "name": "PAGALEME"
+    },
+    {
+      "id": "940210",
+      "regency_id": "9402",
+      "name": "GURAGE"
+    },
+    {
+      "id": "940211",
+      "regency_id": "9402",
+      "name": "IRIMULI"
+    },
+    {
+      "id": "940212",
+      "regency_id": "9402",
+      "name": "MUARA"
+    },
+    {
+      "id": "940213",
+      "regency_id": "9402",
+      "name": "ILAMBURAWI"
+    },
+    {
+      "id": "940214",
+      "regency_id": "9402",
+      "name": "YAMBI"
+    },
+    {
+      "id": "940215",
+      "regency_id": "9402",
+      "name": "LUMO"
+    },
+    {
+      "id": "940216",
+      "regency_id": "9402",
+      "name": "MOLANIKIME"
+    },
+    {
+      "id": "940217",
+      "regency_id": "9402",
+      "name": "DOKOME"
+    },
+    {
+      "id": "940218",
+      "regency_id": "9402",
+      "name": "KALOME"
+    },
+    {
+      "id": "940219",
+      "regency_id": "9402",
+      "name": "WANWI"
+    },
+    {
+      "id": "940220",
+      "regency_id": "9402",
+      "name": "YAMONERI"
+    },
+    {
+      "id": "940221",
+      "regency_id": "9402",
+      "name": "WAEGI"
+    },
+    {
+      "id": "940222",
+      "regency_id": "9402",
+      "name": "NIOGA"
+    },
+    {
+      "id": "940223",
+      "regency_id": "9402",
+      "name": "GUBUME"
+    },
+    {
+      "id": "940224",
+      "regency_id": "9402",
+      "name": "TAGANOMBAK"
+    },
+    {
+      "id": "940225",
+      "regency_id": "9402",
+      "name": "DAGAI"
+    },
+    {
+      "id": "940226",
+      "regency_id": "9402",
+      "name": "KIYAGE"
+    },
+    {
+      "id": "940301",
+      "regency_id": "9403",
+      "name": "PANIAI TIMUR"
+    },
+    {
+      "id": "940302",
+      "regency_id": "9403",
+      "name": "PANIAI BARAT"
+    },
+    {
+      "id": "940303",
+      "regency_id": "9403",
+      "name": "ARADIDE"
+    },
+    {
+      "id": "940304",
+      "regency_id": "9403",
+      "name": "BOGABAIDA"
+    },
+    {
+      "id": "940305",
+      "regency_id": "9403",
+      "name": "BIBIDA"
+    },
+    {
+      "id": "940306",
+      "regency_id": "9403",
+      "name": "DUMADAMA"
+    },
+    {
+      "id": "940307",
+      "regency_id": "9403",
+      "name": "SIRIWO"
+    },
+    {
+      "id": "940308",
+      "regency_id": "9403",
+      "name": "KEBO"
+    },
+    {
+      "id": "940309",
+      "regency_id": "9403",
+      "name": "YATAMO"
+    },
+    {
+      "id": "940310",
+      "regency_id": "9403",
+      "name": "EKADIDE"
+    },
+    {
+      "id": "940311",
+      "regency_id": "9403",
+      "name": "WEGEE MUKA"
+    },
+    {
+      "id": "940312",
+      "regency_id": "9403",
+      "name": "WEGEE BINO"
+    },
+    {
+      "id": "940313",
+      "regency_id": "9403",
+      "name": "PUGO DAGI"
+    },
+    {
+      "id": "940314",
+      "regency_id": "9403",
+      "name": "MUYE"
+    },
+    {
+      "id": "940315",
+      "regency_id": "9403",
+      "name": "NAKAMA"
+    },
+    {
+      "id": "940316",
+      "regency_id": "9403",
+      "name": "TELUK DEYA"
+    },
+    {
+      "id": "940317",
+      "regency_id": "9403",
+      "name": "YAGAI"
+    },
+    {
+      "id": "940318",
+      "regency_id": "9403",
+      "name": "YOUTADI"
+    },
+    {
+      "id": "940319",
+      "regency_id": "9403",
+      "name": "BAYA BIRU"
+    },
+    {
+      "id": "940320",
+      "regency_id": "9403",
+      "name": "DEIYAI MIYO"
+    },
+    {
+      "id": "940321",
+      "regency_id": "9403",
+      "name": "DOGOMO"
+    },
+    {
+      "id": "940322",
+      "regency_id": "9403",
+      "name": "AWEIDA"
+    },
+    {
+      "id": "940323",
+      "regency_id": "9403",
+      "name": "TOPIYAI"
+    },
+    {
+      "id": "940324",
+      "regency_id": "9403",
+      "name": "FAJAR TIMUR"
+    },
+    {
+      "id": "940401",
+      "regency_id": "9404",
+      "name": "MIMIKA BARU"
+    },
+    {
+      "id": "940402",
+      "regency_id": "9404",
+      "name": "AGIMUGA"
+    },
+    {
+      "id": "940403",
+      "regency_id": "9404",
+      "name": "MIMIKA TIMUR"
+    },
+    {
+      "id": "940404",
+      "regency_id": "9404",
+      "name": "MIMIKA BARAT"
+    },
+    {
+      "id": "940405",
+      "regency_id": "9404",
+      "name": "JITA"
+    },
+    {
+      "id": "940406",
+      "regency_id": "9404",
+      "name": "JILA"
+    },
+    {
+      "id": "940407",
+      "regency_id": "9404",
+      "name": "MIMIKA TIMUR JAUH"
+    },
+    {
+      "id": "940408",
+      "regency_id": "9404",
+      "name": "MIMIKA TENGAH"
+    },
+    {
+      "id": "940409",
+      "regency_id": "9404",
+      "name": "KUALA KENCANA"
+    },
+    {
+      "id": "940410",
+      "regency_id": "9404",
+      "name": "TEMBAGAPURA"
+    },
+    {
+      "id": "940411",
+      "regency_id": "9404",
+      "name": "MIMIKA BARAT JAUH"
+    },
+    {
+      "id": "940412",
+      "regency_id": "9404",
+      "name": "MIMIKA BARAT TENGAH"
+    },
+    {
+      "id": "940413",
+      "regency_id": "9404",
+      "name": "KWAMKI NARAMA"
+    },
+    {
+      "id": "940414",
+      "regency_id": "9404",
+      "name": "HOYA"
+    },
+    {
+      "id": "940415",
+      "regency_id": "9404",
+      "name": "IWAKA"
+    },
+    {
+      "id": "940416",
+      "regency_id": "9404",
+      "name": "WANIA"
+    },
+    {
+      "id": "940417",
+      "regency_id": "9404",
+      "name": "AMAR"
+    },
+    {
+      "id": "940418",
+      "regency_id": "9404",
+      "name": "ALAMA"
+    },
+    {
+      "id": "940501",
+      "regency_id": "9405",
+      "name": "ILAGA"
+    },
+    {
+      "id": "940502",
+      "regency_id": "9405",
+      "name": "WANGBE"
+    },
+    {
+      "id": "940503",
+      "regency_id": "9405",
+      "name": "BEOGA"
+    },
+    {
+      "id": "940504",
+      "regency_id": "9405",
+      "name": "DOUFO"
+    },
+    {
+      "id": "940505",
+      "regency_id": "9405",
+      "name": "POGOMA"
+    },
+    {
+      "id": "940506",
+      "regency_id": "9405",
+      "name": "SINAK"
+    },
+    {
+      "id": "940507",
+      "regency_id": "9405",
+      "name": "AGANDUGUME"
+    },
+    {
+      "id": "940508",
+      "regency_id": "9405",
+      "name": "GOME"
+    },
+    {
+      "id": "940509",
+      "regency_id": "9405",
+      "name": "DERVOS"
+    },
+    {
+      "id": "940510",
+      "regency_id": "9405",
+      "name": "BEOGA BARAT"
+    },
+    {
+      "id": "940511",
+      "regency_id": "9405",
+      "name": "BEOGA TIMUR"
+    },
+    {
+      "id": "940512",
+      "regency_id": "9405",
+      "name": "OGAMANIM"
+    },
+    {
+      "id": "940513",
+      "regency_id": "9405",
+      "name": "KEMBRU"
+    },
+    {
+      "id": "940514",
+      "regency_id": "9405",
+      "name": "BINA"
+    },
+    {
+      "id": "940515",
+      "regency_id": "9405",
+      "name": "SINAK BARAT"
+    },
+    {
+      "id": "940516",
+      "regency_id": "9405",
+      "name": "MAGE'ABUME"
+    },
+    {
+      "id": "940517",
+      "regency_id": "9405",
+      "name": "YUGUMUAK"
+    },
+    {
+      "id": "940518",
+      "regency_id": "9405",
+      "name": "ILAGA UTARA"
+    },
+    {
+      "id": "940519",
+      "regency_id": "9405",
+      "name": "MABUGI"
+    },
+    {
+      "id": "940520",
+      "regency_id": "9405",
+      "name": "OMUKIA"
+    },
+    {
+      "id": "940521",
+      "regency_id": "9405",
+      "name": "LAMBEWI"
+    },
+    {
+      "id": "940522",
+      "regency_id": "9405",
+      "name": "ONERI"
+    },
+    {
+      "id": "940523",
+      "regency_id": "9405",
+      "name": "AMUNGKALPIA"
+    },
+    {
+      "id": "940524",
+      "regency_id": "9405",
+      "name": "GOME UTARA"
+    },
+    {
+      "id": "940525",
+      "regency_id": "9405",
+      "name": "ERELMAKAWIA"
+    },
+    {
+      "id": "940601",
+      "regency_id": "9406",
+      "name": "KAMU"
+    },
+    {
+      "id": "940602",
+      "regency_id": "9406",
+      "name": "MAPIA"
+    },
+    {
+      "id": "940603",
+      "regency_id": "9406",
+      "name": "PIYAIYE"
+    },
+    {
+      "id": "940604",
+      "regency_id": "9406",
+      "name": "KAMU UTARA"
+    },
+    {
+      "id": "940605",
+      "regency_id": "9406",
+      "name": "SUKIKAI SELATAN"
+    },
+    {
+      "id": "940606",
+      "regency_id": "9406",
+      "name": "MAPIA BARAT"
+    },
+    {
+      "id": "940607",
+      "regency_id": "9406",
+      "name": "KAMU SELATAN"
+    },
+    {
+      "id": "940608",
+      "regency_id": "9406",
+      "name": "KAMU TIMUR"
+    },
+    {
+      "id": "940609",
+      "regency_id": "9406",
+      "name": "MAPIA TENGAH"
+    },
+    {
+      "id": "940610",
+      "regency_id": "9406",
+      "name": "DOGIYAI"
+    },
+    {
+      "id": "940701",
+      "regency_id": "9407",
+      "name": "SUGAPA"
+    },
+    {
+      "id": "940702",
+      "regency_id": "9407",
+      "name": "HOMEYO"
+    },
+    {
+      "id": "940703",
+      "regency_id": "9407",
+      "name": "WANDAI"
+    },
+    {
+      "id": "940704",
+      "regency_id": "9407",
+      "name": "BIANDOGA"
+    },
+    {
+      "id": "940705",
+      "regency_id": "9407",
+      "name": "AGISIGA"
+    },
+    {
+      "id": "940706",
+      "regency_id": "9407",
+      "name": "HITADIPA"
+    },
+    {
+      "id": "940707",
+      "regency_id": "9407",
+      "name": "UGIMBA"
+    },
+    {
+      "id": "940708",
+      "regency_id": "9407",
+      "name": "TOMOSIGA"
+    },
+    {
+      "id": "940801",
+      "regency_id": "9408",
+      "name": "TIGI"
+    },
+    {
+      "id": "940802",
+      "regency_id": "9408",
+      "name": "TIGI TIMUR"
+    },
+    {
+      "id": "940803",
+      "regency_id": "9408",
+      "name": "BOWOBADO"
+    },
+    {
+      "id": "940804",
+      "regency_id": "9408",
+      "name": "TIGI BARAT"
+    },
+    {
+      "id": "940805",
+      "regency_id": "9408",
+      "name": "KAPIRAYA"
+    }
+  ],
+  "villages": [
+    {
+      "id": "9401011001",
+      "district_id": "940101",
+      "name": "WONOREJO"
+    },
+    {
+      "id": "9401011002",
+      "district_id": "940101",
+      "name": "KALI BOBO"
+    },
+    {
+      "id": "9401011003",
+      "district_id": "940101",
+      "name": "MORGO"
+    },
+    {
+      "id": "9401011004",
+      "district_id": "940101",
+      "name": "GIRIMULYO"
+    },
+    {
+      "id": "9401011005",
+      "district_id": "940101",
+      "name": "KARANG TUMARITIS"
+    },
+    {
+      "id": "9401011006",
+      "district_id": "940101",
+      "name": "OYEHE"
+    },
+    {
+      "id": "9401011007",
+      "district_id": "940101",
+      "name": "KARANG MULIA"
+    },
+    {
+      "id": "9401011008",
+      "district_id": "940101",
+      "name": "NABARUA"
+    },
+    {
+      "id": "9401011009",
+      "district_id": "940101",
+      "name": "SIRIWINI"
+    },
+    {
+      "id": "9401012010",
+      "district_id": "940101",
+      "name": "KALISUSU"
+    },
+    {
+      "id": "9401012011",
+      "district_id": "940101",
+      "name": "KALI HARAPAN"
+    },
+    {
+      "id": "9401012012",
+      "district_id": "940101",
+      "name": "SANOBA"
+    },
+    {
+      "id": "9401022001",
+      "district_id": "940102",
+      "name": "NAPAN"
+    },
+    {
+      "id": "9401022002",
+      "district_id": "940102",
+      "name": "MASIPAWA"
+    },
+    {
+      "id": "9401022003",
+      "district_id": "940102",
+      "name": "WEINAMI"
+    },
+    {
+      "id": "9401032001",
+      "district_id": "940103",
+      "name": "YAUR"
+    },
+    {
+      "id": "9401032002",
+      "district_id": "940103",
+      "name": "AKUDIOMI"
+    },
+    {
+      "id": "9401032003",
+      "district_id": "940103",
+      "name": "SIMA"
+    },
+    {
+      "id": "9401032004",
+      "district_id": "940103",
+      "name": "WAMI"
+    },
+    {
+      "id": "9401042001",
+      "district_id": "940104",
+      "name": "TOPO"
+    },
+    {
+      "id": "9401042002",
+      "district_id": "940104",
+      "name": "URUMUSU"
+    },
+    {
+      "id": "9401042003",
+      "district_id": "940104",
+      "name": "MARGA JAYA"
+    },
+    {
+      "id": "9401042004",
+      "district_id": "940104",
+      "name": "ARGO MULYO"
+    },
+    {
+      "id": "9401042005",
+      "district_id": "940104",
+      "name": "TOPO JAYA"
+    },
+    {
+      "id": "9401042006",
+      "district_id": "940104",
+      "name": "GAMEI JAYA"
+    },
+    {
+      "id": "9401052001",
+      "district_id": "940105",
+      "name": "BUMI MULIA"
+    },
+    {
+      "id": "9401052002",
+      "district_id": "940105",
+      "name": "KARADIRI"
+    },
+    {
+      "id": "9401052003",
+      "district_id": "940105",
+      "name": "WANGGAR MAKMUR"
+    },
+    {
+      "id": "9401062001",
+      "district_id": "940106",
+      "name": "UNIPO"
+    },
+    {
+      "id": "9401062002",
+      "district_id": "940106",
+      "name": "AIBORE"
+    },
+    {
+      "id": "9401062003",
+      "district_id": "940106",
+      "name": "EPOMANI"
+    },
+    {
+      "id": "9401062004",
+      "district_id": "940106",
+      "name": "TIBAI"
+    },
+    {
+      "id": "9401062005",
+      "district_id": "940106",
+      "name": "MABOU"
+    },
+    {
+      "id": "9401062006",
+      "district_id": "940106",
+      "name": "UGIDA"
+    },
+    {
+      "id": "9401072001",
+      "district_id": "940107",
+      "name": "MAKIMI"
+    },
+    {
+      "id": "9401072002",
+      "district_id": "940107",
+      "name": "NIFASI"
+    },
+    {
+      "id": "9401072003",
+      "district_id": "940107",
+      "name": "BIHA"
+    },
+    {
+      "id": "9401072004",
+      "district_id": "940107",
+      "name": "LAGARI JAYA"
+    },
+    {
+      "id": "9401072005",
+      "district_id": "940107",
+      "name": "MAIDEI"
+    },
+    {
+      "id": "9401072006",
+      "district_id": "940107",
+      "name": "MANUNGGAL JAYA"
+    },
+    {
+      "id": "9401082001",
+      "district_id": "940108",
+      "name": "NAPAN YAUR"
+    },
+    {
+      "id": "9401082002",
+      "district_id": "940108",
+      "name": "YERETUAR"
+    },
+    {
+      "id": "9401082003",
+      "district_id": "940108",
+      "name": "BAWEI"
+    },
+    {
+      "id": "9401082004",
+      "district_id": "940108",
+      "name": "GONI"
+    },
+    {
+      "id": "9401092001",
+      "district_id": "940109",
+      "name": "SAMABUSA"
+    },
+    {
+      "id": "9401092002",
+      "district_id": "940109",
+      "name": "WAHARIA"
+    },
+    {
+      "id": "9401092003",
+      "district_id": "940109",
+      "name": "KIMI"
+    },
+    {
+      "id": "9401092004",
+      "district_id": "940109",
+      "name": "LANI"
+    },
+    {
+      "id": "9401092005",
+      "district_id": "940109",
+      "name": "AIR MANDIDI"
+    },
+    {
+      "id": "9401102001",
+      "district_id": "940110",
+      "name": "WANGGAR SARI"
+    },
+    {
+      "id": "9401102002",
+      "district_id": "940110",
+      "name": "WIRASKA"
+    },
+    {
+      "id": "9401102003",
+      "district_id": "940110",
+      "name": "YARO MAKMUR"
+    },
+    {
+      "id": "9401102004",
+      "district_id": "940110",
+      "name": "JAYA MUKTI"
+    },
+    {
+      "id": "9401102005",
+      "district_id": "940110",
+      "name": "WANGGAR PANTAI"
+    },
+    {
+      "id": "9401102006",
+      "district_id": "940110",
+      "name": "ORORODO"
+    },
+    {
+      "id": "9401102007",
+      "district_id": "940110",
+      "name": "BOMOPAI"
+    },
+    {
+      "id": "9401102008",
+      "district_id": "940110",
+      "name": "PARAUTO"
+    },
+    {
+      "id": "9401112001",
+      "district_id": "940111",
+      "name": "TOTOBERI"
+    },
+    {
+      "id": "9401112002",
+      "district_id": "940111",
+      "name": "SAMANUI"
+    },
+    {
+      "id": "9401112003",
+      "district_id": "940111",
+      "name": "KAMARISANO"
+    },
+    {
+      "id": "9401112004",
+      "district_id": "940111",
+      "name": "TAUMI"
+    },
+    {
+      "id": "9401112005",
+      "district_id": "940111",
+      "name": "KEUW"
+    },
+    {
+      "id": "9401122001",
+      "district_id": "940112",
+      "name": "BUMI RAYA"
+    },
+    {
+      "id": "9401122002",
+      "district_id": "940112",
+      "name": "WAROKI"
+    },
+    {
+      "id": "9401122003",
+      "district_id": "940112",
+      "name": "GERBANG SADU"
+    },
+    {
+      "id": "9401122004",
+      "district_id": "940112",
+      "name": "KALI SEMEN"
+    },
+    {
+      "id": "9401122005",
+      "district_id": "940112",
+      "name": "WADIO"
+    },
+    {
+      "id": "9401132001",
+      "district_id": "940113",
+      "name": "MAMBOR"
+    },
+    {
+      "id": "9401132002",
+      "district_id": "940113",
+      "name": "HARITI"
+    },
+    {
+      "id": "9401132003",
+      "district_id": "940113",
+      "name": "MOOR"
+    },
+    {
+      "id": "9401132004",
+      "district_id": "940113",
+      "name": "KAMA"
+    },
+    {
+      "id": "9401132005",
+      "district_id": "940113",
+      "name": "ARUI"
+    },
+    {
+      "id": "9401142001",
+      "district_id": "940114",
+      "name": "EPOUWA"
+    },
+    {
+      "id": "9401142002",
+      "district_id": "940114",
+      "name": "DIKIYA"
+    },
+    {
+      "id": "9401142003",
+      "district_id": "940114",
+      "name": "TAGAUTO"
+    },
+    {
+      "id": "9401142004",
+      "district_id": "940114",
+      "name": "JIGIKEBO"
+    },
+    {
+      "id": "9401142005",
+      "district_id": "940114",
+      "name": "JAINOA"
+    },
+    {
+      "id": "9401152001",
+      "district_id": "940115",
+      "name": "KUNUPI"
+    },
+    {
+      "id": "9401152002",
+      "district_id": "940115",
+      "name": "OGIYAI"
+    },
+    {
+      "id": "9401152003",
+      "district_id": "940115",
+      "name": "LOKODIMI"
+    },
+    {
+      "id": "9401152004",
+      "district_id": "940115",
+      "name": "YEGEUGI"
+    },
+    {
+      "id": "9402011010",
+      "district_id": "940201",
+      "name": "WUYUKWI"
+    },
+    {
+      "id": "9402011011",
+      "district_id": "940201",
+      "name": "PAGALEME"
+    },
+    {
+      "id": "9402012001",
+      "district_id": "940201",
+      "name": "PRULEME"
+    },
+    {
+      "id": "9402012002",
+      "district_id": "940201",
+      "name": "WUYUKWI"
+    },
+    {
+      "id": "9402012003",
+      "district_id": "940201",
+      "name": "WUYUNERI"
+    },
+    {
+      "id": "9402012004",
+      "district_id": "940201",
+      "name": "PEPERA"
+    },
+    {
+      "id": "9402012005",
+      "district_id": "940201",
+      "name": "MULIAGAMBUT"
+    },
+    {
+      "id": "9402012006",
+      "district_id": "940201",
+      "name": "TRIKORA"
+    },
+    {
+      "id": "9402012007",
+      "district_id": "940201",
+      "name": "TOWOGI"
+    },
+    {
+      "id": "9402012008",
+      "district_id": "940201",
+      "name": "BIRAK AMBUT"
+    },
+    {
+      "id": "9402012009",
+      "district_id": "940201",
+      "name": "USIR"
+    },
+    {
+      "id": "9402021021",
+      "district_id": "940202",
+      "name": "WURAK"
+    },
+    {
+      "id": "9402022001",
+      "district_id": "940202",
+      "name": "WURAK"
+    },
+    {
+      "id": "9402022002",
+      "district_id": "940202",
+      "name": "LAMBO"
+    },
+    {
+      "id": "9402022003",
+      "district_id": "940202",
+      "name": "PINDEBAGA"
+    },
+    {
+      "id": "9402022004",
+      "district_id": "940202",
+      "name": "DOLINGGAME"
+    },
+    {
+      "id": "9402022005",
+      "district_id": "940202",
+      "name": "BELANTARA"
+    },
+    {
+      "id": "9402022006",
+      "district_id": "940202",
+      "name": "KALENGGA"
+    },
+    {
+      "id": "9402022007",
+      "district_id": "940202",
+      "name": "PULAU TIMUR"
+    },
+    {
+      "id": "9402022008",
+      "district_id": "940202",
+      "name": "GIRMOR"
+    },
+    {
+      "id": "9402022009",
+      "district_id": "940202",
+      "name": "MAKA"
+    },
+    {
+      "id": "9402022010",
+      "district_id": "940202",
+      "name": "MOBIGI"
+    },
+    {
+      "id": "9402022011",
+      "district_id": "940202",
+      "name": "JAURIA I"
+    },
+    {
+      "id": "9402022012",
+      "district_id": "940202",
+      "name": "GUBULOME"
+    },
+    {
+      "id": "9402022013",
+      "district_id": "940202",
+      "name": "MEGAWI MEGEWA"
+    },
+    {
+      "id": "9402022014",
+      "district_id": "940202",
+      "name": "KURIKPULOK"
+    },
+    {
+      "id": "9402022015",
+      "district_id": "940202",
+      "name": "PUKY PAKY"
+    },
+    {
+      "id": "9402022016",
+      "district_id": "940202",
+      "name": "KANINONGGO"
+    },
+    {
+      "id": "9402022017",
+      "district_id": "940202",
+      "name": "KIRIGIMADUK"
+    },
+    {
+      "id": "9402022018",
+      "district_id": "940202",
+      "name": "POLOGENGGA"
+    },
+    {
+      "id": "9402022019",
+      "district_id": "940202",
+      "name": "GINIPAGO"
+    },
+    {
+      "id": "9402022020",
+      "district_id": "940202",
+      "name": "AULUKME"
+    },
+    {
+      "id": "9402032001",
+      "district_id": "940203",
+      "name": "FAWI"
+    },
+    {
+      "id": "9402032002",
+      "district_id": "940203",
+      "name": "BAKUSI"
+    },
+    {
+      "id": "9402032003",
+      "district_id": "940203",
+      "name": "TURUMO"
+    },
+    {
+      "id": "9402032004",
+      "district_id": "940203",
+      "name": "KAHO"
+    },
+    {
+      "id": "9402032005",
+      "district_id": "940203",
+      "name": "BIRICARE"
+    },
+    {
+      "id": "9402032006",
+      "district_id": "940203",
+      "name": "DOREY"
+    },
+    {
+      "id": "9402032007",
+      "district_id": "940203",
+      "name": "FII"
+    },
+    {
+      "id": "9402032008",
+      "district_id": "940203",
+      "name": "EVO"
+    },
+    {
+      "id": "9402032009",
+      "district_id": "940203",
+      "name": "YEREI"
+    },
+    {
+      "id": "9402042001",
+      "district_id": "940204",
+      "name": "MEWOLUK"
+    },
+    {
+      "id": "9402042002",
+      "district_id": "940204",
+      "name": "GUMBRU"
+    },
+    {
+      "id": "9402042003",
+      "district_id": "940204",
+      "name": "ANGGULOBAGA"
+    },
+    {
+      "id": "9402042004",
+      "district_id": "940204",
+      "name": "BALINGGUP"
+    },
+    {
+      "id": "9402042005",
+      "district_id": "940204",
+      "name": "WALIBA"
+    },
+    {
+      "id": "9402042006",
+      "district_id": "940204",
+      "name": "NGGININIK"
+    },
+    {
+      "id": "9402042007",
+      "district_id": "940204",
+      "name": "BIAK"
+    },
+    {
+      "id": "9402042008",
+      "district_id": "940204",
+      "name": "WUTIKME"
+    },
+    {
+      "id": "9402052001",
+      "district_id": "940205",
+      "name": "YAMBUNI"
+    },
+    {
+      "id": "9402052002",
+      "district_id": "940205",
+      "name": "YOGOLAWI"
+    },
+    {
+      "id": "9402052003",
+      "district_id": "940205",
+      "name": "WUNDU"
+    },
+    {
+      "id": "9402052004",
+      "district_id": "940205",
+      "name": "BINIME"
+    },
+    {
+      "id": "9402052005",
+      "district_id": "940205",
+      "name": "TIOGEME"
+    },
+    {
+      "id": "9402052006",
+      "district_id": "940205",
+      "name": "GOYAGE"
+    },
+    {
+      "id": "9402052007",
+      "district_id": "940205",
+      "name": "KALIMBUT"
+    },
+    {
+      "id": "9402052008",
+      "district_id": "940205",
+      "name": "WOLAME"
+    },
+    {
+      "id": "9402052009",
+      "district_id": "940205",
+      "name": "MUARA"
+    },
+    {
+      "id": "9402052010",
+      "district_id": "940205",
+      "name": "GIBAGA"
+    },
+    {
+      "id": "9402052011",
+      "district_id": "940205",
+      "name": "NAMI"
+    },
+    {
+      "id": "9402052012",
+      "district_id": "940205",
+      "name": "LINWAKWI"
+    },
+    {
+      "id": "9402052013",
+      "district_id": "940205",
+      "name": "KWANTINERI"
+    },
+    {
+      "id": "9402052014",
+      "district_id": "940205",
+      "name": "JILEYALE"
+    },
+    {
+      "id": "9402062001",
+      "district_id": "940206",
+      "name": "MEPAR"
+    },
+    {
+      "id": "9402062002",
+      "district_id": "940206",
+      "name": "ANEBALUI"
+    },
+    {
+      "id": "9402062003",
+      "district_id": "940206",
+      "name": "PAGOLOME"
+    },
+    {
+      "id": "9402062004",
+      "district_id": "940206",
+      "name": "TOMBOK"
+    },
+    {
+      "id": "9402062005",
+      "district_id": "940206",
+      "name": "KERING"
+    },
+    {
+      "id": "9402062006",
+      "district_id": "940206",
+      "name": "MEYONGGA"
+    },
+    {
+      "id": "9402062007",
+      "district_id": "940206",
+      "name": "OUM"
+    },
+    {
+      "id": "9402062008",
+      "district_id": "940206",
+      "name": "NUME"
+    },
+    {
+      "id": "9402062009",
+      "district_id": "940206",
+      "name": "YAWOR"
+    },
+    {
+      "id": "9402062010",
+      "district_id": "940206",
+      "name": "WURINA"
+    },
+    {
+      "id": "9402062011",
+      "district_id": "940206",
+      "name": "WORALUK"
+    },
+    {
+      "id": "9402062012",
+      "district_id": "940206",
+      "name": "ONENDU"
+    },
+    {
+      "id": "9402062013",
+      "district_id": "940206",
+      "name": "AKWIBAGA"
+    },
+    {
+      "id": "9402072001",
+      "district_id": "940207",
+      "name": "GUBUGANI"
+    },
+    {
+      "id": "9402072002",
+      "district_id": "940207",
+      "name": "AMBOK"
+    },
+    {
+      "id": "9402072003",
+      "district_id": "940207",
+      "name": "AWIYAM"
+    },
+    {
+      "id": "9402072004",
+      "district_id": "940207",
+      "name": "TUBUGIME"
+    },
+    {
+      "id": "9402072005",
+      "district_id": "940207",
+      "name": "WARIRU"
+    },
+    {
+      "id": "9402072006",
+      "district_id": "940207",
+      "name": "DIGI"
+    },
+    {
+      "id": "9402072007",
+      "district_id": "940207",
+      "name": "KIKUP"
+    },
+    {
+      "id": "9402072008",
+      "district_id": "940207",
+      "name": "GUNUNG TAYOK"
+    },
+    {
+      "id": "9402072009",
+      "district_id": "940207",
+      "name": "NAMBU"
+    },
+    {
+      "id": "9402072010",
+      "district_id": "940207",
+      "name": "ASUA"
+    },
+    {
+      "id": "9402072011",
+      "district_id": "940207",
+      "name": "DEGEI"
+    },
+    {
+      "id": "9402072012",
+      "district_id": "940207",
+      "name": "SIGOU"
+    },
+    {
+      "id": "9402072013",
+      "district_id": "940207",
+      "name": "NALU"
+    },
+    {
+      "id": "9402082001",
+      "district_id": "940208",
+      "name": "TINGGINERI"
+    },
+    {
+      "id": "9402082002",
+      "district_id": "940208",
+      "name": "MONIA"
+    },
+    {
+      "id": "9402082003",
+      "district_id": "940208",
+      "name": "TINGGINAMBUT"
+    },
+    {
+      "id": "9402082004",
+      "district_id": "940208",
+      "name": "MELEKOM"
+    },
+    {
+      "id": "9402082005",
+      "district_id": "940208",
+      "name": "GIGUME"
+    },
+    {
+      "id": "9402082006",
+      "district_id": "940208",
+      "name": "PAPUA"
+    },
+    {
+      "id": "9402082007",
+      "district_id": "940208",
+      "name": "TINGGINIME"
+    },
+    {
+      "id": "9402082008",
+      "district_id": "940208",
+      "name": "TOMBO"
+    },
+    {
+      "id": "9402082009",
+      "district_id": "940208",
+      "name": "GIMANGGEN"
+    },
+    {
+      "id": "9402082010",
+      "district_id": "940208",
+      "name": "URAGI"
+    },
+    {
+      "id": "9402082011",
+      "district_id": "940208",
+      "name": "YAMENGGA"
+    },
+    {
+      "id": "9402082012",
+      "district_id": "940208",
+      "name": "DEGI"
+    },
+    {
+      "id": "9402082013",
+      "district_id": "940208",
+      "name": "JUGUMBLAWI"
+    },
+    {
+      "id": "9402082014",
+      "district_id": "940208",
+      "name": "PARALO"
+    },
+    {
+      "id": "9402082015",
+      "district_id": "940208",
+      "name": "WOMELAGANDAN"
+    },
+    {
+      "id": "9402082016",
+      "district_id": "940208",
+      "name": "BIGIRAGE"
+    },
+    {
+      "id": "9402082017",
+      "district_id": "940208",
+      "name": "LUMBUK"
+    },
+    {
+      "id": "9402082018",
+      "district_id": "940208",
+      "name": "INIKIMALUK"
+    },
+    {
+      "id": "9402082019",
+      "district_id": "940208",
+      "name": "YONGGUN"
+    },
+    {
+      "id": "9402082020",
+      "district_id": "940208",
+      "name": "GOBAK"
+    },
+    {
+      "id": "9402082021",
+      "district_id": "940208",
+      "name": "GUBUPUR"
+    },
+    {
+      "id": "9402082022",
+      "district_id": "940208",
+      "name": "BERIME"
+    },
+    {
+      "id": "9402092001",
+      "district_id": "940209",
+      "name": "PAGALEME"
+    },
+    {
+      "id": "9402092002",
+      "district_id": "940209",
+      "name": "MULIAMBUT"
+    },
+    {
+      "id": "9402092003",
+      "district_id": "940209",
+      "name": "LUNGGINERI"
+    },
+    {
+      "id": "9402092004",
+      "district_id": "940209",
+      "name": "IGIMBUT"
+    },
+    {
+      "id": "9402092005",
+      "district_id": "940209",
+      "name": "KULOK ENGGAME"
+    },
+    {
+      "id": "9402102001",
+      "district_id": "940210",
+      "name": "YARMUKUM"
+    },
+    {
+      "id": "9402102002",
+      "district_id": "940210",
+      "name": "PILIA"
+    },
+    {
+      "id": "9402102003",
+      "district_id": "940210",
+      "name": "YANIRUK"
+    },
+    {
+      "id": "9402102004",
+      "district_id": "940210",
+      "name": "GWENGGU"
+    },
+    {
+      "id": "9402102005",
+      "district_id": "940210",
+      "name": "TUKWI"
+    },
+    {
+      "id": "9402102006",
+      "district_id": "940210",
+      "name": "TIRU"
+    },
+    {
+      "id": "9402102007",
+      "district_id": "940210",
+      "name": "YOGORINI"
+    },
+    {
+      "id": "9402102008",
+      "district_id": "940210",
+      "name": "NALIME"
+    },
+    {
+      "id": "9402102009",
+      "district_id": "940210",
+      "name": "URGELE"
+    },
+    {
+      "id": "9402102010",
+      "district_id": "940210",
+      "name": "YAGONIK"
+    },
+    {
+      "id": "9402102011",
+      "district_id": "940210",
+      "name": "LULAME"
+    },
+    {
+      "id": "9402112001",
+      "district_id": "940211",
+      "name": "WANDENGGOBAK"
+    },
+    {
+      "id": "9402112002",
+      "district_id": "940211",
+      "name": "JIGINIKIME"
+    },
+    {
+      "id": "9402112003",
+      "district_id": "940211",
+      "name": "PUNCAK SENYUM"
+    },
+    {
+      "id": "9402112004",
+      "district_id": "940211",
+      "name": "ANGGUTARI"
+    },
+    {
+      "id": "9402112005",
+      "district_id": "940211",
+      "name": "WUNAGELO"
+    },
+    {
+      "id": "9402112006",
+      "district_id": "940211",
+      "name": "DONDO"
+    },
+    {
+      "id": "9402112007",
+      "district_id": "940211",
+      "name": "TANOBA"
+    },
+    {
+      "id": "9402112008",
+      "district_id": "940211",
+      "name": "NIRUWI"
+    },
+    {
+      "id": "9402112009",
+      "district_id": "940211",
+      "name": "YALIKAMBI"
+    },
+    {
+      "id": "9402122001",
+      "district_id": "940212",
+      "name": "KULIRIK"
+    },
+    {
+      "id": "9402122002",
+      "district_id": "940212",
+      "name": "DOLIGOBAK"
+    },
+    {
+      "id": "9402122003",
+      "district_id": "940212",
+      "name": "YALINGGUA"
+    },
+    {
+      "id": "9402122004",
+      "district_id": "940212",
+      "name": "TALILOME"
+    },
+    {
+      "id": "9402122005",
+      "district_id": "940212",
+      "name": "MUARA"
+    },
+    {
+      "id": "9402122006",
+      "district_id": "940212",
+      "name": "KARUBATE"
+    },
+    {
+      "id": "9402122007",
+      "district_id": "940212",
+      "name": "DOLOGOBAK"
+    },
+    {
+      "id": "9402122008",
+      "district_id": "940212",
+      "name": "YAMBIDUGUM"
+    },
+    {
+      "id": "9402132001",
+      "district_id": "940213",
+      "name": "ILAMBURAWI"
+    },
+    {
+      "id": "9402132002",
+      "district_id": "940213",
+      "name": "BERELEMA"
+    },
+    {
+      "id": "9402132003",
+      "district_id": "940213",
+      "name": "KALOME"
+    },
+    {
+      "id": "9402132004",
+      "district_id": "940213",
+      "name": "TEMU"
+    },
+    {
+      "id": "9402132005",
+      "district_id": "940213",
+      "name": "JIGUNIKIME"
+    },
+    {
+      "id": "9402142001",
+      "district_id": "940214",
+      "name": "MONDU"
+    },
+    {
+      "id": "9402142002",
+      "district_id": "940214",
+      "name": "YAMBI"
+    },
+    {
+      "id": "9402142003",
+      "district_id": "940214",
+      "name": "MOULO"
+    },
+    {
+      "id": "9402142004",
+      "district_id": "940214",
+      "name": "TENOLOK"
+    },
+    {
+      "id": "9402142005",
+      "district_id": "940214",
+      "name": "GINIGOM"
+    },
+    {
+      "id": "9402142006",
+      "district_id": "940214",
+      "name": "DANGENPAGA"
+    },
+    {
+      "id": "9402142007",
+      "district_id": "940214",
+      "name": "WONOME"
+    },
+    {
+      "id": "9402142008",
+      "district_id": "940214",
+      "name": "YOBOLUK"
+    },
+    {
+      "id": "9402142009",
+      "district_id": "940214",
+      "name": "TIRINERI"
+    },
+    {
+      "id": "9402152001",
+      "district_id": "940215",
+      "name": "LUMO"
+    },
+    {
+      "id": "9402152002",
+      "district_id": "940215",
+      "name": "KILILUMO"
+    },
+    {
+      "id": "9402152003",
+      "district_id": "940215",
+      "name": "GILIBE"
+    },
+    {
+      "id": "9402152004",
+      "district_id": "940215",
+      "name": "NINGGINERI"
+    },
+    {
+      "id": "9402152005",
+      "district_id": "940215",
+      "name": "WURABAK"
+    },
+    {
+      "id": "9402152006",
+      "district_id": "940215",
+      "name": "WULUMA"
+    },
+    {
+      "id": "9402152007",
+      "district_id": "940215",
+      "name": "TIGIR"
+    },
+    {
+      "id": "9402152008",
+      "district_id": "940215",
+      "name": "GILILOME"
+    },
+    {
+      "id": "9402152009",
+      "district_id": "940215",
+      "name": "WURAMBURU"
+    },
+    {
+      "id": "9402162001",
+      "district_id": "940216",
+      "name": "TIOLOME"
+    },
+    {
+      "id": "9402162002",
+      "district_id": "940216",
+      "name": "BELABAGA"
+    },
+    {
+      "id": "9402162003",
+      "district_id": "940216",
+      "name": "MEWUT"
+    },
+    {
+      "id": "9402162004",
+      "district_id": "940216",
+      "name": "MALOINGGEN"
+    },
+    {
+      "id": "9402162005",
+      "district_id": "940216",
+      "name": "WANUME"
+    },
+    {
+      "id": "9402172001",
+      "district_id": "940217",
+      "name": "DOKOME"
+    },
+    {
+      "id": "9402172002",
+      "district_id": "940217",
+      "name": "PURBALO"
+    },
+    {
+      "id": "9402172003",
+      "district_id": "940217",
+      "name": "WURAGE"
+    },
+    {
+      "id": "9402172004",
+      "district_id": "940217",
+      "name": "NOWONERI"
+    },
+    {
+      "id": "9402172005",
+      "district_id": "940217",
+      "name": "NOWOME"
+    },
+    {
+      "id": "9402172006",
+      "district_id": "940217",
+      "name": "IMULINERI"
+    },
+    {
+      "id": "9402172007",
+      "district_id": "940217",
+      "name": "MOLOBAK"
+    },
+    {
+      "id": "9402172008",
+      "district_id": "940217",
+      "name": "KIMIBUT"
+    },
+    {
+      "id": "9402172009",
+      "district_id": "940217",
+      "name": "NUNGGWAGI"
+    },
+    {
+      "id": "9402182001",
+      "district_id": "940218",
+      "name": "KALOME"
+    },
+    {
+      "id": "9402182002",
+      "district_id": "940218",
+      "name": "AGAPE"
+    },
+    {
+      "id": "9402182003",
+      "district_id": "940218",
+      "name": "CILOME"
+    },
+    {
+      "id": "9402182004",
+      "district_id": "940218",
+      "name": "LONGGAWI"
+    },
+    {
+      "id": "9402182005",
+      "district_id": "940218",
+      "name": "WUNDINI"
+    },
+    {
+      "id": "9402182006",
+      "district_id": "940218",
+      "name": "BEREM"
+    },
+    {
+      "id": "9402182007",
+      "district_id": "940218",
+      "name": "DIRALUK"
+    },
+    {
+      "id": "9402182008",
+      "district_id": "940218",
+      "name": "YANENGGAWI"
+    },
+    {
+      "id": "9402182009",
+      "district_id": "940218",
+      "name": "KAYOGEBUR"
+    },
+    {
+      "id": "9402182010",
+      "district_id": "940218",
+      "name": "WURABUME"
+    },
+    {
+      "id": "9402182011",
+      "district_id": "940218",
+      "name": "BINGGELAKME"
+    },
+    {
+      "id": "9402182012",
+      "district_id": "940218",
+      "name": "TORAGE"
+    },
+    {
+      "id": "9402182013",
+      "district_id": "940218",
+      "name": "PALUMAGI"
+    },
+    {
+      "id": "9402182014",
+      "district_id": "940218",
+      "name": "JIRAMOK"
+    },
+    {
+      "id": "9402182015",
+      "district_id": "940218",
+      "name": "JINGGWI"
+    },
+    {
+      "id": "9402182016",
+      "district_id": "940218",
+      "name": "PILIBUR"
+    },
+    {
+      "id": "9402192001",
+      "district_id": "940219",
+      "name": "WANUWI"
+    },
+    {
+      "id": "9402192002",
+      "district_id": "940219",
+      "name": "NENEGAME"
+    },
+    {
+      "id": "9402192003",
+      "district_id": "940219",
+      "name": "BIME"
+    },
+    {
+      "id": "9402192004",
+      "district_id": "940219",
+      "name": "ANGGEGE"
+    },
+    {
+      "id": "9402192005",
+      "district_id": "940219",
+      "name": "PERNALUK"
+    },
+    {
+      "id": "9402192006",
+      "district_id": "940219",
+      "name": "KIBURU"
+    },
+    {
+      "id": "9402192007",
+      "district_id": "940219",
+      "name": "NUWI"
+    },
+    {
+      "id": "9402192008",
+      "district_id": "940219",
+      "name": "PONGGONAME"
+    },
+    {
+      "id": "9402192009",
+      "district_id": "940219",
+      "name": "GIBUME"
+    },
+    {
+      "id": "9402192010",
+      "district_id": "940219",
+      "name": "NABURAGE"
+    },
+    {
+      "id": "9402192011",
+      "district_id": "940219",
+      "name": "YUNGGWI"
+    },
+    {
+      "id": "9402192012",
+      "district_id": "940219",
+      "name": "ANGGAGALO"
+    },
+    {
+      "id": "9402192013",
+      "district_id": "940219",
+      "name": "ANGGALO"
+    },
+    {
+      "id": "9402192014",
+      "district_id": "940219",
+      "name": "WIYAGE"
+    },
+    {
+      "id": "9402192015",
+      "district_id": "940219",
+      "name": "PIYABIGIMBUT"
+    },
+    {
+      "id": "9402192016",
+      "district_id": "940219",
+      "name": "BUNALUK"
+    },
+    {
+      "id": "9402192017",
+      "district_id": "940219",
+      "name": "GEREJA LAMA"
+    },
+    {
+      "id": "9402202001",
+      "district_id": "940220",
+      "name": "AMBERIAMBUT"
+    },
+    {
+      "id": "9402202002",
+      "district_id": "940220",
+      "name": "KOBARAK"
+    },
+    {
+      "id": "9402202003",
+      "district_id": "940220",
+      "name": "WUGIWAGI"
+    },
+    {
+      "id": "9402202004",
+      "district_id": "940220",
+      "name": "YAGALUK"
+    },
+    {
+      "id": "9402202005",
+      "district_id": "940220",
+      "name": "MOULO"
+    },
+    {
+      "id": "9402202006",
+      "district_id": "940220",
+      "name": "JIMBANIME"
+    },
+    {
+      "id": "9402202007",
+      "district_id": "940220",
+      "name": "JIGULUK"
+    },
+    {
+      "id": "9402202008",
+      "district_id": "940220",
+      "name": "YAMONERI"
+    },
+    {
+      "id": "9402202009",
+      "district_id": "940220",
+      "name": "GUMAWI"
+    },
+    {
+      "id": "9402202010",
+      "district_id": "940220",
+      "name": "DIGOLOME"
+    },
+    {
+      "id": "9402202011",
+      "district_id": "940220",
+      "name": "BUNUME"
+    },
+    {
+      "id": "9402202012",
+      "district_id": "940220",
+      "name": "NGGINIGUM"
+    },
+    {
+      "id": "9402202013",
+      "district_id": "940220",
+      "name": "JIMBENERI"
+    },
+    {
+      "id": "9402202014",
+      "district_id": "940220",
+      "name": "JIGELO"
+    },
+    {
+      "id": "9402202015",
+      "district_id": "940220",
+      "name": "PIYAPIGI"
+    },
+    {
+      "id": "9402202016",
+      "district_id": "940220",
+      "name": "JIBONOK"
+    },
+    {
+      "id": "9402212001",
+      "district_id": "940221",
+      "name": "ANGGUTARE"
+    },
+    {
+      "id": "9402212002",
+      "district_id": "940221",
+      "name": "AGOPAGA"
+    },
+    {
+      "id": "9402212003",
+      "district_id": "940221",
+      "name": "LERAWERA"
+    },
+    {
+      "id": "9402212004",
+      "district_id": "940221",
+      "name": "NAKONGWE"
+    },
+    {
+      "id": "9402212005",
+      "district_id": "940221",
+      "name": "GINILOME"
+    },
+    {
+      "id": "9402212006",
+      "district_id": "940221",
+      "name": "YALIBATE"
+    },
+    {
+      "id": "9402212007",
+      "district_id": "940221",
+      "name": "WURUNIKIME"
+    },
+    {
+      "id": "9402212008",
+      "district_id": "940221",
+      "name": "JIMBINGGAME"
+    },
+    {
+      "id": "9402212009",
+      "district_id": "940221",
+      "name": "ORILUK"
+    },
+    {
+      "id": "9402212010",
+      "district_id": "940221",
+      "name": "PAGARUGOM"
+    },
+    {
+      "id": "9402212011",
+      "district_id": "940221",
+      "name": "TOWOLUK"
+    },
+    {
+      "id": "9402212012",
+      "district_id": "940221",
+      "name": "TENOLOK"
+    },
+    {
+      "id": "9402212013",
+      "district_id": "940221",
+      "name": "JIOGOBAK"
+    },
+    {
+      "id": "9402212014",
+      "district_id": "940221",
+      "name": "TIRIGOI"
+    },
+    {
+      "id": "9402212015",
+      "district_id": "940221",
+      "name": "MONDOGONERI"
+    },
+    {
+      "id": "9402212016",
+      "district_id": "940221",
+      "name": "TENOMANGGEN"
+    },
+    {
+      "id": "9402212017",
+      "district_id": "940221",
+      "name": "ANDIRON"
+    },
+    {
+      "id": "9402212018",
+      "district_id": "940221",
+      "name": "AMBITMBIT"
+    },
+    {
+      "id": "9402212019",
+      "district_id": "940221",
+      "name": "AULAKME"
+    },
+    {
+      "id": "9402222001",
+      "district_id": "940222",
+      "name": "NIOGA"
+    },
+    {
+      "id": "9402222002",
+      "district_id": "940222",
+      "name": "YONGGI"
+    },
+    {
+      "id": "9402222003",
+      "district_id": "940222",
+      "name": "WONGGI"
+    },
+    {
+      "id": "9402222004",
+      "district_id": "940222",
+      "name": "WAMBAGALO"
+    },
+    {
+      "id": "9402222005",
+      "district_id": "940222",
+      "name": "JIGONIKME"
+    },
+    {
+      "id": "9402222006",
+      "district_id": "940222",
+      "name": "MURUWI"
+    },
+    {
+      "id": "9402222007",
+      "district_id": "940222",
+      "name": "WUTIME"
+    },
+    {
+      "id": "9402222008",
+      "district_id": "940222",
+      "name": "GIBAGA"
+    },
+    {
+      "id": "9402222009",
+      "district_id": "940222",
+      "name": "PAPAK"
+    },
+    {
+      "id": "9402222010",
+      "district_id": "940222",
+      "name": "WANDURI"
+    },
+    {
+      "id": "9402222011",
+      "district_id": "940222",
+      "name": "WALOM"
+    },
+    {
+      "id": "9402232001",
+      "district_id": "940223",
+      "name": "GUBUME"
+    },
+    {
+      "id": "9402232002",
+      "district_id": "940223",
+      "name": "MILINERI"
+    },
+    {
+      "id": "9402232003",
+      "district_id": "940223",
+      "name": "MELELA"
+    },
+    {
+      "id": "9402232004",
+      "district_id": "940223",
+      "name": "KENENDAGA"
+    },
+    {
+      "id": "9402232005",
+      "district_id": "940223",
+      "name": "APELOME"
+    },
+    {
+      "id": "9402232006",
+      "district_id": "940223",
+      "name": "KUMIGI"
+    },
+    {
+      "id": "9402232007",
+      "district_id": "940223",
+      "name": "NOBA-NOBA"
+    },
+    {
+      "id": "9402232008",
+      "district_id": "940223",
+      "name": "NOGI"
+    },
+    {
+      "id": "9402232009",
+      "district_id": "940223",
+      "name": "GUBUNERI"
+    },
+    {
+      "id": "9402232010",
+      "district_id": "940223",
+      "name": "LIGUNI"
+    },
+    {
+      "id": "9402232011",
+      "district_id": "940223",
+      "name": "MONDU"
+    },
+    {
+      "id": "9402232012",
+      "district_id": "940223",
+      "name": "JINGGI"
+    },
+    {
+      "id": "9402232013",
+      "district_id": "940223",
+      "name": "GINILUME"
+    },
+    {
+      "id": "9402232014",
+      "district_id": "940223",
+      "name": "WUNGGANI"
+    },
+    {
+      "id": "9402232015",
+      "district_id": "940223",
+      "name": "MENGGEGENIKIME"
+    },
+    {
+      "id": "9402232016",
+      "district_id": "940223",
+      "name": "TINGGIREGE"
+    },
+    {
+      "id": "9402232017",
+      "district_id": "940223",
+      "name": "TIMORAMO"
+    },
+    {
+      "id": "9402242001",
+      "district_id": "940224",
+      "name": "GUNA"
+    },
+    {
+      "id": "9402242002",
+      "district_id": "940224",
+      "name": "MANDURA"
+    },
+    {
+      "id": "9402242003",
+      "district_id": "940224",
+      "name": "LUGUBAGO"
+    },
+    {
+      "id": "9402242004",
+      "district_id": "940224",
+      "name": "ANDUGIR"
+    },
+    {
+      "id": "9402242005",
+      "district_id": "940224",
+      "name": "MUARA MIGUNI"
+    },
+    {
+      "id": "9402242006",
+      "district_id": "940224",
+      "name": "ABILI"
+    },
+    {
+      "id": "9402242007",
+      "district_id": "940224",
+      "name": "PEREYA"
+    },
+    {
+      "id": "9402242008",
+      "district_id": "940224",
+      "name": "GINIMANGGEN"
+    },
+    {
+      "id": "9402242009",
+      "district_id": "940224",
+      "name": "LAWOREGE"
+    },
+    {
+      "id": "9402242010",
+      "district_id": "940224",
+      "name": "WUMBIRI"
+    },
+    {
+      "id": "9402252001",
+      "district_id": "940225",
+      "name": "DAGAI"
+    },
+    {
+      "id": "9402252002",
+      "district_id": "940225",
+      "name": "DAGAI 2"
+    },
+    {
+      "id": "9402252003",
+      "district_id": "940225",
+      "name": "DEIDE"
+    },
+    {
+      "id": "9402252004",
+      "district_id": "940225",
+      "name": "FARIDE"
+    },
+    {
+      "id": "9402252005",
+      "district_id": "940225",
+      "name": "SOI"
+    },
+    {
+      "id": "9402252006",
+      "district_id": "940225",
+      "name": "MBOMBAN"
+    },
+    {
+      "id": "9402252007",
+      "district_id": "940225",
+      "name": "YEIHNERI"
+    },
+    {
+      "id": "9402252008",
+      "district_id": "940225",
+      "name": "MANDARA LANI"
+    },
+    {
+      "id": "9402252009",
+      "district_id": "940225",
+      "name": "DEBITE"
+    },
+    {
+      "id": "9402252010",
+      "district_id": "940225",
+      "name": "GUERI"
+    },
+    {
+      "id": "9402262001",
+      "district_id": "940226",
+      "name": "KIYAGE"
+    },
+    {
+      "id": "9402262002",
+      "district_id": "940226",
+      "name": "WANGGIBA"
+    },
+    {
+      "id": "9402262003",
+      "district_id": "940226",
+      "name": "AMURINGGIK"
+    },
+    {
+      "id": "9402262004",
+      "district_id": "940226",
+      "name": "TENGGABANGGWI"
+    },
+    {
+      "id": "9402262005",
+      "district_id": "940226",
+      "name": "TUMBIWOLU"
+    },
+    {
+      "id": "9402262006",
+      "district_id": "940226",
+      "name": "KELANDU"
+    },
+    {
+      "id": "9402262007",
+      "district_id": "940226",
+      "name": "AMBO"
+    },
+    {
+      "id": "9402262008",
+      "district_id": "940226",
+      "name": "ATOLI"
+    },
+    {
+      "id": "9403011001",
+      "district_id": "940301",
+      "name": "ENAROTALI"
+    },
+    {
+      "id": "9403011006",
+      "district_id": "940301",
+      "name": "TIMIDA"
+    },
+    {
+      "id": "9403012002",
+      "district_id": "940301",
+      "name": "MADI"
+    },
+    {
+      "id": "9403012003",
+      "district_id": "940301",
+      "name": "AIKAI"
+    },
+    {
+      "id": "9403012004",
+      "district_id": "940301",
+      "name": "IPAKIYE"
+    },
+    {
+      "id": "9403012005",
+      "district_id": "940301",
+      "name": "PAPATO"
+    },
+    {
+      "id": "9403012007",
+      "district_id": "940301",
+      "name": "KOPO"
+    },
+    {
+      "id": "9403012008",
+      "district_id": "940301",
+      "name": "WAGE"
+    },
+    {
+      "id": "9403012009",
+      "district_id": "940301",
+      "name": "KAGUPAGO"
+    },
+    {
+      "id": "9403012010",
+      "district_id": "940301",
+      "name": "OYAIGO"
+    },
+    {
+      "id": "9403012011",
+      "district_id": "940301",
+      "name": "KOGEKOTU"
+    },
+    {
+      "id": "9403012012",
+      "district_id": "940301",
+      "name": "AWABUTU"
+    },
+    {
+      "id": "9403012013",
+      "district_id": "940301",
+      "name": "GEKO"
+    },
+    {
+      "id": "9403012014",
+      "district_id": "940301",
+      "name": "MUGIMEKETAGO"
+    },
+    {
+      "id": "9403012015",
+      "district_id": "940301",
+      "name": "TUAMAKIDA"
+    },
+    {
+      "id": "9403012016",
+      "district_id": "940301",
+      "name": "GEIBU"
+    },
+    {
+      "id": "9403012017",
+      "district_id": "940301",
+      "name": "PUDOTADI"
+    },
+    {
+      "id": "9403012018",
+      "district_id": "940301",
+      "name": "KOGEKOTU"
+    },
+    {
+      "id": "9403012019",
+      "district_id": "940301",
+      "name": "IYAITAKA"
+    },
+    {
+      "id": "9403012020",
+      "district_id": "940301",
+      "name": "UGIBUTU"
+    },
+    {
+      "id": "9403012021",
+      "district_id": "940301",
+      "name": "WOUYEBUTU"
+    },
+    {
+      "id": "9403012022",
+      "district_id": "940301",
+      "name": "AMOUGIBUTU"
+    },
+    {
+      "id": "9403012023",
+      "district_id": "940301",
+      "name": "DAPAIBA"
+    },
+    {
+      "id": "9403012024",
+      "district_id": "940301",
+      "name": "YUKEKEBO"
+    },
+    {
+      "id": "9403012025",
+      "district_id": "940301",
+      "name": "AGUMAIDA"
+    },
+    {
+      "id": "9403012026",
+      "district_id": "940301",
+      "name": "YAGIYO BUTU"
+    },
+    {
+      "id": "9403021001",
+      "district_id": "940302",
+      "name": "OBANO"
+    },
+    {
+      "id": "9403022002",
+      "district_id": "940302",
+      "name": "KEGOUDA"
+    },
+    {
+      "id": "9403022003",
+      "district_id": "940302",
+      "name": "TOTIYO"
+    },
+    {
+      "id": "9403022004",
+      "district_id": "940302",
+      "name": "BEKO"
+    },
+    {
+      "id": "9403022005",
+      "district_id": "940302",
+      "name": "TIPAKOTU"
+    },
+    {
+      "id": "9403022006",
+      "district_id": "940302",
+      "name": "EPO OBANO"
+    },
+    {
+      "id": "9403022007",
+      "district_id": "940302",
+      "name": "TOWAUWO"
+    },
+    {
+      "id": "9403022008",
+      "district_id": "940302",
+      "name": "WIYOGEI"
+    },
+    {
+      "id": "9403022009",
+      "district_id": "940302",
+      "name": "EKINAUWO"
+    },
+    {
+      "id": "9403022010",
+      "district_id": "940302",
+      "name": "KIGODIDE"
+    },
+    {
+      "id": "9403022011",
+      "district_id": "940302",
+      "name": "PUTAKOGOPA"
+    },
+    {
+      "id": "9403022012",
+      "district_id": "940302",
+      "name": "WAUKOTOPA"
+    },
+    {
+      "id": "9403022013",
+      "district_id": "940302",
+      "name": "DIGIUGII"
+    },
+    {
+      "id": "9403032001",
+      "district_id": "940303",
+      "name": "TOYAIMOTI"
+    },
+    {
+      "id": "9403032002",
+      "district_id": "940303",
+      "name": "AGAPO"
+    },
+    {
+      "id": "9403032003",
+      "district_id": "940303",
+      "name": "ABATADI"
+    },
+    {
+      "id": "9403032005",
+      "district_id": "940303",
+      "name": "BAGUWO"
+    },
+    {
+      "id": "9403032006",
+      "district_id": "940303",
+      "name": "MAKIDINI"
+    },
+    {
+      "id": "9403032007",
+      "district_id": "940303",
+      "name": "TAGIYA"
+    },
+    {
+      "id": "9403032008",
+      "district_id": "940303",
+      "name": "EMAI"
+    },
+    {
+      "id": "9403032009",
+      "district_id": "940303",
+      "name": "DINUBUTU"
+    },
+    {
+      "id": "9403032013",
+      "district_id": "940303",
+      "name": "DUWADIDE"
+    },
+    {
+      "id": "9403042001",
+      "district_id": "940304",
+      "name": "BOGOBAIDA"
+    },
+    {
+      "id": "9403042002",
+      "district_id": "940304",
+      "name": "NAWIPAUWO"
+    },
+    {
+      "id": "9403042003",
+      "district_id": "940304",
+      "name": "MADOU"
+    },
+    {
+      "id": "9403042004",
+      "district_id": "940304",
+      "name": "JIBUDIDE II"
+    },
+    {
+      "id": "9403042005",
+      "district_id": "940304",
+      "name": "YUMAUWO"
+    },
+    {
+      "id": "9403042006",
+      "district_id": "940304",
+      "name": "KAGOUDIDE"
+    },
+    {
+      "id": "9403042007",
+      "district_id": "940304",
+      "name": "EYAPOUDA"
+    },
+    {
+      "id": "9403042008",
+      "district_id": "940304",
+      "name": "MIYOKEPI"
+    },
+    {
+      "id": "9403042009",
+      "district_id": "940304",
+      "name": "OBAYA DIMI"
+    },
+    {
+      "id": "9403051001",
+      "district_id": "940305",
+      "name": "BIBIDA"
+    },
+    {
+      "id": "9403052002",
+      "district_id": "940305",
+      "name": "UGIDIMI"
+    },
+    {
+      "id": "9403052003",
+      "district_id": "940305",
+      "name": "ODIYAI"
+    },
+    {
+      "id": "9403052004",
+      "district_id": "940305",
+      "name": "TUWAKTU"
+    },
+    {
+      "id": "9403052005",
+      "district_id": "940305",
+      "name": "KUGAISIGA"
+    },
+    {
+      "id": "9403052006",
+      "district_id": "940305",
+      "name": "KOLAITAGA"
+    },
+    {
+      "id": "9403052007",
+      "district_id": "940305",
+      "name": "DAMA-DAMA"
+    },
+    {
+      "id": "9403062001",
+      "district_id": "940306",
+      "name": "DUMA"
+    },
+    {
+      "id": "9403062002",
+      "district_id": "940306",
+      "name": "BOMOSIGA"
+    },
+    {
+      "id": "9403062003",
+      "district_id": "940306",
+      "name": "JAPESIGAIWAKA"
+    },
+    {
+      "id": "9403062004",
+      "district_id": "940306",
+      "name": "WAITAPA"
+    },
+    {
+      "id": "9403062005",
+      "district_id": "940306",
+      "name": "DUMA II"
+    },
+    {
+      "id": "9403072001",
+      "district_id": "940307",
+      "name": "TODIA"
+    },
+    {
+      "id": "9403072002",
+      "district_id": "940307",
+      "name": "DADOU"
+    },
+    {
+      "id": "9403072003",
+      "district_id": "940307",
+      "name": "BUA"
+    },
+    {
+      "id": "9403072004",
+      "district_id": "940307",
+      "name": "KEPI"
+    },
+    {
+      "id": "9403072005",
+      "district_id": "940307",
+      "name": "WAGEME"
+    },
+    {
+      "id": "9403072006",
+      "district_id": "940307",
+      "name": "BUGUBUTU"
+    },
+    {
+      "id": "9403072007",
+      "district_id": "940307",
+      "name": "DOGOMOUTO"
+    },
+    {
+      "id": "9403072008",
+      "district_id": "940307",
+      "name": "GIWO"
+    },
+    {
+      "id": "9403072009",
+      "district_id": "940307",
+      "name": "NOMOKEPOTA"
+    },
+    {
+      "id": "9403072010",
+      "district_id": "940307",
+      "name": "EGUAI"
+    },
+    {
+      "id": "9403072011",
+      "district_id": "940307",
+      "name": "DEGATADI"
+    },
+    {
+      "id": "9403072012",
+      "district_id": "940307",
+      "name": "UWOYUPI"
+    },
+    {
+      "id": "9403072013",
+      "district_id": "940307",
+      "name": "WEGEKEBO"
+    },
+    {
+      "id": "9403072014",
+      "district_id": "940307",
+      "name": "YINOTADI"
+    },
+    {
+      "id": "9403082001",
+      "district_id": "940308",
+      "name": "KEBO II"
+    },
+    {
+      "id": "9403082002",
+      "district_id": "940308",
+      "name": "TOGOWA"
+    },
+    {
+      "id": "9403082003",
+      "district_id": "940308",
+      "name": "IBUMAIDA"
+    },
+    {
+      "id": "9403082004",
+      "district_id": "940308",
+      "name": "KAGUPAGU"
+    },
+    {
+      "id": "9403082005",
+      "district_id": "940308",
+      "name": "AYAIGO"
+    },
+    {
+      "id": "9403082006",
+      "district_id": "940308",
+      "name": "GEIBU"
+    },
+    {
+      "id": "9403082007",
+      "district_id": "940308",
+      "name": "YOKADAGI"
+    },
+    {
+      "id": "9403082008",
+      "district_id": "940308",
+      "name": "BUNAIDA"
+    },
+    {
+      "id": "9403082009",
+      "district_id": "940308",
+      "name": "KEDEGE"
+    },
+    {
+      "id": "9403082010",
+      "district_id": "940308",
+      "name": "UWAIYE"
+    },
+    {
+      "id": "9403082011",
+      "district_id": "940308",
+      "name": "DAWAWA"
+    },
+    {
+      "id": "9403082012",
+      "district_id": "940308",
+      "name": "MUGIME KETAGO"
+    },
+    {
+      "id": "9403082013",
+      "district_id": "940308",
+      "name": "TUWAMAKIDA"
+    },
+    {
+      "id": "9403092001",
+      "district_id": "940309",
+      "name": "WOTAI"
+    },
+    {
+      "id": "9403092002",
+      "district_id": "940309",
+      "name": "KENIAPA"
+    },
+    {
+      "id": "9403092003",
+      "district_id": "940309",
+      "name": "MEMIYAIBUTU"
+    },
+    {
+      "id": "9403092004",
+      "district_id": "940309",
+      "name": "DIMIYA"
+    },
+    {
+      "id": "9403092005",
+      "district_id": "940309",
+      "name": "UDAUGI"
+    },
+    {
+      "id": "9403102001",
+      "district_id": "940310",
+      "name": "PASIR PUTIH"
+    },
+    {
+      "id": "9403102002",
+      "district_id": "940310",
+      "name": "GEIDA"
+    },
+    {
+      "id": "9403102003",
+      "district_id": "940310",
+      "name": "WIDIMEIDA"
+    },
+    {
+      "id": "9403102004",
+      "district_id": "940310",
+      "name": "MAKIDIMI"
+    },
+    {
+      "id": "9403102005",
+      "district_id": "940310",
+      "name": "ITEUWO"
+    },
+    {
+      "id": "9403102006",
+      "district_id": "940310",
+      "name": "OGEIDA"
+    },
+    {
+      "id": "9403102007",
+      "district_id": "940310",
+      "name": "TEGUOGI PUGAIDA"
+    },
+    {
+      "id": "9403102008",
+      "district_id": "940310",
+      "name": "DABAMOMAIDA"
+    },
+    {
+      "id": "9403102009",
+      "district_id": "940310",
+      "name": "BAGUWO"
+    },
+    {
+      "id": "9403102010",
+      "district_id": "940310",
+      "name": "KENEUGI"
+    },
+    {
+      "id": "9403102011",
+      "district_id": "940310",
+      "name": "DEBAMOMAIDA"
+    },
+    {
+      "id": "9403102012",
+      "district_id": "940310",
+      "name": "TEGOUGI PUGAIDA"
+    },
+    {
+      "id": "9403111006",
+      "district_id": "940311",
+      "name": "BADAWO"
+    },
+    {
+      "id": "9403112001",
+      "district_id": "940311",
+      "name": "UWAMANI"
+    },
+    {
+      "id": "9403112002",
+      "district_id": "940311",
+      "name": "MUYADEBE"
+    },
+    {
+      "id": "9403112003",
+      "district_id": "940311",
+      "name": "WOUBUTU"
+    },
+    {
+      "id": "9403112004",
+      "district_id": "940311",
+      "name": "KUGITADI"
+    },
+    {
+      "id": "9403112005",
+      "district_id": "940311",
+      "name": "KOBOUYAGAPA"
+    },
+    {
+      "id": "9403112007",
+      "district_id": "940311",
+      "name": "GEKO"
+    },
+    {
+      "id": "9403112008",
+      "district_id": "940311",
+      "name": "KINOU"
+    },
+    {
+      "id": "9403112009",
+      "district_id": "940311",
+      "name": "TOKO"
+    },
+    {
+      "id": "9403112010",
+      "district_id": "940311",
+      "name": "YAGIYO BUTU"
+    },
+    {
+      "id": "9403112011",
+      "district_id": "940311",
+      "name": "OBAIDAGI"
+    },
+    {
+      "id": "9403122001",
+      "district_id": "940312",
+      "name": "DEI"
+    },
+    {
+      "id": "9403122002",
+      "district_id": "940312",
+      "name": "OBAIYOWETA"
+    },
+    {
+      "id": "9403122003",
+      "district_id": "940312",
+      "name": "BUBUGIWO"
+    },
+    {
+      "id": "9403122004",
+      "district_id": "940312",
+      "name": "YIMOUTO"
+    },
+    {
+      "id": "9403122005",
+      "district_id": "940312",
+      "name": "TAMUGAUWO"
+    },
+    {
+      "id": "9403122006",
+      "district_id": "940312",
+      "name": "DAGOUTO"
+    },
+    {
+      "id": "9403122007",
+      "district_id": "940312",
+      "name": "KOPABUTU"
+    },
+    {
+      "id": "9403122008",
+      "district_id": "940312",
+      "name": "BOUTAI"
+    },
+    {
+      "id": "9403122009",
+      "district_id": "940312",
+      "name": "BUKA DUWATA"
+    },
+    {
+      "id": "9403132001",
+      "district_id": "940313",
+      "name": "PUGO"
+    },
+    {
+      "id": "9403132002",
+      "district_id": "940313",
+      "name": "WAIDIDE"
+    },
+    {
+      "id": "9403132003",
+      "district_id": "940313",
+      "name": "KOPAIDAGI"
+    },
+    {
+      "id": "9403132004",
+      "district_id": "940313",
+      "name": "UWIBUTU"
+    },
+    {
+      "id": "9403132005",
+      "district_id": "940313",
+      "name": "TIPAGO"
+    },
+    {
+      "id": "9403132006",
+      "district_id": "940313",
+      "name": "BOBA"
+    },
+    {
+      "id": "9403132007",
+      "district_id": "940313",
+      "name": "IYAIDAGI"
+    },
+    {
+      "id": "9403132008",
+      "district_id": "940313",
+      "name": "IYAITADI"
+    },
+    {
+      "id": "9403132009",
+      "district_id": "940313",
+      "name": "WAIEPO"
+    },
+    {
+      "id": "9403142001",
+      "district_id": "940314",
+      "name": "MUYETADI"
+    },
+    {
+      "id": "9403142002",
+      "district_id": "940314",
+      "name": "MOGEYA"
+    },
+    {
+      "id": "9403142003",
+      "district_id": "940314",
+      "name": "EPABUTU"
+    },
+    {
+      "id": "9403142004",
+      "district_id": "940314",
+      "name": "TIGA DAMUTO"
+    },
+    {
+      "id": "9403142005",
+      "district_id": "940314",
+      "name": "BEBIYAI"
+    },
+    {
+      "id": "9403142006",
+      "district_id": "940314",
+      "name": "IDAIYO"
+    },
+    {
+      "id": "9403142007",
+      "district_id": "940314",
+      "name": "TINOU"
+    },
+    {
+      "id": "9403142008",
+      "district_id": "940314",
+      "name": "DAMUTO"
+    },
+    {
+      "id": "9403142009",
+      "district_id": "940314",
+      "name": "OBAIYODIMI"
+    },
+    {
+      "id": "9403142010",
+      "district_id": "940314",
+      "name": "AMOPA"
+    },
+    {
+      "id": "9403152001",
+      "district_id": "940315",
+      "name": "OKAITADI"
+    },
+    {
+      "id": "9403152002",
+      "district_id": "940315",
+      "name": "KITO"
+    },
+    {
+      "id": "9403152003",
+      "district_id": "940315",
+      "name": "GEIKETAGO"
+    },
+    {
+      "id": "9403152004",
+      "district_id": "940315",
+      "name": "KADIYAI"
+    },
+    {
+      "id": "9403152005",
+      "district_id": "940315",
+      "name": "UWODEGE"
+    },
+    {
+      "id": "9403152006",
+      "district_id": "940315",
+      "name": "DIGIYO TUWATAIDA"
+    },
+    {
+      "id": "9403152007",
+      "district_id": "940315",
+      "name": "ITOKA"
+    },
+    {
+      "id": "9403162001",
+      "district_id": "940316",
+      "name": "UKAUWO"
+    },
+    {
+      "id": "9403162002",
+      "district_id": "940316",
+      "name": "WAIPA"
+    },
+    {
+      "id": "9403162003",
+      "district_id": "940316",
+      "name": "UKAGO"
+    },
+    {
+      "id": "9403162004",
+      "district_id": "940316",
+      "name": "TOTIYO"
+    },
+    {
+      "id": "9403162005",
+      "district_id": "940316",
+      "name": "BIYADIDE"
+    },
+    {
+      "id": "9403162006",
+      "district_id": "940316",
+      "name": "PEKEGE"
+    },
+    {
+      "id": "9403172001",
+      "district_id": "940317",
+      "name": "PANIBAGATA"
+    },
+    {
+      "id": "9403172002",
+      "district_id": "940317",
+      "name": "PUGAIDA"
+    },
+    {
+      "id": "9403172003",
+      "district_id": "940317",
+      "name": "AWEUBUTU"
+    },
+    {
+      "id": "9403172004",
+      "district_id": "940317",
+      "name": "IPUWA"
+    },
+    {
+      "id": "9403172005",
+      "district_id": "940317",
+      "name": "MUNAIYEPA"
+    },
+    {
+      "id": "9403172006",
+      "district_id": "940317",
+      "name": "KEBO I"
+    },
+    {
+      "id": "9403172007",
+      "district_id": "940317",
+      "name": "PAYOGEI"
+    },
+    {
+      "id": "9403172008",
+      "district_id": "940317",
+      "name": "DETAUWO"
+    },
+    {
+      "id": "9403172009",
+      "district_id": "940317",
+      "name": "YAIBU"
+    },
+    {
+      "id": "9403172010",
+      "district_id": "940317",
+      "name": "WOYOUTO"
+    },
+    {
+      "id": "9403182001",
+      "district_id": "940318",
+      "name": "YOUTADI"
+    },
+    {
+      "id": "9403182002",
+      "district_id": "940318",
+      "name": "UWAGI"
+    },
+    {
+      "id": "9403182003",
+      "district_id": "940318",
+      "name": "IPOUWA"
+    },
+    {
+      "id": "9403182004",
+      "district_id": "940318",
+      "name": "MUNAIYEPA"
+    },
+    {
+      "id": "9403182005",
+      "district_id": "940318",
+      "name": "DOKONEIDA"
+    },
+    {
+      "id": "9403182006",
+      "district_id": "940318",
+      "name": "NAMUTADI"
+    },
+    {
+      "id": "9403192001",
+      "district_id": "940319",
+      "name": "NOMOUWODIDE"
+    },
+    {
+      "id": "9403192002",
+      "district_id": "940319",
+      "name": "PIKOKEBO"
+    },
+    {
+      "id": "9403192003",
+      "district_id": "940319",
+      "name": "BAYA BIRU"
+    },
+    {
+      "id": "9403192004",
+      "district_id": "940319",
+      "name": "JIGITOPA TIMUR"
+    },
+    {
+      "id": "9403192005",
+      "district_id": "940319",
+      "name": "MAATADI"
+    },
+    {
+      "id": "9403192006",
+      "district_id": "940319",
+      "name": "PUPEKEBO"
+    },
+    {
+      "id": "9403202001",
+      "district_id": "940320",
+      "name": "UWEBUTU"
+    },
+    {
+      "id": "9403202002",
+      "district_id": "940320",
+      "name": "EPOUTO"
+    },
+    {
+      "id": "9403202003",
+      "district_id": "940320",
+      "name": "TUGUMO"
+    },
+    {
+      "id": "9403202004",
+      "district_id": "940320",
+      "name": "TUGU KAGOMOMA"
+    },
+    {
+      "id": "9403202005",
+      "district_id": "940320",
+      "name": "DEIYAMO"
+    },
+    {
+      "id": "9403202006",
+      "district_id": "940320",
+      "name": "MIYAMO"
+    },
+    {
+      "id": "9403212001",
+      "district_id": "940321",
+      "name": "DOGOMO"
+    },
+    {
+      "id": "9403212002",
+      "district_id": "940321",
+      "name": "BOMONG BUGOPA"
+    },
+    {
+      "id": "9403212003",
+      "district_id": "940321",
+      "name": "DANGIPA"
+    },
+    {
+      "id": "9403212004",
+      "district_id": "940321",
+      "name": "ONDEGAPA"
+    },
+    {
+      "id": "9403212005",
+      "district_id": "940321",
+      "name": "SOGOMO"
+    },
+    {
+      "id": "9403222001",
+      "district_id": "940322",
+      "name": "DETA"
+    },
+    {
+      "id": "9403222002",
+      "district_id": "940322",
+      "name": "TUGUWAI"
+    },
+    {
+      "id": "9403222003",
+      "district_id": "940322",
+      "name": "TUGUWAI MOMA"
+    },
+    {
+      "id": "9403222004",
+      "district_id": "940322",
+      "name": "BUMAIDA"
+    },
+    {
+      "id": "9403222005",
+      "district_id": "940322",
+      "name": "DEBAIYE"
+    },
+    {
+      "id": "9403222007",
+      "district_id": "940322",
+      "name": "KOMOPA"
+    },
+    {
+      "id": "9403232001",
+      "district_id": "940323",
+      "name": "OBAIPUGAIDA"
+    },
+    {
+      "id": "9403232002",
+      "district_id": "940323",
+      "name": "EYAGITAIDA"
+    },
+    {
+      "id": "9403232003",
+      "district_id": "940323",
+      "name": "MOMAGEIDA"
+    },
+    {
+      "id": "9403232004",
+      "district_id": "940323",
+      "name": "EKAUWIYA"
+    },
+    {
+      "id": "9403232005",
+      "district_id": "940323",
+      "name": "DEBAKEBOUDA"
+    },
+    {
+      "id": "9403232006",
+      "district_id": "940323",
+      "name": "KAIDOUTADI"
+    },
+    {
+      "id": "9403232007",
+      "district_id": "940323",
+      "name": "POGEIDIMI"
+    },
+    {
+      "id": "9403232008",
+      "district_id": "940323",
+      "name": "OKONOBAIDA"
+    },
+    {
+      "id": "9403232009",
+      "district_id": "940323",
+      "name": "GAKOKOTU"
+    },
+    {
+      "id": "9403232010",
+      "district_id": "940323",
+      "name": "KEGAMA"
+    },
+    {
+      "id": "9403242001",
+      "district_id": "940324",
+      "name": "YABOMAIDA"
+    },
+    {
+      "id": "9403242002",
+      "district_id": "940324",
+      "name": "AKOUBAIDA"
+    },
+    {
+      "id": "9403242003",
+      "district_id": "940324",
+      "name": "DAUWAGU"
+    },
+    {
+      "id": "9403242004",
+      "district_id": "940324",
+      "name": "GANEYETAKA"
+    },
+    {
+      "id": "9403242005",
+      "district_id": "940324",
+      "name": "YABOMAIDA II"
+    },
+    {
+      "id": "9403242006",
+      "district_id": "940324",
+      "name": "BODATADI"
+    },
+    {
+      "id": "9403242007",
+      "district_id": "940324",
+      "name": "IBOUWAGU"
+    },
+    {
+      "id": "9404011001",
+      "district_id": "940401",
+      "name": "KOPERAPOKA"
+    },
+    {
+      "id": "9404011002",
+      "district_id": "940401",
+      "name": "KWAMKI"
+    },
+    {
+      "id": "9404011003",
+      "district_id": "940401",
+      "name": "TIMIKA JAYA"
+    },
+    {
+      "id": "9404011007",
+      "district_id": "940401",
+      "name": "SEMPAN"
+    },
+    {
+      "id": "9404011008",
+      "district_id": "940401",
+      "name": "PASAR SENTRAL"
+    },
+    {
+      "id": "9404011009",
+      "district_id": "940401",
+      "name": "WANAGON"
+    },
+    {
+      "id": "9404011010",
+      "district_id": "940401",
+      "name": "KEBUN SIRIH"
+    },
+    {
+      "id": "9404011011",
+      "district_id": "940401",
+      "name": "OTOMONA"
+    },
+    {
+      "id": "9404011012",
+      "district_id": "940401",
+      "name": "PERINTIS"
+    },
+    {
+      "id": "9404011013",
+      "district_id": "940401",
+      "name": "DINGO NARAMA"
+    },
+    {
+      "id": "9404011014",
+      "district_id": "940401",
+      "name": "TIMIKA INDAH"
+    },
+    {
+      "id": "9404012004",
+      "district_id": "940401",
+      "name": "NAYARO"
+    },
+    {
+      "id": "9404012005",
+      "district_id": "940401",
+      "name": "MINABUA"
+    },
+    {
+      "id": "9404012006",
+      "district_id": "940401",
+      "name": "HANGAITJI"
+    },
+    {
+      "id": "9404022001",
+      "district_id": "940402",
+      "name": "KILIARMA"
+    },
+    {
+      "id": "9404022002",
+      "district_id": "940402",
+      "name": "AMUNGUN"
+    },
+    {
+      "id": "9404022003",
+      "district_id": "940402",
+      "name": "ARAMSOLKI"
+    },
+    {
+      "id": "9404022004",
+      "district_id": "940402",
+      "name": "FAKAFUKU"
+    },
+    {
+      "id": "9404022005",
+      "district_id": "940402",
+      "name": "MASASIMAMO"
+    },
+    {
+      "id": "9404022006",
+      "district_id": "940402",
+      "name": "EMOGOMA"
+    },
+    {
+      "id": "9404022007",
+      "district_id": "940402",
+      "name": "EMKOMA HALAMA"
+    },
+    {
+      "id": "9404022008",
+      "district_id": "940402",
+      "name": "HINAT UNTUNG"
+    },
+    {
+      "id": "9404031001",
+      "district_id": "940403",
+      "name": "WANIA"
+    },
+    {
+      "id": "9404032002",
+      "district_id": "940403",
+      "name": "KAUGAPA"
+    },
+    {
+      "id": "9404032003",
+      "district_id": "940403",
+      "name": "POUMAKO"
+    },
+    {
+      "id": "9404032004",
+      "district_id": "940403",
+      "name": "TIPUKA"
+    },
+    {
+      "id": "9404032005",
+      "district_id": "940403",
+      "name": "MUARE"
+    },
+    {
+      "id": "9404032006",
+      "district_id": "940403",
+      "name": "HIRIPAU"
+    },
+    {
+      "id": "9404042001",
+      "district_id": "940404",
+      "name": "KOKONAO"
+    },
+    {
+      "id": "9404042002",
+      "district_id": "940404",
+      "name": "MIGIWIA"
+    },
+    {
+      "id": "9404042003",
+      "district_id": "940404",
+      "name": "KIURA"
+    },
+    {
+      "id": "9404042004",
+      "district_id": "940404",
+      "name": "MIMIKA"
+    },
+    {
+      "id": "9404042005",
+      "district_id": "940404",
+      "name": "APARUKA"
+    },
+    {
+      "id": "9404042006",
+      "district_id": "940404",
+      "name": "ATAPO"
+    },
+    {
+      "id": "9404042007",
+      "district_id": "940404",
+      "name": "APURI"
+    },
+    {
+      "id": "9404052001",
+      "district_id": "940405",
+      "name": "SEMPAN TIMUR"
+    },
+    {
+      "id": "9404052002",
+      "district_id": "940405",
+      "name": "WENIN"
+    },
+    {
+      "id": "9404052003",
+      "district_id": "940405",
+      "name": "NOEMA"
+    },
+    {
+      "id": "9404052004",
+      "district_id": "940405",
+      "name": "WAPU"
+    },
+    {
+      "id": "9404052005",
+      "district_id": "940405",
+      "name": "SUMAPRO"
+    },
+    {
+      "id": "9404052006",
+      "district_id": "940405",
+      "name": "WACAKAM"
+    },
+    {
+      "id": "9404052007",
+      "district_id": "940405",
+      "name": "WAITUKU"
+    },
+    {
+      "id": "9404052008",
+      "district_id": "940405",
+      "name": "BULUMEN"
+    },
+    {
+      "id": "9404052009",
+      "district_id": "940405",
+      "name": "KANMAPIRI"
+    },
+    {
+      "id": "9404052010",
+      "district_id": "940405",
+      "name": "JAITAK"
+    },
+    {
+      "id": "9404062001",
+      "district_id": "940406",
+      "name": "JILA"
+    },
+    {
+      "id": "9404062002",
+      "district_id": "940406",
+      "name": "DILOA"
+    },
+    {
+      "id": "9404062003",
+      "district_id": "940406",
+      "name": "NOEMUN"
+    },
+    {
+      "id": "9404062004",
+      "district_id": "940406",
+      "name": "PASIR PUTIH"
+    },
+    {
+      "id": "9404062005",
+      "district_id": "940406",
+      "name": "JENGKON"
+    },
+    {
+      "id": "9404062006",
+      "district_id": "940406",
+      "name": "PILIK OGOM"
+    },
+    {
+      "id": "9404062007",
+      "district_id": "940406",
+      "name": "BUNARAUGIN"
+    },
+    {
+      "id": "9404062008",
+      "district_id": "940406",
+      "name": "UMPLIGA"
+    },
+    {
+      "id": "9404062009",
+      "district_id": "940406",
+      "name": "AMUA OGOM"
+    },
+    {
+      "id": "9404062010",
+      "district_id": "940406",
+      "name": "PUSUWE"
+    },
+    {
+      "id": "9404062011",
+      "district_id": "940406",
+      "name": "WANDUD"
+    },
+    {
+      "id": "9404062012",
+      "district_id": "940406",
+      "name": "DILOA DUA"
+    },
+    {
+      "id": "9404072001",
+      "district_id": "940407",
+      "name": "AYUKA"
+    },
+    {
+      "id": "9404072002",
+      "district_id": "940407",
+      "name": "AMAMAPARE"
+    },
+    {
+      "id": "9404072003",
+      "district_id": "940407",
+      "name": "OHOTYA"
+    },
+    {
+      "id": "9404072004",
+      "district_id": "940407",
+      "name": "OMAWITA"
+    },
+    {
+      "id": "9404072005",
+      "district_id": "940407",
+      "name": "FANAMO"
+    },
+    {
+      "id": "9404082001",
+      "district_id": "940408",
+      "name": "ATUKA"
+    },
+    {
+      "id": "9404082002",
+      "district_id": "940408",
+      "name": "TIWAKA"
+    },
+    {
+      "id": "9404082003",
+      "district_id": "940408",
+      "name": "KEAKWA"
+    },
+    {
+      "id": "9404082004",
+      "district_id": "940408",
+      "name": "AIKAWAPUKA"
+    },
+    {
+      "id": "9404082005",
+      "district_id": "940408",
+      "name": "KAMORO"
+    },
+    {
+      "id": "9404091001",
+      "district_id": "940409",
+      "name": "KUALA KENCANA"
+    },
+    {
+      "id": "9404091002",
+      "district_id": "940409",
+      "name": "KARANG SENANG"
+    },
+    {
+      "id": "9404092003",
+      "district_id": "940409",
+      "name": "UTIKINI BARU"
+    },
+    {
+      "id": "9404092004",
+      "district_id": "940409",
+      "name": "BHINTUKA"
+    },
+    {
+      "id": "9404092005",
+      "district_id": "940409",
+      "name": "TIOKA KENCANA"
+    },
+    {
+      "id": "9404092006",
+      "district_id": "940409",
+      "name": "MIMIKA GUNUNG"
+    },
+    {
+      "id": "9404092007",
+      "district_id": "940409",
+      "name": "KARYA KENCANA"
+    },
+    {
+      "id": "9404092008",
+      "district_id": "940409",
+      "name": "UTIKINI DUA"
+    },
+    {
+      "id": "9404092009",
+      "district_id": "940409",
+      "name": "UTIKINI TIGA"
+    },
+    {
+      "id": "9404092010",
+      "district_id": "940409",
+      "name": "JIMBI"
+    },
+    {
+      "id": "9404101001",
+      "district_id": "940410",
+      "name": "TEMBAGAPURA"
+    },
+    {
+      "id": "9404102002",
+      "district_id": "940410",
+      "name": "WAA"
+    },
+    {
+      "id": "9404102003",
+      "district_id": "940410",
+      "name": "ARWANOP"
+    },
+    {
+      "id": "9404102004",
+      "district_id": "940410",
+      "name": "T'SINGA"
+    },
+    {
+      "id": "9404102005",
+      "district_id": "940410",
+      "name": "JAGAMIN"
+    },
+    {
+      "id": "9404102006",
+      "district_id": "940410",
+      "name": "BANIGOGOM"
+    },
+    {
+      "id": "9404102007",
+      "district_id": "940410",
+      "name": "OPITAWAK"
+    },
+    {
+      "id": "9404102008",
+      "district_id": "940410",
+      "name": "DOLININGOKNGIN"
+    },
+    {
+      "id": "9404102009",
+      "district_id": "940410",
+      "name": "BANTI DUA"
+    },
+    {
+      "id": "9404102010",
+      "district_id": "940410",
+      "name": "AINGOGIN"
+    },
+    {
+      "id": "9404102011",
+      "district_id": "940410",
+      "name": "BALUNI"
+    },
+    {
+      "id": "9404102012",
+      "district_id": "940410",
+      "name": "NOSELANOP"
+    },
+    {
+      "id": "9404102013",
+      "district_id": "940410",
+      "name": "MENINGIMPONOGAMA"
+    },
+    {
+      "id": "9404102014",
+      "district_id": "940410",
+      "name": "JONGKOGAMA"
+    },
+    {
+      "id": "9404112001",
+      "district_id": "940411",
+      "name": "POTOWAI BURU"
+    },
+    {
+      "id": "9404112002",
+      "district_id": "940411",
+      "name": "YAPKOKA"
+    },
+    {
+      "id": "9404112003",
+      "district_id": "940411",
+      "name": "AINDUA"
+    },
+    {
+      "id": "9404112004",
+      "district_id": "940411",
+      "name": "TAPOMAI"
+    },
+    {
+      "id": "9404112005",
+      "district_id": "940411",
+      "name": "UMAR"
+    },
+    {
+      "id": "9404122001",
+      "district_id": "940412",
+      "name": "KAPIRAYA"
+    },
+    {
+      "id": "9404122002",
+      "district_id": "940412",
+      "name": "UTA"
+    },
+    {
+      "id": "9404122003",
+      "district_id": "940412",
+      "name": "MUPURUKA"
+    },
+    {
+      "id": "9404122004",
+      "district_id": "940412",
+      "name": "WUMUKA"
+    },
+    {
+      "id": "9404122005",
+      "district_id": "940412",
+      "name": "AKAR"
+    },
+    {
+      "id": "9404122006",
+      "district_id": "940412",
+      "name": "MAPAR"
+    },
+    {
+      "id": "9404122007",
+      "district_id": "940412",
+      "name": "KIPIA"
+    },
+    {
+      "id": "9404122008",
+      "district_id": "940412",
+      "name": "PRONGGO"
+    },
+    {
+      "id": "9404122009",
+      "district_id": "940412",
+      "name": "WAKIA"
+    },
+    {
+      "id": "9404131001",
+      "district_id": "940413",
+      "name": "HARAPAN"
+    },
+    {
+      "id": "9404132002",
+      "district_id": "940413",
+      "name": "MEEKURIMA"
+    },
+    {
+      "id": "9404132003",
+      "district_id": "940413",
+      "name": "LANDUN MEKAR"
+    },
+    {
+      "id": "9404132004",
+      "district_id": "940413",
+      "name": "OLAROA"
+    },
+    {
+      "id": "9404132005",
+      "district_id": "940413",
+      "name": "BINTANG LIMA"
+    },
+    {
+      "id": "9404132006",
+      "district_id": "940413",
+      "name": "DAMAI"
+    },
+    {
+      "id": "9404132007",
+      "district_id": "940413",
+      "name": "WALANI"
+    },
+    {
+      "id": "9404132008",
+      "district_id": "940413",
+      "name": "AMOLE"
+    },
+    {
+      "id": "9404132009",
+      "district_id": "940413",
+      "name": "LAMOPI"
+    },
+    {
+      "id": "9404132010",
+      "district_id": "940413",
+      "name": "TUNAS MATOA"
+    },
+    {
+      "id": "9404142001",
+      "district_id": "940414",
+      "name": "HOYA"
+    },
+    {
+      "id": "9404142002",
+      "district_id": "940414",
+      "name": "MAMONTOGA"
+    },
+    {
+      "id": "9404142003",
+      "district_id": "940414",
+      "name": "JINONIN"
+    },
+    {
+      "id": "9404142004",
+      "district_id": "940414",
+      "name": "KULAMA OGOM"
+    },
+    {
+      "id": "9404142005",
+      "district_id": "940414",
+      "name": "PUTI"
+    },
+    {
+      "id": "9404142006",
+      "district_id": "940414",
+      "name": "JAWA"
+    },
+    {
+      "id": "9404152001",
+      "district_id": "940415",
+      "name": "LIMAU ASRI TIMUR"
+    },
+    {
+      "id": "9404152002",
+      "district_id": "940415",
+      "name": "WANGIRJA"
+    },
+    {
+      "id": "9404152003",
+      "district_id": "940415",
+      "name": "IWAKA"
+    },
+    {
+      "id": "9404152004",
+      "district_id": "940415",
+      "name": "NAENA MUKTIPURA"
+    },
+    {
+      "id": "9404152005",
+      "district_id": "940415",
+      "name": "MULIA KENCANA"
+    },
+    {
+      "id": "9404152006",
+      "district_id": "940415",
+      "name": "PIGAPU"
+    },
+    {
+      "id": "9404152007",
+      "district_id": "940415",
+      "name": "LIMAU ASRI BARAT"
+    },
+    {
+      "id": "9404161002",
+      "district_id": "940416",
+      "name": "KAMORO JAYA"
+    },
+    {
+      "id": "9404161003",
+      "district_id": "940416",
+      "name": "WONOSARI JAYA"
+    },
+    {
+      "id": "9404161005",
+      "district_id": "940416",
+      "name": "INAUGA"
+    },
+    {
+      "id": "9404162001",
+      "district_id": "940416",
+      "name": "KADUN JAYA"
+    },
+    {
+      "id": "9404162004",
+      "district_id": "940416",
+      "name": "NAWARIPI"
+    },
+    {
+      "id": "9404162006",
+      "district_id": "940416",
+      "name": "MAWOKAU JAYA"
+    },
+    {
+      "id": "9404162007",
+      "district_id": "940416",
+      "name": "MANDIRI JAYA"
+    },
+    {
+      "id": "9404172001",
+      "district_id": "940417",
+      "name": "AMAR"
+    },
+    {
+      "id": "9404172002",
+      "district_id": "940417",
+      "name": "KAWAR"
+    },
+    {
+      "id": "9404172003",
+      "district_id": "940417",
+      "name": "MANUARE"
+    },
+    {
+      "id": "9404172004",
+      "district_id": "940417",
+      "name": "IPIRI"
+    },
+    {
+      "id": "9404172005",
+      "district_id": "940417",
+      "name": "PARIPI"
+    },
+    {
+      "id": "9404172006",
+      "district_id": "940417",
+      "name": "YARAYA"
+    },
+    {
+      "id": "9404182001",
+      "district_id": "940418",
+      "name": "ENGGIN"
+    },
+    {
+      "id": "9404182002",
+      "district_id": "940418",
+      "name": "ALAMA"
+    },
+    {
+      "id": "9404182003",
+      "district_id": "940418",
+      "name": "SENAWAK"
+    },
+    {
+      "id": "9404182004",
+      "district_id": "940418",
+      "name": "UNIMOGOM"
+    },
+    {
+      "id": "9404182005",
+      "district_id": "940418",
+      "name": "BEMOKI"
+    },
+    {
+      "id": "9404182006",
+      "district_id": "940418",
+      "name": "TAGARALMA"
+    },
+    {
+      "id": "9404182007",
+      "district_id": "940418",
+      "name": "GESELEMA"
+    },
+    {
+      "id": "9404182008",
+      "district_id": "940418",
+      "name": "WUAREM"
+    },
+    {
+      "id": "9404182009",
+      "district_id": "940418",
+      "name": "JENGGELO"
+    },
+    {
+      "id": "9404182010",
+      "district_id": "940418",
+      "name": "PURUA"
+    },
+    {
+      "id": "9404182011",
+      "district_id": "940418",
+      "name": "KILMIT"
+    },
+    {
+      "id": "9405012001",
+      "district_id": "940501",
+      "name": "KAGO"
+    },
+    {
+      "id": "9405012002",
+      "district_id": "940501",
+      "name": "KIMAK"
+    },
+    {
+      "id": "9405012003",
+      "district_id": "940501",
+      "name": "WULONI"
+    },
+    {
+      "id": "9405012004",
+      "district_id": "940501",
+      "name": "NIPURALOME"
+    },
+    {
+      "id": "9405012005",
+      "district_id": "940501",
+      "name": "TAGALOA"
+    },
+    {
+      "id": "9405012006",
+      "district_id": "940501",
+      "name": "JENGGERPAGA"
+    },
+    {
+      "id": "9405012007",
+      "district_id": "940501",
+      "name": "KIBOGOLOME"
+    },
+    {
+      "id": "9405012008",
+      "district_id": "940501",
+      "name": "ILAMBET"
+    },
+    {
+      "id": "9405012009",
+      "district_id": "940501",
+      "name": "KALEBUT"
+    },
+    {
+      "id": "9405022001",
+      "district_id": "940502",
+      "name": "WANGBE"
+    },
+    {
+      "id": "9405022002",
+      "district_id": "940502",
+      "name": "JINDAK"
+    },
+    {
+      "id": "9405022003",
+      "district_id": "940502",
+      "name": "PUNGKI"
+    },
+    {
+      "id": "9405022004",
+      "district_id": "940502",
+      "name": "WONALBE"
+    },
+    {
+      "id": "9405022005",
+      "district_id": "940502",
+      "name": "ULIPIA"
+    },
+    {
+      "id": "9405022006",
+      "district_id": "940502",
+      "name": "MARILAUKIN"
+    },
+    {
+      "id": "9405022007",
+      "district_id": "940502",
+      "name": "AILPAILIN"
+    },
+    {
+      "id": "9405022008",
+      "district_id": "940502",
+      "name": "WUNGBET"
+    },
+    {
+      "id": "9405022009",
+      "district_id": "940502",
+      "name": "NAGALJAGAMA"
+    },
+    {
+      "id": "9405022010",
+      "district_id": "940502",
+      "name": "MONGKOIHOL"
+    },
+    {
+      "id": "9405022011",
+      "district_id": "940502",
+      "name": "NANGI"
+    },
+    {
+      "id": "9405032001",
+      "district_id": "940503",
+      "name": "YULUKOMA"
+    },
+    {
+      "id": "9405032002",
+      "district_id": "940503",
+      "name": "MILAWAK"
+    },
+    {
+      "id": "9405032003",
+      "district_id": "940503",
+      "name": "TINGGILBET"
+    },
+    {
+      "id": "9405032004",
+      "district_id": "940503",
+      "name": "OGAMKI"
+    },
+    {
+      "id": "9405032005",
+      "district_id": "940503",
+      "name": "DENGKIBUMA"
+    },
+    {
+      "id": "9405032006",
+      "district_id": "940503",
+      "name": "DAMBET"
+    },
+    {
+      "id": "9405032007",
+      "district_id": "940503",
+      "name": "ONDUGI"
+    },
+    {
+      "id": "9405032008",
+      "district_id": "940503",
+      "name": "AMBOBERA"
+    },
+    {
+      "id": "9405042001",
+      "district_id": "940504",
+      "name": "DOUFO"
+    },
+    {
+      "id": "9405042002",
+      "district_id": "940504",
+      "name": "IRATOI"
+    },
+    {
+      "id": "9405042003",
+      "district_id": "940504",
+      "name": "LANI"
+    },
+    {
+      "id": "9405042004",
+      "district_id": "940504",
+      "name": "WAHUKA"
+    },
+    {
+      "id": "9405042005",
+      "district_id": "940504",
+      "name": "SIBITA"
+    },
+    {
+      "id": "9405042006",
+      "district_id": "940504",
+      "name": "RAWA"
+    },
+    {
+      "id": "9405042007",
+      "district_id": "940504",
+      "name": "JIREI"
+    },
+    {
+      "id": "9405052001",
+      "district_id": "940505",
+      "name": "POGOMA"
+    },
+    {
+      "id": "9405052002",
+      "district_id": "940505",
+      "name": "GAGAMA"
+    },
+    {
+      "id": "9405052003",
+      "district_id": "940505",
+      "name": "WIHA"
+    },
+    {
+      "id": "9405052004",
+      "district_id": "940505",
+      "name": "WAKME"
+    },
+    {
+      "id": "9405052005",
+      "district_id": "940505",
+      "name": "UGUTMU"
+    },
+    {
+      "id": "9405052006",
+      "district_id": "940505",
+      "name": "YUGUME"
+    },
+    {
+      "id": "9405052007",
+      "district_id": "940505",
+      "name": "KOLAMAGI"
+    },
+    {
+      "id": "9405052008",
+      "district_id": "940505",
+      "name": "GUWAMU"
+    },
+    {
+      "id": "9405052009",
+      "district_id": "940505",
+      "name": "KUMASINGGA"
+    },
+    {
+      "id": "9405062001",
+      "district_id": "940506",
+      "name": "YAURIA"
+    },
+    {
+      "id": "9405062002",
+      "district_id": "940506",
+      "name": "GIGOBAK"
+    },
+    {
+      "id": "9405062003",
+      "district_id": "940506",
+      "name": "KALIBUK"
+    },
+    {
+      "id": "9405062004",
+      "district_id": "940506",
+      "name": "KELEMAME"
+    },
+    {
+      "id": "9405062005",
+      "district_id": "940506",
+      "name": "GULABUT"
+    },
+    {
+      "id": "9405062006",
+      "district_id": "940506",
+      "name": "KOLARIBANAK"
+    },
+    {
+      "id": "9405062007",
+      "district_id": "940506",
+      "name": "MOGULU"
+    },
+    {
+      "id": "9405062008",
+      "district_id": "940506",
+      "name": "GIGOBAK II"
+    },
+    {
+      "id": "9405062009",
+      "district_id": "940506",
+      "name": "PASIR PUTIH"
+    },
+    {
+      "id": "9405062010",
+      "district_id": "940506",
+      "name": "GINGGA BARU"
+    },
+    {
+      "id": "9405062011",
+      "district_id": "940506",
+      "name": "TENONGGAME"
+    },
+    {
+      "id": "9405072001",
+      "district_id": "940507",
+      "name": "AGANDUGUME"
+    },
+    {
+      "id": "9405072002",
+      "district_id": "940507",
+      "name": "GUT'YENGGENAK"
+    },
+    {
+      "id": "9405072003",
+      "district_id": "940507",
+      "name": "DUGUNALE"
+    },
+    {
+      "id": "9405072004",
+      "district_id": "940507",
+      "name": "OGOBAK'PELENAK"
+    },
+    {
+      "id": "9405072005",
+      "district_id": "940507",
+      "name": "DOLINGGU"
+    },
+    {
+      "id": "9405072006",
+      "district_id": "940507",
+      "name": "AYUME"
+    },
+    {
+      "id": "9405072007",
+      "district_id": "940507",
+      "name": "TEROWI"
+    },
+    {
+      "id": "9405082001",
+      "district_id": "940508",
+      "name": "GOME"
+    },
+    {
+      "id": "9405082002",
+      "district_id": "940508",
+      "name": "MISIMAGA"
+    },
+    {
+      "id": "9405082003",
+      "district_id": "940508",
+      "name": "UPAGA"
+    },
+    {
+      "id": "9405082004",
+      "district_id": "940508",
+      "name": "AGIYOME"
+    },
+    {
+      "id": "9405082005",
+      "district_id": "940508",
+      "name": "YENGGERNOK"
+    },
+    {
+      "id": "9405082006",
+      "district_id": "940508",
+      "name": "WAKO"
+    },
+    {
+      "id": "9405082007",
+      "district_id": "940508",
+      "name": "TEGELOBAK"
+    },
+    {
+      "id": "9405082008",
+      "district_id": "940508",
+      "name": "NINGGABUMA"
+    },
+    {
+      "id": "9405082009",
+      "district_id": "940508",
+      "name": "KELANUNGIN"
+    },
+    {
+      "id": "9405082010",
+      "district_id": "940508",
+      "name": "YONGGOLAWI"
+    },
+    {
+      "id": "9405092001",
+      "district_id": "940509",
+      "name": "TAYAI"
+    },
+    {
+      "id": "9405092002",
+      "district_id": "940509",
+      "name": "KORDESI"
+    },
+    {
+      "id": "9405092003",
+      "district_id": "940509",
+      "name": "FAISAU"
+    },
+    {
+      "id": "9405092004",
+      "district_id": "940509",
+      "name": "FOKRI"
+    },
+    {
+      "id": "9405092005",
+      "district_id": "940509",
+      "name": "FOISA"
+    },
+    {
+      "id": "9405092006",
+      "district_id": "940509",
+      "name": "DUAITA"
+    },
+    {
+      "id": "9405092007",
+      "district_id": "940509",
+      "name": "DERVOS"
+    },
+    {
+      "id": "9405102001",
+      "district_id": "940510",
+      "name": "BABE"
+    },
+    {
+      "id": "9405102002",
+      "district_id": "940510",
+      "name": "JAMBUL"
+    },
+    {
+      "id": "9405102003",
+      "district_id": "940510",
+      "name": "NUNGAI"
+    },
+    {
+      "id": "9405102004",
+      "district_id": "940510",
+      "name": "MUGULIP"
+    },
+    {
+      "id": "9405102005",
+      "district_id": "940510",
+      "name": "KELMABET"
+    },
+    {
+      "id": "9405102006",
+      "district_id": "940510",
+      "name": "JENGGEREN"
+    },
+    {
+      "id": "9405112001",
+      "district_id": "940511",
+      "name": "PULUK"
+    },
+    {
+      "id": "9405112002",
+      "district_id": "940511",
+      "name": "KELANDIRUMA"
+    },
+    {
+      "id": "9405112003",
+      "district_id": "940511",
+      "name": "PUPET"
+    },
+    {
+      "id": "9405112004",
+      "district_id": "940511",
+      "name": "PILOKOMA"
+    },
+    {
+      "id": "9405112005",
+      "district_id": "940511",
+      "name": "GIMURIK"
+    },
+    {
+      "id": "9405112006",
+      "district_id": "940511",
+      "name": "WANDIBET"
+    },
+    {
+      "id": "9405112007",
+      "district_id": "940511",
+      "name": "MENINGIMTE"
+    },
+    {
+      "id": "9405112008",
+      "district_id": "940511",
+      "name": "BUNGOK"
+    },
+    {
+      "id": "9405122001",
+      "district_id": "940512",
+      "name": "ERONG BERONG"
+    },
+    {
+      "id": "9405122002",
+      "district_id": "940512",
+      "name": "HIKINAT"
+    },
+    {
+      "id": "9405122003",
+      "district_id": "940512",
+      "name": "DAUNG"
+    },
+    {
+      "id": "9405122004",
+      "district_id": "940512",
+      "name": "KOMBET"
+    },
+    {
+      "id": "9405122005",
+      "district_id": "940512",
+      "name": "ONOP"
+    },
+    {
+      "id": "9405122006",
+      "district_id": "940512",
+      "name": "KULAMAGOM"
+    },
+    {
+      "id": "9405122007",
+      "district_id": "940512",
+      "name": "OGAMANIN"
+    },
+    {
+      "id": "9405132001",
+      "district_id": "940513",
+      "name": "AGUIT"
+    },
+    {
+      "id": "9405132002",
+      "district_id": "940513",
+      "name": "KEMBRU"
+    },
+    {
+      "id": "9405132003",
+      "district_id": "940513",
+      "name": "MOLU"
+    },
+    {
+      "id": "9405132004",
+      "district_id": "940513",
+      "name": "BELABA"
+    },
+    {
+      "id": "9405132005",
+      "district_id": "940513",
+      "name": "MAKUMA"
+    },
+    {
+      "id": "9405132006",
+      "district_id": "940513",
+      "name": "TINOTI"
+    },
+    {
+      "id": "9405132007",
+      "district_id": "940513",
+      "name": "NILIME"
+    },
+    {
+      "id": "9405142001",
+      "district_id": "940514",
+      "name": "GOLU"
+    },
+    {
+      "id": "9405142002",
+      "district_id": "940514",
+      "name": "BINA"
+    },
+    {
+      "id": "9405142003",
+      "district_id": "940514",
+      "name": "LUMAKLUK"
+    },
+    {
+      "id": "9405142004",
+      "district_id": "940514",
+      "name": "WOGOT"
+    },
+    {
+      "id": "9405142005",
+      "district_id": "940514",
+      "name": "KABOGOLUK"
+    },
+    {
+      "id": "9405142006",
+      "district_id": "940514",
+      "name": "OGOMEGAT"
+    },
+    {
+      "id": "9405142007",
+      "district_id": "940514",
+      "name": "MAMAPUT"
+    },
+    {
+      "id": "9405152001",
+      "district_id": "940515",
+      "name": "KILUNGGAME"
+    },
+    {
+      "id": "9405152002",
+      "district_id": "940515",
+      "name": "BAKCINI"
+    },
+    {
+      "id": "9405152003",
+      "district_id": "940515",
+      "name": "TIMOBUT"
+    },
+    {
+      "id": "9405152004",
+      "district_id": "940515",
+      "name": "TAGALAME I"
+    },
+    {
+      "id": "9405152005",
+      "district_id": "940515",
+      "name": "WONELUPAGA"
+    },
+    {
+      "id": "9405152006",
+      "district_id": "940515",
+      "name": "KOMAPAGA"
+    },
+    {
+      "id": "9405152007",
+      "district_id": "940515",
+      "name": "TIMOBUT EGEWAK"
+    },
+    {
+      "id": "9405162001",
+      "district_id": "940516",
+      "name": "NIGILOME"
+    },
+    {
+      "id": "9405162002",
+      "district_id": "940516",
+      "name": "WENI"
+    },
+    {
+      "id": "9405162003",
+      "district_id": "940516",
+      "name": "AMULEME"
+    },
+    {
+      "id": "9405162004",
+      "district_id": "940516",
+      "name": "JIGUNGGI"
+    },
+    {
+      "id": "9405162005",
+      "district_id": "940516",
+      "name": "KUMIKOMO"
+    },
+    {
+      "id": "9405162006",
+      "district_id": "940516",
+      "name": "RUMAGI"
+    },
+    {
+      "id": "9405162007",
+      "district_id": "940516",
+      "name": "GELEGI"
+    },
+    {
+      "id": "9405162008",
+      "district_id": "940516",
+      "name": "WOMBRU"
+    },
+    {
+      "id": "9405162009",
+      "district_id": "940516",
+      "name": "KONDOKWE"
+    },
+    {
+      "id": "9405162010",
+      "district_id": "940516",
+      "name": "TINIBOLU"
+    },
+    {
+      "id": "9405162011",
+      "district_id": "940516",
+      "name": "WINANGGWI"
+    },
+    {
+      "id": "9405172001",
+      "district_id": "940517",
+      "name": "PAMEBUT"
+    },
+    {
+      "id": "9405172002",
+      "district_id": "940517",
+      "name": "AGENGGEN"
+    },
+    {
+      "id": "9405172003",
+      "district_id": "940517",
+      "name": "YUGUMUAK"
+    },
+    {
+      "id": "9405172004",
+      "district_id": "940517",
+      "name": "WILEWAK"
+    },
+    {
+      "id": "9405172005",
+      "district_id": "940517",
+      "name": "LAMBERA"
+    },
+    {
+      "id": "9405172006",
+      "district_id": "940517",
+      "name": "WOBULO"
+    },
+    {
+      "id": "9405172007",
+      "district_id": "940517",
+      "name": "MUGALOLO"
+    },
+    {
+      "id": "9405172008",
+      "district_id": "940517",
+      "name": "MANGGAME"
+    },
+    {
+      "id": "9405172009",
+      "district_id": "940517",
+      "name": "JERUSALEM"
+    },
+    {
+      "id": "9405172010",
+      "district_id": "940517",
+      "name": "WIYABUBU"
+    },
+    {
+      "id": "9405182001",
+      "district_id": "940518",
+      "name": "MAYUBERI"
+    },
+    {
+      "id": "9405182002",
+      "district_id": "940518",
+      "name": "MAKI"
+    },
+    {
+      "id": "9405182003",
+      "district_id": "940518",
+      "name": "PALUGA"
+    },
+    {
+      "id": "9405182004",
+      "district_id": "940518",
+      "name": "AYALI"
+    },
+    {
+      "id": "9405182005",
+      "district_id": "940518",
+      "name": "TOEGI"
+    },
+    {
+      "id": "9405182006",
+      "district_id": "940518",
+      "name": "AMUNGI"
+    },
+    {
+      "id": "9405182007",
+      "district_id": "940518",
+      "name": "OLENKI"
+    },
+    {
+      "id": "9405182008",
+      "district_id": "940518",
+      "name": "MUNDIBA"
+    },
+    {
+      "id": "9405182009",
+      "district_id": "940518",
+      "name": "AKONOBAK"
+    },
+    {
+      "id": "9405192001",
+      "district_id": "940519",
+      "name": "BUBET"
+    },
+    {
+      "id": "9405192002",
+      "district_id": "940519",
+      "name": "BOLOGOBAK"
+    },
+    {
+      "id": "9405192003",
+      "district_id": "940519",
+      "name": "KO'EAO"
+    },
+    {
+      "id": "9405192004",
+      "district_id": "940519",
+      "name": "OGONGKI"
+    },
+    {
+      "id": "9405192005",
+      "district_id": "940519",
+      "name": "MABUGA"
+    },
+    {
+      "id": "9405192006",
+      "district_id": "940519",
+      "name": "KABUKI"
+    },
+    {
+      "id": "9405192007",
+      "district_id": "940519",
+      "name": "OKNANIM"
+    },
+    {
+      "id": "9405192008",
+      "district_id": "940519",
+      "name": "KALEMOGOM"
+    },
+    {
+      "id": "9405202001",
+      "district_id": "940520",
+      "name": "EROMAGA"
+    },
+    {
+      "id": "9405202002",
+      "district_id": "940520",
+      "name": "PINGGIL/ERONGGOBAK"
+    },
+    {
+      "id": "9405202003",
+      "district_id": "940520",
+      "name": "GILINI"
+    },
+    {
+      "id": "9405202004",
+      "district_id": "940520",
+      "name": "PINAPA"
+    },
+    {
+      "id": "9405202005",
+      "district_id": "940520",
+      "name": "KUNGA"
+    },
+    {
+      "id": "9405202006",
+      "district_id": "940520",
+      "name": "ONDUGURA"
+    },
+    {
+      "id": "9405202007",
+      "district_id": "940520",
+      "name": "MANGGUME"
+    },
+    {
+      "id": "9405202008",
+      "district_id": "940520",
+      "name": "KULEME"
+    },
+    {
+      "id": "9405202009",
+      "district_id": "940520",
+      "name": "NINGGIBOME"
+    },
+    {
+      "id": "9405202010",
+      "district_id": "940520",
+      "name": "AWILKINOP"
+    },
+    {
+      "id": "9405202011",
+      "district_id": "940520",
+      "name": "DOMAOA"
+    },
+    {
+      "id": "9405202012",
+      "district_id": "940520",
+      "name": "PUNGTRAMA"
+    },
+    {
+      "id": "9405202013",
+      "district_id": "940520",
+      "name": "BALAMAGALAMA"
+    },
+    {
+      "id": "9405202014",
+      "district_id": "940520",
+      "name": "AMINGGARU"
+    },
+    {
+      "id": "9405212001",
+      "district_id": "940521",
+      "name": "TUPUT"
+    },
+    {
+      "id": "9405212002",
+      "district_id": "940521",
+      "name": "WENGGEN'AMBUT"
+    },
+    {
+      "id": "9405212003",
+      "district_id": "940521",
+      "name": "WAMIRU"
+    },
+    {
+      "id": "9405212004",
+      "district_id": "940521",
+      "name": "PILUWOLU"
+    },
+    {
+      "id": "9405212005",
+      "district_id": "940521",
+      "name": "TENAWI"
+    },
+    {
+      "id": "9405212006",
+      "district_id": "940521",
+      "name": "WANOMBUT"
+    },
+    {
+      "id": "9405212007",
+      "district_id": "940521",
+      "name": "PUMBANAK"
+    },
+    {
+      "id": "9405222001",
+      "district_id": "940522",
+      "name": "JIWOT"
+    },
+    {
+      "id": "9405222002",
+      "district_id": "940522",
+      "name": "GUNALUK"
+    },
+    {
+      "id": "9405222003",
+      "district_id": "940522",
+      "name": "KUGIAME"
+    },
+    {
+      "id": "9405222004",
+      "district_id": "940522",
+      "name": "WUYUNGGAME"
+    },
+    {
+      "id": "9405222005",
+      "district_id": "940522",
+      "name": "DEOGI"
+    },
+    {
+      "id": "9405222006",
+      "district_id": "940522",
+      "name": "JUGUMI"
+    },
+    {
+      "id": "9405232001",
+      "district_id": "940523",
+      "name": "AMUNGKALPIA"
+    },
+    {
+      "id": "9405232002",
+      "district_id": "940523",
+      "name": "BELA"
+    },
+    {
+      "id": "9405232003",
+      "district_id": "940523",
+      "name": "OMPLIGA"
+    },
+    {
+      "id": "9405232004",
+      "district_id": "940523",
+      "name": "ALAMA"
+    },
+    {
+      "id": "9405232005",
+      "district_id": "940523",
+      "name": "TAGALARAMA"
+    },
+    {
+      "id": "9405232006",
+      "district_id": "940523",
+      "name": "BEMOKI"
+    },
+    {
+      "id": "9405242001",
+      "district_id": "940524",
+      "name": "MUNDIDOK"
+    },
+    {
+      "id": "9405242002",
+      "district_id": "940524",
+      "name": "YAIKI MAIKI"
+    },
+    {
+      "id": "9405242003",
+      "district_id": "940524",
+      "name": "TOBENGGI"
+    },
+    {
+      "id": "9405242004",
+      "district_id": "940524",
+      "name": "TOWENGGI II"
+    },
+    {
+      "id": "9405242005",
+      "district_id": "940524",
+      "name": "WELENGGARU"
+    },
+    {
+      "id": "9405252001",
+      "district_id": "940525",
+      "name": "ERELMAKAWIA"
+    },
+    {
+      "id": "9405252002",
+      "district_id": "940525",
+      "name": "KALPAMONORA"
+    },
+    {
+      "id": "9405252003",
+      "district_id": "940525",
+      "name": "BOMOGIN"
+    },
+    {
+      "id": "9405252004",
+      "district_id": "940525",
+      "name": "MAMOLDEMA"
+    },
+    {
+      "id": "9405252005",
+      "district_id": "940525",
+      "name": "WAMAGUN"
+    },
+    {
+      "id": "9405252006",
+      "district_id": "940525",
+      "name": "AMUNGKONIN"
+    },
+    {
+      "id": "9405252007",
+      "district_id": "940525",
+      "name": "IPMANGKOP"
+    },
+    {
+      "id": "9405252008",
+      "district_id": "940525",
+      "name": "TAMAGUN"
+    },
+    {
+      "id": "9405252009",
+      "district_id": "940525",
+      "name": "AI ARAMA"
+    },
+    {
+      "id": "9406012001",
+      "district_id": "940601",
+      "name": "IKEBO"
+    },
+    {
+      "id": "9406012002",
+      "district_id": "940601",
+      "name": "MAUWA"
+    },
+    {
+      "id": "9406012003",
+      "district_id": "940601",
+      "name": "EKEMANIDA"
+    },
+    {
+      "id": "9406012004",
+      "district_id": "940601",
+      "name": "BUKAPA"
+    },
+    {
+      "id": "9406012005",
+      "district_id": "940601",
+      "name": "KIMUPUGI"
+    },
+    {
+      "id": "9406012006",
+      "district_id": "940601",
+      "name": "DIKIYOUWO"
+    },
+    {
+      "id": "9406012007",
+      "district_id": "940601",
+      "name": "IDAKOTU"
+    },
+    {
+      "id": "9406012008",
+      "district_id": "940601",
+      "name": "PUTAPA"
+    },
+    {
+      "id": "9406022001",
+      "district_id": "940602",
+      "name": "BOBOMANI"
+    },
+    {
+      "id": "9406022002",
+      "district_id": "940602",
+      "name": "ABAIMAIDA"
+    },
+    {
+      "id": "9406022003",
+      "district_id": "940602",
+      "name": "BONAKUNU"
+    },
+    {
+      "id": "9406022004",
+      "district_id": "940602",
+      "name": "DAWAIKUNU"
+    },
+    {
+      "id": "9406022005",
+      "district_id": "940602",
+      "name": "MAGONE"
+    },
+    {
+      "id": "9406022006",
+      "district_id": "940602",
+      "name": "DIYOUDIMI"
+    },
+    {
+      "id": "9406022007",
+      "district_id": "940602",
+      "name": "OBAIKAGOPA"
+    },
+    {
+      "id": "9406032001",
+      "district_id": "940603",
+      "name": "APOGOMAKIDA"
+    },
+    {
+      "id": "9406032002",
+      "district_id": "940603",
+      "name": "DENEIODE"
+    },
+    {
+      "id": "9406032003",
+      "district_id": "940603",
+      "name": "YEGIYEPA"
+    },
+    {
+      "id": "9406032004",
+      "district_id": "940603",
+      "name": "IDEDUWA"
+    },
+    {
+      "id": "9406032005",
+      "district_id": "940603",
+      "name": "KEGATA"
+    },
+    {
+      "id": "9406032006",
+      "district_id": "940603",
+      "name": "EGIPA"
+    },
+    {
+      "id": "9406032007",
+      "district_id": "940603",
+      "name": "UKAGU"
+    },
+    {
+      "id": "9406032008",
+      "district_id": "940603",
+      "name": "TIBAUGI"
+    },
+    {
+      "id": "9406042001",
+      "district_id": "940604",
+      "name": "IDAKEBO"
+    },
+    {
+      "id": "9406042002",
+      "district_id": "940604",
+      "name": "PUGATADI I"
+    },
+    {
+      "id": "9406042003",
+      "district_id": "940604",
+      "name": "PUGATADI II"
+    },
+    {
+      "id": "9406042004",
+      "district_id": "940604",
+      "name": "IKRAR"
+    },
+    {
+      "id": "9406042005",
+      "district_id": "940604",
+      "name": "OBAYO"
+    },
+    {
+      "id": "9406042006",
+      "district_id": "940604",
+      "name": "KUYAKAGO"
+    },
+    {
+      "id": "9406042007",
+      "district_id": "940604",
+      "name": "MOGOU"
+    },
+    {
+      "id": "9406042008",
+      "district_id": "940604",
+      "name": "YAMETADI"
+    },
+    {
+      "id": "9406042009",
+      "district_id": "940604",
+      "name": "DUNTEK"
+    },
+    {
+      "id": "9406042010",
+      "district_id": "940604",
+      "name": "EKIMANI"
+    },
+    {
+      "id": "9406052001",
+      "district_id": "940605",
+      "name": "UNITO"
+    },
+    {
+      "id": "9406052002",
+      "district_id": "940605",
+      "name": "SUKIKAI"
+    },
+    {
+      "id": "9406052003",
+      "district_id": "940605",
+      "name": "IYARO"
+    },
+    {
+      "id": "9406052004",
+      "district_id": "940605",
+      "name": "WIGOUMAKIDA"
+    },
+    {
+      "id": "9406062001",
+      "district_id": "940606",
+      "name": "ABOUYAGA"
+    },
+    {
+      "id": "9406062002",
+      "district_id": "940606",
+      "name": "MAIKOTU"
+    },
+    {
+      "id": "9406062003",
+      "district_id": "940606",
+      "name": "TAUBAIKEBO"
+    },
+    {
+      "id": "9406062004",
+      "district_id": "940606",
+      "name": "YEGOUKOTU"
+    },
+    {
+      "id": "9406072001",
+      "district_id": "940607",
+      "name": "PUWETA I"
+    },
+    {
+      "id": "9406072002",
+      "district_id": "940607",
+      "name": "POUWOUDA"
+    },
+    {
+      "id": "9406072003",
+      "district_id": "940607",
+      "name": "PUWETA II"
+    },
+    {
+      "id": "9406072004",
+      "district_id": "940607",
+      "name": "BOTUMOMA"
+    },
+    {
+      "id": "9406072005",
+      "district_id": "940607",
+      "name": "OBAIBEGA"
+    },
+    {
+      "id": "9406072006",
+      "district_id": "940607",
+      "name": "DIGIKEBO"
+    },
+    {
+      "id": "9406072007",
+      "district_id": "940607",
+      "name": "BOGIYATEUGI"
+    },
+    {
+      "id": "9406072008",
+      "district_id": "940607",
+      "name": "MATADI"
+    },
+    {
+      "id": "9406072009",
+      "district_id": "940607",
+      "name": "TUWAIDA"
+    },
+    {
+      "id": "9406072010",
+      "district_id": "940607",
+      "name": "YEPO"
+    },
+    {
+      "id": "9406072011",
+      "district_id": "940607",
+      "name": "UGIKAGOUDA"
+    },
+    {
+      "id": "9406072012",
+      "district_id": "940607",
+      "name": "UGIKEBO"
+    },
+    {
+      "id": "9406082001",
+      "district_id": "940608",
+      "name": "UGAPUGA"
+    },
+    {
+      "id": "9406082002",
+      "district_id": "940608",
+      "name": "DEIYAPA"
+    },
+    {
+      "id": "9406082003",
+      "district_id": "940608",
+      "name": "BODUDA"
+    },
+    {
+      "id": "9406082004",
+      "district_id": "940608",
+      "name": "YOTAPUGA"
+    },
+    {
+      "id": "9406082005",
+      "district_id": "940608",
+      "name": "BOKAIBUTU"
+    },
+    {
+      "id": "9406082006",
+      "district_id": "940608",
+      "name": "BUNAUWO"
+    },
+    {
+      "id": "9406082007",
+      "district_id": "940608",
+      "name": "NUWA"
+    },
+    {
+      "id": "9406092001",
+      "district_id": "940609",
+      "name": "PIYAKUNU"
+    },
+    {
+      "id": "9406092002",
+      "district_id": "940609",
+      "name": "DIYEUGI"
+    },
+    {
+      "id": "9406092003",
+      "district_id": "940609",
+      "name": "PUTAAPA"
+    },
+    {
+      "id": "9406092004",
+      "district_id": "940609",
+      "name": "ATOU"
+    },
+    {
+      "id": "9406092005",
+      "district_id": "940609",
+      "name": "MODIO"
+    },
+    {
+      "id": "9406092006",
+      "district_id": "940609",
+      "name": "UPIBEGA"
+    },
+    {
+      "id": "9406092007",
+      "district_id": "940609",
+      "name": "TIMEPA"
+    },
+    {
+      "id": "9406092008",
+      "district_id": "940609",
+      "name": "GABAIKUNU"
+    },
+    {
+      "id": "9406092009",
+      "district_id": "940609",
+      "name": "ADAUWO"
+    },
+    {
+      "id": "9406092010",
+      "district_id": "940609",
+      "name": "MEGAIKEBO"
+    },
+    {
+      "id": "9406102001",
+      "district_id": "940610",
+      "name": "DOGIMANI"
+    },
+    {
+      "id": "9406102002",
+      "district_id": "940610",
+      "name": "KIGAMANI"
+    },
+    {
+      "id": "9406102003",
+      "district_id": "940610",
+      "name": "IDADAGI"
+    },
+    {
+      "id": "9406102004",
+      "district_id": "940610",
+      "name": "DENEMANI"
+    },
+    {
+      "id": "9406102005",
+      "district_id": "940610",
+      "name": "MAKIDIMI"
+    },
+    {
+      "id": "9406102006",
+      "district_id": "940610",
+      "name": "EGEBUTU"
+    },
+    {
+      "id": "9406102007",
+      "district_id": "940610",
+      "name": "MOTITO"
+    },
+    {
+      "id": "9406102008",
+      "district_id": "940610",
+      "name": "BOBOBUTU"
+    },
+    {
+      "id": "9406102009",
+      "district_id": "940610",
+      "name": "PONA"
+    },
+    {
+      "id": "9407012001",
+      "district_id": "940701",
+      "name": "EMONDI"
+    },
+    {
+      "id": "9407012002",
+      "district_id": "940701",
+      "name": "MINDAU"
+    },
+    {
+      "id": "9407012003",
+      "district_id": "940701",
+      "name": "SAMBILI"
+    },
+    {
+      "id": "9407012004",
+      "district_id": "940701",
+      "name": "YOPARU"
+    },
+    {
+      "id": "9407012005",
+      "district_id": "940701",
+      "name": "YOKATAPA"
+    },
+    {
+      "id": "9407012006",
+      "district_id": "940701",
+      "name": "BILOGAI"
+    },
+    {
+      "id": "9407012007",
+      "district_id": "940701",
+      "name": "PUYAGIA"
+    },
+    {
+      "id": "9407012008",
+      "district_id": "940701",
+      "name": "JALAE"
+    },
+    {
+      "id": "9407012009",
+      "district_id": "940701",
+      "name": "MAMBA"
+    },
+    {
+      "id": "9407012010",
+      "district_id": "940701",
+      "name": "TITIGI"
+    },
+    {
+      "id": "9407012011",
+      "district_id": "940701",
+      "name": "EKNEMBA"
+    },
+    {
+      "id": "9407012012",
+      "district_id": "940701",
+      "name": "WANDOGA"
+    },
+    {
+      "id": "9407012013",
+      "district_id": "940701",
+      "name": "PESIGA"
+    },
+    {
+      "id": "9407012014",
+      "district_id": "940701",
+      "name": "MBLUSIGA"
+    },
+    {
+      "id": "9407012015",
+      "district_id": "940701",
+      "name": "NDUGUSIGA"
+    },
+    {
+      "id": "9407012016",
+      "district_id": "940701",
+      "name": "KUMBALAGUPA"
+    },
+    {
+      "id": "9407012017",
+      "district_id": "940701",
+      "name": "BUWISIGA"
+    },
+    {
+      "id": "9407022001",
+      "district_id": "940702",
+      "name": "MAPA"
+    },
+    {
+      "id": "9407022002",
+      "district_id": "940702",
+      "name": "BILAI"
+    },
+    {
+      "id": "9407022003",
+      "district_id": "940702",
+      "name": "MAYA"
+    },
+    {
+      "id": "9407022004",
+      "district_id": "940702",
+      "name": "DEGESIGA"
+    },
+    {
+      "id": "9407022005",
+      "district_id": "940702",
+      "name": "POGAPA"
+    },
+    {
+      "id": "9407022006",
+      "district_id": "940702",
+      "name": "BAMBA"
+    },
+    {
+      "id": "9407022007",
+      "district_id": "940702",
+      "name": "ZOMBANDOGA"
+    },
+    {
+      "id": "9407022008",
+      "district_id": "940702",
+      "name": "KOBAE"
+    },
+    {
+      "id": "9407022009",
+      "district_id": "940702",
+      "name": "SELEMAMA"
+    },
+    {
+      "id": "9407022010",
+      "district_id": "940702",
+      "name": "KENDETAPA"
+    },
+    {
+      "id": "9407022011",
+      "district_id": "940702",
+      "name": "HIYABU"
+    },
+    {
+      "id": "9407022012",
+      "district_id": "940702",
+      "name": "OGOEAPA"
+    },
+    {
+      "id": "9407022013",
+      "district_id": "940702",
+      "name": "BONOGO"
+    },
+    {
+      "id": "9407022014",
+      "district_id": "940702",
+      "name": "AGAPA"
+    },
+    {
+      "id": "9407022015",
+      "district_id": "940702",
+      "name": "ENGGANENGGA"
+    },
+    {
+      "id": "9407022016",
+      "district_id": "940702",
+      "name": "WAIAGEPA"
+    },
+    {
+      "id": "9407022017",
+      "district_id": "940702",
+      "name": "HUGITAPA"
+    },
+    {
+      "id": "9407022018",
+      "district_id": "940702",
+      "name": "BUBISIGA"
+    },
+    {
+      "id": "9407022019",
+      "district_id": "940702",
+      "name": "NGGAGEMBA"
+    },
+    {
+      "id": "9407022020",
+      "district_id": "940702",
+      "name": "SANEPA"
+    },
+    {
+      "id": "9407022021",
+      "district_id": "940702",
+      "name": "MBOMOGO"
+    },
+    {
+      "id": "9407032001",
+      "district_id": "940703",
+      "name": "SABISA"
+    },
+    {
+      "id": "9407032002",
+      "district_id": "940703",
+      "name": "DUBANDOGA"
+    },
+    {
+      "id": "9407032003",
+      "district_id": "940703",
+      "name": "DEBASIGA I"
+    },
+    {
+      "id": "9407032004",
+      "district_id": "940703",
+      "name": "DEBASIGA II"
+    },
+    {
+      "id": "9407032005",
+      "district_id": "940703",
+      "name": "ISANDOGA"
+    },
+    {
+      "id": "9407032006",
+      "district_id": "940703",
+      "name": "MOGALO"
+    },
+    {
+      "id": "9407032007",
+      "district_id": "940703",
+      "name": "JAE"
+    },
+    {
+      "id": "9407032008",
+      "district_id": "940703",
+      "name": "MBUGULO"
+    },
+    {
+      "id": "9407032009",
+      "district_id": "940703",
+      "name": "HULAGUPA"
+    },
+    {
+      "id": "9407042001",
+      "district_id": "940704",
+      "name": "DANGGATADI"
+    },
+    {
+      "id": "9407042002",
+      "district_id": "940704",
+      "name": "MBIANDOGA"
+    },
+    {
+      "id": "9407042003",
+      "district_id": "940704",
+      "name": "BUGALAGA"
+    },
+    {
+      "id": "9407042004",
+      "district_id": "940704",
+      "name": "YAGAITO"
+    },
+    {
+      "id": "9407042005",
+      "district_id": "940704",
+      "name": "KALAWA"
+    },
+    {
+      "id": "9407042006",
+      "district_id": "940704",
+      "name": "YANEI"
+    },
+    {
+      "id": "9407042007",
+      "district_id": "940704",
+      "name": "MANIUWO"
+    },
+    {
+      "id": "9407042008",
+      "district_id": "940704",
+      "name": "TUNGGAPO"
+    },
+    {
+      "id": "9407042009",
+      "district_id": "940704",
+      "name": "PAGAMBA"
+    },
+    {
+      "id": "9407042010",
+      "district_id": "940704",
+      "name": "MAOLAGI"
+    },
+    {
+      "id": "9407042011",
+      "district_id": "940704",
+      "name": "ANEYA"
+    },
+    {
+      "id": "9407042012",
+      "district_id": "940704",
+      "name": "KIGITADI"
+    },
+    {
+      "id": "9407042013",
+      "district_id": "940704",
+      "name": "NDABATADI"
+    },
+    {
+      "id": "9407042014",
+      "district_id": "940704",
+      "name": "MOYOMATAGA"
+    },
+    {
+      "id": "9407042015",
+      "district_id": "940704",
+      "name": "PITADI"
+    },
+    {
+      "id": "9407042016",
+      "district_id": "940704",
+      "name": "ULAR MERAH"
+    },
+    {
+      "id": "9407052001",
+      "district_id": "940705",
+      "name": "AGISIGA"
+    },
+    {
+      "id": "9407052002",
+      "district_id": "940705",
+      "name": "TAUSIGA"
+    },
+    {
+      "id": "9407052003",
+      "district_id": "940705",
+      "name": "UNABUNDOGA"
+    },
+    {
+      "id": "9407052004",
+      "district_id": "940705",
+      "name": "MBAMOGO"
+    },
+    {
+      "id": "9407052005",
+      "district_id": "940705",
+      "name": "JENETAPA JANASIGA"
+    },
+    {
+      "id": "9407052006",
+      "district_id": "940705",
+      "name": "SOALI"
+    },
+    {
+      "id": "9407052007",
+      "district_id": "940705",
+      "name": "TAMBAGE"
+    },
+    {
+      "id": "9407052008",
+      "district_id": "940705",
+      "name": "NABIA"
+    },
+    {
+      "id": "9407052009",
+      "district_id": "940705",
+      "name": "DANGGOA"
+    },
+    {
+      "id": "9407052010",
+      "district_id": "940705",
+      "name": "KOMBOGOSIGA"
+    },
+    {
+      "id": "9407062001",
+      "district_id": "940706",
+      "name": "WABUI"
+    },
+    {
+      "id": "9407062002",
+      "district_id": "940706",
+      "name": "BALAIMAI"
+    },
+    {
+      "id": "9407062003",
+      "district_id": "940706",
+      "name": "JANAMBA"
+    },
+    {
+      "id": "9407062004",
+      "district_id": "940706",
+      "name": "KULAPA"
+    },
+    {
+      "id": "9407062005",
+      "district_id": "940706",
+      "name": "PUGISIGA"
+    },
+    {
+      "id": "9407062006",
+      "district_id": "940706",
+      "name": "HITADIPA"
+    },
+    {
+      "id": "9407062007",
+      "district_id": "940706",
+      "name": "SOANGGAMA"
+    },
+    {
+      "id": "9407062008",
+      "district_id": "940706",
+      "name": "DANGGOMBA"
+    },
+    {
+      "id": "9407062009",
+      "district_id": "940706",
+      "name": "SAKUMBA"
+    },
+    {
+      "id": "9407072001",
+      "district_id": "940707",
+      "name": "UGIMBA"
+    },
+    {
+      "id": "9407072002",
+      "district_id": "940707",
+      "name": "BUNAOPA"
+    },
+    {
+      "id": "9407072003",
+      "district_id": "940707",
+      "name": "PIGABU"
+    },
+    {
+      "id": "9407072004",
+      "district_id": "940707",
+      "name": "TETEOPA"
+    },
+    {
+      "id": "9407072005",
+      "district_id": "940707",
+      "name": "DUKENDOPA"
+    },
+    {
+      "id": "9407072006",
+      "district_id": "940707",
+      "name": "NGGAMAGAE"
+    },
+    {
+      "id": "9407082001",
+      "district_id": "940708",
+      "name": "TOMOSIGA"
+    },
+    {
+      "id": "9407082002",
+      "district_id": "940708",
+      "name": "BIGASIGA"
+    },
+    {
+      "id": "9407082003",
+      "district_id": "940708",
+      "name": "DAPIAGA"
+    },
+    {
+      "id": "9407082004",
+      "district_id": "940708",
+      "name": "PEWESIGA"
+    },
+    {
+      "id": "9407082005",
+      "district_id": "940708",
+      "name": "HEGENAGAI"
+    },
+    {
+      "id": "9407082006",
+      "district_id": "940708",
+      "name": "GAIMIGI"
+    },
+    {
+      "id": "9407082007",
+      "district_id": "940708",
+      "name": "JAWASIGA"
+    },
+    {
+      "id": "9407082008",
+      "district_id": "940708",
+      "name": "DUGINGGOBO"
+    },
+    {
+      "id": "9407082009",
+      "district_id": "940708",
+      "name": "SUGULUBAGALA"
+    },
+    {
+      "id": "9408012001",
+      "district_id": "940801",
+      "name": "WAGHETE I"
+    },
+    {
+      "id": "9408012002",
+      "district_id": "940801",
+      "name": "UGIYA"
+    },
+    {
+      "id": "9408012003",
+      "district_id": "940801",
+      "name": "YABA"
+    },
+    {
+      "id": "9408012004",
+      "district_id": "940801",
+      "name": "WAGHETE II"
+    },
+    {
+      "id": "9408012005",
+      "district_id": "940801",
+      "name": "BOMAU I"
+    },
+    {
+      "id": "9408012006",
+      "district_id": "940801",
+      "name": "OKOMAKEBO"
+    },
+    {
+      "id": "9408012007",
+      "district_id": "940801",
+      "name": "BAMOU II"
+    },
+    {
+      "id": "9408012008",
+      "district_id": "940801",
+      "name": "ATOUDA"
+    },
+    {
+      "id": "9408012009",
+      "district_id": "940801",
+      "name": "ONEIBO"
+    },
+    {
+      "id": "9408012010",
+      "district_id": "940801",
+      "name": "YABA II"
+    },
+    {
+      "id": "9408012011",
+      "district_id": "940801",
+      "name": "MUGOUDA"
+    },
+    {
+      "id": "9408012012",
+      "district_id": "940801",
+      "name": "BOMOU III"
+    },
+    {
+      "id": "9408012013",
+      "district_id": "940801",
+      "name": "OKOMOTADI"
+    },
+    {
+      "id": "9408012014",
+      "district_id": "940801",
+      "name": "BUWOUDIMI"
+    },
+    {
+      "id": "9408012015",
+      "district_id": "940801",
+      "name": "IBODIYO"
+    },
+    {
+      "id": "9408012016",
+      "district_id": "940801",
+      "name": "IKIYAWO"
+    },
+    {
+      "id": "9408012017",
+      "district_id": "940801",
+      "name": "MOTANO"
+    },
+    {
+      "id": "9408012018",
+      "district_id": "940801",
+      "name": "AMAGO"
+    },
+    {
+      "id": "9408012019",
+      "district_id": "940801",
+      "name": "IDEGE"
+    },
+    {
+      "id": "9408012020",
+      "district_id": "940801",
+      "name": "PEKU"
+    },
+    {
+      "id": "9408022001",
+      "district_id": "940802",
+      "name": "DAMABAGATA"
+    },
+    {
+      "id": "9408022002",
+      "district_id": "940802",
+      "name": "KOKOBAYA"
+    },
+    {
+      "id": "9408022003",
+      "district_id": "940802",
+      "name": "WATIYAI"
+    },
+    {
+      "id": "9408022004",
+      "district_id": "940802",
+      "name": "EDAGOTADI"
+    },
+    {
+      "id": "9408022005",
+      "district_id": "940802",
+      "name": "DAKEBO"
+    },
+    {
+      "id": "9408022006",
+      "district_id": "940802",
+      "name": "BAGOU"
+    },
+    {
+      "id": "9408022007",
+      "district_id": "940802",
+      "name": "DAGOKEBO"
+    },
+    {
+      "id": "9408022008",
+      "district_id": "940802",
+      "name": "IPOKE"
+    },
+    {
+      "id": "9408022009",
+      "district_id": "940802",
+      "name": "WAITAKOTU"
+    },
+    {
+      "id": "9408022010",
+      "district_id": "940802",
+      "name": "PEKEPA"
+    },
+    {
+      "id": "9408022011",
+      "district_id": "940802",
+      "name": "BAGUMOMA"
+    },
+    {
+      "id": "9408022012",
+      "district_id": "940802",
+      "name": "UDAUGIDA"
+    },
+    {
+      "id": "9408022013",
+      "district_id": "940802",
+      "name": "BAGOU II"
+    },
+    {
+      "id": "9408022014",
+      "district_id": "940802",
+      "name": "IDAYODAGI"
+    },
+    {
+      "id": "9408032001",
+      "district_id": "940803",
+      "name": "KOPAI I"
+    },
+    {
+      "id": "9408032002",
+      "district_id": "940803",
+      "name": "KOPAI II"
+    },
+    {
+      "id": "9408032003",
+      "district_id": "940803",
+      "name": "WOGE"
+    },
+    {
+      "id": "9408032004",
+      "district_id": "940803",
+      "name": "YEWADIDE"
+    },
+    {
+      "id": "9408032005",
+      "district_id": "940803",
+      "name": "MUDETADI"
+    },
+    {
+      "id": "9408032006",
+      "district_id": "940803",
+      "name": "DIITA"
+    },
+    {
+      "id": "9408042001",
+      "district_id": "940804",
+      "name": "GAKOKEBO"
+    },
+    {
+      "id": "9408042002",
+      "district_id": "940804",
+      "name": "DEMAGO"
+    },
+    {
+      "id": "9408042003",
+      "district_id": "940804",
+      "name": "WIDUWAKIYA"
+    },
+    {
+      "id": "9408042004",
+      "district_id": "940804",
+      "name": "ONAGO"
+    },
+    {
+      "id": "9408042005",
+      "district_id": "940804",
+      "name": "WAGOMANI"
+    },
+    {
+      "id": "9408042006",
+      "district_id": "940804",
+      "name": "DIGIBAGATA"
+    },
+    {
+      "id": "9408042007",
+      "district_id": "940804",
+      "name": "PIYEKEDIMI"
+    },
+    {
+      "id": "9408042008",
+      "district_id": "940804",
+      "name": "AYATEI"
+    },
+    {
+      "id": "9408042009",
+      "district_id": "940804",
+      "name": "TENEDAGI"
+    },
+    {
+      "id": "9408042010",
+      "district_id": "940804",
+      "name": "DIYAI"
+    },
+    {
+      "id": "9408042011",
+      "district_id": "940804",
+      "name": "JINIDABA"
+    },
+    {
+      "id": "9408042012",
+      "district_id": "940804",
+      "name": "WIDIMEI"
+    },
+    {
+      "id": "9408042013",
+      "district_id": "940804",
+      "name": "YAGU"
+    },
+    {
+      "id": "9408042014",
+      "district_id": "940804",
+      "name": "OBAI"
+    },
+    {
+      "id": "9408042015",
+      "district_id": "940804",
+      "name": "YIPAI"
+    },
+    {
+      "id": "9408042016",
+      "district_id": "940804",
+      "name": "DIYAI II"
+    },
+    {
+      "id": "9408042017",
+      "district_id": "940804",
+      "name": "MEYEPA"
+    },
+    {
+      "id": "9408042018",
+      "district_id": "940804",
+      "name": "KOGEMANI"
+    },
+    {
+      "id": "9408042019",
+      "district_id": "940804",
+      "name": "DIGIKOTU"
+    },
+    {
+      "id": "9408042020",
+      "district_id": "940804",
+      "name": "ONAGO II"
+    },
+    {
+      "id": "9408042021",
+      "district_id": "940804",
+      "name": "MAATADI"
+    },
+    {
+      "id": "9408042022",
+      "district_id": "940804",
+      "name": "EPANAI"
+    },
+    {
+      "id": "9408052001",
+      "district_id": "940805",
+      "name": "KOMAUTO/KAPIRAYA"
+    },
+    {
+      "id": "9408052002",
+      "district_id": "940805",
+      "name": "MOGODAGI"
+    },
+    {
+      "id": "9408052003",
+      "district_id": "940805",
+      "name": "YAMOUWITINA"
+    },
+    {
+      "id": "9408052004",
+      "district_id": "940805",
+      "name": "IDEGO"
+    },
+    {
+      "id": "9408052005",
+      "district_id": "940805",
+      "name": "UWE ONAGEI"
+    }
+  ]
+}

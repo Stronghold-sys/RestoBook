@@ -313,6 +313,26 @@ export default function CartPage() {
   const [loadingVillages, setLoadingVillages] = useState(false);
   const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
 
+  // Dynamic Provinces State loaded from local JSON
+  const [provincesList, setProvincesList] = useState<any[]>(INDONESIAN_PROVINCES);
+  const [activeProvinceData, setActiveProvinceData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/data/wilayah/provinces.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Gagal mengambil data provinsi");
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProvincesList(data);
+        }
+      })
+      .catch(err => {
+        console.error("Error loading local provinces, using fallback:", err);
+      });
+  }, []);
+
   const handleProvinceChange = async (provName: string) => {
     setDeliveryProvince(provName);
     setDeliveryRegency("");
@@ -324,18 +344,20 @@ export default function CartPage() {
     setVillages([]);
     setPostalCodes([]);
     setPostalCodeMapping([]);
+    setActiveProvinceData(null);
 
     if (!provName) return;
 
-    const foundProv = INDONESIAN_PROVINCES.find(p => p.name === provName);
+    const foundProv = provincesList.find(p => p.name === provName);
     if (foundProv) {
       setLoadingRegencies(true);
       try {
-        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${foundProv.id}.json`);
-        if (!res.ok) throw new Error("Gagal mengambil data kabupaten/kota");
+        const res = await fetch(`/data/wilayah/provinces/${foundProv.id}.json`);
+        if (!res.ok) throw new Error("Gagal mengambil data provinsi");
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setRegencies(data);
+        if (data && Array.isArray(data.regencies)) {
+          setActiveProvinceData(data);
+          setRegencies(data.regencies);
         }
       } catch (err) {
         console.error("Error fetching regencies:", err);
@@ -359,18 +381,15 @@ export default function CartPage() {
     if (!regName) return;
 
     const foundReg = regencies.find(r => r.name === regName);
-    if (foundReg) {
+    if (foundReg && activeProvinceData) {
       setLoadingDistricts(true);
       try {
-        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${foundReg.id}.json`);
-        if (!res.ok) throw new Error("Gagal mengambil data kecamatan");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setDistricts(data);
-        }
+        const filteredDistricts = activeProvinceData.districts.filter(
+          (d: any) => d.regency_id === foundReg.id
+        );
+        setDistricts(filteredDistricts);
       } catch (err) {
-        console.error("Error fetching districts:", err);
-        toast.error("Gagal memuat data kecamatan. Silakan coba lagi.");
+        console.error("Error filtering districts:", err);
       } finally {
         setLoadingDistricts(false);
       }
@@ -388,24 +407,21 @@ export default function CartPage() {
     if (!distName) return;
 
     const foundDist = districts.find(d => d.name === distName);
-    if (foundDist) {
+    if (foundDist && activeProvinceData) {
       setLoadingVillages(true);
       setLoadingPostalCodes(true);
 
-      // Fetch villages
-      const fetchVillagesPromise = fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${foundDist.id}.json`)
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Gagal mengambil data kelurahan");
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setVillages(data);
-          }
-        })
-        .catch(err => {
-          console.error("Error fetching villages:", err);
-          toast.error("Gagal memuat data kelurahan.");
-        })
-        .finally(() => setLoadingVillages(false));
+      // Filter villages locally
+      try {
+        const filteredVillages = activeProvinceData.villages.filter(
+          (v: any) => v.district_id === foundDist.id
+        );
+        setVillages(filteredVillages);
+      } catch (err) {
+        console.error("Error filtering villages:", err);
+      } finally {
+        setLoadingVillages(false);
+      }
 
       // Fetch postal codes
       const cleanReg = (name: string) => name.toLowerCase().replace(/^(kabupaten|kota)\s+/i, '').trim();
@@ -432,7 +448,7 @@ export default function CartPage() {
         })
         .finally(() => setLoadingPostalCodes(false));
 
-      await Promise.all([fetchVillagesPromise, fetchPostalCodesPromise]);
+      await fetchPostalCodesPromise;
     }
   };
 
@@ -1313,7 +1329,7 @@ export default function CartPage() {
                       <SearchableSelect
                         label="Provinsi"
                         placeholder="Pilih Provinsi"
-                        options={INDONESIAN_PROVINCES.map(p => ({ id: p.id, name: p.name }))}
+                        options={provincesList.map(p => ({ id: p.id, name: p.name }))}
                         value={deliveryProvince}
                         onChange={handleProvinceChange}
                       />

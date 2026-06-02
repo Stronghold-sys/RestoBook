@@ -1301,53 +1301,6 @@ export default function POSPage() {
                   Terapkan
                 </button>
               </div>
-              {availableVouchers.length > 0 && !discount && (
-                <div className="space-y-1 pt-1">
-                  <span className="text-[10px] text-muted font-bold block uppercase tracking-wider">Voucher Tersedia (Klik untuk gunakan):</span>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
-                    {availableVouchers.map((v: any) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => {
-                          setDiscountInput(v.code);
-                          const loadingToast = toast.loading("Memvalidasi voucher...");
-                          fetch("/api/customer/vouchers/apply", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              code: v.code,
-                              customerId: foundOrder?.customer_id || null
-                            })
-                          })
-                          .then(res => res.json().then(data => {
-                            toast.dismiss(loadingToast);
-                            if (!res.ok) {
-                              toast.error(data.error || "Gagal menerapkan voucher");
-                            } else {
-                              setDiscount({
-                                type: "percent",
-                                value: data.voucher.discount_percent,
-                                code: data.voucher.code,
-                                id: data.voucher.id
-                              });
-                              toast.success(`${data.message} Potongan ${data.voucher.discount_percent}% diterapkan.`);
-                              setDiscountInput("");
-                            }
-                          }))
-                          .catch(err => {
-                            toast.dismiss(loadingToast);
-                            toast.error("Terjadi kesalahan koneksi saat validasi voucher");
-                          });
-                        }}
-                        className="text-[10px] font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all uppercase"
-                      >
-                        {v.code} ({v.discount_percent}%)
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               {discount && (
                 <div className="flex justify-between items-center px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 border border-green-200 rounded-xl text-xs font-bold">
                   <span>Diskon {discount.type === 'percent' ? `(${discount.value}%)` : ''} applied</span>

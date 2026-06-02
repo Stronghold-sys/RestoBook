@@ -1000,14 +1000,11 @@ export default function OrderTrackingPage() {
         </div>
 
         {isPaid && (
-          <div className="mt-10">
+          <div className="mt-6 flex justify-center">
             <button 
               onClick={() => setShowReceipt(true)} 
-              className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-2xl font-black flex items-center justify-center gap-4 shadow-xl shadow-emerald-500/20 transition-all uppercase tracking-widest group"
+              className="py-3 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-bold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all uppercase tracking-widest text-[10px] sm:text-xs"
             >
-              <div className="bg-white/20 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                <ReceiptIcon className="w-6 h-6" />
-              </div>
               Lihat Kwitansi Digital
             </button>
           </div>
@@ -1222,20 +1219,6 @@ export default function OrderTrackingPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
                    <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
-                </div>
-                <div className="p-4 border-t border-gray-100 bg-white space-y-2">
-                   <button 
-                     onClick={handleDownloadPDF} 
-                     className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
-                   >
-                     <ReceiptIcon className="w-4 h-4" /> Unduh PDF Kwitansi
-                   </button>
-                   <button 
-                     onClick={handlePrint} 
-                     className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs"
-                   >
-                     <Printer className="w-3.5 h-3.5" /> Cetak Kwitansi
-                   </button>
                 </div>
             </motion.div>
           </div>

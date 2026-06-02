@@ -1600,7 +1600,12 @@ export default function POSPage() {
               <div className="bg-white rounded-3xl p-6 shadow-2xl relative">
                 <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg">Untuk Pelanggan</div>
                 <div className="h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
-                  <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i:any)=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
+                  <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i:any)=>({
+                    ...i.menu_items,
+                    price: i.price || i.menu_items?.price,
+                    quantity: i.quantity,
+                    subtotal: i.subtotal || (Number(i.price || i.menu_items?.price || 0) * i.quantity)
+                  }))} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
                 </div>
                 <button onClick={() => handlePrint(receiptPelangganRef)} className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600">
                   <Printer className="w-4 h-4" /> Cetak Struk Pelanggan

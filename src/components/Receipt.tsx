@@ -44,7 +44,14 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
     }
   }, [initialCashierName, isKasirCopy, isInPersonOrder]);
 
-  const subtotal = orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0);
+  const subtotal = orderItems.reduce((sum: number, item: any) => {
+    const itemPrice = Number(item.price || item.menu_items?.price || 0);
+    const itemQty = Number(item.quantity || item.qty || 0);
+    const itemSubtotal = item.subtotal !== undefined && item.subtotal !== null && !isNaN(Number(item.subtotal))
+      ? Number(item.subtotal)
+      : itemPrice * itemQty;
+    return sum + itemSubtotal;
+  }, 0);
   const totalAmount = Number(order.total_amount);
   const kembalian = cashReceived ? Math.max(0, cashReceived - totalAmount) : 0;
   const taxPercent = settings?.tax_percent !== undefined && settings?.tax_percent !== null ? Number(settings.tax_percent) : 10.00;
@@ -177,13 +184,17 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         </div>
         {orderItems.map((item: any, i: number) => {
           const itemPrice = Number(item.price || item.menu_items?.price || 0);
+          const itemQty = Number(item.quantity || item.qty || 0);
+          const itemSubtotal = item.subtotal !== undefined && item.subtotal !== null && !isNaN(Number(item.subtotal))
+            ? Number(item.subtotal)
+            : itemPrice * itemQty;
           return (
             <div key={i} className="mb-3">
               <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="font-bold text-xs leading-tight flex-1 pr-4" style={{ fontWeight: 'bold', fontSize: '12px' }}>{item.menu_items?.name || item.name}</span>
-                <span className="font-black" style={{ fontWeight: '900' }}>Rp {Number(item.subtotal).toLocaleString("id-ID")}</span>
+                <span className="font-black" style={{ fontWeight: '900' }}>Rp {itemSubtotal.toLocaleString("id-ID")}</span>
               </div>
-              <p className="text-[10px] text-gray-500 font-bold mt-0.5" style={{ fontSize: '10px', color: '#666', margin: '2px 0' }}>{item.quantity}x @ Rp {itemPrice.toLocaleString("id-ID")}</p>
+              <p className="text-[10px] text-gray-500 font-bold mt-0.5" style={{ fontSize: '10px', color: '#666', margin: '2px 0' }}>{itemQty}x @ Rp {itemPrice.toLocaleString("id-ID")}</p>
             </div>
           );
         })}

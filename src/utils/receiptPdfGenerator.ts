@@ -119,7 +119,10 @@ export async function downloadReceiptPDF({
     doc.setFont("courier", "bold");
     const nameTrunc = item.name.length > 25 ? item.name.substring(0, 22) + "..." : item.name;
     doc.text(nameTrunc, 5, y);
-    doc.text(`Rp ${item.subtotal.toLocaleString("id-ID")}`, 75, y, { align: "right" });
+    const itemSubtotal = item.subtotal !== undefined && item.subtotal !== null && !isNaN(Number(item.subtotal))
+      ? Number(item.subtotal)
+      : Number(item.price || 0) * Number(item.quantity || 0);
+    doc.text(`Rp ${itemSubtotal.toLocaleString("id-ID")}`, 75, y, { align: "right" });
     
     y += 4;
     doc.setFont("courier", "normal");
@@ -130,7 +133,12 @@ export async function downloadReceiptPDF({
   doc.text("------------------------------------------", 40, y, { align: "center" });
   
   // Totals
-  const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const subtotal = orderItems.reduce((sum, item) => {
+    const itemSubtotal = item.subtotal !== undefined && item.subtotal !== null && !isNaN(Number(item.subtotal))
+      ? Number(item.subtotal)
+      : Number(item.price || 0) * Number(item.quantity || 0);
+    return sum + itemSubtotal;
+  }, 0);
   const discount = Number(order.discount || 0);
   const taxPercent = settings?.tax_percent ? Number(settings.tax_percent) : 10;
   const taxAmount = Math.round(subtotal * taxPercent / (100 + taxPercent));

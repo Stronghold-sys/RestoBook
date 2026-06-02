@@ -98,7 +98,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     // Fetch count awal
     fetchUnreadNotifCount();
 
-    // Subscribe ke notifikasi real-time
     const channel = supabase
       .channel(`customer-notifications-${userProfile.id}`)
       .on(
@@ -111,14 +110,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         },
         (payload: any) => {
           fetchUnreadNotifCount();
-
-          if (payload.eventType === "INSERT") {
-            playSingleNotifSound();
-            toast.success(`Notifikasi Baru: ${payload.new.title || 'Pesan Baru'}`, {
-              duration: 5000,
-              position: "top-right"
-            });
-          }
         }
       )
       .subscribe();

@@ -7,7 +7,6 @@ import Script from "next/script";
 import ConnectionDetector from "@/components/ConnectionDetector";
 import SessionStatusListener from "@/components/SessionStatusListener";
 import AutoTableStatusManager from "@/components/AutoTableStatusManager";
-import ScrollToTop from "@/components/ScrollToTop";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
@@ -69,7 +68,6 @@ export default function RootLayout({
         {children}
         <Toaster position="top-center" containerStyle={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }} />
         <RestoBot />
-        <ScrollToTop />
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {

@@ -604,12 +604,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   ))}
                 </div>
               </div>
-
-              {/* Floating Loader */}
-              <div className="fixed bottom-8 right-8 z-[100000] bg-primary text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-3 font-bold text-sm">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Menuju Halaman Utama...</span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -228,8 +228,8 @@ export default function CashierReservationsPage() {
           { s: "completed", l: "Selesai", c: "from-blue-500 to-blue-600" },
           { s: "cancelled", l: "Ditolak / Batal", c: "from-red-500 to-rose-600" }
         ].map(item => (
-          <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all ${filter === item.s ? "ring-4 ring-primary" : ""}`}>
-            <p className="text-white/80 text-sm font-medium">{item.l}</p>
+          <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${filter === item.s ? "ring-4 ring-primary" : ""}`}>
+            <p className="text-white/80 text-sm font-semibold leading-tight">{item.l}</p>
             <p className="text-3xl font-black mt-1">{reservations.filter(r => r.status === item.s).length}</p>
           </motion.div>
         ))}

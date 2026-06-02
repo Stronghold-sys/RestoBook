@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 
 // Database Admin Client (Bypass RLS)
 const supabaseAdmin = createClient(
@@ -21,6 +22,11 @@ async function sha256(message: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const maintenanceResponse = await checkMaintenanceActive();
+    if (maintenanceResponse) {
+      return maintenanceResponse;
+    }
+    
     const { orderId, paymentMethod, returnUrl } = await req.json();
 
     if (!orderId) {

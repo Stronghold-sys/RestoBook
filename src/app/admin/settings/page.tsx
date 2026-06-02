@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Save, Loader2, Store, MapPin, Phone, Mail, Clock, QrCode, Smartphone, CreditCard, Upload, ImageIcon, ShieldAlert, DollarSign, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { formatToIndonesianDate } from "@/utils/operationalHours";
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -37,8 +37,15 @@ export default function AdminSettingsPage() {
     payday_date: 28,
     cutoff_date: 27,
     tax_percent: 10.00,
-    payment_expiry_minutes: 60
+    payment_expiry_minutes: 60,
+    is_maintenance_active: false,
+    maintenance_start_time: "",
+    maintenance_end_time: "",
+    maintenance_message: "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
+    maintenance_estimated_hours: "2 Jam"
   });
+
+  const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
 
   const [expiryHoursInput, setExpiryHoursInput] = useState<string>("1");
   const [expiryMinutesInput, setExpiryMinutesInput] = useState<string>("0");
@@ -61,8 +68,23 @@ export default function AdminSettingsPage() {
 
   const supabase = createClient();
 
+  const fetchMaintenanceLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('maintenance_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (data) {
+        setMaintenanceLogs(data);
+      }
+    } catch (err) {
+      console.error("Gagal memuat log maintenance:", err);
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
+    fetchMaintenanceLogs();
     // Load merchant settings from localStorage
     const savedMerchant = localStorage.getItem("restaurant_merchant_settings");
     if (savedMerchant) {
@@ -93,7 +115,12 @@ export default function AdminSettingsPage() {
           payday_date: data.payday_date !== null && data.payday_date !== undefined ? Number(data.payday_date) : 28,
           cutoff_date: data.cutoff_date !== null && data.cutoff_date !== undefined ? Number(data.cutoff_date) : 27,
           tax_percent: data.tax_percent !== null && data.tax_percent !== undefined ? Number(data.tax_percent) : 10.00,
-          payment_expiry_minutes: expiryMin
+          payment_expiry_minutes: expiryMin,
+          is_maintenance_active: !!data.is_maintenance_active,
+          maintenance_start_time: data.maintenance_start_time ? new Date(data.maintenance_start_time).toISOString().substring(0, 16) : "",
+          maintenance_end_time: data.maintenance_end_time ? new Date(data.maintenance_end_time).toISOString().substring(0, 16) : "",
+          maintenance_message: data.maintenance_message || "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
+          maintenance_estimated_hours: data.maintenance_estimated_hours || "2 Jam"
         });
         const totalSec = Math.round(expiryMin * 60);
         setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
@@ -223,6 +250,11 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Get current settings to compare maintenance status change
+      const { data: currentDbSettings } = await supabase.from("restaurant_settings").select("is_maintenance_active").eq("id", settings.id).single();
+      const wasActive = currentDbSettings?.is_maintenance_active || false;
+      const isNowActive = settings.is_maintenance_active;
+
       // Save primary restaurant settings to Supabase
       const { error } = await supabase.from("restaurant_settings").update({
         name: settings.name, 
@@ -248,8 +280,36 @@ export default function AdminSettingsPage() {
         cutoff_date: Number(settings.cutoff_date || 27),
         tax_percent: Number(settings.tax_percent !== undefined ? settings.tax_percent : 10.00),
         payment_expiry_minutes: Number(settings.payment_expiry_minutes || 60),
+        is_maintenance_active: settings.is_maintenance_active,
+        maintenance_start_time: settings.maintenance_start_time ? new Date(settings.maintenance_start_time).toISOString() : null,
+        maintenance_end_time: settings.maintenance_end_time ? new Date(settings.maintenance_end_time).toISOString() : null,
+        maintenance_message: settings.maintenance_message,
+        maintenance_estimated_hours: settings.maintenance_estimated_hours,
       }).eq("id", settings.id);
       if (error) throw error;
+
+      // Log to maintenance_logs if status changed
+      if (wasActive !== isNowActive) {
+        const { data: { user } } = await supabase.auth.getUser();
+        let actedByName = "Admin";
+        let actedById = null;
+        if (user) {
+          actedById = user.id;
+          const { data: prof } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
+          if (prof) {
+            actedByName = prof.full_name;
+          }
+        }
+        await supabase.from('maintenance_logs').insert({
+          action: isNowActive ? 'activate' : 'deactivate',
+          acted_by: actedById,
+          acted_by_name: actedByName,
+          message: settings.maintenance_message,
+          scheduled_start: settings.maintenance_start_time ? new Date(settings.maintenance_start_time).toISOString() : null,
+          scheduled_end: settings.maintenance_end_time ? new Date(settings.maintenance_end_time).toISOString() : null
+        });
+        fetchMaintenanceLogs();
+      }
 
       // Broadcast settings change background trigger
       const broadcastChannel = supabase.channel("settings-sync-channel");
@@ -814,10 +874,184 @@ export default function AdminSettingsPage() {
         </motion.div>
       </div>
 
+      {/* MAINTENANCE MODE MANAGEMENT CARD */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.15 }} 
+        className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden mt-8"
+      >
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 flex items-center gap-3 text-white">
+          <ShieldAlert className="w-8 h-8 animate-pulse" />
+          <div>
+            <h2 className="text-xl font-bold">Manajemen Mode Maintenance</h2>
+            <p className="text-white/80 text-sm">Blokir total transaksi pelanggan & kasir demi pemeliharaan terjadwal</p>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            {/* Control Column */}
+            <div className="space-y-5">
+              <div className="flex flex-col gap-3 p-4 bg-orange-50/50 dark:bg-orange-950/10 rounded-2xl border border-orange-100 dark:border-orange-900/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-sm text-orange-950 dark:text-orange-300">Mode Maintenance</p>
+                    <p className="text-[11px] text-orange-800/70 dark:text-orange-400/70">
+                      Aktifkan untuk memblokir checkout, top-up, & verifikasi transaksi.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                      settings.is_maintenance_active 
+                        ? "bg-red-500 text-white" 
+                        : "bg-emerald-500 text-white"
+                    }`}>
+                      {settings.is_maintenance_active ? "Aktif" : "Nonaktif"}
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        title="Toggle Mode Maintenance"
+                        aria-label="Toggle Mode Maintenance"
+                        checked={settings.is_maintenance_active} 
+                        onChange={e => setSettings({ ...settings, is_maintenance_active: e.target.checked })} 
+                        className="sr-only peer" 
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="maintEst" className="text-sm font-medium text-text-light dark:text-text-dark mb-1.5 block">
+                  Estimasi Waktu Pengerjaan
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3.5 top-3.5 h-5 w-5 text-muted" />
+                  <input 
+                    id="maintEst" 
+                    type="text" 
+                    value={settings.maintenance_estimated_hours} 
+                    onChange={e => setSettings({ ...settings, maintenance_estimated_hours: e.target.value })} 
+                    className="w-full pl-11 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" 
+                    placeholder="Contoh: 2 Jam, 30 Menit" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="maintStart" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">
+                    Jadwal Mulai (Opsional)
+                  </label>
+                  <input 
+                    id="maintStart" 
+                    type="datetime-local" 
+                    value={settings.maintenance_start_time} 
+                    onChange={e => setSettings({ ...settings, maintenance_start_time: e.target.value })} 
+                    className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maintEnd" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">
+                    Jadwal Selesai (Opsional)
+                  </label>
+                  <input 
+                    id="maintEnd" 
+                    type="datetime-local" 
+                    value={settings.maintenance_end_time} 
+                    onChange={e => setSettings({ ...settings, maintenance_end_time: e.target.value })} 
+                    className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Message Column */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="maintMsg" className="text-sm font-medium text-text-light dark:text-text-dark mb-1.5 block">
+                  Pesan Kustom Banner/Peringatan
+                </label>
+                <textarea 
+                  id="maintMsg" 
+                  rows={4}
+                  value={settings.maintenance_message} 
+                  onChange={e => setSettings({ ...settings, maintenance_message: e.target.value })} 
+                  className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm resize-none" 
+                  placeholder="Isi pesan kustom untuk di halaman depan / checkout..." 
+                />
+              </div>
+
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/30 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4" /> Info Pembatasan Role:
+                </p>
+                <p>
+                  * Admin tetap bisa login & mengakses menu pengaturan tanpa gangguan.
+                </p>
+                <p>
+                  * Pelanggan & Kasir diblokir total dari checkout, transfer dompet, point, & POS.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Audit Logs Sub-Section */}
+          <div className="border-t border-border-light dark:border-border-dark pt-5 mt-5">
+            <h3 className="font-black text-xs uppercase tracking-widest text-primary flex items-center gap-2 mb-3">
+              <CalendarDays className="w-4 h-4" /> Riwayat Log Aktivasi Maintenance
+            </h3>
+            
+            {maintenanceLogs.length === 0 ? (
+              <p className="text-xs text-muted italic">Belum ada riwayat perubahan status maintenance.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-background-light dark:bg-background-dark text-muted uppercase font-black tracking-wider border-b border-border-light dark:border-border-dark">
+                      <th className="p-3">Waktu</th>
+                      <th className="p-3">Aksi</th>
+                      <th className="p-3">Oleh</th>
+                      <th className="p-3">Pesan Estimasi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                    {maintenanceLogs.slice(0, 5).map((log: any) => (
+                      <tr key={log.id} className="hover:bg-background-light/50 dark:hover:bg-background-dark/30 text-text-light dark:text-text-dark">
+                        <td className="p-3 font-medium">
+                          {new Date(log.created_at).toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-md font-bold uppercase ${
+                            log.action === "activate" 
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400" 
+                              : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          }`}>
+                            {log.action === "activate" ? "Aktifkan" : "Matikan"}
+                          </span>
+                        </td>
+                        <td className="p-3 font-semibold">{log.acted_by_name || "Sistem"}</td>
+                        <td className="p-3 truncate max-w-[200px]" title={log.message || ""}>
+                          {log.message || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSave} disabled={saving} className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-xl shadow-primary/30 mt-4 uppercase tracking-wider">
         {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> Simpan Semua Konfigurasi</>}
       </motion.button>
-      <Toaster position="top-center" />
 
       {/* CROP MODAL */}
       <AnimatePresence>

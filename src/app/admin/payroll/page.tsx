@@ -12,7 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, startOfYear } from "date-fns";
 import { id } from "date-fns/locale";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import { downloadFile } from "@/utils/downloadHelper";
@@ -1366,7 +1366,6 @@ export default function AdvancedPayrollPage() {
 
   return (
     <div className="min-h-screen bg-[#fdfbf7] dark:bg-gray-950 p-6 lg:p-10 text-text-light dark:text-text-dark font-sans">
-      <Toaster />
       
       {/* HEADER BAR */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">

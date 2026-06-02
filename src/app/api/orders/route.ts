@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 
 function getStatusNotification(status: string, orderId: string, orderType: string, reason?: string) {
   const shortId = orderId.split('-')[0].toUpperCase();
@@ -55,6 +56,11 @@ function getStatusNotification(status: string, orderId: string, orderType: strin
 
 export async function POST(req: NextRequest) {
   try {
+    const maintenanceResponse = await checkMaintenanceActive();
+    if (maintenanceResponse) {
+      return maintenanceResponse;
+    }
+    
     const body = await req.json();
     const { orderId, action, paymentStatus, status, reason, orderData, itemsData } = body;
 

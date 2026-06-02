@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 
 const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE!;
 const DUITKU_API_KEY = process.env.DUITKU_API_KEY!;
@@ -15,6 +16,11 @@ async function sha256(message: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const maintenanceResponse = await checkMaintenanceActive();
+    if (maintenanceResponse) {
+      return maintenanceResponse;
+    }
+
     const supabase = createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 

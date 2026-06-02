@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 
 const getWibExpiryString = (expiresAtStr: string) => {
   if (!expiresAtStr) return "";
@@ -13,6 +14,11 @@ const getWibExpiryString = (expiresAtStr: string) => {
 
 export async function POST(req: NextRequest) {
   try {
+    const maintenanceResponse = await checkMaintenanceActive();
+    if (maintenanceResponse) {
+      return maintenanceResponse;
+    }
+
     const supabase = createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 

@@ -99,6 +99,13 @@ export async function GET() {
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS is_auto_close_shift_enabled BOOLEAN DEFAULT TRUE;
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS tax_percent NUMERIC DEFAULT 10.00;
 
+    -- Maintenance columns
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS is_maintenance_active BOOLEAN DEFAULT FALSE;
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_start_time TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_end_time TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_message TEXT DEFAULT 'Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.';
+    ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_estimated_hours TEXT DEFAULT '2 Jam';
+
     -- Create Notifications Table if not exists
     CREATE TABLE IF NOT EXISTS notifications (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -107,6 +114,18 @@ export async function GET() {
       message TEXT NOT NULL,
       type TEXT DEFAULT 'info',
       is_read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create Maintenance Logs Table if not exists
+    CREATE TABLE IF NOT EXISTS maintenance_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      action TEXT NOT NULL, -- 'activate', 'deactivate'
+      acted_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+      acted_by_name TEXT,
+      message TEXT,
+      scheduled_start TIMESTAMP WITH TIME ZONE,
+      scheduled_end TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
@@ -137,6 +156,7 @@ export async function GET() {
     ALTER TABLE IF EXISTS tables ENABLE ROW LEVEL SECURITY;
     ALTER TABLE IF EXISTS notifications ENABLE ROW LEVEL SECURITY;
     ALTER TABLE IF EXISTS resign_requests ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS maintenance_logs ENABLE ROW LEVEL SECURITY;
 
     -- Drop and recreate essential policies
     DROP POLICY IF EXISTS "auth_orders_all" ON orders;
@@ -155,6 +175,9 @@ export async function GET() {
 
     DROP POLICY IF EXISTS "auth_resign_requests_all" ON resign_requests;
     CREATE POLICY "auth_resign_requests_all" ON resign_requests FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+    DROP POLICY IF EXISTS "auth_maintenance_logs_all" ON maintenance_logs;
+    CREATE POLICY "auth_maintenance_logs_all" ON maintenance_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
     -- Policy for Customer to update (cancel) their own reservations
     DROP POLICY IF EXISTS "Customer update own reservations" ON reservations;
@@ -225,6 +248,9 @@ export async function GET() {
       END IF;
       IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'resign_requests') THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE resign_requests;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'maintenance_logs') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE maintenance_logs;
       END IF;
     END $$;
 

@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import MaintenanceBlockPage from "@/components/MaintenanceBlockPage";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,41 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const supabase = createClient();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [maintenanceSettings, setMaintenanceSettings] = useState({
+    is_maintenance_active: false,
+    maintenance_message: "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
+    maintenance_estimated_hours: "2 Jam"
+  });
+
+  const isTransactionRoute = (path: string): boolean => {
+    const p = path.toLowerCase();
+    return (
+      p.includes("/customer/cart") ||
+      p.includes("/customer/wallet") ||
+      p.includes("/customer/rewards") ||
+      p.includes("/cashier/pos") ||
+      p.includes("/cashier/online-orders")
+    );
+  };
+
+  const fetchMaintenanceSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from("restaurant_settings")
+        .select("is_maintenance_active, maintenance_message, maintenance_estimated_hours")
+        .single();
+      if (data) {
+        setMaintenanceSettings({
+          is_maintenance_active: !!data.is_maintenance_active,
+          maintenance_message: data.maintenance_message || "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
+          maintenance_estimated_hours: data.maintenance_estimated_hours || "2 Jam"
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching maintenance settings in layout:", e);
+    }
+  };
+
   useEffect(() => {
     // Inisialisasi Audio Notifikasi
     // Inisialisasi Audio Notifikasi (Announcement Style)
@@ -49,6 +85,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     
     checkUser();
     fetchOnlineOrderCount();
+    fetchMaintenanceSettings();
     
     // Real-time Listener untuk Pesanan Online Baru & Update Badge
     const channel = supabase
@@ -86,8 +123,27 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       })
       .subscribe();
 
+    // Real-time Listener untuk status mode maintenance
+    const maintChannel = supabase
+      .channel('layout-maintenance-sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'restaurant_settings'
+      }, (payload: any) => {
+        if (payload.new) {
+          setMaintenanceSettings({
+            is_maintenance_active: !!payload.new.is_maintenance_active,
+            maintenance_message: payload.new.maintenance_message || "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
+            maintenance_estimated_hours: payload.new.maintenance_estimated_hours || "2 Jam"
+          });
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(maintChannel);
     };
   }, []);
 
@@ -357,7 +413,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 >
                   <div className="flex items-center gap-3">
                     <link.icon className={`h-5 w-5 ${pathname === link.href ? "text-white" : "text-muted group-hover:text-primary"}`} />
-                    {link.name}
+                    <span>{link.name}</span>
+                    {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
+                      <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+                    )}
                   </div>
                   {link.badge !== undefined && link.badge > 0 && (
                     <motion.span 
@@ -432,8 +491,32 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </div>
           </header>
 
+          {maintenanceSettings.is_maintenance_active && (
+            <div className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 px-6 font-bold text-xs sm:text-sm flex items-center justify-between gap-4 shadow-md border-b border-orange-500/25 z-20">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 animate-pulse flex-shrink-0" />
+                <span>
+                  <strong>Info Penting:</strong> Saat ini sistem sedang maintenance. Beberapa layanan transaksi sedang tidak tersedia untuk sementara.
+                </span>
+              </div>
+              {role === "admin" && (
+                <span className="bg-white/20 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                  Admin Bypass
+                </span>
+              )}
+            </div>
+          )}
+
           <main className="flex-1">
-            {children}
+            {maintenanceSettings.is_maintenance_active && role !== "admin" && isTransactionRoute(pathname) ? (
+              <MaintenanceBlockPage 
+                message={maintenanceSettings.maintenance_message} 
+                estimatedHours={maintenanceSettings.maintenance_estimated_hours}
+                role={role || "customer"}
+              />
+            ) : (
+              children
+            )}
           </main>
         </div>
 
@@ -489,7 +572,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                     >
                       <div className="flex items-center gap-3">
                         <link.icon className="h-5 w-5" />
-                        {link.name}
+                        <span>{link.name}</span>
+                        {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
+                          <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+                        )}
                       </div>
                       {link.badge !== undefined && link.badge > 0 && (
                         <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${

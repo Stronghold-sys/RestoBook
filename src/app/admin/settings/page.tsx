@@ -1015,11 +1015,13 @@ export default function AdminSettingsPage() {
                 <p className="font-bold flex items-center gap-1.5">
                   <ShieldAlert className="w-4 h-4" /> Info Pembatasan Role:
                 </p>
-                <p>
-                  * Admin tetap bisa login & mengakses menu pengaturan tanpa gangguan.
+                <p className="flex items-start gap-2">
+                  <span className="text-amber-500 font-bold">•</span>
+                  <span>Admin tetap bisa login & mengakses menu pengaturan tanpa gangguan.</span>
                 </p>
-                <p>
-                  * Pelanggan & Kasir diblokir total dari checkout, transfer dompet, point, & POS.
+                <p className="flex items-start gap-2">
+                  <span className="text-amber-500 font-bold">•</span>
+                  <span>Pelanggan & Kasir diblokir total dari checkout, transfer dompet, point, & POS.</span>
                 </p>
               </div>
             </div>

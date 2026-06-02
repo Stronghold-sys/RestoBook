@@ -214,6 +214,16 @@ export async function POST(req: NextRequest) {
         status_badge: 'Berhasil'
       });
 
+      const pendingNotif = getStatusNotification('pending', newOrder.id, newOrder.order_type);
+      await supabaseAdmin.from('notifications').insert({
+        user_id: newOrder.customer_id,
+        title: pendingNotif.title,
+        message: pendingNotif.message,
+        type: 'order',
+        order_id: newOrder.id,
+        status_badge: pendingNotif.statusBadge
+      });
+
       return NextResponse.json({ success: true, order: newOrder });
     }
 

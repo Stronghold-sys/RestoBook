@@ -881,16 +881,20 @@ export default function CartPage() {
           await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", selectedTable);
         }
  
+        // Trigger Notification (Awaited to prevent browser cancellation)
+        try {
+          await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+          });
+        } catch (err) {
+          console.error("Notification error:", err);
+        }
+
         isOrderCompleted.current = true;
         if (typeof window !== "undefined") localStorage.removeItem("selected_table");
         clearCart();
- 
-        // Trigger Notification (Non-blocking)
-        fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-        }).catch(err => console.error("Notification error:", err));
  
         toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
         router.push(`/customer/orders/${orderData.id}`);
@@ -1020,15 +1024,16 @@ export default function CartPage() {
 
       if (paymentMethod === "cash") {
         isOrderCompleted.current = true;
-        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-        clearCart();
-
-        // Trigger Notification (Non-blocking)
-        fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-        }).catch(err => console.error("Notification error:", err));
+        // Trigger Notification (Awaited to prevent browser cancellation)
+        try {
+          await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+          });
+        } catch (err) {
+          console.error("Notification error:", err);
+        }
 
         toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
         router.push(`/customer/orders/${orderData.id}`);
@@ -1059,33 +1064,41 @@ export default function CartPage() {
           // INJECT DUITKU POP SDK OVERLAY
           (window as any).checkout.process(duitkuData.reference, {
              successEvent: async function() {
-               isOrderCompleted.current = true;
-               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-               clearCart();
-               
-               // Trigger Notification (Non-blocking)
-               fetch('/api/orders', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-               }).catch(err => console.error("Notification error:", err));
+                // Trigger Notification (Awaited to prevent browser cancellation)
+                try {
+                  await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+                  });
+                } catch (err) {
+                  console.error("Notification error:", err);
+                }
 
-               toast.success("Pembayaran Berhasil!");
-               router.push(`/customer/orders/${orderData.id}`);
+                isOrderCompleted.current = true;
+                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+                clearCart();
+
+                toast.success("Pembayaran Berhasil!");
+                router.push(`/customer/orders/${orderData.id}`);
              },
              pendingEvent: async function() {
-               isOrderCompleted.current = true;
-               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-               clearCart();
-               
-               // Trigger Notification (Non-blocking)
-               fetch('/api/orders', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-               }).catch(err => console.error("Notification error:", err));
+                // Trigger Notification (Awaited to prevent browser cancellation)
+                try {
+                  await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+                  });
+                } catch (err) {
+                  console.error("Notification error:", err);
+                }
 
-               router.push(`/customer/orders/${orderData.id}?status=pending`);
+                isOrderCompleted.current = true;
+                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+                clearCart();
+
+                router.push(`/customer/orders/${orderData.id}?status=pending`);
              },
              errorEvent: async function() {
                isOrderCompleted.current = true;
@@ -1104,16 +1117,20 @@ export default function CartPage() {
           });
           return;
         } else if (duitkuData.paymentUrl) {
+          // Trigger Notification (Awaited to prevent browser cancellation)
+          try {
+            await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+            });
+          } catch (err) {
+            console.error("Notification error:", err);
+          }
+
           isOrderCompleted.current = true;
           if (typeof window !== "undefined") localStorage.removeItem("selected_table");
           clearCart();
-          
-          // Trigger Notification (Non-blocking)
-          fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-          }).catch(err => console.error("Notification error:", err));
 
           toast.success("Mengalihkan ke halaman pembayaran...", { id: loadingToast });
           window.location.href = duitkuData.paymentUrl;

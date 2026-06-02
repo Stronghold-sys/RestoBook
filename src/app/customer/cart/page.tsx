@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet, Lock } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet, Lock, Search, ChevronDown } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -53,6 +53,110 @@ const INDONESIAN_PROVINCES = [
   { id: "95", name: "PAPUA PEGUNUNGAN" },
   { id: "96", name: "PAPUA BARAT DAYA" }
 ];
+
+interface SearchableSelectProps {
+  label: string;
+  placeholder: string;
+  options: { id: string; name: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+function SearchableSelect({
+  label,
+  placeholder,
+  options,
+  value,
+  onChange,
+  disabled = false,
+  loading = false
+}: SearchableSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    opt.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOption = options.find(opt => opt.name === value);
+
+  return (
+    <div className="relative w-full text-left" ref={dropdownRef}>
+      <label className="text-[9px] font-black text-muted uppercase block mb-1">{label}</label>
+      <button
+        type="button"
+        disabled={disabled || loading}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearch("");
+        }}
+        className={`w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark flex items-center justify-between text-left transition-all ${
+          disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"
+        }`}
+      >
+        <span className={selectedOption ? "text-text-light dark:text-text-dark font-semibold truncate pr-2" : "text-muted truncate pr-2"}>
+          {loading ? "Memuat..." : selectedOption ? selectedOption.name : placeholder}
+        </span>
+        {loading ? (
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+        ) : (
+          <ChevronDown className={`w-4 h-4 text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        )}
+      </button>
+
+      {isOpen && !disabled && !loading && (
+        <div className="absolute left-0 right-0 mt-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-xl z-50 overflow-hidden max-h-60 flex flex-col">
+          <div className="p-2 border-b border-border-light dark:border-border-dark bg-background-light/50 dark:bg-background-dark/50 flex items-center gap-2">
+            <Search className="w-3.5 h-3.5 text-muted shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cari..."
+              className="w-full bg-transparent border-0 text-xs outline-none text-text-light dark:text-text-dark font-medium placeholder-muted"
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 custom-scrollbar max-h-48 py-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-xs text-muted text-center">Data tidak ditemukan</div>
+            ) : (
+              filteredOptions.map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.name);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-primary/5 hover:text-primary transition-colors flex items-center justify-between ${
+                    opt.name === value ? "bg-primary/10 text-primary" : "text-text-light dark:text-text-dark"
+                  }`}
+                >
+                  <span className="truncate pr-2">{opt.name}</span>
+                  {opt.name === value && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
@@ -200,117 +304,148 @@ export default function CartPage() {
   const [regencies, setRegencies] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [villages, setVillages] = useState<any[]>([]);
+  const [postalCodes, setPostalCodes] = useState<string[]>([]);
+  const [postalCodeMapping, setPostalCodeMapping] = useState<any[]>([]);
 
-  const [regencyMode, setRegencyMode] = useState<"select" | "manual">("select");
-  const [districtMode, setDistrictMode] = useState<"select" | "manual">("select");
-  const [villageMode, setVillageMode] = useState<"select" | "manual">("select");
+  // Loading States
+  const [loadingRegencies, setLoadingRegencies] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingVillages, setLoadingVillages] = useState(false);
+  const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
 
   const handleProvinceChange = async (provName: string) => {
     setDeliveryProvince(provName);
     setDeliveryRegency("");
     setDeliveryDistrict("");
     setDeliveryVillage("");
+    setDeliveryPostalCode("");
     setRegencies([]);
     setDistricts([]);
     setVillages([]);
-    setRegencyMode("select");
-    setDistrictMode("select");
-    setVillageMode("select");
+    setPostalCodes([]);
+    setPostalCodeMapping([]);
 
     if (!provName) return;
 
     const foundProv = INDONESIAN_PROVINCES.find(p => p.name === provName);
     if (foundProv) {
+      setLoadingRegencies(true);
       try {
         const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${foundProv.id}.json`);
         if (!res.ok) throw new Error("Gagal mengambil data kabupaten/kota");
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setRegencies(data);
-          setRegencyMode("select");
-        } else {
-          setRegencyMode("manual");
         }
       } catch (err) {
-        console.error("Error fetching regencies, switching to manual input:", err);
-        setRegencyMode("manual");
+        console.error("Error fetching regencies:", err);
+        toast.error("Gagal memuat data kabupaten/kota. Silakan coba lagi.");
+      } finally {
+        setLoadingRegencies(false);
       }
-    } else {
-      setRegencyMode("manual");
     }
   };
 
   const handleRegencyChange = async (regName: string) => {
     setDeliveryRegency(regName);
-
-    if (regencyMode === "manual") {
-      setDistrictMode("manual");
-      setVillageMode("manual");
-      return;
-    }
-
     setDeliveryDistrict("");
     setDeliveryVillage("");
+    setDeliveryPostalCode("");
     setDistricts([]);
     setVillages([]);
-    setDistrictMode("select");
-    setVillageMode("select");
+    setPostalCodes([]);
+    setPostalCodeMapping([]);
 
     if (!regName) return;
 
     const foundReg = regencies.find(r => r.name === regName);
     if (foundReg) {
+      setLoadingDistricts(true);
       try {
         const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${foundReg.id}.json`);
         if (!res.ok) throw new Error("Gagal mengambil data kecamatan");
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setDistricts(data);
-          setDistrictMode("select");
-        } else {
-          setDistrictMode("manual");
         }
       } catch (err) {
-        console.error("Error fetching districts, switching to manual input:", err);
-        setDistrictMode("manual");
+        console.error("Error fetching districts:", err);
+        toast.error("Gagal memuat data kecamatan. Silakan coba lagi.");
+      } finally {
+        setLoadingDistricts(false);
       }
-    } else {
-      setDistrictMode("manual");
     }
   };
 
   const handleDistrictChange = async (distName: string) => {
     setDeliveryDistrict(distName);
-
-    if (districtMode === "manual") {
-      setVillageMode("manual");
-      return;
-    }
-
     setDeliveryVillage("");
+    setDeliveryPostalCode("");
     setVillages([]);
-    setVillageMode("select");
+    setPostalCodes([]);
+    setPostalCodeMapping([]);
 
     if (!distName) return;
 
     const foundDist = districts.find(d => d.name === distName);
     if (foundDist) {
-      try {
-        const res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${foundDist.id}.json`);
-        if (!res.ok) throw new Error("Gagal mengambil data kelurahan");
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setVillages(data);
-          setVillageMode("select");
-        } else {
-          setVillageMode("manual");
-        }
-      } catch (err) {
-        console.error("Error fetching villages, switching to manual input:", err);
-        setVillageMode("manual");
-      }
-    } else {
-      setVillageMode("manual");
+      setLoadingVillages(true);
+      setLoadingPostalCodes(true);
+
+      // Fetch villages
+      const fetchVillagesPromise = fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${foundDist.id}.json`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Gagal mengambil data kelurahan");
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setVillages(data);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching villages:", err);
+          toast.error("Gagal memuat data kelurahan.");
+        })
+        .finally(() => setLoadingVillages(false));
+
+      // Fetch postal codes
+      const cleanReg = (name: string) => name.toLowerCase().replace(/^(kabupaten|kota)\s+/i, '').trim();
+      const q = encodeURIComponent(distName);
+      const fetchPostalCodesPromise = fetch(`https://kodepos.vercel.app/search?q=${q}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Gagal");
+          const json = await res.json();
+          if (json && Array.isArray(json.data)) {
+            const filtered = json.data.filter((item: any) => {
+              const matchProv = item.province.toLowerCase() === deliveryProvince.toLowerCase();
+              const matchReg = cleanReg(item.regency) === cleanReg(deliveryRegency);
+              const matchDist = item.district.toLowerCase() === distName.toLowerCase();
+              return matchProv && matchReg && matchDist;
+            });
+
+            setPostalCodeMapping(filtered);
+            const codes: string[] = Array.from(new Set(filtered.map((item: any) => String(item.code))));
+            setPostalCodes(codes);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching postal codes:", err);
+        })
+        .finally(() => setLoadingPostalCodes(false));
+
+      await Promise.all([fetchVillagesPromise, fetchPostalCodesPromise]);
+    }
+  };
+
+  const handleVillageChange = (villageName: string) => {
+    setDeliveryVillage(villageName);
+    setDeliveryPostalCode("");
+
+    // Try to auto-detect postal code from mapping
+    const match = postalCodeMapping.find(
+      item => item.village.toLowerCase() === villageName.toLowerCase()
+    );
+    if (match) {
+      setDeliveryPostalCode(String(match.code));
     }
   };
   
@@ -1174,106 +1309,44 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Provinsi</label>
-                        <select
-                          required
-                          value={deliveryProvince}
-                          title="Provinsi"
-                          onChange={e => handleProvinceChange(e.target.value)}
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
-                        >
-                          <option value="">-- Pilih Provinsi --</option>
-                          {INDONESIAN_PROVINCES.map(p => (
-                            <option key={p.id} value={p.name}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kabupaten / Kota</label>
-                        {regencyMode === "select" ? (
-                          <select
-                            required
-                            disabled={!deliveryProvince}
-                            value={deliveryRegency}
-                            title="Kabupaten / Kota"
-                            onChange={e => handleRegencyChange(e.target.value)}
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                          >
-                            <option value="">-- Pilih Kabupaten --</option>
-                            {regencies.map(r => (
-                              <option key={r.id} value={r.name}>{r.name}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            value={deliveryRegency}
-                            onChange={e => handleRegencyChange(e.target.value)}
-                            placeholder="Ketik Kabupaten/Kota..."
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
-                          />
-                        )}
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SearchableSelect
+                        label="Provinsi"
+                        placeholder="Pilih Provinsi"
+                        options={INDONESIAN_PROVINCES.map(p => ({ id: p.id, name: p.name }))}
+                        value={deliveryProvince}
+                        onChange={handleProvinceChange}
+                      />
+                      <SearchableSelect
+                        label="Kabupaten / Kota"
+                        placeholder="Pilih Kabupaten / Kota"
+                        options={regencies.map(r => ({ id: r.id, name: r.name }))}
+                        value={deliveryRegency}
+                        onChange={handleRegencyChange}
+                        disabled={!deliveryProvince}
+                        loading={loadingRegencies}
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kecamatan</label>
-                        {districtMode === "select" ? (
-                          <select
-                            required
-                            disabled={!deliveryRegency}
-                            value={deliveryDistrict}
-                            title="Kecamatan"
-                            onChange={e => handleDistrictChange(e.target.value)}
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                          >
-                            <option value="">-- Pilih Kecamatan --</option>
-                            {districts.map(d => (
-                              <option key={d.id} value={d.name}>{d.name}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            value={deliveryDistrict}
-                            onChange={e => handleDistrictChange(e.target.value)}
-                            placeholder="Ketik Kecamatan..."
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kelurahan / Desa</label>
-                        {villageMode === "select" ? (
-                          <select
-                            required
-                            disabled={!deliveryDistrict}
-                            value={deliveryVillage}
-                            title="Kelurahan / Desa"
-                            onChange={e => setDeliveryVillage(e.target.value)}
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark disabled:opacity-50"
-                          >
-                            <option value="">-- Pilih Kelurahan --</option>
-                            {villages.map(v => (
-                              <option key={v.id} value={v.name}>{v.name}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            value={deliveryVillage}
-                            onChange={e => setDeliveryVillage(e.target.value)}
-                            placeholder="Ketik Kelurahan/Desa..."
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
-                          />
-                        )}
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SearchableSelect
+                        label="Kecamatan"
+                        placeholder="Pilih Kecamatan"
+                        options={districts.map(d => ({ id: d.id, name: d.name }))}
+                        value={deliveryDistrict}
+                        onChange={handleDistrictChange}
+                        disabled={!deliveryRegency}
+                        loading={loadingDistricts}
+                      />
+                      <SearchableSelect
+                        label="Kelurahan / Desa"
+                        placeholder="Pilih Kelurahan / Desa"
+                        options={villages.map(v => ({ id: v.id, name: v.name }))}
+                        value={deliveryVillage}
+                        onChange={handleVillageChange}
+                        disabled={!deliveryDistrict}
+                        loading={loadingVillages}
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1290,14 +1363,37 @@ export default function CartPage() {
                       </div>
                       <div>
                         <label className="text-[9px] font-black text-muted uppercase block mb-1">Kode Pos</label>
-                        <input
-                          type="text"
-                          required
-                          value={deliveryPostalCode}
-                          onChange={e => setDeliveryPostalCode(e.target.value)}
-                          placeholder="Kode Pos"
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
-                        />
+                        {loadingPostalCodes ? (
+                          <div className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-muted">
+                            <span>Memuat Kode Pos...</span>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                          </div>
+                        ) : postalCodes.length > 0 ? (
+                          <select
+                            required
+                            value={deliveryPostalCode}
+                            title="Kode Pos"
+                            onChange={e => setDeliveryPostalCode(e.target.value)}
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          >
+                            <option value="">-- Pilih Kode Pos --</option>
+                            {postalCodes.map(code => (
+                              <option key={code} value={code}>{code}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            value={deliveryPostalCode}
+                            onChange={e => setDeliveryPostalCode(e.target.value)}
+                            placeholder="Kode Pos"
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          />
+                        )}
+                        {postalCodes.length > 0 && (
+                          <span className="text-[8px] text-primary font-medium mt-1 block">Kode pos otomatis terisi setelah Kelurahan dipilih.</span>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -1418,28 +1514,37 @@ export default function CartPage() {
                 <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-6 h-6" /></button>
               </div>
 
-              <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="p-6 md:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {paymentMethod === "cash" && (
-                  <div className="space-y-6 text-center py-6">
-                    <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
-                      <Banknote className="w-10 h-10" />
+                  <div className="space-y-6 text-center py-4 md:py-6">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+                      <Banknote className="w-8 h-8 md:w-10 md:h-10" />
                     </div>
                     <div className="space-y-2 max-w-md mx-auto">
-                      <h3 className="font-black text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
-                      <p className="text-muted text-sm leading-relaxed">
+                      <h3 className="font-bold text-lg md:text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
+                      <p className="text-muted text-xs md:text-sm leading-relaxed px-2">
                         {orderType === "delivery" ? (
-                          <>Pesanan Anda akan segera diproses. Pembayaran dilakukan secara tunai kepada kurir saat pesanan Anda diantar sampai ke tujuan.</>
+                          <>Pesanan Anda akan segera kami proses. Silakan siapkan pembayaran tunai untuk diberikan kepada kurir saat pesanan tiba di alamat Anda.</>
                         ) : orderType === "takeaway" ? (
-                          <>Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat Anda mengambil makanan di restoran.</>
+                          <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir saat mengambil pesanan.</>
                         ) : (
-                          <>Pesanan Anda akan dikirim ke dapur. Pembayaran dilakukan secara tunai kepada kasir saat pesanan selesai atau ketika Anda makan.</>
+                          <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir setelah selesai makan.</>
                         )}
                       </p>
                     </div>
-                    <div className="flex gap-4 pt-4 border-t border-border-light dark:border-border-dark">
-                      <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 border border-border-light dark:border-border-dark rounded-2xl font-bold text-muted hover:bg-gray-50 transition-colors">Batal</button>
-                      <button onClick={() => handleCheckoutClick()} disabled={loading} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi Pesanan</>}
+                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-4 border-t border-border-light/60 dark:border-border-dark/60">
+                      <button 
+                        onClick={() => setShowPaymentModal(false)} 
+                        className="w-full sm:flex-1 order-2 sm:order-1 py-2.5 sm:py-3 px-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm md:text-base"
+                      >
+                        Batal
+                      </button>
+                      <button 
+                        onClick={() => handleCheckoutClick()} 
+                        disabled={loading} 
+                        className="w-full sm:flex-1 order-1 sm:order-2 py-2.5 sm:py-3 px-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all text-xs sm:text-sm md:text-base disabled:opacity-50"
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> Konfirmasi Pesanan</>}
                       </button>
                     </div>
                   </div>

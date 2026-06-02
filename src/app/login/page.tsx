@@ -394,7 +394,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!identifier) return toast.error("Email atau ID Karyawan tidak boleh kosong");
+    if (!identifier) return toast.error("Email tidak boleh kosong");
     if (!password) return toast.error("Password tidak boleh kosong");
 
     setLoading(true);
@@ -423,7 +423,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        toast.error(error.message === "Invalid login credentials" ? "Email/ID atau password salah" : error.message);
+        toast.error(error.message === "Invalid login credentials" ? "Email atau password salah" : error.message);
         setLoading(false);
         return;
       }
@@ -605,7 +605,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-light dark:text-text-dark">Email atau ID Karyawan</label>
+            <label className="text-sm font-medium text-text-light dark:text-text-dark">Email</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-muted" />
@@ -615,7 +615,7 @@ export default function LoginPage() {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark"
-                placeholder="Email atau ID Karyawan"
+                placeholder="Alamat email terdaftar"
               />
             </div>
           </div>

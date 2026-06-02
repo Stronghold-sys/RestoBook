@@ -62,6 +62,7 @@ interface SearchableSelectProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   loading?: boolean;
+  align?: "left" | "right";
 }
 
 function SearchableSelect({
@@ -71,7 +72,8 @@ function SearchableSelect({
   value,
   onChange,
   disabled = false,
-  loading = false
+  loading = false,
+  align = "left"
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -118,7 +120,7 @@ function SearchableSelect({
       </button>
 
       {isOpen && !disabled && !loading && (
-        <div className="absolute left-0 right-0 mt-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-xl z-50 overflow-hidden max-h-60 flex flex-col">
+        <div className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-1.5 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-xl z-50 overflow-hidden max-h-60 flex flex-col w-max min-w-full max-w-[calc(100vw-2rem)] sm:max-w-[400px]`}>
           <div className="p-2 border-b border-border-light dark:border-border-dark bg-background-light/50 dark:bg-background-dark/50 flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-muted shrink-0" />
             <input
@@ -146,8 +148,8 @@ function SearchableSelect({
                     opt.name === value ? "bg-primary/10 text-primary" : "text-text-light dark:text-text-dark"
                   }`}
                 >
-                  <span className="truncate pr-2 md:whitespace-normal md:overflow-visible">{opt.name}</span>
-                  {opt.name === value && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />}
+                  <span className="whitespace-nowrap truncate pr-4 text-left" title={opt.name}>{opt.name}</span>
+                  {opt.name === value && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0 ml-2" />}
                 </button>
               ))
             )}
@@ -1298,7 +1300,7 @@ export default function CartPage() {
                   </motion.div>
                 )}
                 {orderType === "delivery" && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 overflow-hidden text-left">
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 text-left">
                     <h4 className="text-xs font-bold text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
@@ -1332,6 +1334,7 @@ export default function CartPage() {
                         options={provincesList.map(p => ({ id: p.id, name: p.name }))}
                         value={deliveryProvince}
                         onChange={handleProvinceChange}
+                        align="left"
                       />
                       <SearchableSelect
                         label="Kabupaten / Kota"
@@ -1341,6 +1344,7 @@ export default function CartPage() {
                         onChange={handleRegencyChange}
                         disabled={!deliveryProvince}
                         loading={loadingRegencies}
+                        align="right"
                       />
                     </div>
 
@@ -1353,6 +1357,7 @@ export default function CartPage() {
                         onChange={handleDistrictChange}
                         disabled={!deliveryRegency}
                         loading={loadingDistricts}
+                        align="left"
                       />
                       <SearchableSelect
                         label="Kelurahan / Desa"
@@ -1362,6 +1367,7 @@ export default function CartPage() {
                         onChange={handleVillageChange}
                         disabled={!deliveryDistrict}
                         loading={loadingVillages}
+                        align="right"
                       />
                     </div>
 

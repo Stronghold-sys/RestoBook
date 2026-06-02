@@ -470,7 +470,7 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       if (pStatus === 'paid') {
-        const payMethodName = pMethod === 'cash' ? 'Tunai' : pMethod === 'wallet' ? 'Dompetku' : 'Duitku';
+        const payMethodName = pMethod === 'cash' ? 'Tunai' : pMethod === 'wallet' ? 'Dompetku' : 'Pembayaran Online';
         const paidNotif = getPaidNotification(order, payMethodName);
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
@@ -517,7 +517,7 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
 
       if (pStatus === 'paid') {
-        const payMethodName = order.payment_method === 'cash' ? 'Tunai' : order.payment_method === 'wallet' ? 'Dompetku' : 'Duitku';
+        const payMethodName = order.payment_method === 'cash' ? 'Tunai' : order.payment_method === 'wallet' ? 'Dompetku' : 'Pembayaran Online';
         const paidNotif = getPaidNotification(order, payMethodName);
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
@@ -711,7 +711,7 @@ export async function POST(req: NextRequest) {
 
       if (order.payment_method === 'non_cash' && order.payment_status === 'unpaid') {
         title = 'Menunggu Pembayaran';
-        message = `Pesanan Anda #${orderId.split('-')[0].toUpperCase()} telah dibuat. Silakan lakukan pembayaran online Duitku agar pesanan dapat segera dikonfirmasi dan diproses.`;
+        message = `Pesanan Anda #${orderId.split('-')[0].toUpperCase()} telah dibuat. Silakan lakukan pembayaran online agar pesanan dapat segera dikonfirmasi dan diproses.`;
         statusBadge = 'Menunggu untuk dibayar';
       }
 
@@ -751,7 +751,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
           title: 'Pembayaran Belum Selesai',
-          message: `Anda keluar dari portal pembayaran online Duitku sebelum menyelesaikan transaksi untuk No. Pesanan #${shortId}. Silakan lakukan pembayaran ulang.`,
+          message: `Anda telah keluar dari halaman pembayaran online sebelum menyelesaikan transaksi untuk No. Pesanan #${shortId}. Silakan lakukan pembayaran ulang.`,
           type: 'order',
           order_id: orderId,
           status_badge: 'Menunggu untuk dibayar ulang'

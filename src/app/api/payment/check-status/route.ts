@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       }
 
       if (finalOrder && finalOrder.customer_id) {
-        const paidNotif = getPaidNotification(finalOrder, 'Duitku');
+        const paidNotif = getPaidNotification(finalOrder, 'Pembayaran Online');
         await supabaseAdmin.from('notifications').insert({
           user_id: finalOrder.customer_id,
           title: paidNotif.title,

@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, expiryDays, redeemLimit, redeemLimitPeriod } = body;
+    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, expiryDays, redeemLimit, redeemLimitValue, redeemLimitPeriod, expiresAt } = body;
 
     if (!title || !category) {
       return NextResponse.json({ error: 'Judul dan Kategori harus diisi' }, { status: 400 });
@@ -126,7 +126,9 @@ export async function POST(req: NextRequest) {
         is_auto_cashback: !!isAutoCashback,
         expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
         redeem_limit: redeemLimit === '' || redeemLimit === null || redeemLimit === undefined ? null : Number(redeemLimit),
+        redeem_limit_value: redeemLimitValue === '' || redeemLimitValue === null || redeemLimitValue === undefined ? 1 : Number(redeemLimitValue),
         redeem_limit_period: redeemLimitPeriod || 'all',
+        expires_at: expiresAt === '' || expiresAt === null || expiresAt === undefined ? null : expiresAt,
         is_active: true
       })
       .select()
@@ -167,7 +169,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive, expiryDays, redeemLimit, redeemLimitPeriod } = body;
+    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive, expiryDays, redeemLimit, redeemLimitValue, redeemLimitPeriod, expiresAt } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID Reward tidak disertakan' }, { status: 400 });
@@ -189,7 +191,9 @@ export async function PUT(req: NextRequest) {
         is_auto_cashback: !!isAutoCashback,
         expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
         redeem_limit: redeemLimit === '' || redeemLimit === null || redeemLimit === undefined ? null : Number(redeemLimit),
+        redeem_limit_value: redeemLimitValue === '' || redeemLimitValue === null || redeemLimitValue === undefined ? 1 : Number(redeemLimitValue),
         redeem_limit_period: redeemLimitPeriod || 'all',
+        expires_at: expiresAt === '' || expiresAt === null || expiresAt === undefined ? null : expiresAt,
         is_active: isActive,
         updated_at: new Date().toISOString()
       })

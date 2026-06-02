@@ -87,10 +87,11 @@ export default function CustomerRewardsPage() {
 
   const checkRedemptionLimit = (reward: any) => {
     if (!reward.redeem_limit || reward.redeem_limit <= 0) {
-      return { exceeded: false, message: "" };
+      return { exceeded: false, count: 0, limit: 0, period: "all", message: "" };
     }
 
     const limit = reward.redeem_limit;
+    const limitValue = reward.redeem_limit_value || 1;
     const period = reward.redeem_limit_period || "all";
 
     // Filter redemptions for this reward that are not cancelled
@@ -101,48 +102,40 @@ export default function CustomerRewardsPage() {
     const now = new Date();
     let activeRedemptions = rewardRedemptions;
 
-    if (period === "hour") {
-      activeRedemptions = rewardRedemptions.filter((r) => {
-        const d = new Date(r.created_at);
-        return (
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth() &&
-          d.getDate() === now.getDate() &&
-          d.getHours() === now.getHours()
-        );
-      });
-    } else if (period === "day") {
-      activeRedemptions = rewardRedemptions.filter((r) => {
-        const d = new Date(r.created_at);
-        return (
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth() &&
-          d.getDate() === now.getDate()
-        );
-      });
-    } else if (period === "week") {
-      const startOfWeek = new Date(now);
-      const day = startOfWeek.getDay();
-      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-      startOfWeek.setDate(diff);
-      startOfWeek.setHours(0, 0, 0, 0);
+    if (period !== "all") {
+      let offsetMs = 0;
+      if (period === "minute") {
+        offsetMs = limitValue * 60 * 1000;
+      } else if (period === "hour") {
+        offsetMs = limitValue * 60 * 60 * 1000;
+      } else if (period === "day") {
+        offsetMs = limitValue * 24 * 60 * 60 * 1000;
+      } else if (period === "week") {
+        offsetMs = limitValue * 7 * 24 * 60 * 60 * 1000;
+      } else if (period === "month") {
+        const boundary = new Date(now);
+        boundary.setMonth(boundary.getMonth() - limitValue);
+        activeRedemptions = rewardRedemptions.filter((r) => {
+          const d = new Date(r.created_at);
+          return d >= boundary;
+        });
+      }
 
-      activeRedemptions = rewardRedemptions.filter((r) => {
-        const d = new Date(r.created_at);
-        return d >= startOfWeek;
-      });
-    } else if (period === "month") {
-      activeRedemptions = rewardRedemptions.filter((r) => {
-        const d = new Date(r.created_at);
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      });
+      if (period !== "month") {
+        const boundaryTime = now.getTime() - offsetMs;
+        activeRedemptions = rewardRedemptions.filter((r) => {
+          const d = new Date(r.created_at).getTime();
+          return d >= boundaryTime;
+        });
+      }
     }
 
     const count = activeRedemptions.length;
     const exceeded = count >= limit;
 
     let periodLabel = "";
-    if (period === "hour") periodLabel = "jam";
+    if (period === "minute") periodLabel = "menit";
+    else if (period === "hour") periodLabel = "jam";
     else if (period === "day") periodLabel = "hari";
     else if (period === "week") periodLabel = "minggu";
     else if (period === "month") periodLabel = "bulan";
@@ -150,19 +143,13 @@ export default function CustomerRewardsPage() {
     let message = "";
     if (exceeded) {
       if (period === "all") {
-        message = `Kuota penukaran reward ini telah habis (Maksimal ${limit}x).`;
+        message = "Kuota penukaran penuh. Reward ini tidak dapat ditukarkan lagi.";
       } else {
-        message = `Kuota penukaran penuh (${limit}x per ${periodLabel}). Dapat ditukar kembali pada ${periodLabel} berikutnya.`;
-      }
-    } else if (limit > 0) {
-      if (period === "all") {
-        message = `Batas penukaran: ${count}/${limit} kali`;
-      } else {
-        message = `Batas penukaran: ${count}/${limit} kali per ${periodLabel}`;
+        message = "Kuota penukaran penuh. Dapat ditukar kembali pada periode berikutnya.";
       }
     }
 
-    return { exceeded, count, limit, period, message };
+    return { exceeded, count, limit, period, message, limitValue, periodLabel };
   };
 
   const handleRedeemClick = (reward: any) => {
@@ -482,7 +469,9 @@ export default function CustomerRewardsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {rewards.map((reward) => {
+                  {rewards
+                    .filter(reward => !reward.expires_at || new Date(reward.expires_at).getTime() > Date.now())
+                    .map((reward) => {
                     const isPointsEnough = profile.points >= reward.min_points;
                     const isOutOfStock = reward.stock !== null && reward.stock <= 0;
                     const diffPoints = reward.min_points - profile.points;
@@ -536,52 +525,59 @@ export default function CustomerRewardsPage() {
                           </div>
                         </div>
 
-                        <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex items-center justify-between gap-4">
-                          <div className="flex flex-col gap-0.5">
-                            {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
-                              <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
-                                Masa Aktif: {reward.expiry_days} Hari
-                              </span>
-                            )}
-                            {limitCheck.message && (
-                              <span className={`text-[10px] font-extrabold ${limitCheck.exceeded ? "text-rose-600 dark:text-rose-450 animate-pulse" : "text-primary"}`}>
-                                {limitCheck.message}
-                              </span>
+                        <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 space-y-2">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-col gap-0.5">
+                              {reward.expires_at && (
+                                <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
+                                  Dapat ditukar s.d: {format(new Date(reward.expires_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
+                                </span>
+                              )}
+                              {reward.redeem_limit !== null && reward.redeem_limit > 0 && (
+                                <span className="text-[10px] font-extrabold text-primary">
+                                  Sisa penukaran: {limitCheck.count}/{limitCheck.limit}
+                                </span>
+                              )}
+                            </div>
+
+                            {isOutOfStock ? (
+                              <button
+                                disabled
+                                className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed shrink-0"
+                              >
+                                Stok Habis
+                              </button>
+                            ) : limitCheck.exceeded ? (
+                              <button
+                                disabled
+                                className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed shrink-0"
+                              >
+                                Kuota Habis
+                              </button>
+                            ) : !isPointsEnough ? (
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                <button
+                                  disabled
+                                  className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
+                                >
+                                  Poin Kurang
+                                </button>
+                                <span className="text-[9px] font-black text-rose-500 uppercase tracking-wide">Kurang {diffPoints} poin lagi</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleRedeemClick(reward)}
+                                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-1.5 shrink-0"
+                              >
+                                Redeem <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
 
-
-                          {isOutOfStock ? (
-                            <button
-                              disabled
-                              className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
-                            >
-                              Stok Habis
-                            </button>
-                          ) : limitCheck.exceeded ? (
-                            <button
-                              disabled
-                              className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
-                            >
-                              Kuota Habis
-                            </button>
-                          ) : !isPointsEnough ? (
-                            <div className="flex flex-col items-end gap-1">
-                              <button
-                                disabled
-                                className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
-                              >
-                                Poin Kurang
-                              </button>
-                              <span className="text-[9px] font-black text-rose-500 uppercase tracking-wide">Kurang {diffPoints} poin lagi</span>
+                          {limitCheck.exceeded && limitCheck.message && (
+                            <div className="text-[10px] font-extrabold text-rose-650 dark:text-rose-400 animate-pulse bg-rose-50/50 dark:bg-rose-950/10 border border-rose-200/20 rounded-xl p-2.5 leading-relaxed text-left">
+                              {limitCheck.message}
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => handleRedeemClick(reward)}
-                              className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-1.5"
-                            >
-                              Redeem <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
                           )}
                         </div>
                       </motion.div>
@@ -830,10 +826,10 @@ export default function CustomerRewardsPage() {
                             <div className="absolute top-0 right-0 p-3">
                               <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
                                 isExpired
-                                  ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-450 border border-rose-200/20"
+                                  ? "bg-rose-100/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-455 border border-rose-200/20"
                                   : "bg-gray-100 text-gray-500 border border-gray-200"
                               }`}>
-                                {isExpired ? "Kadaluarsa" : "Telah Digunakan"}
+                                {isExpired ? "Kadaluarsa (Belum Digunakan)" : "Telah Digunakan"}
                               </span>
                             </div>
 

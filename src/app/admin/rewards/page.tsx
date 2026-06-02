@@ -70,7 +70,9 @@ export default function AdminRewardsPage() {
     isAutoCashback: false,
     expiryDays: "",
     redeemLimit: "",
-    redeemLimitPeriod: "all"
+    redeemLimitValue: "1",
+    redeemLimitPeriod: "all",
+    expiresAt: ""
   });
 
   // Customer manual adjustment modal
@@ -190,6 +192,21 @@ export default function AdminRewardsPage() {
 
 
   const handleOpenRewardModal = (reward: any = null) => {
+    const formatDatetimeLocal = (isoString: string) => {
+      if (!isoString) return "";
+      try {
+        const date = new Date(isoString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      } catch {
+        return "";
+      }
+    };
+
     if (reward) {
       setCurrentReward(reward);
       setRewardForm({
@@ -204,7 +221,9 @@ export default function AdminRewardsPage() {
         isAutoCashback: !!reward.is_auto_cashback,
         expiryDays: reward.expiry_days !== null && reward.expiry_days !== undefined ? String(reward.expiry_days) : "",
         redeemLimit: reward.redeem_limit !== null && reward.redeem_limit !== undefined ? String(reward.redeem_limit) : "",
-        redeemLimitPeriod: reward.redeem_limit_period || "all"
+        redeemLimitValue: reward.redeem_limit_value !== null && reward.redeem_limit_value !== undefined ? String(reward.redeem_limit_value) : "1",
+        redeemLimitPeriod: reward.redeem_limit_period || "all",
+        expiresAt: formatDatetimeLocal(reward.expires_at)
       });
     } else {
       setCurrentReward(null);
@@ -220,36 +239,31 @@ export default function AdminRewardsPage() {
         isAutoCashback: false,
         expiryDays: "",
         redeemLimit: "",
-        redeemLimitPeriod: "all"
+        redeemLimitValue: "1",
+        redeemLimitPeriod: "all",
+        expiresAt: ""
       });
     }
     setShowRewardModal(true);
   };
 
   const generateAutoDescription = () => {
-    const { title, category, minPoints, discountPercent, cashbackAmount, isAutoCashback, stock, expiryDays } = rewardForm;
+    const { title, category, minPoints, discountPercent, expiryDays } = rewardForm;
     const pts = Number(minPoints) || 0;
     const exp = expiryDays ? `Berlaku ${expiryDays} hari setelah ditukar.` : "Berlaku tanpa batas waktu.";
-    const stokInfo = stock ? `Stok tersedia: ${stock} buah.` : "Stok tidak terbatas.";
 
     let desc = "";
     if (category === "voucher") {
       const disc = Number(discountPercent) || 0;
-      desc = `${title || "Reward ini"} memberikan diskon sebesar ${disc}% untuk pembelian di RestoBook. Dapat ditukar dengan minimal ${pts} poin. ${exp} ${stokInfo}`;
+      desc = `${title || "Reward ini"} memberikan diskon sebesar ${disc}% untuk pembelian di RestoBook. Dapat ditukar dengan minimal ${pts} poin. ${exp}`;
     } else if (category === "food") {
-      desc = `${title || "Menu spesial ini"} hadir sebagai hadiah eksklusif untuk pelanggan setia RestoBook! Tukarkan minimal ${pts} poin Anda dan nikmati sajian istimewa dari kami. ${exp} ${stokInfo}`;
+      desc = `${title || "Menu spesial ini"} hadir sebagai hadiah eksklusif untuk pelanggan setia RestoBook! Tukarkan minimal ${pts} poin Anda dan nikmati sajian istimewa dari kami. ${exp}`;
     } else if (category === "cashback") {
-      if (isAutoCashback) {
-        const estimasi = pts * 100;
-        desc = `Tukarkan ${pts} poin dan dapatkan saldo Dompetku sebesar Rp ${estimasi.toLocaleString("id-ID")} secara otomatis (Rp 100 per poin). ${exp} ${stokInfo}`;
-      } else {
-        const cb = Number(cashbackAmount) || 0;
-        desc = `Tukarkan ${pts} poin dan dapatkan cashback saldo Dompetku sebesar Rp ${cb.toLocaleString("id-ID")}. ${exp} ${stokInfo}`;
-      }
+      desc = `Tukarkan ${pts} poin untuk mendapatkan saldo Dompetku. ${exp}`;
     } else if (category === "product") {
-      desc = `${title || "Produk promo eksklusif ini"} tersedia khusus untuk pelanggan RestoBook. Tukarkan minimal ${pts} poin dan dapatkan produk pilihan kami. ${exp} ${stokInfo}`;
+      desc = `${title || "Produk promo eksklusif ini"} tersedia khusus untuk pelanggan RestoBook. Tukarkan minimal ${pts} poin dan dapatkan produk pilihan kami. ${exp}`;
     } else {
-      desc = `${title || "Reward eksklusif ini"} dapat ditukar dengan minimal ${pts} poin RestoBook. ${exp} ${stokInfo}`;
+      desc = `${title || "Reward eksklusif ini"} dapat ditukar dengan minimal ${pts} poin RestoBook. ${exp}`;
     }
     setRewardForm((prev: any) => ({ ...prev, description: desc }));
     toast.success("Deskripsi berhasil digenerate!");
@@ -271,7 +285,9 @@ export default function AdminRewardsPage() {
         isAutoCashback: !!rewardForm.isAutoCashback,
         expiryDays: rewardForm.expiryDays === "" ? null : Number(rewardForm.expiryDays),
         redeemLimit: rewardForm.redeemLimit === "" ? null : Number(rewardForm.redeemLimit),
+        redeemLimitValue: rewardForm.redeemLimitValue === "" ? 1 : Number(rewardForm.redeemLimitValue),
         redeemLimitPeriod: rewardForm.redeemLimitPeriod || "all",
+        expiresAt: rewardForm.expiresAt === "" ? null : new Date(rewardForm.expiresAt).toISOString(),
         isActive: currentReward ? currentReward.is_active : true
       };
       const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
@@ -339,7 +355,9 @@ export default function AdminRewardsPage() {
           cashbackAmount: reward.cashback_amount,
           expiryDays: reward.expiry_days,
           redeemLimit: reward.redeem_limit !== null && reward.redeem_limit !== undefined ? String(reward.redeem_limit) : "",
+          redeemLimitValue: reward.redeem_limit_value !== null && reward.redeem_limit_value !== undefined ? String(reward.redeem_limit_value) : "1",
           redeemLimitPeriod: reward.redeem_limit_period || "all",
+          expiresAt: reward.expires_at || null,
           isActive: !reward.is_active
         })
       });
@@ -740,18 +758,28 @@ export default function AdminRewardsPage() {
                             </span>
                             {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
                               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                Kadaluarsa: {reward.expiry_days} Hari
+                                Kadaluarsa Penggunaan: {reward.expiry_days} Hari setelah ditukar
                               </span>
                             )}
                             {reward.redeem_limit !== null && reward.redeem_limit !== undefined && reward.redeem_limit > 0 && (
                               <span className="text-[10px] font-bold text-primary flex items-center gap-1 mt-0.5">
                                 <Clock className="w-3 h-3 text-primary shrink-0" />
                                 Limit: {reward.redeem_limit}x per {
-                                  reward.redeem_limit_period === 'hour' ? 'jam' :
-                                  reward.redeem_limit_period === 'day' ? 'hari' :
-                                  reward.redeem_limit_period === 'week' ? 'minggu' :
-                                  reward.redeem_limit_period === 'month' ? 'bulan' : 'selamanya'
+                                  reward.redeem_limit_period === 'all' ? 'selamanya' :
+                                  `${reward.redeem_limit_value || 1} ${
+                                    reward.redeem_limit_period === 'minute' ? 'menit' :
+                                    reward.redeem_limit_period === 'hour' ? 'jam' :
+                                    reward.redeem_limit_period === 'day' ? 'hari' :
+                                    reward.redeem_limit_period === 'week' ? 'minggu' :
+                                    reward.redeem_limit_period === 'month' ? 'bulan' : 'periode'
+                                  }`
                                 }
+                              </span>
+                            )}
+                            {reward.expires_at && (
+                              <span className="text-[10px] font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-3 h-3 text-rose-500 dark:text-rose-400 shrink-0" />
+                                Kadaluarsa Katalog: {format(new Date(reward.expires_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
                               </span>
                             )}
                           </div>
@@ -1461,37 +1489,70 @@ export default function AdminRewardsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="rewardRedeemLimit" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Batas Penukaran Pelanggan</label>
-                    <input 
-                      id="rewardRedeemLimit"
-                      type="number" 
-                      min={1}
-                      value={rewardForm.redeemLimit} 
-                      onChange={e => setRewardForm({ ...rewardForm, redeemLimit: e.target.value })} 
-                      placeholder="Tak terbatas"
-                      title="Batas Penukaran Pelanggan"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                    />
-                  </div>
+                <div className="bg-gray-50 dark:bg-gray-900/45 p-4 rounded-2xl border border-gray-150 dark:border-gray-800 space-y-4">
+                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block font-extrabold">Batas Kuota Penukaran Pelanggan</span>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label htmlFor="rewardRedeemLimit" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Kuota (x)</label>
+                      <input 
+                        id="rewardRedeemLimit"
+                        type="number" 
+                        min={1}
+                        value={rewardForm.redeemLimit} 
+                        onChange={e => setRewardForm({ ...rewardForm, redeemLimit: e.target.value })} 
+                        placeholder="Bebas"
+                        title="Batas Penukaran Pelanggan"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                      />
+                    </div>
 
-                  <div>
-                    <label htmlFor="rewardRedeemLimitPeriod" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Periode Batas</label>
-                    <select 
-                      id="rewardRedeemLimitPeriod"
-                      value={rewardForm.redeemLimitPeriod} 
-                      onChange={e => setRewardForm({ ...rewardForm, redeemLimitPeriod: e.target.value })} 
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      title="Periode Batas"
-                    >
-                      <option value="all">Selamanya (Lifetime)</option>
-                      <option value="hour">Per Jam</option>
-                      <option value="day">Per Hari</option>
-                      <option value="week">Per Minggu</option>
-                      <option value="month">Per Bulan</option>
-                    </select>
+                    <div>
+                      <label htmlFor="rewardRedeemLimitValue" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Durasi</label>
+                      <input 
+                        id="rewardRedeemLimitValue"
+                        type="number" 
+                        min={1}
+                        disabled={rewardForm.redeemLimitPeriod === "all"}
+                        value={rewardForm.redeemLimitPeriod === "all" ? "" : rewardForm.redeemLimitValue} 
+                        onChange={e => setRewardForm({ ...rewardForm, redeemLimitValue: e.target.value })} 
+                        placeholder="1"
+                        title="Durasi Batas"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark disabled:opacity-50 disabled:bg-gray-100" 
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="rewardRedeemLimitPeriod" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Unit Periode</label>
+                      <select 
+                        id="rewardRedeemLimitPeriod"
+                        value={rewardForm.redeemLimitPeriod} 
+                        onChange={e => setRewardForm({ ...rewardForm, redeemLimitPeriod: e.target.value })} 
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                        title="Periode Batas"
+                      >
+                        <option value="all">Selamanya</option>
+                        <option value="minute">Menit</option>
+                        <option value="hour">Jam</option>
+                        <option value="day">Hari</option>
+                        <option value="week">Minggu</option>
+                        <option value="month">Bulan</option>
+                      </select>
+                    </div>
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="rewardExpiresAt" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Tanggal Kadaluarsa Katalog (Selesai Tayang)</label>
+                  <input 
+                    id="rewardExpiresAt"
+                    type="datetime-local" 
+                    value={rewardForm.expiresAt} 
+                    onChange={e => setRewardForm({ ...rewardForm, expiresAt: e.target.value })} 
+                    title="Tanggal Kadaluarsa Katalog"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  />
+                  <p className="text-[10px] text-muted mt-1">Kosongkan jika reward ingin selalu tampil di katalog pelanggan.</p>
                 </div>
 
                 <div>

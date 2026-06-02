@@ -30,11 +30,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 });
     }
 
+    const nowStr = new Date().toISOString();
     // Get active rewards catalog
     const { data: rewards, error: rewardsError } = await supabaseAdmin
       .from('rewards')
       .select('*')
       .eq('is_active', true)
+      .or(`expires_at.is.null,expires_at.gt.${nowStr}`)
       .order('min_points', { ascending: true });
 
     if (rewardsError) throw rewardsError;

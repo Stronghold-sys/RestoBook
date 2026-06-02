@@ -684,10 +684,6 @@ export default function CustomerWalletPage() {
                 >
                   Isi Saldo
                 </button>
-                <span className="text-[10px] font-bold text-white/90 bg-white/10 px-3 py-1 rounded-full flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-                  Realtime Sync
-                </span>
               </div>
             </motion.div>
 

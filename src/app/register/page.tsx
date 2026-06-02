@@ -261,14 +261,14 @@ export default function RegisterPage() {
                   <label htmlFor="regName" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nama Lengkap</label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regName" title="Nama Lengkap" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Budi Santoso" />
+                    <input id="regName" title="Nama Lengkap" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Masukkan nama lengkap Anda" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="regEmail" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regEmail" title="Email" type="email" name="email" value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="budi@email.com" />
+                    <input id="regEmail" title="Email" type="email" name="email" value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Masukan email aktif Anda" />
                   </div>
                 </div>
                 <div>

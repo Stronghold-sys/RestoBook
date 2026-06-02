@@ -107,7 +107,7 @@ function SearchableSelect({
           disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"
         }`}
       >
-        <span className={selectedOption ? "text-text-light dark:text-text-dark font-semibold truncate pr-2" : "text-muted truncate pr-2"}>
+        <span className={selectedOption ? "text-text-light dark:text-text-dark font-semibold truncate pr-2 md:whitespace-normal md:overflow-visible" : "text-muted truncate pr-2 md:whitespace-normal md:overflow-visible"}>
           {loading ? "Memuat..." : selectedOption ? selectedOption.name : placeholder}
         </span>
         {loading ? (
@@ -146,7 +146,7 @@ function SearchableSelect({
                     opt.name === value ? "bg-primary/10 text-primary" : "text-text-light dark:text-text-dark"
                   }`}
                 >
-                  <span className="truncate pr-2">{opt.name}</span>
+                  <span className="truncate pr-2 md:whitespace-normal md:overflow-visible">{opt.name}</span>
                   {opt.name === value && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />}
                 </button>
               ))

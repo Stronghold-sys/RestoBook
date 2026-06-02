@@ -68,7 +68,9 @@ export default function AdminRewardsPage() {
     discountPercent: 10,
     cashbackAmount: 0,
     isAutoCashback: false,
-    expiryDays: ""
+    expiryDays: "",
+    redeemLimit: "",
+    redeemLimitPeriod: "all"
   });
 
   // Customer manual adjustment modal
@@ -112,6 +114,9 @@ export default function AdminRewardsPage() {
         fetchAdminData();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "point_transactions" }, () => {
+        fetchAdminData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rewards" }, () => {
         fetchAdminData();
       })
       .subscribe();
@@ -197,7 +202,9 @@ export default function AdminRewardsPage() {
         discountPercent: reward.discount_percent || 10,
         cashbackAmount: reward.cashback_amount || 0,
         isAutoCashback: !!reward.is_auto_cashback,
-        expiryDays: reward.expiry_days !== null && reward.expiry_days !== undefined ? String(reward.expiry_days) : ""
+        expiryDays: reward.expiry_days !== null && reward.expiry_days !== undefined ? String(reward.expiry_days) : "",
+        redeemLimit: reward.redeem_limit !== null && reward.redeem_limit !== undefined ? String(reward.redeem_limit) : "",
+        redeemLimitPeriod: reward.redeem_limit_period || "all"
       });
     } else {
       setCurrentReward(null);
@@ -211,7 +218,9 @@ export default function AdminRewardsPage() {
         discountPercent: 10,
         cashbackAmount: 0,
         isAutoCashback: false,
-        expiryDays: ""
+        expiryDays: "",
+        redeemLimit: "",
+        redeemLimitPeriod: "all"
       });
     }
     setShowRewardModal(true);
@@ -261,6 +270,8 @@ export default function AdminRewardsPage() {
         cashbackAmount: !rewardForm.cashbackAmount ? 0 : Number(rewardForm.cashbackAmount),
         isAutoCashback: !!rewardForm.isAutoCashback,
         expiryDays: rewardForm.expiryDays === "" ? null : Number(rewardForm.expiryDays),
+        redeemLimit: rewardForm.redeemLimit === "" ? null : Number(rewardForm.redeemLimit),
+        redeemLimitPeriod: rewardForm.redeemLimitPeriod || "all",
         isActive: currentReward ? currentReward.is_active : true
       };
       const bodyPayload = currentReward ? { id: currentReward.id, ...cleanedForm } : cleanedForm;
@@ -327,6 +338,8 @@ export default function AdminRewardsPage() {
           discountPercent: reward.discount_percent,
           cashbackAmount: reward.cashback_amount,
           expiryDays: reward.expiry_days,
+          redeemLimit: reward.redeem_limit !== null && reward.redeem_limit !== undefined ? String(reward.redeem_limit) : "",
+          redeemLimitPeriod: reward.redeem_limit_period || "all",
           isActive: !reward.is_active
         })
       });
@@ -703,7 +716,7 @@ export default function AdminRewardsPage() {
                             </div>
                           </div>
 
-                          <p className="text-xs text-muted leading-relaxed line-clamp-2">
+                          <p className="text-xs text-muted leading-relaxed">
                             {reward.description || "Tidak ada deskripsi."}
                           </p>
 
@@ -728,6 +741,17 @@ export default function AdminRewardsPage() {
                             {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
                               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
                                 Kadaluarsa: {reward.expiry_days} Hari
+                              </span>
+                            )}
+                            {reward.redeem_limit !== null && reward.redeem_limit !== undefined && reward.redeem_limit > 0 && (
+                              <span className="text-[10px] font-bold text-primary flex items-center gap-1 mt-0.5">
+                                <Clock className="w-3 h-3 text-primary shrink-0" />
+                                Limit: {reward.redeem_limit}x per {
+                                  reward.redeem_limit_period === 'hour' ? 'jam' :
+                                  reward.redeem_limit_period === 'day' ? 'hari' :
+                                  reward.redeem_limit_period === 'week' ? 'minggu' :
+                                  reward.redeem_limit_period === 'month' ? 'bulan' : 'selamanya'
+                                }
                               </span>
                             )}
                           </div>
@@ -1435,6 +1459,39 @@ export default function AdminRewardsPage() {
                     title="Masa Berlaku Reward Setelah Ditukar (Hari)"
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="rewardRedeemLimit" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Batas Penukaran Pelanggan</label>
+                    <input 
+                      id="rewardRedeemLimit"
+                      type="number" 
+                      min={1}
+                      value={rewardForm.redeemLimit} 
+                      onChange={e => setRewardForm({ ...rewardForm, redeemLimit: e.target.value })} 
+                      placeholder="Tak terbatas"
+                      title="Batas Penukaran Pelanggan"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="rewardRedeemLimitPeriod" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Periode Batas</label>
+                    <select 
+                      id="rewardRedeemLimitPeriod"
+                      value={rewardForm.redeemLimitPeriod} 
+                      onChange={e => setRewardForm({ ...rewardForm, redeemLimitPeriod: e.target.value })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                      title="Periode Batas"
+                    >
+                      <option value="all">Selamanya (Lifetime)</option>
+                      <option value="hour">Per Jam</option>
+                      <option value="day">Per Hari</option>
+                      <option value="week">Per Minggu</option>
+                      <option value="month">Per Bulan</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>

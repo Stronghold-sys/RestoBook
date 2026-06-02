@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, expiryDays } = body;
+    const { title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, expiryDays, redeemLimit, redeemLimitPeriod } = body;
 
     if (!title || !category) {
       return NextResponse.json({ error: 'Judul dan Kategori harus diisi' }, { status: 400 });
@@ -125,6 +125,8 @@ export async function POST(req: NextRequest) {
         cashback_amount: finalCashback,
         is_auto_cashback: !!isAutoCashback,
         expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
+        redeem_limit: redeemLimit === '' || redeemLimit === null || redeemLimit === undefined ? null : Number(redeemLimit),
+        redeem_limit_period: redeemLimitPeriod || 'all',
         is_active: true
       })
       .select()
@@ -165,7 +167,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive, expiryDays } = body;
+    const { id, title, description, category, minPoints, stock, imageUrl, discountPercent, cashbackAmount, isAutoCashback, isActive, expiryDays, redeemLimit, redeemLimitPeriod } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID Reward tidak disertakan' }, { status: 400 });
@@ -186,6 +188,8 @@ export async function PUT(req: NextRequest) {
         cashback_amount: finalCashback,
         is_auto_cashback: !!isAutoCashback,
         expiry_days: expiryDays === '' || expiryDays === null || expiryDays === undefined ? null : Number(expiryDays),
+        redeem_limit: redeemLimit === '' || redeemLimit === null || redeemLimit === undefined ? null : Number(redeemLimit),
+        redeem_limit_period: redeemLimitPeriod || 'all',
         is_active: isActive,
         updated_at: new Date().toISOString()
       })

@@ -47,6 +47,9 @@ export default function CustomerRewardsPage() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
         fetchPointData();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rewards" }, () => {
+        fetchPointData();
+      })
       .subscribe();
 
     const interval = setInterval(() => {
@@ -82,9 +85,94 @@ export default function CustomerRewardsPage() {
     }
   };
 
+  const checkRedemptionLimit = (reward: any) => {
+    if (!reward.redeem_limit || reward.redeem_limit <= 0) {
+      return { exceeded: false, message: "" };
+    }
+
+    const limit = reward.redeem_limit;
+    const period = reward.redeem_limit_period || "all";
+
+    // Filter redemptions for this reward that are not cancelled
+    const rewardRedemptions = redemptions.filter(
+      (r) => r.reward_id === reward.id && r.status !== "cancelled"
+    );
+
+    const now = new Date();
+    let activeRedemptions = rewardRedemptions;
+
+    if (period === "hour") {
+      activeRedemptions = rewardRedemptions.filter((r) => {
+        const d = new Date(r.created_at);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate() &&
+          d.getHours() === now.getHours()
+        );
+      });
+    } else if (period === "day") {
+      activeRedemptions = rewardRedemptions.filter((r) => {
+        const d = new Date(r.created_at);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      });
+    } else if (period === "week") {
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      activeRedemptions = rewardRedemptions.filter((r) => {
+        const d = new Date(r.created_at);
+        return d >= startOfWeek;
+      });
+    } else if (period === "month") {
+      activeRedemptions = rewardRedemptions.filter((r) => {
+        const d = new Date(r.created_at);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      });
+    }
+
+    const count = activeRedemptions.length;
+    const exceeded = count >= limit;
+
+    let periodLabel = "";
+    if (period === "hour") periodLabel = "jam";
+    else if (period === "day") periodLabel = "hari";
+    else if (period === "week") periodLabel = "minggu";
+    else if (period === "month") periodLabel = "bulan";
+
+    let message = "";
+    if (exceeded) {
+      if (period === "all") {
+        message = `Kuota penukaran reward ini telah habis (Maksimal ${limit}x).`;
+      } else {
+        message = `Kuota penukaran penuh (${limit}x per ${periodLabel}). Dapat ditukar kembali pada ${periodLabel} berikutnya.`;
+      }
+    } else if (limit > 0) {
+      if (period === "all") {
+        message = `Batas penukaran: ${count}/${limit} kali`;
+      } else {
+        message = `Batas penukaran: ${count}/${limit} kali per ${periodLabel}`;
+      }
+    }
+
+    return { exceeded, count, limit, period, message };
+  };
+
   const handleRedeemClick = (reward: any) => {
     if (profile.is_redeem_blocked) {
       toast.error("Akses penukaran poin Anda sedang diblokir oleh admin.");
+      return;
+    }
+    const limitCheck = checkRedemptionLimit(reward);
+    if (limitCheck.exceeded) {
+      toast.error(limitCheck.message);
       return;
     }
     if (profile.points < reward.min_points) {
@@ -399,6 +487,7 @@ export default function CustomerRewardsPage() {
                     const isOutOfStock = reward.stock !== null && reward.stock <= 0;
                     const diffPoints = reward.min_points - profile.points;
                     const progressPercent = Math.min(100, Math.round((profile.points / reward.min_points) * 100));
+                    const limitCheck = checkRedemptionLimit(reward);
 
                     return (
                       <motion.div
@@ -428,7 +517,7 @@ export default function CustomerRewardsPage() {
                             </div>
                           </div>
 
-                          <p className="text-xs text-muted leading-relaxed line-clamp-2 pl-1.5 border-l-2 border-primary/20">
+                          <p className="text-xs text-muted leading-relaxed pl-1.5 border-l-2 border-primary/20">
                             {reward.description || "Tukarkan poin Anda dengan reward istimewa ini."}
                           </p>
 
@@ -449,12 +538,14 @@ export default function CustomerRewardsPage() {
 
                         <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex items-center justify-between gap-4">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-bold text-muted shrink-0">
-                              {reward.stock !== null ? `Stok: ${reward.stock} item` : "Stok melimpah"}
-                            </span>
                             {reward.expiry_days !== null && reward.expiry_days !== undefined && reward.expiry_days > 0 && (
                               <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
                                 Masa Aktif: {reward.expiry_days} Hari
+                              </span>
+                            )}
+                            {limitCheck.message && (
+                              <span className={`text-[10px] font-extrabold ${limitCheck.exceeded ? "text-rose-600 dark:text-rose-450 animate-pulse" : "text-primary"}`}>
+                                {limitCheck.message}
                               </span>
                             )}
                           </div>
@@ -466,6 +557,13 @@ export default function CustomerRewardsPage() {
                               className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
                             >
                               Stok Habis
+                            </button>
+                          ) : limitCheck.exceeded ? (
+                            <button
+                              disabled
+                              className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-wider border border-border-light dark:border-border-dark cursor-not-allowed"
+                            >
+                              Kuota Habis
                             </button>
                           ) : !isPointsEnough ? (
                             <div className="flex flex-col items-end gap-1">

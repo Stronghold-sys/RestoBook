@@ -95,7 +95,7 @@ function SearchableSelect({
 
   return (
     <div className="relative w-full text-left" ref={dropdownRef}>
-      <label className="text-[9px] font-black text-muted uppercase block mb-1">{label}</label>
+      <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">{label}</label>
       <button
         type="button"
         disabled={disabled || loading}
@@ -103,7 +103,7 @@ function SearchableSelect({
           setIsOpen(!isOpen);
           setSearch("");
         }}
-        className={`w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark flex items-center justify-between text-left transition-all ${
+        className={`w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark flex items-center justify-between text-left transition-all ${
           disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"
         }`}
       >
@@ -1299,28 +1299,28 @@ export default function CartPage() {
                 )}
                 {orderType === "delivery" && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 overflow-hidden text-left">
-                    <h4 className="text-[11px] font-black text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
+                    <h4 className="text-xs font-bold text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Nama Penerima</label>
+                        <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">Nama Penerima</label>
                         <input
                           type="text"
                           required
                           value={deliveryName}
                           onChange={e => setDeliveryName(e.target.value)}
                           placeholder="Nama Lengkap"
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">No. HP Penerima</label>
+                        <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">No. HP Penerima</label>
                         <input
                           type="tel"
                           required
                           value={deliveryPhone}
                           onChange={e => setDeliveryPhone(e.target.value)}
                           placeholder="Contoh: 08123456789"
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                         />
                       </div>
                     </div>
@@ -1367,21 +1367,21 @@ export default function CartPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="md:col-span-2">
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Alamat Lengkap</label>
+                        <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">Alamat Lengkap</label>
                         <input
                           type="text"
                           required
                           value={deliveryAddress}
                           onChange={e => setDeliveryAddress(e.target.value)}
                           placeholder="Nama Jalan, Blok, RT/RW, No. Rumah"
-                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                          className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-black text-muted uppercase block mb-1">Kode Pos</label>
+                        <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">Kode Pos</label>
                         {loadingPostalCodes ? (
-                          <div className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-muted">
-                            <span>Memuat Kode Pos...</span>
+                          <div className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 flex items-center justify-between text-xs text-muted">
+                            <span>Memuat...</span>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
                           </div>
                         ) : postalCodes.length > 0 ? (
@@ -1390,7 +1390,7 @@ export default function CartPage() {
                             value={deliveryPostalCode}
                             title="Kode Pos"
                             onChange={e => setDeliveryPostalCode(e.target.value)}
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                           >
                             <option value="">-- Pilih Kode Pos --</option>
                             {postalCodes.map(code => (
@@ -1404,7 +1404,7 @@ export default function CartPage() {
                             value={deliveryPostalCode}
                             onChange={e => setDeliveryPostalCode(e.target.value)}
                             placeholder="Kode Pos"
-                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
+                            className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark"
                           />
                         )}
                         {postalCodes.length > 0 && (
@@ -1521,13 +1521,15 @@ export default function CartPage() {
         {showPaymentModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowPaymentModal(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden border border-border-light dark:border-border-dark my-8">
-              <div className="bg-primary p-8 text-white flex justify-between items-center relative">
+              <div className="bg-primary p-6 md:p-7 text-white flex justify-between items-center relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
                 <div className="relative">
-                  <h2 className="text-2xl font-black uppercase tracking-tight">Selesaikan Pembayaran</h2>
-                  <p className="text-white/80 text-sm mt-1">Total Tagihan: <span className="font-extrabold text-white text-base">Rp {totalAmount.toLocaleString("id-ID")}</span></p>
+                  <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight">Selesaikan Pembayaran</h2>
+                  <p className="text-white/90 text-xs md:text-sm mt-1 font-medium">
+                    Total Tagihan: <span className="font-extrabold text-white text-sm md:text-base">Rp {totalAmount.toLocaleString("id-ID")}</span>
+                  </p>
                 </div>
-                <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-6 h-6" /></button>
+                <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-5 h-5 md:w-6 h-6" /></button>
               </div>
 
               <div className="p-6 md:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">

@@ -93,18 +93,32 @@ export async function POST(req: Request) {
         .select('*, profiles(email, full_name), order_items(*, menu_items(name))')
         .single();
 
+      let finalOrder = order;
       if (updateError) {
         // Coba lagi tanpa filter .single() jika gagal
         const { data: retryData, error: retryError } = await supabaseAdmin
           .from('orders')
           .update({ payment_status: 'paid', payment_method: 'duitku' })
           .eq('id', dbOrderId)
-          .select();
+          .select()
+          .single();
           
         if (retryError) {
           console.error("Database Update Failed After Retry:", retryError);
           return new NextResponse('Error Update', { status: 500 });
         }
+        if (retryData) finalOrder = retryData;
+      }
+
+      if (finalOrder && finalOrder.customer_id) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: finalOrder.customer_id,
+          title: 'Pembayaran Berhasil',
+          message: `Pembayaran online sebesar Rp ${Number(finalOrder.total_amount).toLocaleString('id-ID')} untuk No. Pesanan #${dbOrderId.split('-')[0].toUpperCase()} telah berhasil dikonfirmasi.`,
+          type: 'order',
+          order_id: dbOrderId,
+          status_badge: 'Berhasil'
+        });
       }
 
       console.log("Order successfully marked as PAID:", dbOrderId);

@@ -54,13 +54,31 @@ export async function POST(req: Request) {
         .select()
         .single();
 
+      let finalOrder = data;
       if (updateError) {
         // Retry jika ID yang dikirim ternyata mengandung suffix
         const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
         const match = orderId.match(uuidRegex);
         const cleanId = match ? match[0] : orderId;
         
-        await supabaseAdmin.from('orders').update({ payment_status: 'paid' }).eq('id', cleanId);
+        const { data: retryData } = await supabaseAdmin
+          .from('orders')
+          .update({ payment_status: 'paid', payment_method: 'duitku' })
+          .eq('id', cleanId)
+          .select()
+          .single();
+        if (retryData) finalOrder = retryData;
+      }
+
+      if (finalOrder && finalOrder.customer_id) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: finalOrder.customer_id,
+          title: 'Pembayaran Berhasil',
+          message: `Pembayaran online sebesar Rp ${Number(finalOrder.total_amount).toLocaleString('id-ID')} untuk No. Pesanan #${finalOrder.id.split('-')[0].toUpperCase()} telah berhasil dikonfirmasi.`,
+          type: 'order',
+          order_id: finalOrder.id,
+          status_badge: 'Berhasil'
+        });
       }
 
       // Send receipt email to customer

@@ -41,8 +41,15 @@ export default function CashierQueue() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
-      if (error) throw error;
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, action: 'update_status', status: newStatus }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Gagal memperbarui status');
+      }
       toast.success("Status diperbarui!");
     } catch (error: any) {
       toast.error(error.message);

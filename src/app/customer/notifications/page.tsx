@@ -93,6 +93,10 @@ export default function CustomerNotificationsPage() {
       case "siap":
       case "siap disajikan":
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/50 uppercase">Siap</span>;
+      case "dikirim":
+      case "shipping":
+      case "dalam pengiriman":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-cyan-50 text-cyan-700 border border-cyan-100 dark:bg-cyan-950/20 dark:text-cyan-400 dark:border-cyan-900/50 uppercase">Dikirim</span>;
       case "selesai":
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-green-50 text-green-700 border border-green-100 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/50 uppercase">Selesai</span>;
       default:

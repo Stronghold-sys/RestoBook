@@ -2,6 +2,57 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
+function getStatusNotification(status: string, orderId: string, orderType: string, reason?: string) {
+  const shortId = orderId.split('-')[0].toUpperCase();
+  let title = 'Update Pesanan';
+  let message = `Status No. Pesanan #${shortId} diperbarui ke: ${status}`;
+  let statusBadge = status;
+
+  if (status === 'pending') {
+    title = 'Pesanan Menunggu Konfirmasi';
+    message = orderType === 'delivery'
+      ? `Pesanan delivery #${shortId} telah dibuat. Menunggu konfirmasi dan verifikasi dari kasir.`
+      : `Pesanan Anda #${shortId} telah dibuat. Menunggu konfirmasi dari kasir.`;
+    statusBadge = 'pending';
+  } else if (status === 'confirmed') {
+    title = 'Pesanan Diterima';
+    message = orderType === 'delivery'
+      ? `Pesanan delivery #${shortId} Anda telah diterima oleh restoran. Dapur akan segera menyiapkan hidangan Anda.`
+      : `Pesanan Anda #${shortId} telah dikonfirmasi dan diterima oleh kasir.`;
+    statusBadge = 'dikonfirmasi';
+  } else if (status === 'processing') {
+    title = 'Pesanan Sedang Diproses';
+    message = orderType === 'delivery'
+      ? `Hidangan pesanan delivery Anda sedang disiapkan dan dimasak oleh chef kami di dapur.`
+      : `Chef sedang menyiapkan hidangan Anda di dapur. Mohon tunggu sebentar!`;
+    statusBadge = 'proses';
+  } else if (status === 'ready') {
+    title = 'Pesanan Siap';
+    message = orderType === 'takeaway'
+      ? `Pesanan takeaway #${shortId} Anda sudah siap! Silakan ambil pesanan Anda di kasir.`
+      : orderType === 'dine_in'
+      ? `Hidangan pesanan dine-in #${shortId} Anda sudah siap disajikan di meja!`
+      : `Pesanan Anda #${shortId} sudah siap disajikan!`;
+    statusBadge = 'siap';
+  } else if (status === 'shipping') {
+    title = 'Pesanan Sedang Dikirim';
+    message = `Kabar gembira! Pesanan delivery #${shortId} Anda sedang dalam perjalanan ke alamat Anda oleh kurir. Silakan bersiap-siap menerima pesanan!`;
+    statusBadge = 'shipping';
+  } else if (status === 'completed') {
+    title = 'Pesanan Selesai';
+    message = orderType === 'delivery'
+      ? `Pesanan delivery #${shortId} telah sukses diantarkan ke alamat Anda. Selamat menikmati hidangan kami!`
+      : `Pesanan Anda #${shortId} telah selesai diproses. Terima kasih atas kunjungan Anda!`;
+    statusBadge = 'selesai';
+  } else if (status === 'cancelled') {
+    title = 'Pesanan Dibatalkan';
+    message = `Pesanan Anda #${shortId} terpaksa dibatalkan. Alasan: ${reason || 'Tidak disebutkan'}`;
+    statusBadge = 'dibatalkan';
+  }
+
+  return { title, message, statusBadge };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -361,36 +412,11 @@ export async function POST(req: NextRequest) {
 
       // Add Notification
       if (order.customer_id) {
-        let notifTitle = 'Update Pesanan';
-        let notifMsg = `Status No. Pesanan #${orderId.split('-')[0].toUpperCase()} diperbarui ke: ${status}`;
-        let statusBadge = status;
-        
-        if (status === 'confirmed') {
-          notifTitle = 'Pesanan Dikonfirmasi';
-          notifMsg = `No. Pesanan #${orderId.split('-')[0].toUpperCase()} telah dikonfirmasi oleh kasir.`;
-          statusBadge = 'dikonfirmasi';
-        } else if (status === 'processing') {
-          notifTitle = 'Pesanan Dimasak';
-          notifMsg = `Chef sedang menyiapkan hidangan Anda. Mohon tunggu sebentar!`;
-          statusBadge = 'proses';
-        } else if (status === 'ready') {
-          notifTitle = 'Pesanan Siap';
-          notifMsg = `Pesanan Anda sudah siap disajikan!`;
-          statusBadge = 'siap';
-        } else if (status === 'completed') {
-          notifTitle = 'Pesanan Selesai';
-          notifMsg = `Terima kasih telah berkunjung! Berikan ulasan terbaik Anda.`;
-          statusBadge = 'selesai';
-        } else if (status === 'cancelled') {
-          notifTitle = 'Pesanan Dibatalkan';
-          notifMsg = `Pesanan Anda dibatalkan oleh kasir. Alasan: ${reason || 'Tidak disebutkan'}`;
-          statusBadge = 'dibatalkan';
-        }
-
+        const { title, message, statusBadge } = getStatusNotification(status, orderId, order.order_type, reason);
         await supabaseAdmin.from('notifications').insert({
           user_id: order.customer_id,
-          title: notifTitle,
-          message: notifMsg,
+          title: title,
+          message: message,
           type: 'order',
           order_id: orderId,
           status_badge: statusBadge
@@ -437,8 +463,23 @@ export async function POST(req: NextRequest) {
           user_id: order.customer_id,
           title: 'Pembayaran Berhasil',
           message: `Pembayaran untuk No. Pesanan #${orderId.split('-')[0]} telah dikonfirmasi Lunas via Kasir.`,
-          type: 'order'
+          type: 'order',
+          order_id: orderId,
+          status_badge: 'Berhasil'
         });
+
+        // Also add status update notification if it changed
+        if (oStatus !== order.status) {
+          const { title, message, statusBadge } = getStatusNotification(oStatus, orderId, order.order_type);
+          await supabaseAdmin.from('notifications').insert({
+            user_id: order.customer_id,
+            title,
+            message,
+            type: 'order',
+            order_id: orderId,
+            status_badge: statusBadge
+          });
+        }
 
         if (body.tableId) {
           await supabaseAdmin.from('tables').update({ status: 'occupied', occupied_at: new Date().toISOString() }).eq('id', body.tableId);
@@ -645,11 +686,14 @@ export async function POST(req: NextRequest) {
 
     // New action: notification for order created
     if (action === 'notify_created') {
+      const { title, message, statusBadge } = getStatusNotification('pending', orderId, order.order_type);
       await supabaseAdmin.from('notifications').insert({
         user_id: order.customer_id,
-        title: 'Pesanan Dibuat',
-        message: `No. Pesanan #${orderId.split('-')[0]} berhasil dibuat. Menunggu konfirmasi dari kasir.`,
-        type: 'order'
+        title,
+        message,
+        type: 'order',
+        order_id: orderId,
+        status_badge: statusBadge
       });
       return NextResponse.json({ success: true });
     }

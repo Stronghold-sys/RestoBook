@@ -117,19 +117,16 @@ export default function OnlineOrdersPage() {
   const updateOrderStatus = async (orderId: string, newStatus: string, reason?: string) => {
     const loadingToast = toast.loading("Memperbarui status...");
     try {
-      const updateData: any = { status: newStatus };
-      
-      if (newStatus === 'cancelled' && reason) {
-        const timestamp = format(new Date(), "HH:mm:ss");
-        updateData.cancel_reason = `[Dibatalkan Kasir ${cashierName} jam ${timestamp}]: ${reason}`;
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, action: 'update_status', status: newStatus, reason }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Gagal memperbarui status");
       }
-
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', orderId);
-
-      if (error) throw error;
       
       toast.success(
         newStatus === 'confirmed' ? "Pesanan Diterima!" : 
@@ -144,8 +141,8 @@ export default function OnlineOrdersPage() {
       setShowRejectModal(false);
       setRejectionReason("");
       fetchOrders();
-    } catch (err) {
-      toast.error("Gagal memperbarui status", { id: loadingToast });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memperbarui status", { id: loadingToast });
     }
   };
 

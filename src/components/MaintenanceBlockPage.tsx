@@ -108,7 +108,7 @@ export default function MaintenanceBlockPage({
         transition={{ delay: 0.3 }}
         className="text-[11px] text-muted font-medium"
       >
-        Mohon maaf atas ketidaknyamanan ini. Kami sedang memperbarui infrastruktur backend RestoBook untuk memberikan performa transaksi yang jauh lebih cepat dan andal.
+        Mohon maaf atas ketidaknyamanan ini. Kami sedang memperbarui sistem internal RestoBook untuk memberikan performa transaksi yang jauh lebih cepat dan andal.
       </motion.p>
     </div>
   );

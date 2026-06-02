@@ -335,23 +335,32 @@ export default function CashierTransactionsPage() {
           </div>
         </div>
 
-        <div className="xl:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div whileHover={{ y: -4 }} className="bg-gradient-to-br from-primary to-primary-hover rounded-3xl p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-3 mb-4 relative z-10"><TrendingUp className="w-6 h-6 opacity-80" /><span className="text-white/90 text-sm font-bold tracking-wider uppercase">Total Pendapatan (Bulan Ini)</span></div>
-            <p className="text-4xl font-black relative z-10">Rp {totalRevenue.toLocaleString("id-ID")}</p>
+        <div className="xl:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-5">
+          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-primary to-primary-hover rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-primary/20 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Pendapatan (Bulan Ini)</span>
+            </div>
+            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {totalRevenue.toLocaleString("id-ID")}</p>
           </motion.div>
-          
-          <motion.div whileHover={{ y: -4 }} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-3 mb-4 relative z-10"><Banknote className="w-6 h-6 opacity-80" /><span className="text-white/90 text-sm font-bold tracking-wider uppercase">Pendapatan Hari Ini</span></div>
-            <p className="text-4xl font-black relative z-10">Rp {todayRevenue.toLocaleString("id-ID")}</p>
+
+          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-emerald-500/20 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <Banknote className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Pendapatan Hari Ini</span>
+            </div>
+            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">Rp {todayRevenue.toLocaleString("id-ID")}</p>
           </motion.div>
-          
-          <motion.div whileHover={{ y: -4 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-3 mb-4 relative z-10"><Receipt className="w-6 h-6 opacity-80" /><span className="text-white/90 text-sm font-bold tracking-wider uppercase">Total Transaksi</span></div>
-            <p className="text-4xl font-black relative z-10">{orders.length} <span className="text-lg font-medium opacity-80">Pesanan</span></p>
+
+          <motion.div whileHover={{ y: -3 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 lg:p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <Receipt className="w-4 h-4 lg:w-5 lg:h-5 opacity-80 shrink-0" />
+              <span className="text-white/90 text-[10px] lg:text-xs font-bold tracking-wider uppercase leading-tight">Total Transaksi</span>
+            </div>
+            <p className="text-2xl lg:text-2xl xl:text-3xl font-black relative z-10 leading-tight">{orders.length} <span className="text-sm font-medium opacity-80">Pesanan</span></p>
           </motion.div>
         </div>
       </div>

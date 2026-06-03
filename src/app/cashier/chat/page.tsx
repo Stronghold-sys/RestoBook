@@ -167,8 +167,14 @@ export default function CashierChatPage() {
   useEffect(() => {
     const channel = supabase
       .channel("cashier-chat-list-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_chat_messages" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_chat_messages" }, (payload: any) => {
         fetchChats();
+        if (payload.eventType === "INSERT") {
+          const newMsg = payload.new;
+          if (newMsg && chatProfile.current && newMsg.sender_id !== chatProfile.current.id && newMsg.sender_role !== "cashier") {
+            playPingSound();
+          }
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "order_chats" }, () => {
         fetchChats();
@@ -176,7 +182,7 @@ export default function CashierChatPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchChats]);
+  }, [fetchChats, playPingSound]);
 
   // --- Presence tracking (kasir online) ---
   useEffect(() => {
@@ -257,7 +263,11 @@ export default function CashierChatPage() {
         const newMsg = payload.new;
         setMessages(prev => {
           if (prev.some(m => m.id === newMsg.id)) return prev;
-          if (newMsg.sender_role === "customer") {
+          
+          const isMe = chatProfile.current && newMsg.sender_id === chatProfile.current.id;
+          const isMeRole = newMsg.sender_role === "cashier";
+          
+          if (!isMe && !isMeRole) {
             playPingSound();
             // Auto-tandai sebagai dibaca karena sedang dibuka
             supabase.from("order_chat_messages").update({ is_read: true }).eq("id", newMsg.id);

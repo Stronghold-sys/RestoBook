@@ -349,11 +349,17 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
 
   const fetchPendingTicketCount = async () => {
     try {
-      const { count } = await supabase
+      const { count: supportPending } = await supabase
         .from('support_tickets')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
-      setPendingTicketCount(count || 0);
+
+      const { count: escalatedChats } = await supabase
+        .from('order_chats')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'need_admin');
+
+      setPendingTicketCount((supportPending || 0) + (escalatedChats || 0));
     } catch (e) {
       console.error("Error fetching pending ticket count:", e);
     }
@@ -383,6 +389,13 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         event: '*',
         schema: 'public',
         table: 'support_tickets'
+      }, () => {
+        fetchPendingTicketCount();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_chats'
       }, () => {
         fetchPendingTicketCount();
       })

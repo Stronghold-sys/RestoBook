@@ -139,8 +139,8 @@ export async function PUT(
         user_id: currentTicket.customer_id,
         title: status === 'completed' ? 'Tiket Telah Selesai' : 'Tiket Telah Ditutup',
         message: status === 'completed' 
-          ? `Tiket ${currentTicket.ticket_number} telah diselesaikan oleh ${profile.role === 'admin' ? 'Admin' : 'Anda'}. Percakapan dikunci.`
-          : `Tiket ${currentTicket.ticket_number} telah ditutup. Percakapan dikunci.`,
+          ? `Tiket Pengaduan Selesai: Tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} telah diselesaikan oleh ${profile.role === 'admin' ? 'Admin' : 'Anda'}.`
+          : `Tiket Pengaduan Ditutup: Tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} telah ditutup.`,
         type: 'support_status',
         reference_id: currentTicket.id,
         status_badge: status === 'completed' ? 'Selesai' : 'Batal'
@@ -178,7 +178,7 @@ export async function PUT(
         {
           user_id: currentTicket.customer_id,
           title: 'Permintaan Perubahan Disetujui',
-          message: 'Permintaan perubahan data akun Anda telah disetujui. Silakan periksa kembali profil Anda untuk melanjutkan pembaruan data yang diizinkan.',
+          message: `Tiket Pengaduan Disetujui: Permintaan pada tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} telah disetujui. Silakan periksa kembali profil Anda untuk melanjutkan pembaruan data.`,
           type: 'support_status',
           reference_id: currentTicket.id,
           status_badge: 'Disetujui'
@@ -186,7 +186,7 @@ export async function PUT(
         {
           user_id: currentTicket.customer_id,
           title: 'Kolom Edit Dibuka',
-          message: 'Beberapa kolom yang terkait telah dibuka sementara agar Anda dapat melanjutkan proses pembaruan sesuai persetujuan admin.',
+          message: `Kolom edit terkait kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} telah dibuka sementara sesuai persetujuan admin.`,
           type: 'support_status',
           reference_id: currentTicket.id,
           status_badge: 'Edit Aktif'
@@ -216,7 +216,7 @@ export async function PUT(
       await supabase.from('notifications').insert({
         user_id: currentTicket.customer_id,
         title: 'Permintaan Perubahan Ditolak',
-        message: 'Mohon maaf, permintaan perubahan data akun Anda belum dapat disetujui saat ini.',
+        message: `Tiket Pengaduan Ditolak: Permintaan pada tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} belum dapat disetujui saat ini.`,
         type: 'support_status',
         reference_id: currentTicket.id,
         status_badge: 'Ditolak'
@@ -230,7 +230,7 @@ export async function PUT(
       await supabase.from('notifications').insert({
         user_id: currentTicket.customer_id,
         title: 'Tiket Sedang Diproses',
-        message: 'Permintaan perubahan data akun Anda sedang ditinjau oleh admin.',
+        message: `Tiket Pengaduan Diproses: Tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''} sedang ditinjau oleh admin.`,
         type: 'support_status',
         reference_id: currentTicket.id,
         status_badge: 'Diproses'
@@ -240,7 +240,7 @@ export async function PUT(
       await supabase.from('notifications').insert({
         user_id: currentTicket.customer_id,
         title: 'Menunggu Informasi Tambahan',
-        message: `Kami memerlukan informasi tambahan untuk memproses tiket ${currentTicket.ticket_number} Anda.`,
+        message: `Tiket Pengaduan Menunggu Informasi: Kami memerlukan informasi tambahan untuk memproses tiket ${currentTicket.ticket_number} dengan kategori ${currentTicket.category}${currentTicket.subcategory ? ` (${currentTicket.subcategory})` : ''}.`,
         type: 'support_status',
         reference_id: currentTicket.id,
         status_badge: 'Menunggu Konfirmasi'

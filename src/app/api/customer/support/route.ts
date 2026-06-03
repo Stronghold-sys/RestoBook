@@ -107,6 +107,16 @@ export async function POST(req: NextRequest) {
 
     if (insertError) throw insertError;
 
+    // Create customer notification about ticket creation
+    await supabase.from('notifications').insert({
+      user_id: profile.id,
+      title: 'Tiket Baru Diajukan',
+      message: `Tiket Pengaduan Diajukan: Tiket ${ticketNumber} dengan kategori ${category}${subcategory ? ` (${subcategory})` : ''} telah berhasil dibuat. Silakan tunggu tanggapan dari tim kami.`,
+      type: 'support_status',
+      reference_id: ticket.id,
+      status_badge: 'Diajukan'
+    });
+
     // 4. Create internal System Notification for admins about the new ticket
     const { data: admins } = await supabase
       .from('profiles')

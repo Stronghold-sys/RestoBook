@@ -187,22 +187,50 @@ export default function CustomerSupportPage() {
     };
   }, [activeTicket?.id, profile?.id]);
 
-  // Countdown timer logic
+  // Countdown timer logic and trigger cleanup
+  const triggerCronCleanup = async () => {
+    try {
+      const res = await fetch('/api/support/ticket/cron', { method: 'POST' });
+      if (res.ok) {
+        fetchProfileAndTickets();
+        if (activeTicket) {
+          const { data: updatedTicket } = await supabase
+            .from('support_tickets')
+            .select('*')
+            .eq('id', activeTicket.id)
+            .single();
+          if (updatedTicket) {
+            setActiveTicket(updatedTicket);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Gagal menjalankan auto-cleanup:", e);
+    }
+  };
+
   useEffect(() => {
     if (!activeTicket || !activeTicket.chat_history_deleted_at) {
       setCountdownText('');
       return;
     }
 
+    const deletionTime = new Date(activeTicket.chat_history_deleted_at).getTime();
+    const initialDiff = deletionTime - Date.now();
+
+    if (initialDiff <= 0 && activeTicket.status !== 'expired') {
+      setCountdownText('00 jam 00 menit 00 detik');
+      triggerCronCleanup();
+      return;
+    }
+
     const interval = setInterval(() => {
-      const deletionTime = new Date(activeTicket.chat_history_deleted_at!).getTime();
       const diff = deletionTime - Date.now();
 
       if (diff <= 0) {
         setCountdownText('00 jam 00 menit 00 detik');
         clearInterval(interval);
-        // Refresh active ticket status
-        fetchProfileAndTickets();
+        triggerCronCleanup();
       } else {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -214,7 +242,7 @@ export default function CustomerSupportPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeTicket?.chat_history_deleted_at]);
+  }, [activeTicket?.chat_history_deleted_at, activeTicket?.status]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -729,71 +757,81 @@ export default function CustomerSupportPage() {
               <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-background-light/20 dark:bg-background-dark/10" id="chat-messages-container">
                 
                 {/* Chat status messages */}
-                {!activeTicket.chat_started_at && (
-                  <div className="text-center py-10 space-y-2">
-                    <Clock className="w-10 h-10 mx-auto text-yellow-500 opacity-60 animate-pulse" />
-                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Chat belum dimulai oleh admin.</p>
-                    <p className="text-xs text-muted max-w-[300px] mx-auto">Silakan tunggu hingga tim kami meninjau keluhan Anda dan memulai percakapan.</p>
+                {activeTicket.status === 'expired' ? (
+                  <div className="text-center py-12 text-muted text-xs">
+                    <Trash2 className="w-10 h-10 mx-auto text-red-500 opacity-60 mb-2" />
+                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Riwayat chat telah dihapus permanen.</p>
+                    <p className="text-xs text-muted max-w-[300px] mx-auto mt-1">Sesuai dengan kebijakan privasi dan keamanan sistem kami.</p>
                   </div>
-                )}
-
-                {activeTicket.chat_started_at && messages.length === 0 && (
-                  <div className="text-center py-12 text-muted text-xs">Belum ada percakapan. Mulai kirim pesan Anda.</div>
-                )}
-
-                {messages.map((msg) => {
-                  const isMe = profile && msg.sender_id === profile.id;
-                  const isSystem = msg.message.startsWith('[SISTEM]');
-                  
-                  if (isSystem) {
-                    return (
-                      <div key={msg.id} className="flex justify-center my-2">
-                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] px-3 py-1.5 rounded-full font-medium border border-border-light dark:border-border-dark">
-                          {msg.message.replace('[SISTEM] ', '')}
-                        </span>
+                ) : (
+                  <>
+                    {!activeTicket.chat_started_at && (
+                      <div className="text-center py-10 space-y-2">
+                        <Clock className="w-10 h-10 mx-auto text-yellow-500 opacity-60 animate-pulse" />
+                        <p className="font-bold text-sm text-text-light dark:text-text-dark">Chat belum dimulai oleh admin.</p>
+                        <p className="text-xs text-muted max-w-[300px] mx-auto">Silakan tunggu hingga tim kami meninjau keluhan Anda dan memulai percakapan.</p>
                       </div>
-                    );
-                  }
+                    )}
 
-                  return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
-                      <div className="flex flex-col max-w-[70%]">
-                        <div className={`p-3.5 rounded-2xl border text-sm ${
-                          isMe 
-                            ? 'bg-primary text-white border-primary rounded-tr-none'
-                            : 'bg-white dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark rounded-tl-none'
-                        }`}>
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
-                          {msg.attachment_url && (
-                            <div className="mt-2 pt-2 border-t border-white/20">
-                              {(() => {
-                                const url = msg.attachment_url;
-                                const ext = url.split('.').pop()?.toLowerCase();
-                                const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
-                                if (isImg) {
-                                  return (
-                                    <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px] mb-1">
-                                      <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline flex items-center gap-1">
-                                      <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
-                                    </a>
-                                  );
-                                }
-                              })()}
+                    {activeTicket.chat_started_at && messages.length === 0 && (
+                      <div className="text-center py-12 text-muted text-xs">Belum ada percakapan. Mulai kirim pesan Anda.</div>
+                    )}
+
+                    {messages.map((msg) => {
+                      const isMe = profile && msg.sender_id === profile.id;
+                      const isSystem = msg.message.startsWith('[SISTEM]');
+                      
+                      if (isSystem) {
+                        return (
+                          <div key={msg.id} className="flex justify-center my-2">
+                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] px-3 py-1.5 rounded-full font-medium border border-border-light dark:border-border-dark">
+                              {msg.message.replace('[SISTEM] ', '')}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
+                          <div className="flex flex-col max-w-[70%]">
+                            <div className={`p-3.5 rounded-2xl border text-sm ${
+                              isMe 
+                                ? 'bg-primary text-white border-primary rounded-tr-none'
+                                : 'bg-white dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark rounded-tl-none'
+                            }`}>
+                              <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                              {msg.attachment_url && (
+                                <div className="mt-2 pt-2 border-t border-white/20">
+                                  {(() => {
+                                    const url = msg.attachment_url;
+                                    const ext = url.split('.').pop()?.toLowerCase();
+                                    const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                    if (isImg) {
+                                      return (
+                                        <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px] mb-1">
+                                          <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline flex items-center gap-1.5">
+                                          <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
+                                        </a>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
                             </div>
-                          )}
+                            <span className="text-[9px] text-muted mt-1 self-end px-1">
+                              {format(new Date(msg.created_at), "HH:mm", { locale: localeId })}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-[9px] text-muted mt-1 self-end px-1">
-                          {format(new Date(msg.created_at), "HH:mm", { locale: localeId })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 

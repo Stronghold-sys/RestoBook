@@ -10,7 +10,7 @@ import {
   LifeBuoy, Search, Filter, Play, CheckCircle, XCircle, Info, Send,
   FileText, Clock, Volume2, VolumeX, ShieldAlert, Sparkles, User,
   Mail, Calendar, Download, RefreshCw, Settings, ChevronRight,
-  Paperclip, Camera
+  Paperclip, Camera, Trash2
 } from "lucide-react";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 
@@ -60,6 +60,79 @@ export default function AdminSupportPage() {
   const [adminProfile, setAdminProfile] = useState<any>(null);
   const [ticketViewTab, setTicketViewTab] = useState<'aktif' | 'riwayat' | 'bantuan_admin'>('aktif');
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+
+  // States for visual indicator counts
+  const [pendingCount, setPendingCount] = useState(0);
+  const [escalatedCount, setEscalatedCount] = useState(0);
+  const adminProfileRef = useRef<any>(null);
+
+  useEffect(() => {
+    adminProfileRef.current = adminProfile;
+  }, [adminProfile]);
+
+  const fetchCounts = async () => {
+    try {
+      const { count: pendingSupport } = await supabase
+        .from('support_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingCount(pendingSupport || 0);
+
+      const { count: needAdmin } = await supabase
+        .from('order_chats')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'need_admin');
+      setEscalatedCount(needAdmin || 0);
+    } catch (e) {
+      console.error("Error fetching counts:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchCounts();
+
+    const countsChannel = supabase
+      .channel('admin-support-counts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+        fetchCounts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_chats' }, () => {
+        fetchCounts();
+      })
+      .subscribe();
+
+    // Global message channel for admin to hear incoming messages on any ticket or order chat
+    const globalMsgChannel = supabase
+      .channel('admin-global-messages-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ticket_messages'
+      }, (payload: any) => {
+        const newMsg = payload.new;
+        const profile = adminProfileRef.current;
+        if (profile && newMsg.sender_id !== profile.id) {
+          playAdminSound('customer_chat');
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'order_chat_messages'
+      }, (payload: any) => {
+        const newMsg = payload.new;
+        const profile = adminProfileRef.current;
+        if (profile && newMsg.sender_id !== profile.id) {
+          playAdminSound('customer_chat');
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(countsChannel);
+      supabase.removeChannel(globalMsgChannel);
+    };
+  }, []);
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState('');
@@ -260,20 +333,49 @@ export default function AdminSupportPage() {
   }, [activeTicket?.id, adminProfile?.id]);
 
   // Countdown timer for completed/closed tickets
+  const triggerCronCleanup = async () => {
+    try {
+      const res = await fetch('/api/support/ticket/cron', { method: 'POST' });
+      if (res.ok) {
+        fetchAdminAndTickets();
+        if (activeTicket) {
+          const { data: updatedTicket } = await supabase
+            .from('support_tickets')
+            .select('*')
+            .eq('id', activeTicket.id)
+            .single();
+          if (updatedTicket) {
+            setActiveTicket(updatedTicket);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Gagal menjalankan auto-cleanup:", e);
+    }
+  };
+
   useEffect(() => {
     if (!activeTicket || !activeTicket.chat_history_deleted_at) {
       setCountdownText('');
       return;
     }
 
+    const deletionTime = new Date(activeTicket.chat_history_deleted_at).getTime();
+    const initialDiff = deletionTime - Date.now();
+
+    if (initialDiff <= 0 && activeTicket.status !== 'expired') {
+      setCountdownText('00:00:00');
+      triggerCronCleanup();
+      return;
+    }
+
     const interval = setInterval(() => {
-      const deletionTime = new Date(activeTicket.chat_history_deleted_at!).getTime();
       const diff = deletionTime - Date.now();
 
       if (diff <= 0) {
         setCountdownText('00:00:00');
         clearInterval(interval);
-        fetchAdminAndTickets();
+        triggerCronCleanup();
       } else {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -285,7 +387,7 @@ export default function AdminSupportPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeTicket?.chat_history_deleted_at]);
+  }, [activeTicket?.chat_history_deleted_at, activeTicket?.status]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1159,13 +1261,18 @@ export default function AdminSupportPage() {
                   setTicketViewTab('aktif');
                   setActiveTicket(null);
                 }}
-                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all ${
                   ticketViewTab === 'aktif'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-muted hover:text-primary'
                 }`}
               >
-                Antrean Aktif
+                <span>Antrean Aktif</span>
+                {pendingCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded-full bg-rose-500 text-white animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => {
@@ -1185,13 +1292,18 @@ export default function AdminSupportPage() {
                   setTicketViewTab('bantuan_admin');
                   setActiveTicket(null);
                 }}
-                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all ${
                   ticketViewTab === 'bantuan_admin'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-muted hover:text-primary'
                 }`}
               >
-                Bantuan Admin
+                <span>Bantuan Admin</span>
+                {escalatedCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded-full bg-rose-500 text-white animate-pulse">
+                    {escalatedCount}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -1377,69 +1489,79 @@ export default function AdminSupportPage() {
 
                 {/* Messages Screen */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-background-light/20 dark:bg-background-dark/10" id="admin-chat-container">
-                  {!activeTicket.chat_started_at && (
-                    <div className="text-center py-12 text-muted text-xs font-semibold">
-                      Live Chat belum dimulai. Tekan tombol &quot;Mulai Chat&quot; di atas untuk membuka percakapan dengan pelanggan.
+                  {activeTicket.status === 'expired' ? (
+                    <div className="text-center py-12 text-muted text-xs">
+                      <Trash2 className="w-10 h-10 mx-auto text-red-500 opacity-60 mb-2" />
+                      <p className="font-bold text-sm text-text-light dark:text-text-dark">Riwayat chat telah dihapus permanen.</p>
+                      <p className="text-xs text-muted max-w-[300px] mx-auto mt-1">Sesuai dengan kebijakan privasi dan keamanan sistem RestoBook.</p>
                     </div>
-                  )}
-
-                  {activeTicket.chat_started_at && messages.length === 0 && (
-                    <div className="text-center py-12 text-muted text-xs">Belum ada percakapan. Ketik tanggapan Anda di bawah.</div>
-                  )}
-
-                  {messages.map((msg) => {
-                    const isMe = adminProfile && msg.sender_id === adminProfile.id;
-                    const isSystem = msg.message.startsWith('[SISTEM]');
-                    
-                    if (isSystem) {
-                      return (
-                        <div key={msg.id} className="flex justify-center my-2">
-                          <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] px-3 py-1.5 rounded-full font-medium border border-border-light dark:border-border-dark">
-                            {msg.message.replace('[SISTEM] ', '')}
-                          </span>
+                  ) : (
+                    <>
+                      {!activeTicket.chat_started_at && (
+                        <div className="text-center py-12 text-muted text-xs font-semibold">
+                          Live Chat belum dimulai. Tekan tombol &quot;Mulai Chat&quot; di atas untuk membuka percakapan dengan pelanggan.
                         </div>
-                      );
-                    }
+                      )}
 
-                    return (
-                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
-                        <div className="flex flex-col max-w-[75%]">
-                          <div className={`p-3 rounded-2xl border text-xs leading-relaxed ${
-                            isMe
-                              ? 'bg-primary text-white border-primary rounded-tr-none shadow-sm'
-                              : 'bg-white dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark rounded-tl-none'
-                          }`}>
-                            {msg.attachment_url && (
-                              <div className="mb-2">
-                                {(() => {
-                                  const url = msg.attachment_url;
-                                  const ext = url.split('.').pop()?.toLowerCase();
-                                  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
-                                  if (isImg) {
-                                    return (
-                                      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-w-[200px] mb-1">
-                                        <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-850 border-border-light dark:border-border-dark text-primary'}`}>
-                                        <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
-                                      </a>
-                                    );
-                                  }
-                                })()}
+                      {activeTicket.chat_started_at && messages.length === 0 && (
+                        <div className="text-center py-12 text-muted text-xs">Belum ada percakapan. Ketik tanggapan Anda di bawah.</div>
+                      )}
+
+                      {messages.map((msg) => {
+                        const isMe = adminProfile && msg.sender_id === adminProfile.id;
+                        const isSystem = msg.message.startsWith('[SISTEM]');
+                        
+                        if (isSystem) {
+                          return (
+                            <div key={msg.id} className="flex justify-center my-2">
+                              <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] px-3 py-1.5 rounded-full font-medium border border-border-light dark:border-border-dark">
+                                {msg.message.replace('[SISTEM] ', '')}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
+                            <div className="flex flex-col max-w-[75%]">
+                              <div className={`p-3 rounded-2xl border text-xs leading-relaxed ${
+                                isMe
+                                  ? 'bg-primary text-white border-primary rounded-tr-none shadow-sm'
+                                  : 'bg-white dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark rounded-tl-none'
+                              }`}>
+                                {msg.attachment_url && (
+                                  <div className="mb-2">
+                                    {(() => {
+                                      const url = msg.attachment_url;
+                                      const ext = url.split('.').pop()?.toLowerCase();
+                                      const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                      if (isImg) {
+                                        return (
+                                          <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-w-[200px] mb-1">
+                                            <img src={url} alt="Lampiran" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                          </div>
+                                        );
+                                      } else {
+                                        return (
+                                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline flex items-center gap-1.5 text-primary">
+                                            <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
+                                          </a>
+                                        );
+                                      }
+                                    })()}
+                                  </div>
+                                )}
+                                {msg.message && <p className="whitespace-pre-wrap break-words">{msg.message}</p>}
                               </div>
-                            )}
-                            <p className="whitespace-pre-wrap">{msg.message}</p>
+                              <span className="text-[9px] text-muted mt-1 self-end px-1">
+                                {format(new Date(msg.created_at), "HH:mm", { locale: localeId })}
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-[9px] text-muted mt-1 self-end px-1">
-                            {format(new Date(msg.created_at), "HH:mm", { locale: localeId })}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </>
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
 

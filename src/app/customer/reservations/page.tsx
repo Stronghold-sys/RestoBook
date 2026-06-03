@@ -107,7 +107,7 @@ export default function CustomerReservationsPage() {
         catatan: form.notes
       });
 
-      const { error } = await supabase.from("reservations").insert({
+      const { data: newRes, error } = await supabase.from("reservations").insert({
         customer_id: profileId,
         table_id: selectedTableIds[0], // primary table
         reservation_date: form.date,
@@ -115,7 +115,7 @@ export default function CustomerReservationsPage() {
         guest_count: form.guests,
         notes: structuredNotes,
         status: "pending",
-      });
+      }).select().single();
       if (error) throw error;
 
       // Add Notification
@@ -123,8 +123,18 @@ export default function CustomerReservationsPage() {
         user_id: profileId,
         title: "Reservasi Baru Diajukan",
         message: `Reservasi atas nama ${form.atasNama} pada tanggal ${format(new Date(form.date), "dd MMM yyyy")} meja ${selectedTables.map(t => t.table_number).join(", ")} sedang menunggu konfirmasi kasir.`,
-        type: "reservation"
+        type: "reservation",
+        status_badge: "menunggu konfirmasi"
       });
+
+      // Trigger Email Notification (realtime, async)
+      if (newRes?.id) {
+        fetch("/api/reservations/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: newRes.id, status: "pending" })
+        }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+      }
 
       toast.success("Reservasi berhasil diajukan! Menunggu konfirmasi kasir.");
       setShowModal(false);
@@ -173,8 +183,16 @@ export default function CustomerReservationsPage() {
         user_id: profileId,
         title: "Reservasi Dibatalkan",
         message: `Reservasi atas nama ${parsedNotes?.atas_nama || "Pelanggan"} pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah dibatalkan oleh pelanggan. Alasan: ${cancelReason}`,
-        type: "reservation"
+        type: "reservation",
+        status_badge: "dibatalkan"
       });
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
       toast.success("Reservasi berhasil dibatalkan");
       setCancellingId(null);

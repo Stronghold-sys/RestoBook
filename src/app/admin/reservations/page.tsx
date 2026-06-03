@@ -88,9 +88,17 @@ export default function AdminReservationsPage() {
           user_id: res.customer_id,
           title: "Reservasi Disetujui",
           message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy")} telah disetujui oleh admin.`,
-          type: "reservation"
+          type: "reservation",
+          status_badge: "dikonfirmasi"
         });
       }
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: res.id, status: "confirmed" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
       toast.success("Reservasi berhasil dikonfirmasi!");
       fetchData();
@@ -135,9 +143,17 @@ export default function AdminReservationsPage() {
               user_id: res.customer_id,
               title: "Reservasi Ditolak",
               message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy")} ditolak dengan alasan: ${reason}`,
-              type: "reservation"
+              type: "reservation",
+              status_badge: "dibatalkan"
             });
           }
+
+          // Trigger Email Notification (realtime, async)
+          fetch("/api/reservations/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reservationId: res.id, status: "cancelled" })
+          }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
           toast.success("Reservasi telah ditolak.", { id: toastId });
           fetchData();

@@ -90,6 +90,24 @@ export default function CashierReservationsPage() {
         if (tableError) throw tableError;
       }
 
+      // Add Notification
+      if (res.customer_id) {
+        await supabase.from("notifications").insert({
+          user_id: res.customer_id,
+          title: "Reservasi Disetujui",
+          message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah dikonfirmasi dan disetujui oleh kasir.`,
+          type: "reservation",
+          status_badge: "dikonfirmasi"
+        });
+      }
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: res.id, status: "confirmed" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+
       toast.success("Reservasi berhasil dikonfirmasi! Meja telah ditandai RESERVED.");
       fetchData();
     } catch (e: any) {
@@ -120,6 +138,24 @@ export default function CashierReservationsPage() {
         await supabase.from("tables").update({ status: "available" }).in("id", tableIds);
       }
 
+      // Add Notification
+      if (res.customer_id) {
+        await supabase.from("notifications").insert({
+          user_id: res.customer_id,
+          title: "Reservasi Ditolak/Batal",
+          message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} ditolak oleh kasir dengan alasan: ${rejectReason}`,
+          type: "reservation",
+          status_badge: "dibatalkan"
+        });
+      }
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: rejectingId, status: "cancelled" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+
       toast.success("Reservasi telah ditolak.");
       setRejectingId(null);
       setRejectReason("");
@@ -143,6 +179,24 @@ export default function CashierReservationsPage() {
         const { error: tableError } = await supabase.from("tables").update({ status: "available" }).in("id", tableIds);
         if (tableError) throw tableError;
       }
+
+      // Add Notification
+      if (res.customer_id) {
+        await supabase.from("notifications").insert({
+          user_id: res.customer_id,
+          title: "Reservasi Selesai",
+          message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah ditandai selesai. Terima kasih atas kunjungan Anda!`,
+          type: "reservation",
+          status_badge: "selesai"
+        });
+      }
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: res.id, status: "completed" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
       toast.success("Reservasi selesai! Meja kembali READY (Tersedia).");
       fetchData();

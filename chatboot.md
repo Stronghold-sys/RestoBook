@@ -268,3 +268,24 @@ Buat implementasi lengkap untuk sistem reservasi meja yang:
 - punya pesan yang sopan dan jelas
 - memiliki dashboard admin yang lengkap
 - stabil, aman, dan sinkron penuh
+
+---
+
+## LOG DEPLOYMENT & RESOLUTION (2026-06-03)
+
+### Masalah Build
+Proses deployment di Cloudflare Pages mengalami kegagalan pada perintah `npx @cloudflare/next-on-pages@1` dengan detail kesalahan:
+```
+▲  npm error code E404
+▲  npm error 404 Not Found - GET https://registry.npmjs.org/@vercel/express/-/express-0.1.96.tgz - Not found
+▲  npm error 404
+▲  npm error 404  '@vercel/express@https://registry.npmjs.org/@vercel/express/-/express-0.1.96.tgz' is not in this registry.
+```
+
+### Penyebab
+Kesalahan E404 terjadi karena adanya keterlambatan replikasi (replication lag) pada registry npm saat paket `vercel@54.8.0` dan subdependensinya `@vercel/express@0.1.96` baru saja dipublikasikan oleh Vercel. Paket `@vercel/express` direferensikan dalam `vercel`, namun tarball rilis barunya belum sepenuhnya tersedia secara publik di CDN registry npm saat deployment dijalankan.
+
+### Solusi & Verifikasi
+1. Dependensi telah diperiksa secara lokal dan dipastikan bahwa proses instalasi paket `vercel@54.8.0` saat ini sudah berjalan dengan lancar setelah registry npm ter-update sepenuhnya.
+2. Pengujian build lokal menggunakan perintah `npm run build` berhasil diselesaikan tanpa ada error kompilasi.
+3. Commit ini dilakukan untuk memicu ulang (re-trigger) proses build dan deployment otomatis pada Cloudflare Pages dengan registry npm yang sudah sinkron sepenuhnya.

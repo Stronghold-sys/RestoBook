@@ -292,6 +292,88 @@ export default function CartPage() {
   const [customerCoords, setCustomerCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+
+  const shippingFee = (orderType === "delivery" && distanceKm !== null)
+    ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
+    : 0;
+
+  const shippingDiscount = (orderType === "delivery" && shippingFee > 0)
+    ? (subtotal >= minOrderFreeShipping
+        ? shippingFee
+        : (appliedVoucher && appliedVoucher.voucher_type === 'shipping'
+            ? (appliedVoucher.discount_type === 'percent'
+                ? Math.round(shippingFee * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
+                : Math.min(shippingFee, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
+            : 0))
+    : 0;
+
+  const discountAmount = (appliedVoucher && appliedVoucher.voucher_type !== 'shipping')
+    ? (appliedVoucher.discount_type === 'percent'
+        ? Math.round(subtotal * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
+        : Math.min(subtotal, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
+    : 0;
+
+  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee - shippingDiscount);
+
+
+
+  const [profileData, setProfileData] = useState<any>(null);
+  const [duitkuMethod, setDuitkuMethod] = useState("");
+  const [openingTime, setOpeningTime] = useState<string | null>(null);
+  const [closingTime, setClosingTime] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isTemporaryClosed, setIsTemporaryClosed] = useState<boolean>(false);
+  const [isHoliday, setIsHoliday] = useState<boolean>(false);
+  const [holidayReopenDate, setHolidayReopenDate] = useState<string>("");
+  const [is24Hours, setIs24Hours] = useState<boolean>(false);
+  const [temporaryClosedReopenTime, setTemporaryClosedReopenTime] = useState<string>("");
+  
+  // Cashless flow states
+  const [nonCashCategory, setNonCashCategory] = useState<"ewallet" | "transfer" | "qris" | "others">("qris");
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  
+  const [tables, setTables] = useState<Table[]>([]);
+  const [selectedTable, setSelectedTable] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("selected_table") || "";
+    }
+    return "";
+  });
+  const [orderNotes, setOrderNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  // QRIS Timer
+  const [qrisTimer, setQrisTimer] = useState(600); // 10 minutes in seconds
+  const [qrisExpired, setQrisExpired] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isOrderCompleted = useRef(false);
+  const selectedTableRef = useRef("");
+
+  // Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Wallet Top Up States inside checkout
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [submittingTopUp, setSubmittingTopUp] = useState(false);
+
+  // Wallet PIN payment states
+  const [showPinPaymentModal, setShowPinPaymentModal] = useState(false);
+  const [paymentPin, setPaymentPin] = useState("");
+  const [pinRemainingAttempts, setPinRemainingAttempts] = useState<number | null>(null);
+
+  // Delivery Form States
+  const [deliveryName, setDeliveryName] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryProvince, setDeliveryProvince] = useState("");
+  const [deliveryRegency, setDeliveryRegency] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
+  const [deliveryVillage, setDeliveryVillage] = useState("");
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
+  const [taxPercent, setTaxPercent] = useState<number>(10.00);
+
   const [loadingDistance, setLoadingDistance] = useState(false);
 
   // Geocode address in real-time using OSM Nominatim
@@ -376,86 +458,6 @@ export default function CartPage() {
       setCustomerCoords(null);
     }
   }, [deliveryAddress, deliveryVillage, deliveryDistrict, deliveryRegency, deliveryProvince, orderType]);
-
-  const shippingFee = (orderType === "delivery" && distanceKm !== null)
-    ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
-    : 0;
-
-  const shippingDiscount = (orderType === "delivery" && shippingFee > 0)
-    ? (subtotal >= minOrderFreeShipping
-        ? shippingFee
-        : (appliedVoucher && appliedVoucher.voucher_type === 'shipping'
-            ? (appliedVoucher.discount_type === 'percent'
-                ? Math.round(shippingFee * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
-                : Math.min(shippingFee, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
-            : 0))
-    : 0;
-
-  const discountAmount = (appliedVoucher && appliedVoucher.voucher_type !== 'shipping')
-    ? (appliedVoucher.discount_type === 'percent'
-        ? Math.round(subtotal * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
-        : Math.min(subtotal, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
-    : 0;
-
-  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee - shippingDiscount);
-
-
-
-  const [profileData, setProfileData] = useState<any>(null);
-  const [duitkuMethod, setDuitkuMethod] = useState("");
-  const [openingTime, setOpeningTime] = useState<string | null>(null);
-  const [closingTime, setClosingTime] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [isTemporaryClosed, setIsTemporaryClosed] = useState<boolean>(false);
-  const [isHoliday, setIsHoliday] = useState<boolean>(false);
-  const [holidayReopenDate, setHolidayReopenDate] = useState<string>("");
-  const [is24Hours, setIs24Hours] = useState<boolean>(false);
-  const [temporaryClosedReopenTime, setTemporaryClosedReopenTime] = useState<string>("");
-  
-  // Cashless flow states
-  const [nonCashCategory, setNonCashCategory] = useState<"ewallet" | "transfer" | "qris" | "others">("qris");
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  
-  const [tables, setTables] = useState<Table[]>([]);
-  const [selectedTable, setSelectedTable] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("selected_table") || "";
-    }
-    return "";
-  });
-  const [orderNotes, setOrderNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-  
-  // QRIS Timer
-  const [qrisTimer, setQrisTimer] = useState(600); // 10 minutes in seconds
-  const [qrisExpired, setQrisExpired] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isOrderCompleted = useRef(false);
-  const selectedTableRef = useRef("");
-
-  // Modal State
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
-  // Wallet Top Up States inside checkout
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState("");
-  const [submittingTopUp, setSubmittingTopUp] = useState(false);
-
-  // Wallet PIN payment states
-  const [showPinPaymentModal, setShowPinPaymentModal] = useState(false);
-  const [paymentPin, setPaymentPin] = useState("");
-  const [pinRemainingAttempts, setPinRemainingAttempts] = useState<number | null>(null);
-
-  // Delivery Form States
-  const [deliveryName, setDeliveryName] = useState("");
-  const [deliveryPhone, setDeliveryPhone] = useState("");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryProvince, setDeliveryProvince] = useState("");
-  const [deliveryRegency, setDeliveryRegency] = useState("");
-  const [deliveryDistrict, setDeliveryDistrict] = useState("");
-  const [deliveryVillage, setDeliveryVillage] = useState("");
-  const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
-  const [taxPercent, setTaxPercent] = useState<number>(10.00);
 
   // Administrative regions select state
   const [regencies, setRegencies] = useState<any[]>([]);

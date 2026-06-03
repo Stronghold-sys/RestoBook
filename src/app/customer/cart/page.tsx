@@ -1386,7 +1386,7 @@ export default function CartPage() {
               {appliedVoucher && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
                   <span>Total Anda Hemat</span>
-                  <span>Rp {discountAmount.toLocaleString("id-ID")}</span>
+                  <span>Rp {(discountAmount + shippingDiscount).toLocaleString("id-ID")}</span>
                 </div>
               )}
 

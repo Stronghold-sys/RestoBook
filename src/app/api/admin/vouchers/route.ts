@@ -201,6 +201,47 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Voucher berhasil dikirim ke seluruh pelanggan' });
     }
 
+    if (action === 'edit') {
+      const { 
+        code, 
+        discount_percent, 
+        usage_limit, 
+        max_usage_per_user, 
+        expires_at, 
+        is_active,
+        voucher_type,
+        discount_type,
+        discount_value,
+        min_transaction
+      } = body;
+
+      if (!code || !expires_at) {
+        return NextResponse.json({ error: 'Kode dan tanggal kedaluwarsa harus diisi' }, { status: 400 });
+      }
+
+      const { data: voucher, error } = await supabaseAdmin
+        .from('vouchers')
+        .update({
+          code: code.toUpperCase().trim(),
+          discount_percent: discount_type === 'percent' ? Number(discount_percent) : 0,
+          usage_limit: usage_limit ? Number(usage_limit) : 100,
+          max_usage_per_user: max_usage_per_user ? Number(max_usage_per_user) : 1,
+          expires_at,
+          is_active: is_active !== undefined ? is_active : true,
+          voucher_type: voucher_type || 'general',
+          discount_type: discount_type || 'percent',
+          discount_value: discount_type === 'nominal' ? Number(discount_value) : 0,
+          min_transaction: min_transaction ? Number(min_transaction) : 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', voucherId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ success: true, voucher });
+    }
+
     return NextResponse.json({ error: 'Aksi tidak valid' }, { status: 400 });
   } catch (error: any) {
     console.error('Update voucher error:', error);

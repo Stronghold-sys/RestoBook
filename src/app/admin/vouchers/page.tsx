@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Ticket, Plus, Trash2, Send, Calendar, Percent,
-  Users, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw
+  Users, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw, Pencil, Save
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
@@ -16,6 +16,8 @@ export default function AdminVouchersPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [distributingId, setDistributingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"active" | "history">("active");
 
   // Modern Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -104,6 +106,40 @@ export default function AdminVouchersPage() {
     }));
   };
 
+  const handleEditClick = (voucher: any) => {
+    setEditingId(voucher.id);
+    setForm({
+      code: voucher.code,
+      discount_percent: voucher.discount_percent ? voucher.discount_percent.toString() : "",
+      usage_limit: voucher.usage_limit.toString(),
+      max_usage_per_user: voucher.max_usage_per_user.toString(),
+      expires_at: voucher.expires_at ? new Date(voucher.expires_at).toISOString().substring(0, 16) : "",
+      is_active: !!voucher.is_active,
+      voucher_type: voucher.voucher_type || "general",
+      discount_type: voucher.discount_type || "percent",
+      discount_value: voucher.discount_value ? voucher.discount_value.toString() : "",
+      min_transaction: voucher.min_transaction ? voucher.min_transaction.toString() : "0"
+    });
+    toast.success(`Mengedit voucher ${voucher.code}`);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm({
+      code: "",
+      discount_percent: "",
+      usage_limit: "100",
+      max_usage_per_user: "1",
+      expires_at: "",
+      is_active: true,
+      voucher_type: "general",
+      discount_type: "percent",
+      discount_value: "",
+      min_transaction: "0"
+    });
+    generateRandomCode(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.code || !form.expires_at) {
@@ -134,15 +170,34 @@ export default function AdminVouchersPage() {
         expires_at: new Date(form.expires_at).toISOString()
       };
 
-      const response = await fetch("/api/admin/vouchers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formattedForm)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Gagal membuat voucher");
+      let response;
+      if (editingId) {
+        response = await fetch("/api/admin/vouchers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            voucherId: editingId,
+            action: "edit",
+            ...formattedForm
+          })
+        });
+      } else {
+        response = await fetch("/api/admin/vouchers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formattedForm)
+        });
+      }
 
-      toast.success(`Voucher ${data.voucher.code} Berhasil Dibuat!`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Gagal menyimpan voucher");
+
+      if (editingId) {
+        toast.success(`Voucher ${data.voucher.code} Berhasil Diperbarui!`);
+        setEditingId(null);
+      } else {
+        toast.success(`Voucher ${data.voucher.code} Berhasil Dibuat!`);
+      }
       
       // Reset Form (except usage_limit and max_usage defaults)
       setForm({
@@ -263,7 +318,15 @@ export default function AdminVouchersPage() {
         <div className="lg:col-span-1">
           <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-xl sticky top-24">
             <h2 className="text-xl font-bold text-text-light dark:text-text-dark mb-6 flex items-center gap-2 border-b border-border-light dark:border-border-dark pb-4">
-              <Plus className="w-5 h-5 text-primary" /> Buat Voucher Baru
+              {editingId ? (
+                <>
+                  <Pencil className="w-5 h-5 text-amber-500" /> Edit Voucher
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5 text-primary" /> Buat Voucher Baru
+                </>
+              )}
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -446,11 +509,19 @@ export default function AdminVouchersPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary hover:bg-primary/90 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                  editingId 
+                    ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20" 
+                    : "bg-primary hover:bg-primary/90 shadow-primary/20"
+                }`}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" /> Menyimpan...
+                  </>
+                ) : editingId ? (
+                  <>
+                    <Save className="w-5 h-5" /> Simpan Perubahan
                   </>
                 ) : (
                   <>
@@ -458,49 +529,94 @@ export default function AdminVouchersPage() {
                   </>
                 )}
               </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all mt-2 text-xs uppercase"
+                >
+                  Batal Edit
+                </button>
+              )}
             </form>
           </div>
         </div>
 
         {/* Daftar Voucher (Kanan) */}
         <div className="lg:col-span-2">
-          <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-xl min-h-[400px]">
-            <h2 className="text-xl font-bold text-text-light dark:text-text-dark mb-6 flex items-center gap-2 pb-4 border-b border-border-light dark:border-border-dark">
-              <Ticket className="w-5 h-5 text-primary" /> Daftar Voucher Aktif & Riwayat
-            </h2>
+          {(() => {
+            const nowTime = new Date();
+            const activeVouchers = vouchers.filter(v => new Date(v.expires_at) > nowTime && v.used_count < v.usage_limit && v.is_active);
+            const historyVouchers = vouchers.filter(v => new Date(v.expires_at) <= nowTime || v.used_count >= v.usage_limit || !v.is_active);
+            const displayedVouchers = tab === "active" ? activeVouchers : historyVouchers;
 
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted">
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-                <span>Memuat data voucher...</span>
-              </div>
-            ) : vouchers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted text-center">
-                <AlertCircle className="w-12 h-12 text-muted/50 mb-3" />
-                <span className="font-bold">Belum ada voucher</span>
-                <span className="text-xs mt-1">Tambahkan voucher baru menggunakan form di sebelah kiri.</span>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
-                  <thead>
-                    <tr className="border-b border-border-light dark:border-border-dark">
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Kode</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Tipe</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Diskon</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Min. Belanja</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Pemakaian</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Berakhir Pada</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Status</th>
-                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-right whitespace-nowrap">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vouchers.map((voucher) => {
-                      const isExpired = new Date(voucher.expires_at) <= new Date();
-                      const isLimitReached = voucher.used_count >= voucher.usage_limit;
+            return (
+              <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-xl min-h-[400px]">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                  <h2 className="text-xl font-bold text-text-light dark:text-text-dark flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-primary" /> Daftar Voucher
+                  </h2>
+                  
+                  {/* Tab Selector */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTab("active")}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all border ${
+                        tab === "active"
+                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                          : "bg-background-light text-muted dark:bg-background-dark border-border-light dark:border-border-dark hover:text-text-light dark:hover:text-text-dark"
+                      }`}
+                    >
+                      Aktif ({activeVouchers.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab("history")}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all border ${
+                        tab === "history"
+                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                          : "bg-background-light text-muted dark:bg-background-dark border-border-light dark:border-border-dark hover:text-text-light dark:hover:text-text-dark"
+                      }`}
+                    >
+                      Riwayat ({historyVouchers.length})
+                    </button>
+                  </div>
+                </div>
 
-                      return (
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+                    <span>Memuat data voucher...</span>
+                  </div>
+                ) : displayedVouchers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted text-center">
+                    <AlertCircle className="w-12 h-12 text-muted/50 mb-3" />
+                    <span className="font-bold">Belum ada voucher</span>
+                    <span className="text-xs mt-1">Tidak ada voucher di kategori ini.</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
+                      <thead>
+                        <tr className="border-b border-border-light dark:border-border-dark">
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Kode</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Tipe</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Diskon</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Min. Belanja</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Pemakaian</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Berakhir Pada</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                          <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-right whitespace-nowrap">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedVouchers.map((voucher) => {
+                          const isExpired = new Date(voucher.expires_at) <= nowTime;
+                          const isLimitReached = voucher.used_count >= voucher.usage_limit;
+
+                          return (
                         <tr
                           key={voucher.id}
                           className="border-b border-border-light/50 dark:border-border-dark/50 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
@@ -567,6 +683,13 @@ export default function AdminVouchersPage() {
                           </td>
                           <td className="py-4 text-right space-x-2 whitespace-nowrap">
                             <button
+                              onClick={() => handleEditClick(voucher)}
+                              title="Edit Voucher"
+                              className="inline-flex items-center justify-center p-2 rounded-xl text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white transition-all"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => handleDistribute(voucher.id, voucher.code)}
                               disabled={distributingId === voucher.id || isExpired || !voucher.is_active}
                               title="Kirim ke Semua Pelanggan"
@@ -594,6 +717,8 @@ export default function AdminVouchersPage() {
               </div>
             )}
           </div>
+          );
+        })()}
         </div>
       </div>
       {/* GENERIC MODERN CONFIRMATION MODAL */}

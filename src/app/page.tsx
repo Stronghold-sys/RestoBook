@@ -503,12 +503,13 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {CATEGORIES.map((cat, i) => {
               const Icon = cat.icon;
+              const count = menuItems.filter(item => item.cat === cat.name).length;
               return (
                 <motion.div key={cat.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -8, scale: 1.03 }} onClick={() => { setActiveCat(cat.name === activeCat ? "all" : cat.name); document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" }); }} className={`relative bg-gradient-to-br ${cat.color} rounded-2xl p-6 text-white cursor-pointer shadow-lg overflow-hidden group ${activeCat === cat.name ? "ring-4 ring-white/60 scale-105" : ""}`}>
                   <div className="absolute -right-3 -bottom-3 opacity-10 group-hover:opacity-20 transition-opacity"><Icon className="w-24 h-24" /></div>
                   <Icon className="w-8 h-8 mb-3" />
                   <h3 className="font-bold text-lg">{cat.name}</h3>
-                  <p className="text-white/80 text-sm mt-1">{cat.count} Menu</p>
+                  <p className="text-white/80 text-sm mt-1">{count} Menu</p>
                 </motion.div>
               );
             })}

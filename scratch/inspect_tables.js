@@ -22,11 +22,17 @@ async function inspect() {
   }
 
   try {
-    const { data: rowTicket, error: err3 } = await supabase.from('support_tickets').select('*').limit(1);
-    console.log("Support Tickets columns:", rowTicket && rowTicket.length > 0 ? Object.keys(rowTicket[0] || {}) : "No support_tickets rows found");
+    const { data: rowChat, error: errChat } = await supabase.from('order_chats').select('*').limit(1);
+    console.log("Order Chats columns after alter:", rowChat && rowChat.length > 0 ? Object.keys(rowChat[0] || {}) : "No order_chats rows found");
+    if (rowChat && rowChat.length > 0) console.log("Sample Row:", rowChat[0]);
+    if (errChat) console.error("Error order_chats select:", errChat);
   } catch (e) {
-    console.error("Err support_tickets:", e);
+    console.error("Err:", e);
   }
 }
 
 inspect();
+
+
+
+

@@ -40,9 +40,7 @@ function containsCashierRequest(text: string): boolean {
 }
 
 const AI_GREETING_MESSAGES = [
-  'Halo! Saya RestoBot, asisten bantuan pesanan Anda. Ada yang bisa saya bantu?',
-  'Selamat datang di layanan chat kasir. Saya siap membantu pesanan Anda. Silakan jelaskan kebutuhan Anda, saya akan bantu secepat mungkin.',
-  'Jika Anda ingin berbicara langsung dengan kasir, saya juga bisa menghubungkan Anda.'
+  'Halo! Saya RestoBot, asisten otomatis Anda. Jelaskan kebutuhan Anda, atau klik tombol di bawah untuk terhubung langsung dengan kasir.'
 ];
 
 const CASHIER_OFFER_MESSAGES = [

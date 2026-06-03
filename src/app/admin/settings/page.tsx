@@ -1058,26 +1058,26 @@ export default function AdminSettingsPage() {
             <h3 className="text-sm font-bold text-text-light dark:text-text-dark mb-4">Estimasi Default Per Tipe Pesanan (Menit)</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Dine In (Makan di Tempat)</label>
-                <input type="number" min="1" value={estimationSettings.dine_in_default_minutes}
+                <label htmlFor="dineInDefault" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Dine In (Makan di Tempat)</label>
+                <input id="dineInDefault" type="number" min="1" value={estimationSettings.dine_in_default_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, dine_in_default_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Takeaway (Bawa Pulang)</label>
-                <input type="number" min="1" value={estimationSettings.takeaway_default_minutes}
+                <label htmlFor="takeawayDefault" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Takeaway (Bawa Pulang)</label>
+                <input id="takeawayDefault" type="number" min="1" value={estimationSettings.takeaway_default_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, takeaway_default_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Delivery (Pengiriman)</label>
-                <input type="number" min="1" value={estimationSettings.delivery_default_minutes}
+                <label htmlFor="deliveryDefault" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Delivery (Pengiriman)</label>
+                <input id="deliveryDefault" type="number" min="1" value={estimationSettings.delivery_default_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, delivery_default_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Pickup (Ambil Sendiri)</label>
-                <input type="number" min="1" value={estimationSettings.pickup_default_minutes}
+                <label htmlFor="pickupDefault" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Pickup (Ambil Sendiri)</label>
+                <input id="pickupDefault" type="number" min="1" value={estimationSettings.pickup_default_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, pickup_default_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
@@ -1088,20 +1088,20 @@ export default function AdminSettingsPage() {
             <h3 className="text-sm font-bold text-text-light dark:text-text-dark mb-4">Tambahan Waktu Kustom & Batasan</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Minimum (Menit)</label>
-                <input type="number" min="1" value={estimationSettings.min_minutes}
+                <label htmlFor="minMinutes" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Minimum (Menit)</label>
+                <input id="minMinutes" type="number" min="1" value={estimationSettings.min_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, min_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Maksimum (Menit)</label>
-                <input type="number" min="1" value={estimationSettings.max_minutes}
+                <label htmlFor="maxMinutes" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Maksimum (Menit)</label>
+                <input id="maxMinutes" type="number" min="1" value={estimationSettings.max_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, max_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Jika Ramai (Menit)</label>
-                <input type="number" min="0" value={estimationSettings.busy_multiplier_minutes}
+                <label htmlFor="busyMultiplier" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Jika Ramai (Menit)</label>
+                <input id="busyMultiplier" type="number" min="0" value={estimationSettings.busy_multiplier_minutes}
                   onChange={e => setEstimationSettings({ ...estimationSettings, busy_multiplier_minutes: cleanLeadingZero(e.target.value) })}
                   className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
               </div>
@@ -1118,8 +1118,8 @@ export default function AdminSettingsPage() {
                 </div>
                 {estimationSettings.is_item_addition_active && (
                   <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per Item (Menit)</label>
-                    <input type="number" min="0" value={estimationSettings.per_item_addition_minutes}
+                    <label htmlFor="perItemAddition" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per Item (Menit)</label>
+                    <input id="perItemAddition" type="number" min="0" value={estimationSettings.per_item_addition_minutes}
                       onChange={e => setEstimationSettings({ ...estimationSettings, per_item_addition_minutes: cleanLeadingZero(e.target.value) })}
                       className="w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-bold" />
                   </div>
@@ -1136,8 +1136,8 @@ export default function AdminSettingsPage() {
                 </div>
                 {estimationSettings.is_distance_estimation_active && (
                   <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per KM (Menit)</label>
-                    <input type="number" min="0" value={estimationSettings.delivery_per_km_minutes}
+                    <label htmlFor="deliveryPerKm" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per KM (Menit)</label>
+                    <input id="deliveryPerKm" type="number" min="0" value={estimationSettings.delivery_per_km_minutes}
                       onChange={e => setEstimationSettings({ ...estimationSettings, delivery_per_km_minutes: cleanLeadingZero(e.target.value) })}
                       className="w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-bold" />
                   </div>

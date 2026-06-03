@@ -110,9 +110,12 @@ input[type=number] {
 .device-mobile h2, 
 .device-mobile h3,
 .device-mobile a,
+.device-mobile td,
+.device-mobile th,
 .device-mobile button {
+  overflow-wrap: break-word !important;
   word-wrap: break-word !important;
-  word-break: break-word !important;
+  word-break: normal !important;
 }
 
 /* Penyesuaian safe area pada notch perangkat (iOS / iPhone) */

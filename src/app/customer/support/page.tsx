@@ -667,23 +667,27 @@ export default function CustomerSupportPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  {activeTicket.sla_deadline && !['completed', 'closed', 'expired'].includes(activeTicket.status) && (
+                  {activeTicket.sla_deadline && !['completed', 'closed', 'expired', 'approved', 'rejected'].includes(activeTicket.status) && (
                     <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30">
                       <Clock className="w-4 h-4" />
                       <span>
-                        SLA: {format(new Date(activeTicket.sla_deadline), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
+                        Batas Waktu Pelayanan: {format(new Date(activeTicket.sla_deadline), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
                       </span>
                     </div>
                   )}
-                  {!['completed', 'closed', 'expired'].includes(activeTicket.status) && (
+                  {!['completed', 'closed', 'expired', 'approved', 'rejected'].includes(activeTicket.status) && (
                     <button
+                      disabled={['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at}
                       onClick={() => {
                         setCancelReason('');
                         setShowCancelModal(true);
                       }}
-                      className="px-4 py-2 bg-red-650 hover:bg-red-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm bg-red-600 hover:bg-red-700"
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                      title={(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at) ? "Tiket sedang diproses oleh admin dan tidak dapat dibatalkan" : "Batalkan Tiket"}
                     >
-                      Batalkan Tiket
+                      {(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at)
+                        ? "Tiket Sedang Diproses (Tidak Dapat Dibatalkan)"
+                        : "Batalkan Tiket"}
                     </button>
                   )}
                 </div>

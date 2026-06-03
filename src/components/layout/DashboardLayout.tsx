@@ -610,7 +610,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </div>
           )}
 
-          <main className="flex-1">
+          <main className="flex-1 relative">
             {maintenanceSettings.is_maintenance_active && role !== "admin" && isTransactionRoute(pathname) ? (
               <MaintenanceBlockPage 
                 message={maintenanceSettings.maintenance_message} 

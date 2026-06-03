@@ -18,7 +18,7 @@ import { useRef } from "react";
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<any>({
     id: "",
     name: "",
     address: "",
@@ -85,7 +85,7 @@ export default function AdminSettingsPage() {
       .channel('admin-settings-sync')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_settings' }, (payload: any) => {
         if (payload.new) {
-          setSettings(prev => ({
+          setSettings((prev: any) => ({
             ...prev,
             is_maintenance_active: !!payload.new.is_maintenance_active,
             maintenance_start_time: payload.new.maintenance_start_time ? new Date(payload.new.maintenance_start_time).toISOString().substring(0, 16) : "",
@@ -211,7 +211,7 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error(result.error || `Gagal mengunggah ${cropTarget}`);
       if (cropTarget === 'logo') {
         if (settings.id) await supabase.from("restaurant_settings").update({ logo_url: result.url }).eq("id", settings.id);
-        setSettings(prev => ({ ...prev, logo_url: result.url }));
+        setSettings((prev: any) => ({ ...prev, logo_url: result.url }));
         toast.success("Logo berhasil diperbarui!");
       } else {
         if (settings.id) await supabase.from("restaurant_settings").update({ updated_at: new Date().toISOString() }).eq("id", settings.id);
@@ -440,7 +440,7 @@ export default function AdminSettingsPage() {
               <label htmlFor="setTax" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Pajak Restoran (%)</label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted" />
-                <input id="setTax" type="number" value={settings.tax_percent} onChange={e => setSettings({ ...settings, tax_percent: Number(e.target.value) })}
+                <input id="setTax" type="number" value={settings.tax_percent ?? ""} onChange={e => setSettings({ ...settings, tax_percent: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm" />
               </div>
             </div>
@@ -587,8 +587,8 @@ export default function AdminSettingsPage() {
               <div className="relative">
                 <Clock className="absolute left-3 top-3 h-4 w-4 text-muted" />
                 <input id="warningMinutes" type="number" min="1" max="120"
-                  value={settings.customer_warning_minutes || ""}
-                  onChange={e => { const val = Number(e.target.value); setSettings({ ...settings, close_warning_minutes: val, customer_warning_minutes: val }); }}
+                  value={settings.customer_warning_minutes ?? ""}
+                  onChange={e => { const val = e.target.value; setSettings({ ...settings, close_warning_minutes: val, customer_warning_minutes: val }); }}
                   className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-sky-400 outline-none text-text-light dark:text-text-dark text-sm" />
               </div>
               <p className="text-[11px] text-muted mt-1">Banner peringatan muncul sekian menit sebelum jam tutup.</p>
@@ -615,8 +615,8 @@ export default function AdminSettingsPage() {
                     <div className="relative">
                       <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
                       <input id="shiftBuffer" type="number" min="1" max="240"
-                        value={settings.shift_closing_buffer_minutes || 30}
-                        onChange={e => setSettings({ ...settings, shift_closing_buffer_minutes: Number(e.target.value) })}
+                        value={settings.shift_closing_buffer_minutes ?? ""}
+                        onChange={e => setSettings({ ...settings, shift_closing_buffer_minutes: e.target.value })}
                         className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/30 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-text-light dark:text-text-dark" />
                     </div>
                   </motion.div>
@@ -723,9 +723,9 @@ export default function AdminSettingsPage() {
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: "expiryHours", label: "Jam", value: expiryHoursInput, onChange: (val: string) => { setExpiryHoursInput(val); const h = val === "" ? 0 : Number(val); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
-                { id: "expiryMinutes", label: "Menit", value: expiryMinutesInput, onChange: (val: string) => { setExpiryMinutesInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = val === "" ? 0 : Number(val); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
-                { id: "expirySeconds", label: "Detik", value: expirySecondsInput, onChange: (val: string) => { setExpirySecondsInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = val === "" ? 0 : Number(val); setSettings(prev => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expiryHours", label: "Jam", value: expiryHoursInput, onChange: (val: string) => { setExpiryHoursInput(val); const h = val === "" ? 0 : Number(val); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings((prev: any) => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expiryMinutes", label: "Menit", value: expiryMinutesInput, onChange: (val: string) => { setExpiryMinutesInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = val === "" ? 0 : Number(val); const s = expirySecondsInput === "" ? 0 : Number(expirySecondsInput); setSettings((prev: any) => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
+                { id: "expirySeconds", label: "Detik", value: expirySecondsInput, onChange: (val: string) => { setExpirySecondsInput(val); const h = expiryHoursInput === "" ? 0 : Number(expiryHoursInput); const m = expiryMinutesInput === "" ? 0 : Number(expiryMinutesInput); const s = val === "" ? 0 : Number(val); setSettings((prev: any) => ({ ...prev, payment_expiry_minutes: (h * 60) + m + (s / 60) })); } },
               ].map(field => (
                 <div key={field.id}>
                   <label htmlFor={field.id} className="text-[10px] text-muted font-bold block uppercase tracking-wider mb-1">{field.label}</label>
@@ -758,8 +758,8 @@ export default function AdminSettingsPage() {
               <label htmlFor="lateTolerance" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Toleransi Keterlambatan (Menit)</label>
               <div className="relative">
                 <Clock className="absolute left-3 top-3 h-4 w-4 text-muted" />
-                <input id="lateTolerance" type="number" min="0" value={settings.late_tolerance_minutes}
-                  onChange={e => setSettings({ ...settings, late_tolerance_minutes: Number(e.target.value) })}
+                <input id="lateTolerance" type="number" min="0" value={settings.late_tolerance_minutes ?? ""}
+                  onChange={e => setSettings({ ...settings, late_tolerance_minutes: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-rose-400 outline-none text-text-light dark:text-text-dark text-sm" />
               </div>
               <p className="text-[11px] text-muted mt-1">Menit maksimal sebelum absensi dicatat TERLAMBAT otomatis.</p>
@@ -778,8 +778,8 @@ export default function AdminSettingsPage() {
                 {settings.auto_deduct_late_salary && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden pt-3 border-t border-amber-200 dark:border-amber-800 mt-1">
                     <label htmlFor="minutesPerWorkingDay" className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-500 block mb-1.5">Total Menit Kerja Per Hari</label>
-                    <input id="minutesPerWorkingDay" type="number" value={settings.minutes_per_working_day}
-                      onChange={e => setSettings({ ...settings, minutes_per_working_day: Number(e.target.value) })}
+                    <input id="minutesPerWorkingDay" type="number" value={settings.minutes_per_working_day ?? ""}
+                      onChange={e => setSettings({ ...settings, minutes_per_working_day: e.target.value })}
                       className="w-full bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-sm font-bold text-amber-900 dark:text-amber-200 focus:ring-2 focus:ring-amber-500 outline-none" />
                     <p className="text-[9px] text-amber-600 mt-1 italic font-medium">Standar: 8 Jam Kerja = 480 Menit</p>
                   </motion.div>
@@ -806,15 +806,15 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="cutoffDate" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tanggal Cutoff (Tutup Buku)</label>
-              <input id="cutoffDate" type="number" min="1" max="31" value={settings.cutoff_date}
-                onChange={e => setSettings({ ...settings, cutoff_date: Number(e.target.value) })}
+              <input id="cutoffDate" type="number" min="1" max="31" value={settings.cutoff_date ?? ""}
+                onChange={e => setSettings({ ...settings, cutoff_date: e.target.value })}
                 className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none text-text-light dark:text-text-dark text-sm font-bold" />
               <p className="text-[11px] text-muted mt-1">Batas akhir data absensi dihitung setiap bulan.</p>
             </div>
             <div>
               <label htmlFor="paydayDate" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tanggal Transfer Gaji</label>
-              <input id="paydayDate" type="number" min="1" max="31" value={settings.payday_date}
-                onChange={e => setSettings({ ...settings, payday_date: Number(e.target.value) })}
+              <input id="paydayDate" type="number" min="1" max="31" value={settings.payday_date ?? ""}
+                onChange={e => setSettings({ ...settings, payday_date: e.target.value })}
                 className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none text-text-light dark:text-text-dark text-sm font-bold" />
               <p className="text-[11px] text-muted mt-1">Target tanggal distribusi upah karyawan.</p>
             </div>
@@ -849,23 +849,23 @@ export default function AdminSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border-light dark:border-border-dark pt-4">
                   <div>
                     <label htmlFor="shippingRate" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tarif Ongkir Per KM (Rp)</label>
-                    <input id="shippingRate" type="number" min="0" value={settings.shipping_rate_per_km}
-                      onChange={e => setSettings({ ...settings, shipping_rate_per_km: Number(e.target.value) })}
+                    <input id="shippingRate" type="number" min="0" value={settings.shipping_rate_per_km ?? ""}
+                      onChange={e => setSettings({ ...settings, shipping_rate_per_km: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                   </div>
                   
                   <div>
                     <label htmlFor="minShippingDist" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Jarak Layanan Minimum (KM)</label>
-                    <input id="minShippingDist" type="number" min="0" value={settings.min_shipping_distance}
-                      onChange={e => setSettings({ ...settings, min_shipping_distance: Number(e.target.value) })}
+                    <input id="minShippingDist" type="number" min="0" value={settings.min_shipping_distance ?? ""}
+                      onChange={e => setSettings({ ...settings, min_shipping_distance: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                     <p className="text-[10px] text-muted mt-1">Jarak minimum yang akan tetap dikenakan tarif minimum.</p>
                   </div>
 
                   <div>
                     <label htmlFor="maxShippingDist" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Jarak Layanan Maksimum (KM)</label>
-                    <input id="maxShippingDist" type="number" min="0" value={settings.max_shipping_distance}
-                      onChange={e => setSettings({ ...settings, max_shipping_distance: Number(e.target.value) })}
+                    <input id="maxShippingDist" type="number" min="0" value={settings.max_shipping_distance ?? ""}
+                      onChange={e => setSettings({ ...settings, max_shipping_distance: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                     <p className="text-[10px] text-muted mt-1">Batas terjauh jangkauan pengiriman restoran.</p>
                   </div>
@@ -874,15 +874,15 @@ export default function AdminSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="additionalCharge" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Biaya Zona Tambahan (Rp)</label>
-                    <input id="additionalCharge" type="number" min="0" value={settings.additional_zone_charge}
-                      onChange={e => setSettings({ ...settings, additional_zone_charge: Number(e.target.value) })}
+                    <input id="additionalCharge" type="number" min="0" value={settings.additional_zone_charge ?? ""}
+                      onChange={e => setSettings({ ...settings, additional_zone_charge: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                   </div>
 
                   <div>
                     <label htmlFor="minOrderFreeShipping" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Min. Belanja Gratis Ongkir (Rp)</label>
-                    <input id="minOrderFreeShipping" type="number" min="0" value={settings.min_order_for_free_shipping}
-                      onChange={e => setSettings({ ...settings, min_order_for_free_shipping: Number(e.target.value) })}
+                    <input id="minOrderFreeShipping" type="number" min="0" value={settings.min_order_for_free_shipping ?? ""}
+                      onChange={e => setSettings({ ...settings, min_order_for_free_shipping: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                   </div>
                 </div>
@@ -892,14 +892,14 @@ export default function AdminSettingsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label htmlFor="restoLatitude" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Latitude</label>
-                      <input id="restoLatitude" type="number" step="any" value={settings.resto_latitude}
-                        onChange={e => setSettings({ ...settings, resto_latitude: Number(e.target.value) })}
+                      <input id="restoLatitude" type="number" step="any" value={settings.resto_latitude ?? ""}
+                        onChange={e => setSettings({ ...settings, resto_latitude: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                     </div>
                     <div>
                       <label htmlFor="restoLongitude" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Longitude</label>
-                      <input id="restoLongitude" type="number" step="any" value={settings.resto_longitude}
-                        onChange={e => setSettings({ ...settings, resto_longitude: Number(e.target.value) })}
+                      <input id="restoLongitude" type="number" step="any" value={settings.resto_longitude ?? ""}
+                        onChange={e => setSettings({ ...settings, resto_longitude: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
                     </div>
                   </div>

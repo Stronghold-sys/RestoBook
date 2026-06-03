@@ -89,6 +89,7 @@ export default function OrderTrackingPage() {
   const [chatAttachmentUrl, setChatAttachmentUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [chatActionLoading, setChatActionLoading] = useState(false);
+  const [waitingTime, setWaitingTime] = useState(0);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<any>(null);
@@ -196,6 +197,21 @@ export default function OrderTrackingPage() {
 
     return () => clearInterval(interval);
   }, [chatRoom?.chat_history_deleted_at, chatRoom?.status]);
+
+  // Efek untuk memperbarui durasi tunggu pelanggan di antrean secara real-time
+  useEffect(() => {
+    const aiStatus = chatRoom?.ai_chat_status;
+    if ((aiStatus === 'waiting_cashier' || aiStatus === 'transfer_requested') && !chatRoom?.is_replied_manually) {
+      const interval = setInterval(() => {
+        const updatedTime = chatRoom.updated_at ? new Date(chatRoom.updated_at).getTime() : Date.now();
+        const elapsed = Math.floor((Date.now() - updatedTime) / 1000);
+        setWaitingTime(elapsed);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setWaitingTime(0);
+    }
+  }, [chatRoom?.ai_chat_status, chatRoom?.updated_at, chatRoom?.is_replied_manually]);
 
   // Realtime messages subscription
   useEffect(() => {
@@ -462,7 +478,7 @@ export default function OrderTrackingPage() {
     }
   };
 
-  const handleChatAction = async (action: 'request_cashier' | 'confirm_transfer' | 'cancel_transfer') => {
+  const handleChatAction = async (action: 'request_cashier' | 'confirm_transfer' | 'cancel_transfer' | 'complete_chat') => {
     if (chatActionLoading) return;
     setChatActionLoading(true);
     try {
@@ -481,6 +497,40 @@ export default function OrderTrackingPage() {
       toast.error(err.message || "Terjadi kesalahan");
     } finally {
       setChatActionLoading(false);
+    }
+  };
+
+  const sendQuickReplyMessage = async (text: string) => {
+    if (chatSending || chatActionLoading) return;
+    if (text === "Hubungi kasir" || text === "Hubungi Kasir") {
+      handleChatAction('request_cashier');
+      return;
+    }
+    if (text === "Selesai" || text === "selesai") {
+      handleChatAction('complete_chat');
+      return;
+    }
+    
+    setChatSending(true);
+    try {
+      const res = await fetch(`/api/customer/orders/${id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          attachment_url: null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Gagal mengirim pesan");
+      } else {
+        fetchChatMessages();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengirim pesan");
+    } finally {
+      setChatSending(false);
     }
   };
 
@@ -1854,7 +1904,7 @@ export default function OrderTrackingPage() {
                   {(() => {
                     const aiStatus = chatRoom?.ai_chat_status || 'ai_active';
                     const isCashierMode = chatRoom?.is_replied_manually || aiStatus === 'cashier_active';
-                    const isWaitingCashier = aiStatus === 'waiting_cashier';
+                    const isWaitingCashier = aiStatus === 'waiting_cashier' || aiStatus === 'transfer_requested';
                     return (
                       <>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 ${isCashierMode ? 'bg-blue-600' : isWaitingCashier ? 'bg-amber-500' : 'bg-primary'}`}>
@@ -2004,7 +2054,7 @@ export default function OrderTrackingPage() {
                     {/* Tombol konfirmasi transfer ke kasir - muncul saat waiting_customer_choice */}
                     {chatRoom?.ai_chat_status === 'waiting_customer_choice' && !chatRoom?.is_replied_manually && (
                       <div className="flex justify-start">
-                        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs mr-2 shrink-0 mt-1">AI</div>
+                        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shrink-0 mt-1">AI</div>
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl rounded-tl-none p-3 max-w-[75%]">
                           <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase mb-2">Pilih Tindakan</p>
                           <div className="flex flex-col gap-2">
@@ -2014,14 +2064,14 @@ export default function OrderTrackingPage() {
                               className="px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-md shadow-primary/20"
                             >
                               {chatActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                              Ya, Hubungkan ke Kasir
+                              Ya, hubungkan
                             </button>
                             <button
                               onClick={() => handleChatAction('cancel_transfer')}
                               disabled={chatActionLoading}
                               className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-muted text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
                             >
-                              Tidak, Lanjut Chat AI
+                              Batal
                             </button>
                           </div>
                         </div>
@@ -2100,12 +2150,34 @@ export default function OrderTrackingPage() {
               ) : (
                 <div className="border-t border-border-light dark:border-border-dark">
                   {/* Status bar */}
-                  {chatRoom?.ai_chat_status === 'waiting_cashier' && !chatRoom?.is_replied_manually && (
+                  {(chatRoom?.ai_chat_status === 'waiting_cashier' || chatRoom?.ai_chat_status === 'transfer_requested') && !chatRoom?.is_replied_manually && (
                     <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/40 dark:border-amber-700/20 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin text-amber-500 shrink-0" />
-                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Menunggu kasir bergabung... Anda masih bisa mengirim pesan.</p>
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                        {waitingTime > 45 
+                          ? "Terima kasih sudah menunggu, pesan Anda masih dalam antrean kasir. Mohon tunggu sebentar." 
+                          : "Menunggu kasir bergabung... Anda masih bisa mengirim pesan."}
+                      </p>
                     </div>
                   )}
+
+                  {/* Quick replies */}
+                  {(chatRoom?.ai_chat_status === 'ai_active' || !chatRoom?.ai_chat_status) && !chatRoom?.is_replied_manually && (
+                    <div className="px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/30 border-b border-border-light dark:border-border-dark flex gap-2 overflow-x-auto scrollbar-hide py-3">
+                      {["Status pesanan", "Estimasi selesai", "Hubungi kasir", "Ubah pesanan", "Batalkan pesanan", "Komplain", "Selesai"].map((reply) => (
+                        <button
+                          key={reply}
+                          type="button"
+                          onClick={() => sendQuickReplyMessage(reply)}
+                          disabled={chatSending}
+                          className="px-3.5 py-1.5 bg-white dark:bg-gray-800 hover:bg-primary hover:text-white dark:hover:bg-primary transition-all rounded-full border border-border-light dark:border-border-dark text-[11px] font-bold text-muted hover:border-primary shrink-0 whitespace-nowrap shadow-sm active:scale-95"
+                        >
+                          {reply}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <form onSubmit={sendChatMessage} className="p-3 flex items-center gap-2">
                     <div className="flex items-center gap-1 shrink-0">
                       <label htmlFor="order-chat-file-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Pilih File dari Perangkat">

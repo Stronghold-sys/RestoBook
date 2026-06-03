@@ -27,7 +27,7 @@ interface ChatRoom {
   status: string;
   is_replied_manually: boolean;
   is_blocked: boolean;
-  ai_chat_status: 'ai_active' | 'waiting_customer_choice' | 'waiting_cashier' | 'cashier_active' | null;
+  ai_chat_status: 'ai_active' | 'waiting_customer_choice' | 'transfer_requested' | 'waiting_cashier' | 'cashier_active' | null;
   chat_closed_at?: string;
   chat_history_deleted_at?: string;
   created_at: string;
@@ -779,8 +779,7 @@ export default function CashierChatPage() {
                           <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : getChatStatusStyle(chat.status)}`}>
                             {getChatStatusLabel(chat.status)}
                           </span>
-                          {/* Badge AI/Kasir status */}
-                          {chat.ai_chat_status === 'waiting_cashier' && !chat.is_replied_manually && (
+                          {(chat.ai_chat_status === 'waiting_cashier' || chat.ai_chat_status === 'transfer_requested') && !chat.is_replied_manually && (
                             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase animate-pulse ${isSelected ? "bg-white/30 text-white" : "bg-orange-100 text-orange-700"}`}>
                               Minta Kasir!
                             </span>
@@ -859,8 +858,7 @@ export default function CashierChatPage() {
                     <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${getChatStatusStyle(selectedChat.status)}`}>
                       {getChatStatusLabel(selectedChat.status)}
                     </span>
-                    {/* AI State Machine badge */}
-                    {selectedChat.ai_chat_status === 'waiting_cashier' && !selectedChat.is_replied_manually && (
+                    {(selectedChat.ai_chat_status === 'waiting_cashier' || selectedChat.ai_chat_status === 'transfer_requested') && !selectedChat.is_replied_manually && (
                       <span className="text-[9px] font-black px-2 py-0.5 rounded-md uppercase bg-orange-500 text-white animate-pulse">
                         ⚡ Minta Kasir
                       </span>

@@ -12,7 +12,8 @@ const VULGAR_WORDS = [
 const URGENT_KEYWORDS = [
   'komplain', 'marah', 'salah', 'belum diterima', 'refund', 'batal',
   'kecewa', 'jelek', 'lama sekali', 'tidak sesuai', 'rambut', 'benda asing',
-  'keracunan', 'mual', 'gatal', 'kotor', 'basi', 'tidak enak', 'ancur'
+  'keracunan', 'mual', 'gatal', 'kotor', 'basi', 'tidak enak', 'ancur',
+  'ubah', 'ganti'
 ];
 
 // Kata kunci yang menandakan pelanggan ingin bicara ke kasir
@@ -39,14 +40,14 @@ function containsCashierRequest(text: string): boolean {
 }
 
 const AI_GREETING_MESSAGES = [
-  'Halo! Saya RestoBot, asisten bantuan pesanan Anda. Saya siap membantu menjawab pertanyaan seputar pesanan Anda.',
-  'Jika Anda memiliki pertanyaan tentang status pesanan, estimasi selesai, pembayaran, atau hal lainnya, silakan sampaikan kepada saya.',
-  'Anda juga bisa langsung menghubungi kasir kami jika diperlukan bantuan lebih lanjut.'
+  'Halo! Saya RestoBot, asisten bantuan pesanan Anda. Ada yang bisa saya bantu?',
+  'Selamat datang di layanan chat kasir. Saya siap membantu pesanan Anda. Silakan jelaskan kebutuhan Anda, saya akan bantu secepat mungkin.',
+  'Jika Anda ingin berbicara langsung dengan kasir, saya juga bisa menghubungkan Anda.'
 ];
 
 const CASHIER_OFFER_MESSAGES = [
-  'Baik, saya bisa hubungkan Anda ke kasir untuk mendapatkan bantuan langsung dari staf kami.',
-  'Apakah Anda ingin dihubungkan ke kasir sekarang?'
+  'Baik, saya bisa hubungkan Anda ke kasir. Apakah Anda ingin melanjutkan?',
+  'Saya akan meneruskan chat ini ke kasir agar dibantu langsung. Lanjutkan?'
 ];
 
 async function sendAIGreeting(supabase: any, chatId: string) {
@@ -341,15 +342,21 @@ export async function POST(
     if (action === 'confirm_transfer') {
       // Pelanggan mengkonfirmasi ingin terhubung ke kasir
       await supabase.from('order_chats').update({
-        ai_chat_status: 'waiting_cashier',
+        ai_chat_status: 'transfer_requested',
         updated_at: new Date().toISOString()
       }).eq('id', chat.id);
 
-      // Kirim pesan transisi dari AI
+      // Kirim pesan transisi dari AI sesuai spesifikasi chatboot.md
       await supabase.from('order_chat_messages').insert({
         chat_id: chat.id,
         sender_role: 'ai',
-        message: 'Baik, Anda akan dihubungkan ke kasir. Pesan Anda sudah diteruskan. Mohon tunggu sebentar, kasir akan segera membalas.',
+        message: 'Baik, Anda akan dihubungkan ke kasir. Mohon tunggu sebentar.',
+        is_read: false
+      });
+      await supabase.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: 'Pesan Anda sudah diteruskan. Silakan menunggu balasan kasir.',
         is_read: false
       });
 
@@ -406,6 +413,53 @@ export async function POST(
       return NextResponse.json({ success: true, action: 'transfer_cancelled' });
     }
 
+    if (action === 'complete_chat') {
+      // Pelanggan menyatakan chat selesai
+      const { data: settings } = await supabase
+        .from('support_settings')
+        .select('*')
+        .eq('id', '77777777-7777-7777-7777-777777777777')
+        .single();
+
+      const hours = settings?.order_chat_expiry_hours ?? 0;
+      const minutes = settings?.order_chat_expiry_minutes ?? 30;
+      const seconds = settings?.order_chat_expiry_seconds ?? 0;
+
+      const now = new Date();
+      const closedAt = now.toISOString();
+      const deletedAt = new Date(now.getTime() + (hours * 3600 + minutes * 60 + seconds) * 1000).toISOString();
+
+      const { data: updatedChat, error: updateErr } = await supabase
+        .from('order_chats')
+        .update({
+          status: 'completed',
+          chat_closed_at: closedAt,
+          chat_history_deleted_at: deletedAt,
+          updated_at: now.toISOString()
+        })
+        .eq('id', chat.id)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+
+      let wordingTime = '';
+      if (hours > 0) wordingTime += `${hours} jam `;
+      if (minutes > 0) wordingTime += `${minutes} menit `;
+      if (seconds > 0) wordingTime += `${seconds} detik`;
+      if (!wordingTime) wordingTime = 'beberapa saat';
+
+      // Kirim pesan sistem otomatis
+      await supabase.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: `Sesi obrolan ini telah dinyatakan selesai oleh pelanggan. Sesi obrolan ditutup secara resmi, dan seluruh riwayat pesan akan dihapus otomatis secara permanen dalam ${wordingTime.trim()}. Terima kasih!`,
+        is_read: false
+      });
+
+      return NextResponse.json({ success: true, chat: updatedChat });
+    }
+
     // --- Kirim pesan biasa ---
     if (!message && !attachment_url) {
       return NextResponse.json({ error: 'Pesan atau lampiran wajib diisi' }, { status: 400 });
@@ -427,7 +481,31 @@ export async function POST(
         .maybeSingle();
 
       if (lastMsg && lastMsg.sender_role === 'customer' && lastMsg.message === message) {
-        return NextResponse.json({ error: 'Pesan duplikat terdeteksi. Harap tidak mengirim pesan yang sama berulang kali.' }, { status: 400 });
+        // Simpan pesan duplikat pelanggan ke database
+        const { data: newMsg, error: insertError } = await supabase
+          .from('order_chat_messages')
+          .insert({
+            chat_id: chat.id,
+            sender_id: profile.id,
+            sender_role: 'customer',
+            message: message || null,
+            attachment_url: attachment_url || null,
+            is_read: false
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        // Kirim respons penenang dari AI
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chat.id,
+          sender_role: 'ai',
+          message: 'Mohon bersabar dan tidak mengirimkan pesan secara berulang. Saya atau kasir kami akan membantu Anda secepatnya.',
+          is_read: false
+        });
+
+        return NextResponse.json({ success: true, message: newMsg });
       }
     }
 
@@ -465,36 +543,55 @@ export async function POST(
           updated_at: new Date().toISOString()
         }).eq('id', chat.id);
       } else if (message && containsUrgentKeyword(message)) {
-        // Pesan mendesak - jawab AI + langsung tawarkan kasir
+        // Pesan mendesak - jawab AI + langsung tawarkan kasir secara sinkron (edge safety)
         await sendAIResponse(supabase, chat.id, orderId, message, currentAiStatus);
-        // Tawaran cepat ke kasir setelah jawaban AI
-        setTimeout(async () => {
-          try {
-            await supabase.from('order_chat_messages').insert({
-              chat_id: chat.id,
-              sender_role: 'ai',
-              message: 'Jika Anda memerlukan penanganan lebih lanjut, saya dapat menghubungkan Anda langsung ke kasir kami. Apakah Anda ingin dihubungkan?',
-              is_read: false
-            });
-            await supabase.from('order_chats').update({
-              ai_chat_status: 'waiting_customer_choice',
-              updated_at: new Date().toISOString()
-            }).eq('id', chat.id);
-          } catch (e) {}
-        }, 100);
+        
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chat.id,
+          sender_role: 'ai',
+          message: 'Jika Anda memerlukan penanganan lebih lanjut, saya dapat menghubungkan Anda langsung ke kasir kami. Apakah Anda ingin dihubungkan?',
+          is_read: false
+        });
+        
+        await supabase.from('order_chats').update({
+          ai_chat_status: 'waiting_customer_choice',
+          updated_at: new Date().toISOString()
+        }).eq('id', chat.id);
       } else {
         // Jawab normal oleh AI
         await sendAIResponse(supabase, chat.id, orderId, message || '', currentAiStatus);
       }
-    } else if (currentAiStatus === 'waiting_cashier') {
-      // Sudah dalam antrian kasir - kirim pesan pengingat jika belum ada kasir
+    } else if (currentAiStatus === 'waiting_cashier' || currentAiStatus === 'transfer_requested') {
+      // Sudah dalam antrian kasir - kirim pesan pengingat jika belum ada kasir (dibatasi 30 detik)
       if (!chat.is_replied_manually) {
-        await supabase.from('order_chat_messages').insert({
-          chat_id: chat.id,
-          sender_role: 'ai',
-          message: 'Pesan Anda sudah diterima. Kasir akan membalas secepatnya, terima kasih atas kesabaran Anda.',
-          is_read: false
-        });
+        const { data: lastAiMsg } = await supabase
+          .from('order_chat_messages')
+          .select('created_at')
+          .eq('chat_id', chat.id)
+          .eq('sender_role', 'ai')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const lastAiTime = lastAiMsg ? new Date(lastAiMsg.created_at).getTime() : 0;
+        const timeDiff = Date.now() - lastAiTime;
+
+        if (timeDiff > 30000) {
+          const reminderMessages = [
+            'Mohon tunggu sebentar, kasir sedang memproses pesan Anda.',
+            'Pesan Anda sudah diterima, silakan menunggu balasan kasir.',
+            'Kami sedang menghubungkan Anda ke kasir, harap bersabar.',
+            'Kasir akan membalas secepatnya, terima kasih atas pengertiannya.'
+          ];
+          const randomReminder = reminderMessages[Math.floor(Math.random() * reminderMessages.length)];
+
+          await supabase.from('order_chat_messages').insert({
+            chat_id: chat.id,
+            sender_role: 'ai',
+            message: randomReminder,
+            is_read: false
+          });
+        }
       }
     }
     // Jika CASHIER_ACTIVE (is_replied_manually = true), AI tidak ikut campur

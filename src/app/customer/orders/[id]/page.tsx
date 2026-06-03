@@ -13,79 +13,12 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
-import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 
 declare const google: any;
 
-interface DeliveryMapProps {
-  restoLat: number;
-  restoLng: number;
-  address: string;
-}
 
-function DeliveryMap({ restoLat, restoLng, address }: DeliveryMapProps) {
-  const map = useMap();
-  const geocodingLib = useMapsLibrary("geocoding");
-  const routesLib = useMapsLibrary("routes");
-  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [directionsRenderer, setDirectionsRenderer] = useState<any>(null);
-  const [directionsService, setDirectionsService] = useState<any>(null);
-
-  useEffect(() => {
-    if (!geocodingLib || !address) return;
-    const geocoder = new geocodingLib.Geocoder();
-    geocoder.geocode({ address }, (results: any, status: any) => {
-      if (status === "OK" && results && results[0]) {
-        const loc = results[0].geometry.location;
-        setCustomerCoords({ lat: loc.lat(), lng: loc.lng() });
-      }
-    });
-  }, [geocodingLib, address]);
-
-  useEffect(() => {
-    if (!routesLib || !map) return;
-    const renderer = new routesLib.DirectionsRenderer({
-      map,
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: "#e85d04",
-        strokeWeight: 5
-      }
-    });
-    const service = new routesLib.DirectionsService();
-    setDirectionsRenderer(renderer);
-    setDirectionsService(service);
-    return () => {
-      renderer.setMap(null);
-    };
-  }, [routesLib, map]);
-
-  useEffect(() => {
-    if (!directionsService || !directionsRenderer || !customerCoords) return;
-    directionsService.route(
-      {
-        origin: { lat: restoLat, lng: restoLng },
-        destination: customerCoords,
-        travelMode: google.maps.TravelMode.DRIVING
-      },
-      (result: any, status: string) => {
-        if (status === "OK" && result) {
-          directionsRenderer.setDirections(result);
-        }
-      }
-    );
-  }, [directionsService, directionsRenderer, customerCoords, restoLat, restoLng]);
-
-  return (
-    <>
-      <Marker position={{ lat: restoLat, lng: restoLng }} title="Restoran Kami" />
-      {customerCoords && (
-        <Marker position={customerCoords} title="Alamat Pengiriman" />
-      )}
-    </>
-  );
-}
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -1242,24 +1175,7 @@ export default function OrderTrackingPage() {
             </div>
           </div>
 
-          {/* Google Maps Route Display */}
-          {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && settingsLoaded && (
-            <div className="w-full h-72 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark mt-4">
-              <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
-                <Map
-                  defaultCenter={{ lat: restoLat, lng: restoLng }}
-                  defaultZoom={13}
-                  gestureHandling={'cooperative'}
-                >
-                  <DeliveryMap 
-                    restoLat={restoLat}
-                    restoLng={restoLng}
-                    address={`${order.delivery_address}, ${order.delivery_village || ""}, ${order.delivery_district || ""}, ${order.delivery_regency || ""}, ${order.delivery_province || ""} ${order.delivery_postal_code || ""}`}
-                  />
-                </Map>
-              </APIProvider>
-            </div>
-          )}
+
         </div>
       )}
 

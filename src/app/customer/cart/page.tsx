@@ -10,9 +10,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/operationalHours";
-import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 
-declare const google: any;
 
 interface Table { id: string; table_number: number; capacity: number; status: string; }
 
@@ -175,139 +173,7 @@ function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lo
   return Math.round(R * c * 100) / 100;
 }
 
-const parseAddressComponents = (place: any) => {
-  let province = "";
-  let regency = "";
-  let district = "";
-  let village = "";
-  let postalCode = "";
 
-  if (place.address_components) {
-    for (const comp of place.address_components) {
-      const types = comp.types;
-      if (types.includes("administrative_area_level_1")) {
-        province = comp.long_name.toUpperCase();
-      } else if (types.includes("administrative_area_level_2")) {
-        regency = comp.long_name.toUpperCase();
-      } else if (types.includes("administrative_area_level_3")) {
-        district = comp.long_name.toUpperCase();
-      } else if (types.includes("administrative_area_level_4") || types.includes("sublocality_level_1")) {
-        village = comp.long_name.toUpperCase();
-      } else if (types.includes("postal_code")) {
-        postalCode = comp.long_name;
-      }
-    }
-  }
-
-  return { province, regency, district, village, postalCode };
-};
-
-interface PlaceAutocompleteProps {
-  onPlaceSelect: (lat: number, lng: number, address: string, components: ReturnType<typeof parseAddressComponents>) => void;
-  placeholder?: string;
-}
-
-function PlaceAutocomplete({ onPlaceSelect, placeholder = "Cari alamat atau lokasi..." }: PlaceAutocompleteProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const placesLib = useMapsLibrary("places");
-  const autocompleteRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!placesLib || !inputRef.current) return;
-
-    const autocomplete = new placesLib.Autocomplete(inputRef.current, {
-      fields: ["geometry", "formatted_address", "address_components", "name"],
-      componentRestrictions: { country: "id" }
-    });
-    autocompleteRef.current = autocomplete;
-
-    const listener = autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const address = place.formatted_address || place.name || "";
-        const components = parseAddressComponents(place);
-        onPlaceSelect(lat, lng, address, components);
-      }
-    });
-
-    return () => {
-      if (listener) {
-        google.maps.event.removeListener(listener);
-      }
-    };
-  }, [placesLib]);
-
-  return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder={placeholder}
-        className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark font-medium placeholder-muted"
-      />
-      <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
-    </div>
-  );
-}
-
-interface DirectionsProps {
-  origin: { lat: number; lng: number };
-  destination: { lat: number; lng: number };
-  onDistanceCalculated: (distanceKm: number) => void;
-}
-
-function Directions({ origin, destination, onDistanceCalculated }: DirectionsProps) {
-  const map = useMap();
-  const routesLib = useMapsLibrary("routes");
-  const [directionsRenderer, setDirectionsRenderer] = useState<any>(null);
-  const [directionsService, setDirectionsService] = useState<any>(null);
-
-  useEffect(() => {
-    if (!routesLib || !map) return;
-    const renderer = new routesLib.DirectionsRenderer({
-      map,
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: "#e85d04",
-        strokeWeight: 5
-      }
-    });
-    const service = new routesLib.DirectionsService();
-    setDirectionsRenderer(renderer);
-    setDirectionsService(service);
-    return () => {
-      renderer.setMap(null);
-    };
-  }, [routesLib, map]);
-
-  useEffect(() => {
-    if (!directionsService || !directionsRenderer) return;
-    
-    directionsService.route(
-      {
-        origin,
-        destination,
-        travelMode: google.maps.TravelMode.DRIVING
-      },
-      (result: any, status: string) => {
-        if (status === "OK" && result) {
-          directionsRenderer.setDirections(result);
-          const route = result.routes[0];
-          if (route && route.legs && route.legs[0]) {
-            const distance = route.legs[0].distance?.value ? route.legs[0].distance.value / 1000 : 0;
-            onDistanceCalculated(distance);
-          }
-        } else {
-          console.error("Directions request failed:", status);
-        }
-      }
-    );
-  }, [directionsService, directionsRenderer, origin, destination]);
-
-  return null;
-}
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
@@ -426,6 +292,90 @@ export default function CartPage() {
   const [customerCoords, setCustomerCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [loadingDistance, setLoadingDistance] = useState(false);
+
+  // Geocode address in real-time using OSM Nominatim
+  const geocodeAddressRealtime = async (address: string, village: string, district: string, regency: string, province: string) => {
+    if (!address || !district || !regency || !province) return;
+    setLoadingDistance(true);
+    
+    // We construct a query from the manual inputs
+    const queryParts = [];
+    if (address) queryParts.push(address);
+    if (village) queryParts.push(village);
+    if (district) queryParts.push(district);
+    if (regency) queryParts.push(regency);
+    if (province) queryParts.push(province);
+    queryParts.push("Indonesia");
+    
+    const query = queryParts.join(", ");
+    
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`, {
+        headers: {
+          'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8',
+          'User-Agent': 'RestoBook/1.0 (contact@restobookid.my.id)'
+        }
+      });
+      if (!response.ok) throw new Error("Gagal melakukan request geocoding");
+      const results = await response.json();
+      
+      if (results && results.length > 0) {
+        const lat = Number(results[0].lat);
+        const lng = Number(results[0].lon);
+        setCustomerCoords({ lat, lng });
+        const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+        setDistanceKm(dist);
+      } else {
+        // Fallback: try search with village, district, regency, province (if detailed street address failed)
+        const fallbackParts = [];
+        if (village) fallbackParts.push(village);
+        if (district) fallbackParts.push(district);
+        if (regency) fallbackParts.push(regency);
+        if (province) fallbackParts.push(province);
+        fallbackParts.push("Indonesia");
+        const fallbackQuery = fallbackParts.join(", ");
+        
+        const fallbackResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fallbackQuery)}&format=json&limit=1`, {
+          headers: {
+            'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8',
+            'User-Agent': 'RestoBook/1.0 (contact@restobookid.my.id)'
+          }
+        });
+        
+        if (fallbackResponse.ok) {
+          const fallbackResults = await fallbackResponse.json();
+          if (fallbackResults && fallbackResults.length > 0) {
+            const lat = Number(fallbackResults[0].lat);
+            const lng = Number(fallbackResults[0].lon);
+            setCustomerCoords({ lat, lng });
+            const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+            setDistanceKm(dist);
+            return;
+          }
+        }
+        
+        setDistanceKm(null);
+        setCustomerCoords(null);
+      }
+    } catch (error) {
+      console.error("OSM Nominatim error:", error);
+    } finally {
+      setLoadingDistance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orderType === "delivery" && deliveryAddress && deliveryDistrict && deliveryRegency && deliveryProvince) {
+      const timer = setTimeout(() => {
+        geocodeAddressRealtime(deliveryAddress, deliveryVillage, deliveryDistrict, deliveryRegency, deliveryProvince);
+      }, 1000); // 1 second debounce
+      return () => clearTimeout(timer);
+    } else {
+      setDistanceKm(null);
+      setCustomerCoords(null);
+    }
+  }, [deliveryAddress, deliveryVillage, deliveryDistrict, deliveryRegency, deliveryProvince, orderType]);
 
   const shippingFee = (orderType === "delivery" && distanceKm !== null)
     ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
@@ -449,97 +399,7 @@ export default function CartPage() {
 
   const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee - shippingDiscount);
 
-  const prefillFromComponents = async (components: ReturnType<typeof parseAddressComponents>) => {
-    if (components.province) {
-      const foundProv = provincesList.find(p => p.name.includes(components.province) || components.province.includes(p.name));
-      if (foundProv) {
-        setDeliveryProvince(foundProv.name);
-        setLoadingRegencies(true);
-        try {
-          const res = await fetch(`/data/wilayah/provinces/${foundProv.id}.json`);
-          if (!res.ok) throw new Error("Gagal");
-          const data = await res.json();
-          if (data && Array.isArray(data.regencies)) {
-            setRegencies(data.regencies);
-            setActiveProvinceData(data);
-            
-            if (components.regency) {
-              const cleanName = (name: string) => name.replace(/^(KABUPATEN|KOTA)\s+/i, "").trim();
-              const foundReg = data.regencies.find((r: any) => cleanName(r.name).includes(cleanName(components.regency)) || cleanName(components.regency).includes(cleanName(r.name)));
-              if (foundReg) {
-                setDeliveryRegency(foundReg.name);
-                
-                const filteredDistricts = data.districts.filter((d: any) => d.regency_id === foundReg.id);
-                setDistricts(filteredDistricts);
-                
-                if (components.district) {
-                  const foundDist = filteredDistricts.find((d: any) => d.name.includes(components.district) || components.district.includes(d.name));
-                  if (foundDist) {
-                    setDeliveryDistrict(foundDist.name);
-                    
-                    const filteredVillages = data.villages.filter((v: any) => v.district_id === foundDist.id);
-                    setVillages(filteredVillages);
-                    
-                    if (components.village) {
-                      const foundVill = filteredVillages.find((v: any) => v.name.includes(components.village) || components.village.includes(v.name));
-                      if (foundVill) {
-                        setDeliveryVillage(foundVill.name);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoadingRegencies(false);
-        }
-      }
-    }
-    if (components.postalCode) {
-      setDeliveryPostalCode(components.postalCode);
-    }
-  };
 
-  const handleUseGPS = () => {
-    if (!navigator.geolocation) {
-      toast.error("Browser Anda tidak mendukung geolokasi (GPS)");
-      return;
-    }
-    
-    const gpsToast = toast.loading("Mendapatkan lokasi perangkat Anda...");
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        setCustomerCoords({ lat, lng });
-        
-        const distance = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-        setDistanceKm(distance);
-        
-        toast.success("Berhasil mendapatkan lokasi GPS!", { id: gpsToast });
-        
-        if (typeof google !== "undefined" && google.maps) {
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
-            if (status === "OK" && results && results[0]) {
-              const place = results[0];
-              setDeliveryAddress(place.formatted_address || "");
-              const components = parseAddressComponents(place);
-              prefillFromComponents(components);
-            }
-          });
-        }
-      },
-      (error) => {
-        console.error(error);
-        toast.error("Gagal mendapatkan lokasi GPS. Pastikan izin lokasi aktif.", { id: gpsToast });
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
 
   const [profileData, setProfileData] = useState<any>(null);
   const [duitkuMethod, setDuitkuMethod] = useState("");
@@ -1138,7 +998,7 @@ export default function CartPage() {
         return toast.error("Silakan lengkapi informasi pengiriman");
       }
       if (distanceKm === null) {
-        return toast.error("Silakan cari alamat Anda atau gunakan GPS untuk menghitung jarak");
+        return toast.error("Gagal mendeteksi lokasi dari alamat Anda. Pastikan alamat yang diisi benar.");
       }
       if (distanceKm > maxShippingDistance) {
         return toast.error(`Alamat pengantaran berada di luar batas jarak maksimal ${maxShippingDistance} km`);
@@ -1426,7 +1286,15 @@ export default function CartPage() {
                 <div className="flex justify-between text-muted text-sm">
                   <span>Ongkos Kirim {distanceKm !== null ? `(${distanceKm.toFixed(1)} km)` : ""}</span>
                   <span className="font-semibold text-text-light dark:text-text-dark">
-                    {distanceKm !== null ? `Rp ${shippingFee.toLocaleString("id-ID")}` : "Menghitung..."}
+                    {distanceKm !== null ? (
+                      `Rp ${shippingFee.toLocaleString("id-ID")}`
+                    ) : loadingDistance ? (
+                      <span className="flex items-center gap-1 text-xs">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary inline" /> Menghitung...
+                      </span>
+                    ) : (
+                      "Lengkapi Alamat..."
+                    )}
                   </span>
                 </div>
               )}
@@ -1549,143 +1417,12 @@ export default function CartPage() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 text-left">
                     <h4 className="text-xs font-bold text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
                     
-                    {/* Google Maps & GPS Integration */}
-                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Cari & Tentukan Lokasi Anda</label>
-                        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
-                          <PlaceAutocomplete 
-                            onPlaceSelect={(lat, lng, address, components) => {
-                              setCustomerCoords({ lat, lng });
-                              setDeliveryAddress(address);
-                              prefillFromComponents(components);
-                              const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-                              setDistanceKm(dist);
-                            }}
-                          />
-                          
-                          {/* Map container */}
-                          <div className="w-full h-60 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark relative bg-background-light dark:bg-background-dark">
-                            {settingsLoaded ? (
-                              <Map
-                                defaultCenter={{ lat: restoLat, lng: restoLng }}
-                                center={customerCoords ? { lat: customerCoords.lat, lng: customerCoords.lng } : { lat: restoLat, lng: restoLng }}
-                                defaultZoom={13}
-                                gestureHandling={'cooperative'}
-                              >
-                                {/* Restaurant Marker */}
-                                <Marker 
-                                  position={{ lat: restoLat, lng: restoLng }}
-                                  title="Restoran Kami"
-                                />
-                                
-                                {/* Customer Marker */}
-                                {customerCoords && (
-                                  <Marker 
-                                    position={{ lat: customerCoords.lat, lng: customerCoords.lng }}
-                                    draggable={true}
-                                    title="Lokasi Anda (Geser untuk menyesuaikan)"
-                                    onDragEnd={(e) => {
-                                      if (e.latLng) {
-                                        const lat = e.latLng.lat();
-                                        const lng = e.latLng.lng();
-                                        setCustomerCoords({ lat, lng });
-                                        
-                                        const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-                                        setDistanceKm(dist);
-                                        
-                                        if (typeof google !== "undefined" && google.maps) {
-                                          const geocoder = new google.maps.Geocoder();
-                                          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
-                                            if (status === "OK" && results && results[0]) {
-                                              const place = results[0];
-                                              setDeliveryAddress(place.formatted_address || "");
-                                              const components = parseAddressComponents(place);
-                                              prefillFromComponents(components);
-                                            }
-                                          });
-                                        }
-                                      }
-                                    }}
-                                  />
-                                )}
-                                
-                                {/* Directions route renderer */}
-                                {customerCoords && (
-                                  <Directions 
-                                    origin={{ lat: restoLat, lng: restoLng }}
-                                    destination={{ lat: customerCoords.lat, lng: customerCoords.lng }}
-                                    onDistanceCalculated={(dist) => {
-                                      setDistanceKm(dist);
-                                    }}
-                                  />
-                                )}
-                              </Map>
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-                                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                              </div>
-                            )}
-                          </div>
-                        </APIProvider>
-                      </div>
-                    ) : (
-                      <div className="p-4 border border-dashed border-amber-300 bg-amber-500/10 rounded-2xl text-center space-y-2">
-                        <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto animate-pulse" />
-                        <p className="text-xs font-bold text-text-light dark:text-text-dark">Google Maps API Key Belum Dikonfigurasi</p>
-                        <p className="text-[10px] text-muted leading-relaxed">
-                          Anda dapat memasukkan koordinat alamat Anda secara manual di bawah ini untuk menghitung jarak pengiriman.
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-2 pt-2">
-                          <div>
-                            <label className="text-[9px] font-bold text-muted uppercase tracking-wider block mb-1">Latitude</label>
-                            <input 
-                              type="number" 
-                              step="any"
-                              placeholder="Contoh: -7.7829" 
-                              value={customerCoords?.lat || ""}
-                              onChange={e => {
-                                const lat = Number(e.target.value);
-                                const lng = customerCoords?.lng || 0;
-                                setCustomerCoords({ lat, lng });
-                                const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-                                setDistanceKm(dist);
-                              }}
-                              className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 text-xs outline-none text-text-light dark:text-text-dark font-medium"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-bold text-muted uppercase tracking-wider block mb-1">Longitude</label>
-                            <input 
-                              type="number" 
-                              step="any"
-                              placeholder="Contoh: 110.3323" 
-                              value={customerCoords?.lng || ""}
-                              onChange={e => {
-                                const lat = customerCoords?.lat || 0;
-                                const lng = Number(e.target.value);
-                                setCustomerCoords({ lat, lng });
-                                const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-                                setDistanceKm(dist);
-                              }}
-                              className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 text-xs outline-none text-text-light dark:text-text-dark font-medium"
-                            />
-                          </div>
-                        </div>
+                    {loadingDistance && (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800/40 border border-border-light dark:border-border-dark rounded-xl flex items-center justify-center gap-2 text-xs text-muted">
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        <span>Sedang mengalkulasi jarak pengantaran...</span>
                       </div>
                     )}
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleUseGPS}
-                        className="flex-1 bg-primary/10 hover:bg-primary hover:text-white border border-primary/20 text-primary rounded-xl px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all"
-                      >
-                        <MapPin className="w-4 h-4 shrink-0" />
-                        Gunakan GPS Perangkat Anda
-                      </button>
-                    </div>
 
                     {distanceKm !== null && (
                       <div className="p-3 bg-gray-50 dark:bg-gray-800/40 border border-border-light dark:border-border-dark rounded-xl flex items-center justify-between text-xs">

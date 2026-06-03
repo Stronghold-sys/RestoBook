@@ -13,7 +13,7 @@ import { formatToIndonesianDate } from "@/utils/operationalHours";
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useRef } from "react";
-import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
+
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -904,52 +904,26 @@ export default function AdminSettingsPage() {
                     </div>
                   </div>
 
-                  {/* PETA INTERAKTIF */}
-                  <div className="w-full h-80 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark relative bg-background-light dark:bg-background-dark flex items-center justify-center">
-                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
-                      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
-                        <Map
-                          defaultCenter={{ lat: settings.resto_latitude, lng: settings.resto_longitude }}
-                          defaultZoom={15}
-                          gestureHandling={'cooperative'}
-                          onClick={(e) => {
-                            if (e.detail.latLng) {
-                              setSettings(prev => ({
-                                ...prev,
-                                resto_latitude: e.detail.latLng!.lat,
-                                resto_longitude: e.detail.latLng!.lng
-                              }));
-                            }
-                          }}
-                        >
-                          <Marker
-                            position={{ lat: settings.resto_latitude, lng: settings.resto_longitude }}
-                            draggable={true}
-                            onDragEnd={(e) => {
-                              if (e.latLng) {
-                                setSettings(prev => ({
-                                  ...prev,
-                                  resto_latitude: e.latLng!.lat(),
-                                  resto_longitude: e.latLng!.lng()
-                                }));
-                              }
-                            }}
-                          />
-                        </Map>
-                      </APIProvider>
-                    ) : (
-                      <div className="p-8 text-center max-w-md">
-                        <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                        <p className="text-xs font-bold text-text-light dark:text-text-dark">Peta Interaktif Dinonaktifkan</p>
-                        <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                          Kunci API Google Maps tidak terdeteksi. Silakan atur koordinat secara manual di kolom atas, atau tambahkan <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> pada file konfigurasi environment (.env.local).
-                        </p>
-                      </div>
-                    )}
+                  {/* PETA INTERAKTIF SEKARANG DIGANTI DENGAN KARTU INSTRUKSI STATIS */}
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800/40 border border-border-light dark:border-border-dark rounded-2xl space-y-3 text-left">
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      <span>Lokasi Titik Koordinat Restoran</span>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Titik koordinat (Latitude & Longitude) di atas digunakan sebagai titik pusat acuan (origin) untuk menghitung jarak pengiriman pesanan secara otomatis (Haversine distance).
+                    </p>
+                    <div className="p-3.5 bg-amber-500/10 border border-amber-550/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs space-y-1">
+                      <p className="font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" /> Panduan Pengaturan Koordinat:
+                      </p>
+                      <ul className="list-disc list-inside pl-1 space-y-0.5 text-[11px] leading-relaxed text-muted">
+                        <li>Gunakan format desimal lengkap (contoh Latitude: <code className="font-mono bg-amber-500/20 px-1 rounded">-7.7829</code>, Longitude: <code className="font-mono bg-amber-500/20 px-1 rounded">110.3323</code>).</li>
+                        <li>Anda dapat menyalin koordinat lokasi restoran Anda langsung dari pencarian Google Maps atau OpenStreetMap untuk akurasi optimal.</li>
+                        <li>Pastikan koordinat tersimpan dengan benar agar perhitungan ongkos kirim pelanggan tidak mengalami deviasi jarak.</li>
+                      </ul>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-muted mt-1.5 italic">
-                    Tips: Klik di peta atau geser penanda merah untuk menentukan koordinat lokasi restoran Anda secara presisi.
-                  </p>
                 </div>
               </motion.div>
             )}

@@ -8,7 +8,7 @@ import {
   Search, Send, X, Loader2, MessageSquare, Package,
   CheckCheck, Check, Shield, AlertCircle, RefreshCw,
   Printer, FileText, Utensils, Truck, Coffee,
-  ArrowLeft, Ban, Camera, RotateCcw, Paperclip
+  ArrowLeft, Ban, Camera, RotateCcw, Paperclip, Trash2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -27,6 +27,8 @@ interface ChatRoom {
   status: string;
   is_replied_manually: boolean;
   is_blocked: boolean;
+  chat_closed_at?: string;
+  chat_history_deleted_at?: string;
   created_at: string;
   updated_at: string;
   order: {
@@ -106,6 +108,12 @@ export default function CashierChatPage() {
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
   const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [chatCountdownText, setChatCountdownText] = useState("");
+  const selectedChatRef = useRef<ChatRoom | null>(null);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
@@ -176,8 +184,11 @@ export default function CashierChatPage() {
           }
         }
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_chats" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_chats" }, (payload: any) => {
         fetchChats();
+        if (payload.new && selectedChatRef.current && payload.new.id === selectedChatRef.current.id) {
+          setSelectedChat(prev => prev ? { ...prev, ...payload.new } : null);
+        }
       })
       .subscribe();
 
@@ -247,6 +258,61 @@ export default function CashierChatPage() {
     };
     loadMessages();
   }, [selectedChat?.id]);
+
+  // --- Timer Hitung Mundur Pembersihan Chat ---
+  const triggerOrderChatCronCleanup = async () => {
+    try {
+      await fetch('/api/support/ticket/cron', { method: 'POST' });
+      fetchChats();
+      if (selectedChatRef.current) {
+        const { data, error } = await supabase
+          .from('order_chats')
+          .select('*')
+          .eq('id', selectedChatRef.current.id)
+          .single();
+        if (!error && data) {
+          setSelectedChat(prev => prev ? { ...prev, ...data } : null);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal menjalankan auto-cleanup obrolan order:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedChat || !selectedChat.chat_history_deleted_at) {
+      setChatCountdownText('');
+      return;
+    }
+
+    const deletionTime = new Date(selectedChat.chat_history_deleted_at).getTime();
+    const initialDiff = deletionTime - Date.now();
+
+    if (initialDiff <= 0 && selectedChat.status !== 'expired') {
+      setChatCountdownText('00:00:00');
+      triggerOrderChatCronCleanup();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const diff = deletionTime - Date.now();
+
+      if (diff <= 0) {
+        setChatCountdownText('00:00:00');
+        clearInterval(interval);
+        triggerOrderChatCronCleanup();
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        setChatCountdownText(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [selectedChat?.chat_history_deleted_at, selectedChat?.status]);
 
   // --- Realtime pesan untuk chat yang sedang dibuka ---
   useEffect(() => {
@@ -560,6 +626,7 @@ export default function CashierChatPage() {
       case "completed": return "bg-gray-100 text-gray-500";
       case "waiting_customer": return "bg-amber-100 text-amber-700";
       case "need_admin": return "bg-red-100 text-red-700";
+      case "expired": return "bg-red-50 text-red-500 border-red-200";
       default: return "bg-gray-100 text-gray-500";
     }
   };
@@ -570,13 +637,15 @@ export default function CashierChatPage() {
       case "completed": return "Selesai";
       case "waiting_customer": return "Menunggu Pelanggan";
       case "need_admin": return "Perlu Admin";
+      case "expired": return "Kedaluwarsa";
       default: return status;
     }
   };
 
   const isChatInputDisabled = !selectedChat ||
     selectedChat.is_blocked ||
-    selectedChat.status === "completed";
+    selectedChat.status === "completed" ||
+    selectedChat.status === "expired";
 
   return (
     <div className="h-[calc(100vh-5rem)] flex flex-col overflow-hidden p-4 gap-4">
@@ -800,7 +869,7 @@ export default function CashierChatPage() {
                     <FileText className="w-4 h-4" />
                   </button>
 
-                  {selectedChat.status !== "completed" && (
+                  {selectedChat.status !== "completed" && selectedChat.status !== "expired" && (
                     <button
                       onClick={() => performAction("mark_completed", "Chat ditandai selesai")}
                       title="Tandai selesai"
@@ -824,43 +893,53 @@ export default function CashierChatPage() {
                     </button>
                   )}
 
-                  <button
-                    onClick={() => performAction("need_admin", "Ditandai perlu bantuan admin")}
-                    title="Perlu bantuan admin"
-                    aria-label="Eskalasi ke admin"
-                    disabled={actionLoading}
-                    className="p-2 rounded-xl text-muted hover:bg-amber-100 hover:text-amber-700 transition-all"
-                  >
-                    <AlertCircle className="w-4 h-4" />
-                  </button>
+                  {selectedChat.status !== "completed" && selectedChat.status !== "expired" && (
+                    <button
+                      onClick={() => performAction("need_admin", "Ditandai perlu bantuan admin")}
+                      title="Perlu bantuan admin"
+                      aria-label="Eskalasi ke admin"
+                      disabled={actionLoading}
+                      className="p-2 rounded-xl text-muted hover:bg-amber-100 hover:text-amber-700 transition-all"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                    </button>
+                  )}
 
-                  {!selectedChat.is_blocked ? (
-                    <button
-                      onClick={() => setConfirmBlockOpen(true)}
-                      title="Blokir pelanggan (spam)"
-                      aria-label="Blokir pelanggan"
-                      disabled={actionLoading}
-                      className="p-2 rounded-xl text-muted hover:bg-red-100 hover:text-red-600 transition-all"
-                    >
-                      <Ban className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => performAction("unblock", "Blokir dicabut")}
-                      title="Cabut blokir pelanggan"
-                      aria-label="Cabut blokir"
-                      disabled={actionLoading}
-                      className="p-2 rounded-xl text-muted hover:bg-green-100 hover:text-green-700 transition-all"
-                    >
-                      <Shield className="w-4 h-4" />
-                    </button>
+                  {selectedChat.status !== "completed" && selectedChat.status !== "expired" && (
+                    !selectedChat.is_blocked ? (
+                      <button
+                        onClick={() => setConfirmBlockOpen(true)}
+                        title="Blokir pelanggan (spam)"
+                        aria-label="Blokir pelanggan"
+                        disabled={actionLoading}
+                        className="p-2 rounded-xl text-muted hover:bg-red-100 hover:text-red-600 transition-all"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => performAction("unblock", "Blokir dicabut")}
+                        title="Cabut blokir pelanggan"
+                        aria-label="Cabut blokir"
+                        disabled={actionLoading}
+                        className="p-2 rounded-xl text-muted hover:bg-green-100 hover:text-green-700 transition-all"
+                      >
+                        <Shield className="w-4 h-4" />
+                      </button>
+                    )
                   )}
                 </div>
               </div>
 
               {/* Area Pesan */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
-                {loadingMessages ? (
+                {selectedChat.status === "expired" ? (
+                  <div className="text-center py-12 text-muted text-xs h-full flex flex-col items-center justify-center">
+                    <Trash2 className="w-10 h-10 mx-auto text-red-500 opacity-60 mb-2 animate-bounce" />
+                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Riwayat chat telah dihapus permanen.</p>
+                    <p className="text-xs text-muted max-w-[300px] mx-auto mt-1">Sesuai dengan kebijakan privasi dan keamanan sistem RestoBook.</p>
+                  </div>
+                ) : loadingMessages ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
@@ -1031,16 +1110,27 @@ export default function CashierChatPage() {
                   </button>
                 </div>
               ) : selectedChat.status === "completed" ? (
-                <div className="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 flex items-center gap-3">
-                  <CheckCheck className="w-5 h-5 text-muted flex-shrink-0" />
-                  <p className="text-sm text-muted font-medium">Percakapan ini telah diselesaikan.</p>
-                  <button
-                    onClick={() => performAction("reactivate", "Chat diaktifkan kembali")}
-                    disabled={actionLoading}
-                    className="ml-auto px-4 py-2 bg-gray-200 dark:bg-gray-700 text-text-light dark:text-text-dark text-xs font-black rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all whitespace-nowrap"
-                  >
-                    Buka Kembali
-                  </button>
+                <div className="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 flex flex-col items-center justify-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <CheckCheck className="w-5 h-5 text-muted flex-shrink-0" />
+                    <p className="text-sm text-muted font-medium">Percakapan ini telah diselesaikan.</p>
+                    <button
+                      onClick={() => performAction("reactivate", "Chat diaktifkan kembali")}
+                      disabled={actionLoading}
+                      className="ml-auto px-4 py-2 bg-gray-200 dark:bg-gray-700 text-text-light dark:text-text-dark text-xs font-black rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all whitespace-nowrap"
+                    >
+                      Buka Kembali
+                    </button>
+                  </div>
+                  {chatCountdownText && (
+                    <p className="text-[10px] text-muted">
+                      Riwayat chat akan dibersihkan dalam: <strong className="font-mono text-red-500">{chatCountdownText}</strong>
+                    </p>
+                  )}
+                </div>
+              ) : selectedChat.status === "expired" ? (
+                <div className="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 text-center">
+                  <p className="text-sm text-red-500 font-medium">Riwayat chat telah dihapus permanen.</p>
                 </div>
               ) : (
                 <form onSubmit={sendMessage} className="p-3 border-t border-border-light dark:border-border-dark flex items-end gap-2">

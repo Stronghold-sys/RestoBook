@@ -65,10 +65,15 @@ export default function AdminSupportPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [escalatedCount, setEscalatedCount] = useState(0);
   const adminProfileRef = useRef<any>(null);
+  const activeTicketRef = useRef<Ticket | null>(null);
 
   useEffect(() => {
     adminProfileRef.current = adminProfile;
   }, [adminProfile]);
+
+  useEffect(() => {
+    activeTicketRef.current = activeTicket;
+  }, [activeTicket]);
 
   const fetchCounts = async () => {
     try {
@@ -150,6 +155,9 @@ export default function AdminSupportPage() {
   const [chatExpiryHours, setChatExpiryHours] = useState(0);
   const [chatExpiryMinutes, setChatExpiryMinutes] = useState(30);
   const [chatExpirySeconds, setChatExpirySeconds] = useState(0);
+  const [orderChatExpiryHours, setOrderChatExpiryHours] = useState(0);
+  const [orderChatExpiryMinutes, setOrderChatExpiryMinutes] = useState(30);
+  const [orderChatExpirySeconds, setOrderChatExpirySeconds] = useState(0);
   const [slaHoursLow, setSlaHoursLow] = useState(48);
   const [slaHoursMedium, setSlaHoursMedium] = useState(24);
   const [slaHoursHigh, setSlaHoursHigh] = useState(12);
@@ -227,10 +235,22 @@ export default function AdminSupportPage() {
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'order_chats',
-          filter: 'status=eq.need_admin'
-        }, () => {
+          table: 'order_chats'
+        }, (payload: any) => {
           fetchEscalatedChats();
+          if (payload.new && activeTicketRef.current && payload.new.id === activeTicketRef.current.id) {
+            setActiveTicket((current: any) => {
+              if (current && current.id === payload.new.id) {
+                return {
+                  ...current,
+                  status: payload.new.status,
+                  chat_closed_at: payload.new.chat_closed_at,
+                  chat_history_deleted_at: payload.new.chat_history_deleted_at
+                };
+              }
+              return current;
+            });
+          }
         })
         .subscribe();
 
@@ -337,15 +357,35 @@ export default function AdminSupportPage() {
     try {
       const res = await fetch('/api/support/ticket/cron', { method: 'POST' });
       if (res.ok) {
-        fetchAdminAndTickets();
+        if (ticketViewTab === 'bantuan_admin') {
+          fetchEscalatedChats();
+        } else {
+          fetchAdminAndTickets();
+        }
         if (activeTicket) {
-          const { data: updatedTicket } = await supabase
-            .from('support_tickets')
-            .select('*')
-            .eq('id', activeTicket.id)
-            .single();
-          if (updatedTicket) {
-            setActiveTicket(updatedTicket);
+          if (activeTicket.is_order_chat) {
+            const { data: updatedChat } = await supabase
+              .from('order_chats')
+              .select('*')
+              .eq('id', activeTicket.id)
+              .single();
+            if (updatedChat) {
+              setActiveTicket((prev: any) => prev ? {
+                ...prev,
+                status: updatedChat.status,
+                chat_closed_at: updatedChat.chat_closed_at,
+                chat_history_deleted_at: updatedChat.chat_history_deleted_at
+              } : null);
+            }
+          } else {
+            const { data: updatedTicket } = await supabase
+              .from('support_tickets')
+              .select('*')
+              .eq('id', activeTicket.id)
+              .single();
+            if (updatedTicket) {
+              setActiveTicket(updatedTicket);
+            }
           }
         }
       }
@@ -469,7 +509,7 @@ export default function AdminSupportPage() {
             avatar_url
           )
         `)
-        .eq('status', 'need_admin')
+        .in('status', ['need_admin', 'completed', 'expired'])
         .order('updated_at', { ascending: false });
 
       if (!error && data) {
@@ -486,6 +526,8 @@ export default function AdminSupportPage() {
           created_at: chat.created_at,
           updated_at: chat.updated_at,
           chat_started_at: chat.created_at,
+          chat_closed_at: chat.chat_closed_at,
+          chat_history_deleted_at: chat.chat_history_deleted_at,
           profiles: {
             full_name: chat.customer?.full_name || 'Pelanggan',
             email: chat.customer?.email || '-'
@@ -529,6 +571,9 @@ export default function AdminSupportPage() {
         setChatExpiryHours(data.chat_expiry_hours ?? 0);
         setChatExpiryMinutes(data.chat_expiry_minutes ?? 30);
         setChatExpirySeconds(data.chat_expiry_seconds ?? 0);
+        setOrderChatExpiryHours(data.order_chat_expiry_hours ?? 0);
+        setOrderChatExpiryMinutes(data.order_chat_expiry_minutes ?? 30);
+        setOrderChatExpirySeconds(data.order_chat_expiry_seconds ?? 0);
         setSlaHoursLow(data.sla_hours_low ?? 48);
         setSlaHoursMedium(data.sla_hours_medium ?? 24);
         setSlaHoursHigh(data.sla_hours_high ?? 12);
@@ -548,6 +593,9 @@ export default function AdminSupportPage() {
           chat_expiry_hours: chatExpiryHours,
           chat_expiry_minutes: chatExpiryMinutes,
           chat_expiry_seconds: chatExpirySeconds,
+          order_chat_expiry_hours: orderChatExpiryHours,
+          order_chat_expiry_minutes: orderChatExpiryMinutes,
+          order_chat_expiry_seconds: orderChatExpirySeconds,
           sla_hours_low: slaHoursLow,
           sla_hours_medium: slaHoursMedium,
           sla_hours_high: slaHoursHigh,
@@ -1015,7 +1063,7 @@ export default function AdminSupportPage() {
             
             {/* Countdown Expiry */}
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-text-light dark:text-text-dark">Waktu Penghapusan Riwayat Chat (Setelah Tiket Selesai)</h3>
+              <h3 className="text-sm font-bold text-text-light dark:text-text-dark">Waktu Penghapusan Riwayat Chat Support (Setelah Tiket Selesai)</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label htmlFor="chatExpiryHours" className="text-xs font-bold text-muted uppercase">Jam</label>
@@ -1056,6 +1104,54 @@ export default function AdminSupportPage() {
                     max="59"
                     value={chatExpirySeconds}
                     onChange={(e) => setChatExpirySeconds(Number(e.target.value))}
+                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-border-light dark:border-border-dark">
+              <h3 className="text-sm font-bold text-text-light dark:text-text-dark">Waktu Penghapusan Chat Pesanan & Bantuan Kasir (Setelah Selesai)</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label htmlFor="orderChatExpiryHours" className="text-xs font-bold text-muted uppercase">Jam</label>
+                  <input
+                    id="orderChatExpiryHours"
+                    title="Jam"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={orderChatExpiryHours}
+                    onChange={(e) => setOrderChatExpiryHours(Number(e.target.value))}
+                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="orderChatExpiryMinutes" className="text-xs font-bold text-muted uppercase">Menit</label>
+                  <input
+                    id="orderChatExpiryMinutes"
+                    title="Menit"
+                    placeholder="30"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={orderChatExpiryMinutes}
+                    onChange={(e) => setOrderChatExpiryMinutes(Number(e.target.value))}
+                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="orderChatExpirySeconds" className="text-xs font-bold text-muted uppercase">Detik</label>
+                  <input
+                    id="orderChatExpirySeconds"
+                    title="Detik"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={orderChatExpirySeconds}
+                    onChange={(e) => setOrderChatExpirySeconds(Number(e.target.value))}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>

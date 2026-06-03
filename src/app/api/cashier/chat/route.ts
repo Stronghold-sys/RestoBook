@@ -126,11 +126,36 @@ export async function POST(req: NextRequest) {
       
       if (action === 'mark_completed') {
         updateData.status = 'completed';
+        
+        // Fetch order chat expiry settings
+        const { data: settings } = await supabase
+          .from('support_settings')
+          .select('*')
+          .eq('id', '77777777-7777-7777-7777-777777777777')
+          .single();
+
+        const hours = settings?.order_chat_expiry_hours ?? 0;
+        const minutes = settings?.order_chat_expiry_minutes ?? 30;
+        const seconds = settings?.order_chat_expiry_seconds ?? 0;
+
+        const now = new Date();
+        const closedAt = now.toISOString();
+        const deletedAt = new Date(now.getTime() + (hours * 3600 + minutes * 60 + seconds) * 1000).toISOString();
+
+        updateData.chat_closed_at = closedAt;
+        updateData.chat_history_deleted_at = deletedAt;
+
+        let wordingTime = '';
+        if (hours > 0) wordingTime += `${hours} jam `;
+        if (minutes > 0) wordingTime += `${minutes} menit `;
+        if (seconds > 0) wordingTime += `${seconds} detik`;
+        if (!wordingTime) wordingTime = 'beberapa saat';
+
         // Kirim pesan sistem otomatis
         await supabase.from('order_chat_messages').insert({
           chat_id: chatId,
           sender_role: 'ai',
-          message: 'Bantuan admin telah selesai diproses. Sesi obrolan ini ditutup secara resmi. Jika Anda masih memiliki kendala lainnya, silakan gunakan menu Pengaduan & Bantuan kembali. Terima kasih!',
+          message: `Sesi obrolan ini telah dinyatakan selesai. Sesi obrolan ditutup secara resmi, dan seluruh riwayat pesan akan dihapus otomatis secara permanen dalam ${wordingTime.trim()}. Terima kasih!`,
           is_read: false
         });
       } else if (action === 'need_admin') {
@@ -146,6 +171,15 @@ export async function POST(req: NextRequest) {
         updateData.status = 'waiting_customer';
       } else if (action === 'reactivate') {
         updateData.status = 'active';
+        updateData.chat_closed_at = null;
+        updateData.chat_history_deleted_at = null;
+        // Kirim pesan sistem otomatis
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chatId,
+          sender_role: 'ai',
+          message: 'Sesi obrolan ini telah diaktifkan kembali.',
+          is_read: false
+        });
       } else if (action === 'block') {
         updateData.is_blocked = true;
       } else if (action === 'unblock') {

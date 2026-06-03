@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send, Paperclip, FileText } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send, Paperclip, FileText, Trash2 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -85,6 +85,7 @@ export default function OrderTrackingPage() {
   const [chatRoom, setChatRoom] = useState<any>(null);
   const [senderRoles, setSenderRoles] = useState<Record<string, string>>({});
   const [cashiersOnlineCount, setCashiersOnlineCount] = useState(0);
+  const [chatCountdownText, setChatCountdownText] = useState("");
   const [chatAttachmentUrl, setChatAttachmentUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
   const typingChannelRef = useRef<any>(null);
@@ -145,6 +146,50 @@ export default function OrderTrackingPage() {
       fetchChatMessages();
     }
   }, [showChatDrawer]);
+
+  const triggerOrderChatCronCleanup = async () => {
+    try {
+      await fetch('/api/support/ticket/cron', { method: 'POST' });
+      fetchChatMessages();
+    } catch (e) {
+      console.error("Gagal menjalankan auto-cleanup obrolan order:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!chatRoom || !chatRoom.chat_history_deleted_at) {
+      setChatCountdownText('');
+      return;
+    }
+
+    const deletionTime = new Date(chatRoom.chat_history_deleted_at).getTime();
+    const initialDiff = deletionTime - Date.now();
+
+    if (initialDiff <= 0 && chatRoom.status !== 'expired') {
+      setChatCountdownText('00:00:00');
+      triggerOrderChatCronCleanup();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const diff = deletionTime - Date.now();
+
+      if (diff <= 0) {
+        setChatCountdownText('00:00:00');
+        clearInterval(interval);
+        triggerOrderChatCronCleanup();
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        setChatCountdownText(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [chatRoom?.chat_history_deleted_at, chatRoom?.status]);
 
   // Realtime messages subscription
   useEffect(() => {
@@ -1801,6 +1846,12 @@ export default function OrderTrackingPage() {
                   <div className="h-full flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
+                ) : chatRoom?.status === 'expired' ? (
+                  <div className="text-center py-12 text-muted text-xs h-full flex flex-col items-center justify-center">
+                    <Trash2 className="w-10 h-10 mx-auto text-red-500 opacity-60 mb-2 animate-bounce" />
+                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Riwayat chat telah dihapus permanen.</p>
+                    <p className="text-xs text-muted max-w-[300px] mx-auto mt-1">Sesuai dengan kebijakan privasi dan keamanan sistem RestoBook.</p>
+                  </div>
                 ) : chatMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center text-muted space-y-2 p-6">
                     <MessageSquare className="w-12 h-12 text-muted/50" />
@@ -1908,8 +1959,19 @@ export default function OrderTrackingPage() {
                   <p className="text-xs font-bold text-muted">
                     Percakapan telah selesai.
                   </p>
+                  {chatCountdownText && chatRoom?.status !== 'expired' && (
+                    <p className="text-[10px] text-muted mt-1">
+                      Riwayat chat akan dibersihkan dalam: <strong className="font-mono text-red-500">{chatCountdownText}</strong>
+                    </p>
+                  )}
                   <p className="text-[10px] text-muted mt-1">
                     Jika masih memerlukan bantuan, silakan gunakan menu Pengaduan dan Bantuan.
+                  </p>
+                </div>
+              ) : chatRoom?.status === 'expired' ? (
+                <div className="p-6 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
+                  <p className="text-xs font-bold text-red-500">
+                    Riwayat obrolan telah dihapus permanen.
                   </p>
                 </div>
               ) : (

@@ -17,7 +17,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
 type OrderType = "all" | "dine_in" | "takeaway" | "delivery";
-type ChatStatus = "all" | "active" | "completed" | "waiting_customer" | "need_admin";
+type ChatStatus = "all" | "active" | "completed" | "waiting_customer" | "need_admin" | "riwayat";
 
 interface ChatRoom {
   id: string;
@@ -90,7 +90,6 @@ export default function CashierChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeOrderType, setActiveOrderType] = useState<OrderType>("all");
   const [activeChatStatus, setActiveChatStatus] = useState<ChatStatus>("all");
-  const [chatViewTab, setChatViewTab] = useState<'aktif' | 'riwayat'>('aktif');
 
   // State: chat yang dipilih
   const [selectedChat, setSelectedChat] = useState<ChatRoom | null>(null);
@@ -598,20 +597,22 @@ export default function CashierChatPage() {
   };
 
   // --- Filter daftar chat ---
-  const HISTORY_STATUSES = ['completed', 'expired'];
-  const ACTIVE_STATUSES_EXCLUDE = ['need_admin', ...HISTORY_STATUSES];
-
   const filteredChats = chats.filter(chat => {
-    // Tab Riwayat: hanya completed dan expired
-    if (chatViewTab === 'riwayat') {
-      if (!HISTORY_STATUSES.includes(chat.status)) return false;
+    if (chat.status === "need_admin") return false;
+    if (activeOrderType !== "all" && chat.order?.order_type !== activeOrderType) return false;
+    
+    const isHistory = ["completed", "expired"].includes(chat.status);
+    
+    if (activeChatStatus === "riwayat") {
+      if (!isHistory) return false;
     } else {
-      // Tab Aktif: semua kecuali need_admin, completed, expired
-      if (chat.status === "need_admin") return false;
-      if (HISTORY_STATUSES.includes(chat.status)) return false;
+      // Exclude completed/expired from active views
+      if (isHistory) return false;
+      
+      // Filter by active status
       if (activeChatStatus !== "all" && chat.status !== activeChatStatus) return false;
     }
-    if (activeOrderType !== "all" && chat.order?.order_type !== activeOrderType) return false;
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchName = chat.customer?.full_name?.toLowerCase().includes(q);
@@ -683,30 +684,6 @@ export default function CashierChatPage() {
         {/* ====== PANEL KIRI: Daftar Chat ====== */}
         <div className={`w-full md:w-[340px] flex-shrink-0 flex flex-col gap-3 ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
 
-          {/* Tab Aktif / Riwayat */}
-          <div className="flex gap-1.5 p-1 bg-gray-100 dark:bg-gray-800/60 rounded-xl border border-border-light dark:border-border-dark">
-            <button
-              onClick={() => { setChatViewTab('aktif'); setActiveChatStatus('all'); setSelectedChat(null); }}
-              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
-                chatViewTab === 'aktif'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-muted hover:text-primary'
-              }`}
-            >
-              Aktif
-            </button>
-            <button
-              onClick={() => { setChatViewTab('riwayat'); setActiveChatStatus('all'); setSelectedChat(null); }}
-              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
-                chatViewTab === 'riwayat'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-muted hover:text-primary'
-              }`}
-            >
-              Riwayat
-            </button>
-          </div>
-
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
@@ -737,24 +714,23 @@ export default function CashierChatPage() {
             ))}
           </div>
 
-          {/* Filter Status - hanya tampil di tab Aktif */}
-          {chatViewTab === 'aktif' && (
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {([
-                { id: "all", label: "Semua Status" },
-                { id: "active", label: "Aktif" },
-                { id: "waiting_customer", label: "Menunggu" },
-              ] as { id: ChatStatus; label: string }[]).map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveChatStatus(tab.id)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeChatStatus === tab.id ? "bg-primary text-white" : "bg-gray-100 dark:bg-gray-800 text-muted hover:text-primary"}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Filter Status */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {([
+              { id: "all", label: "Semua Status" },
+              { id: "active", label: "Aktif" },
+              { id: "waiting_customer", label: "Menunggu" },
+              { id: "riwayat", label: "Riwayat" },
+            ] as { id: ChatStatus; label: string }[]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveChatStatus(tab.id)}
+                className={`px-3 py-1 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeChatStatus === tab.id ? "bg-primary text-white" : "bg-gray-100 dark:bg-gray-800 text-muted hover:text-primary"}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {/* Daftar Chat */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
@@ -765,14 +741,7 @@ export default function CashierChatPage() {
             ) : filteredChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 opacity-50">
                 <MessageSquare className="w-12 h-12 text-muted mb-3" />
-                <p className="text-sm text-muted font-medium">
-                  {chatViewTab === 'riwayat' ? 'Belum ada riwayat chat' : 'Tidak ada chat aktif'}
-                </p>
-                <p className="text-[11px] text-muted text-center mt-1 max-w-[200px]">
-                  {chatViewTab === 'riwayat' 
-                    ? 'Chat yang sudah selesai atau kedaluwarsa akan muncul di sini.' 
-                    : 'Chat baru akan muncul saat pelanggan menghubungi.'}
-                </p>
+                <p className="text-sm text-muted font-medium">Tidak ada chat ditemukan</p>
               </div>
             ) : (
               filteredChats.map(chat => {

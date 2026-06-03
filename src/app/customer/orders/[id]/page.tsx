@@ -13,6 +13,78 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
+import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+
+declare const google: any;
+
+interface DeliveryMapProps {
+  restoLat: number;
+  restoLng: number;
+  address: string;
+}
+
+function DeliveryMap({ restoLat, restoLng, address }: DeliveryMapProps) {
+  const map = useMap();
+  const geocodingLib = useMapsLibrary("geocoding");
+  const routesLib = useMapsLibrary("routes");
+  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [directionsRenderer, setDirectionsRenderer] = useState<any>(null);
+  const [directionsService, setDirectionsService] = useState<any>(null);
+
+  useEffect(() => {
+    if (!geocodingLib || !address) return;
+    const geocoder = new geocodingLib.Geocoder();
+    geocoder.geocode({ address }, (results: any, status: any) => {
+      if (status === "OK" && results && results[0]) {
+        const loc = results[0].geometry.location;
+        setCustomerCoords({ lat: loc.lat(), lng: loc.lng() });
+      }
+    });
+  }, [geocodingLib, address]);
+
+  useEffect(() => {
+    if (!routesLib || !map) return;
+    const renderer = new routesLib.DirectionsRenderer({
+      map,
+      suppressMarkers: true,
+      polylineOptions: {
+        strokeColor: "#e85d04",
+        strokeWeight: 5
+      }
+    });
+    const service = new routesLib.DirectionsService();
+    setDirectionsRenderer(renderer);
+    setDirectionsService(service);
+    return () => {
+      renderer.setMap(null);
+    };
+  }, [routesLib, map]);
+
+  useEffect(() => {
+    if (!directionsService || !directionsRenderer || !customerCoords) return;
+    directionsService.route(
+      {
+        origin: { lat: restoLat, lng: restoLng },
+        destination: customerCoords,
+        travelMode: google.maps.TravelMode.DRIVING
+      },
+      (result: any, status: string) => {
+        if (status === "OK" && result) {
+          directionsRenderer.setDirections(result);
+        }
+      }
+    );
+  }, [directionsService, directionsRenderer, customerCoords, restoLat, restoLng]);
+
+  return (
+    <>
+      <Marker position={{ lat: restoLat, lng: restoLng }} title="Restoran Kami" />
+      {customerCoords && (
+        <Marker position={customerCoords} title="Alamat Pengiriman" />
+      )}
+    </>
+  );
+}
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -48,6 +120,8 @@ export default function OrderTrackingPage() {
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [duitkuMethod, setDuitkuMethod] = useState("");
   const [taxPercent, setTaxPercent] = useState<number>(10.00);
+  const [restoLat, setRestoLat] = useState<number>(-7.7829);
+  const [restoLng, setRestoLng] = useState<number>(110.3323);
   const [paymentExpiryMinutes, setPaymentExpiryMinutes] = useState<number>(60);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
@@ -469,13 +543,19 @@ export default function OrderTrackingPage() {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data } = await supabase.from("restaurant_settings").select("tax_percent, payment_expiry_minutes").single();
+      const { data } = await supabase.from("restaurant_settings").select("tax_percent, payment_expiry_minutes, resto_latitude, resto_longitude").single();
       if (data) {
         if (data.tax_percent !== null && data.tax_percent !== undefined) {
           setTaxPercent(Number(data.tax_percent));
         }
         if (data.payment_expiry_minutes !== null && data.payment_expiry_minutes !== undefined) {
           setPaymentExpiryMinutes(Number(data.payment_expiry_minutes));
+        }
+        if (data.resto_latitude !== null && data.resto_latitude !== undefined) {
+          setRestoLat(Number(data.resto_latitude));
+        }
+        if (data.resto_longitude !== null && data.resto_longitude !== undefined) {
+          setRestoLng(Number(data.resto_longitude));
         }
       }
     };
@@ -1067,6 +1147,25 @@ export default function OrderTrackingPage() {
               </div>
             </div>
           </div>
+
+          {/* Google Maps Route Display */}
+          {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+            <div className="w-full h-72 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark mt-4">
+              <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
+                <Map
+                  defaultCenter={{ lat: restoLat, lng: restoLng }}
+                  defaultZoom={13}
+                  gestureHandling={'cooperative'}
+                >
+                  <DeliveryMap 
+                    restoLat={restoLat}
+                    restoLng={restoLng}
+                    address={`${order.delivery_address}, ${order.delivery_village || ""}, ${order.delivery_district || ""}, ${order.delivery_regency || ""}, ${order.delivery_province || ""} ${order.delivery_postal_code || ""}`}
+                  />
+                </Map>
+              </APIProvider>
+            </div>
+          )}
         </div>
       )}
 
@@ -1093,7 +1192,7 @@ export default function OrderTrackingPage() {
         <div className="mt-10 pt-8 border-t border-border-light dark:border-border-dark">
           <div className="space-y-4 max-w-sm ml-auto">
             <div className="flex justify-between text-muted font-bold">
-              <span>Subtotal</span>
+              <span>Subtotal Hidangan</span>
               <span>Rp {orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0).toLocaleString("id-ID")}</span>
             </div>
             {Number(order.discount) > 0 && (
@@ -1102,14 +1201,28 @@ export default function OrderTrackingPage() {
                 <span>-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
               </div>
             )}
+            {order.order_type === 'delivery' && (
+              <>
+                <div className="flex justify-between text-muted font-bold">
+                  <span>Biaya Pengiriman ({Number(order.distance_km || 0).toFixed(1)} km)</span>
+                  <span>Rp {Number(order.shipping_fee || 0).toLocaleString("id-ID")}</span>
+                </div>
+                {Number(order.shipping_discount || 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>Potongan Ongkir</span>
+                    <span>-Rp {Number(order.shipping_discount).toLocaleString("id-ID")}</span>
+                  </div>
+                )}
+              </>
+            )}
             <div className="flex justify-between text-muted font-bold">
               <span>Pajak ({taxPercent}%)</span>
               <span>Rp {Math.round(orderItems.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0) * taxPercent / (100 + taxPercent)).toLocaleString("id-ID")} (Termasuk)</span>
             </div>
-            {Number(order.discount) > 0 && (
+            {(Number(order.discount) > 0 || Number(order.shipping_discount) > 0) && (
               <div className="bg-emerald-50 dark:bg-emerald-950/10 rounded-xl p-3 border border-emerald-100/10 text-xs text-emerald-700 dark:text-emerald-300 flex justify-between font-bold">
                 <span>Total Anda Hemat</span>
-                <span>Rp {Number(order.discount).toLocaleString("id-ID")}</span>
+                <span>Rp {(Number(order.discount || 0) + Number(order.shipping_discount || 0)).toLocaleString("id-ID")}</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-4 border-t border-border-light dark:border-border-dark">
@@ -1760,6 +1873,15 @@ export default function OrderTrackingPage() {
                 <div className="p-6 border-t border-border-light dark:border-border-dark bg-red-50 dark:bg-red-950/20 text-center">
                   <p className="text-xs font-bold text-red-600 dark:text-red-400">
                     Obrolan dinonaktifkan oleh Kasir karena indikasi penyalahgunaan.
+                  </p>
+                </div>
+              ) : chatRoom?.status === 'completed' || ['completed', 'cancelled'].includes(order?.status) ? (
+                <div className="p-6 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
+                  <p className="text-xs font-bold text-muted">
+                    Percakapan telah selesai.
+                  </p>
+                  <p className="text-[10px] text-muted mt-1">
+                    Jika masih memerlukan bantuan, silakan gunakan menu Pengaduan dan Bantuan.
                   </p>
                 </div>
               ) : (

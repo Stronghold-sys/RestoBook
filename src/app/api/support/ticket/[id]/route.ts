@@ -182,14 +182,23 @@ export async function PUT(
 
     // Log activity of status change if updated
     if (status && status !== currentTicket.status) {
-      // Insert a message indicating status changed
-      const systemMsg = `[SISTEM] Status tiket diubah menjadi: ${
-        status === 'pending' ? 'Menunggu Tanggapan' :
-        status === 'processing' ? 'Diproses' :
-        status === 'waiting_info' ? 'Menunggu Informasi Tambahan' :
-        status === 'completed' ? 'Selesai' :
-        status === 'closed' ? 'Ditutup' : status
-      } oleh ${profile.full_name || 'Admin'}.`;
+      let systemMsg = '';
+      if (status === 'closed') {
+        if (!isAdmin && body.cancellation_reason) {
+          systemMsg = `[SISTEM] Tiket dibatalkan oleh Pelanggan. Alasan: ${body.cancellation_reason}`;
+        } else if (isAdmin) {
+          systemMsg = `[SISTEM] Tiket ditutup oleh Admin ${profile.full_name}.`;
+        } else {
+          systemMsg = `[SISTEM] Tiket ditutup oleh Pelanggan.`;
+        }
+      } else {
+        systemMsg = `[SISTEM] Status tiket diubah menjadi: ${
+          status === 'pending' ? 'Menunggu Tanggapan' :
+          status === 'processing' ? 'Diproses' :
+          status === 'waiting_info' ? 'Menunggu Informasi Tambahan' :
+          status === 'completed' ? 'Selesai' : status
+        } oleh ${profile.full_name || 'Admin'}.`;
+      }
       
       await supabase.from('ticket_messages').insert({
         ticket_id: ticketId,

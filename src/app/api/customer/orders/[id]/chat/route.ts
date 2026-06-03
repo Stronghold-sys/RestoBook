@@ -118,7 +118,7 @@ export async function POST(
     // 1. Verifikasi pesanan ada dan milik user ini
     const { data: order } = await supabase
       .from('orders')
-      .select('id, customer_id')
+      .select('id, customer_id, status')
       .eq('id', orderId)
       .single();
 
@@ -139,6 +139,10 @@ export async function POST(
 
     if (chat.is_blocked) {
       return NextResponse.json({ error: 'Akses chat Anda diblokir oleh kasir karena indikasi penyalahgunaan' }, { status: 403 });
+    }
+
+    if (chat.status === 'completed' || ['completed', 'cancelled'].includes(order.status)) {
+      return NextResponse.json({ error: 'Percakapan ini telah selesai. Jika masih memerlukan bantuan, silakan buat tiket pengaduan.' }, { status: 403 });
     }
 
     const body = await req.json();

@@ -4,6 +4,18 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 import { getPaidNotification } from '@/utils/notificationHelper';
 
+function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+}
+
 function getStatusNotification(status: string, orderId: string, orderType: string, reason?: string) {
   const shortId = orderId.split('-')[0].toUpperCase();
   let title = 'Update Pesanan';
@@ -85,6 +97,316 @@ export async function POST(req: NextRequest) {
         
       if (itemsError) throw itemsError;
       
+      return NextResponse.json({ success: true, order: newOrder });
+    }
+
+    if (action === 'create_customer_order') {
+      const { orderData, itemsData, paymentMethod, pin, customerLat, customerLng } = body;
+
+      if (!orderData || !itemsData || !paymentMethod) {
+        return NextResponse.json({ error: 'Data pesanan, item, dan metode pembayaran wajib diisi' }, { status: 400 });
+      }
+
+      // 1. Ambil pengaturan restoran
+      const { data: settings, error: settingsErr } = await supabaseAdmin
+        .from('restaurant_settings')
+        .select('*')
+        .single();
+      if (settingsErr || !settings) {
+        return NextResponse.json({ error: 'Pengaturan restoran tidak ditemukan' }, { status: 500 });
+      }
+
+      // 2. Validasi parameter pengiriman jika tipe pesanan delivery
+      let calculatedShippingFee = 0;
+      let calculatedShippingDiscount = 0;
+      let shippingDistance = null;
+
+      if (orderData.order_type === 'delivery') {
+        if (!settings.is_shipping_enabled) {
+          return NextResponse.json({ error: 'Layanan pengiriman saat ini sedang dinonaktifkan' }, { status: 400 });
+        }
+
+        const clientDistance = Number(orderData.distance_km || 0);
+        const lat = Number(customerLat || 0);
+        const lng = Number(customerLng || 0);
+
+        // Hitung jarak lurus sebagai batas bawah
+        const restoLat = Number(settings.resto_latitude || -7.7829);
+        const restoLng = Number(settings.resto_longitude || 110.3323);
+        const straightLineDistance = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+
+        // Jika jarak yang dikirim client lebih kecil dari 90% jarak lurus (margin error floating point), ada indikasi manipulasi
+        if (clientDistance < straightLineDistance * 0.9) {
+          return NextResponse.json({ error: 'Jarak pengiriman tidak valid' }, { status: 400 });
+        }
+
+        // Cek jarak maksimum pengiriman
+        if (straightLineDistance > Number(settings.max_shipping_distance || 15)) {
+          return NextResponse.json({ error: 'Alamat pengiriman di luar batas jangkauan layanan kami' }, { status: 400 });
+        }
+
+        shippingDistance = clientDistance;
+
+        // Hitung ongkir
+        const effectiveDistance = Math.max(clientDistance, Number(settings.min_shipping_distance || 1));
+        calculatedShippingFee = Math.round(effectiveDistance * Number(settings.shipping_rate_per_km || 2500));
+        calculatedShippingFee += Number(settings.additional_zone_charge || 0);
+
+        // Bandingkan dengan ongkir dari client
+        if (Math.abs(calculatedShippingFee - Number(orderData.shipping_fee || 0)) > 100) {
+          return NextResponse.json({ error: 'Biaya pengiriman tidak cocok dengan perhitungan server' }, { status: 400 });
+        }
+      }
+
+      // 3. Hitung subtotal dan periksa ketersediaan menu dari database
+      let serverSubtotal = 0;
+      const menuItemIds = itemsData.map((item: any) => item.menu_item_id);
+      
+      const { data: menuItems, error: menuItemsErr } = await supabaseAdmin
+        .from('menu_items')
+        .select('*')
+        .in('id', menuItemIds);
+        
+      if (menuItemsErr || !menuItems) {
+        return NextResponse.json({ error: 'Gagal mengambil data menu' }, { status: 500 });
+      }
+
+      for (const item of itemsData) {
+        const menuItem = menuItems.find((m: any) => m.id === item.menu_item_id);
+        if (!menuItem) {
+          return NextResponse.json({ error: 'Menu tidak ditemukan' }, { status: 404 });
+        }
+        if (!menuItem.is_active) {
+          return NextResponse.json({ error: `Menu ${menuItem.name} sedang tidak aktif` }, { status: 400 });
+        }
+        serverSubtotal += Number(menuItem.price) * Number(item.quantity);
+      }
+
+      // 4. Validasi voucher dan hitung diskon
+      let serverDiscount = 0;
+      if (orderData.voucher_id) {
+        const { data: voucher, error: voucherErr } = await supabaseAdmin
+          .from('vouchers')
+          .select('*')
+          .eq('id', orderData.voucher_id)
+          .single();
+          
+        if (voucherErr || !voucher) {
+          return NextResponse.json({ error: 'Voucher tidak valid' }, { status: 400 });
+        }
+        
+        if (!voucher.is_active) {
+          return NextResponse.json({ error: 'Voucher tidak aktif' }, { status: 400 });
+        }
+        if (new Date(voucher.expires_at) <= new Date()) {
+          return NextResponse.json({ error: 'Voucher sudah kedaluwarsa' }, { status: 400 });
+        }
+        if (voucher.used_count >= voucher.usage_limit) {
+          return NextResponse.json({ error: 'Kuota voucher sudah habis' }, { status: 400 });
+        }
+        if (voucher.min_transaction && serverSubtotal < Number(voucher.min_transaction)) {
+          return NextResponse.json({ error: 'Minimal transaksi voucher tidak terpenuhi' }, { status: 400 });
+        }
+
+        const val = Number(voucher.discount_value || voucher.discount_percent || 0);
+        if (voucher.voucher_type === 'shipping') {
+          if (orderData.order_type !== 'delivery') {
+            return NextResponse.json({ error: 'Voucher pengiriman hanya dapat digunakan untuk pengiriman' }, { status: 400 });
+          }
+          if (voucher.discount_type === 'percent') {
+            calculatedShippingDiscount = Math.round(calculatedShippingFee * val / 100);
+          } else {
+            calculatedShippingDiscount = Math.min(calculatedShippingFee, val);
+          }
+        } else {
+          // General
+          if (voucher.discount_type === 'percent') {
+            serverDiscount = Math.round(serverSubtotal * val / 100);
+          } else {
+            serverDiscount = Math.min(serverSubtotal, val);
+          }
+        }
+      }
+
+      // Cek gratis ongkir minimal order
+      if (orderData.order_type === 'delivery' && serverSubtotal >= Number(settings.min_order_for_free_shipping || 100000)) {
+        calculatedShippingDiscount = calculatedShippingFee;
+      }
+
+      // 5. Hitung total akhir
+      const serverTotalAmount = Math.max(0, serverSubtotal - serverDiscount + calculatedShippingFee - calculatedShippingDiscount);
+
+      if (Math.abs(serverTotalAmount - Number(orderData.total_amount)) > 100) {
+        return NextResponse.json({ error: 'Total nominal transaksi tidak cocok dengan perhitungan server' }, { status: 400 });
+      }
+
+      // Get customer profile
+      const { data: profile, error: profileErr } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', orderData.customer_id)
+        .single();
+
+      if (profileErr || !profile) {
+        return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      // 6. Jalankan pemotongan saldo jika metode pembayaran e-wallet
+      if (paymentMethod === 'wallet') {
+        if (profile.is_wallet_blocked) {
+          const blockReason = profile.wallet_block_reason || 'Dompetku Anda diblokir. Hubungi admin atau ajukan banding di halaman Dompetku.';
+          return NextResponse.json({ error: blockReason, code: 'WALLET_BLOCKED' }, { status: 400 });
+        }
+
+        if (!profile.wallet_pin) {
+          return NextResponse.json({ error: 'Anda belum membuat PIN Dompetku. Silakan buat PIN terlebih dahulu di halaman Dompetku.', code: 'NO_PIN' }, { status: 400 });
+        }
+        if (!pin) {
+          return NextResponse.json({ error: 'Masukkan PIN Dompetku untuk melanjutkan pembayaran', code: 'PIN_REQUIRED' }, { status: 400 });
+        }
+
+        // Hash PIN dan cocokkan
+        const encoder = new TextEncoder();
+        const pinBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(String(pin)));
+        const hashedPin = Array.from(new Uint8Array(pinBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        if (hashedPin !== profile.wallet_pin) {
+          const newCount = (profile.wrong_pin_count || 0) + 1;
+          if (newCount >= 3) {
+            await supabaseAdmin.from('profiles').update({
+              wrong_pin_count: newCount,
+              is_wallet_blocked: true,
+              wallet_block_reason: 'Dompetku Anda diblokir secara otomatis karena PIN salah dimasukkan 3 kali berturut-turut. Ajukan banding di halaman Dompetku untuk membuka blokir.'
+            }).eq('id', profile.id);
+            await supabaseAdmin.from('notifications').insert({
+              user_id: profile.id,
+              title: 'Dompetku Diblokir Otomatis',
+              message: 'PIN Dompetku Anda salah 3 kali berturut-turut. Dompetku Anda telah diblokir untuk keamanan. Ajukan banding di halaman Dompetku.',
+              type: 'wallet_blocked',
+            });
+            return NextResponse.json({ error: 'PIN salah 3 kali berturut-turut. Dompetku Anda telah diblokir otomatis. Buka halaman Dompetku untuk mengajukan banding.', code: 'WALLET_BLOCKED_NOW' }, { status: 400 });
+          }
+          await supabaseAdmin.from('profiles').update({ wrong_pin_count: newCount }).eq('id', profile.id);
+          return NextResponse.json({ error: `PIN salah. Sisa percobaan: ${3 - newCount} kali lagi.`, code: 'WRONG_PIN', remaining: 3 - newCount }, { status: 400 });
+        }
+
+        // PIN benar — reset hitungan
+        await supabaseAdmin.from('profiles').update({ wrong_pin_count: 0 }).eq('id', profile.id);
+
+        const balance = Number(profile.wallet_balance || 0);
+        if (balance < serverTotalAmount) {
+          return NextResponse.json({ error: 'Saldo dompet tidak mencukupi untuk melakukan pembayaran' }, { status: 400 });
+        }
+
+        // Deduct balance
+        const { error: deductErr } = await supabaseAdmin
+          .from('profiles')
+          .update({ wallet_balance: balance - serverTotalAmount })
+          .eq('id', profile.id);
+
+        if (deductErr) throw deductErr;
+      }
+
+      // 7. Simpan pesanan ke database
+      const dbPaymentStatus = (paymentMethod === 'wallet' || paymentMethod === 'free') ? 'paid' : 'unpaid';
+      const dbPaymentMethodColumn = paymentMethod === 'free' ? 'voucher' : paymentMethod; // 'cash', 'non_cash', 'wallet', 'voucher'
+
+      const { data: newOrder, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .insert({
+          customer_id: orderData.customer_id,
+          table_id: orderData.table_id,
+          order_type: orderData.order_type,
+          total_amount: serverTotalAmount,
+          notes: orderData.notes,
+          status: 'pending',
+          payment_method: dbPaymentMethodColumn,
+          payment_status: dbPaymentStatus,
+          voucher_id: orderData.voucher_id,
+          discount: serverDiscount,
+          distance_km: shippingDistance,
+          shipping_fee: calculatedShippingFee,
+          shipping_discount: calculatedShippingDiscount,
+          delivery_recipient_name: orderData.delivery_recipient_name,
+          delivery_phone: orderData.delivery_phone,
+          delivery_address: orderData.delivery_address,
+          delivery_province: orderData.delivery_province,
+          delivery_regency: orderData.delivery_regency,
+          delivery_district: orderData.delivery_district,
+          delivery_village: orderData.delivery_village,
+          delivery_postal_code: orderData.delivery_postal_code
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        // Rollback balance jika wallet
+        if (paymentMethod === 'wallet') {
+          const balanceObj = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', profile.id).single();
+          const curBal = Number(balanceObj.data?.wallet_balance || 0);
+          await supabaseAdmin.from('profiles').update({ wallet_balance: curBal + serverTotalAmount }).eq('id', profile.id);
+        }
+        throw orderError;
+      }
+
+      // 8. Simpan item pesanan
+      const itemsToInsert = itemsData.map((item: any) => {
+        const menuItem = menuItems.find((m: any) => m.id === item.menu_item_id)!;
+        return {
+          order_id: newOrder.id,
+          menu_item_id: item.menu_item_id,
+          quantity: item.quantity,
+          price: menuItem.price,
+          subtotal: Number(menuItem.price) * Number(item.quantity),
+          notes: item.notes || null
+        };
+      });
+
+      const { error: itemsError } = await supabaseAdmin
+        .from('order_items')
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        // Rollback order dan balance
+        await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
+        if (paymentMethod === 'wallet') {
+          const balanceObj = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', profile.id).single();
+          const curBal = Number(balanceObj.data?.wallet_balance || 0);
+          await supabaseAdmin.from('profiles').update({ wallet_balance: curBal + serverTotalAmount }).eq('id', profile.id);
+        }
+        throw itemsError;
+      }
+
+      // 9. Catat transaksi dompet jika menggunakan wallet
+      if (paymentMethod === 'wallet') {
+        await supabaseAdmin.from('wallet_transactions').insert({
+          customer_id: profile.id,
+          amount: serverTotalAmount,
+          type: 'payment',
+          status: 'success',
+          description: `Pembayaran pesanan #${newOrder.id.substring(0, 8).toUpperCase()}`
+        });
+      }
+
+      // 10. Update status meja jika dine_in
+      if (newOrder.table_id) {
+        await supabaseAdmin.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", newOrder.table_id);
+      }
+
+      // 11. Kirim notifikasi jika sudah lunas (wallet / free)
+      if (dbPaymentStatus === 'paid') {
+        const payMethodName = paymentMethod === 'free' ? 'Voucher' : 'Dompetku';
+        const paidNotif = getPaidNotification(newOrder, payMethodName);
+        await supabaseAdmin.from('notifications').insert({
+          user_id: newOrder.customer_id,
+          title: paidNotif.title,
+          message: paidNotif.message,
+          type: 'order',
+          order_id: newOrder.id,
+          status_badge: paidNotif.status_badge
+        });
+      }
+
       return NextResponse.json({ success: true, order: newOrder });
     }
 

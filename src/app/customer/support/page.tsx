@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   LifeBuoy, Plus, ClipboardList, Send, FileText,
   User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2
@@ -51,6 +52,10 @@ export default function CustomerSupportPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat'>('aktif');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Form states
   const [formTitle, setFormTitle] = useState('');
@@ -302,7 +307,7 @@ export default function CustomerSupportPage() {
       setFormAttachmentUrl('');
 
       // Auto-trigger confirmation alert message
-      alert(result.message);
+      toast.success(result.message);
 
       // Refresh list
       fetchProfileAndTickets();
@@ -310,6 +315,44 @@ export default function CustomerSupportPage() {
       toast.error(error.message);
     } finally {
       setSubmitLoading(false);
+    }
+  };
+
+  const handleCancelTicket = async () => {
+    if (!activeTicket) return;
+    if (!cancelReason.trim()) {
+      toast.error("Alasan pembatalan wajib diisi");
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      const res = await fetch(`/api/support/ticket/${activeTicket.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'closed',
+          cancellation_reason: cancelReason.trim()
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || 'Gagal membatalkan tiket');
+      }
+
+      toast.success("Tiket berhasil dibatalkan");
+      setShowCancelModal(false);
+      
+      // Refresh tickets list and active ticket state
+      await fetchProfileAndTickets();
+      
+      // Update activeTicket state locally to reflect closed status
+      setActiveTicket(prev => prev ? { ...prev, status: 'closed' } : null);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -374,6 +417,11 @@ export default function CustomerSupportPage() {
     }
   };
 
+  const filteredTickets = tickets.filter(t => {
+    const isHistory = ['completed', 'closed', 'expired'].includes(t.status);
+    return activeTab === 'riwayat' ? isHistory : !isHistory;
+  });
+
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
       
@@ -414,17 +462,53 @@ export default function CustomerSupportPage() {
             <ClipboardList className="w-5 h-5 text-muted" /> Daftar Tiket Anda
           </h2>
 
+          {/* Tab Selector */}
+          <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
+            <button
+              onClick={() => {
+                setActiveTab('aktif');
+                setActiveTicket(null);
+              }}
+              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                activeTab === 'aktif'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted hover:text-primary'
+              }`}
+            >
+              Aktif
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('riwayat');
+                setActiveTicket(null);
+              }}
+              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                activeTab === 'riwayat'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted hover:text-primary'
+              }`}
+            >
+              Riwayat
+            </button>
+          </div>
+
           {loading ? (
             <div className="text-center py-12 text-muted">Memuat data tiket...</div>
-          ) : tickets.length === 0 ? (
+          ) : filteredTickets.length === 0 ? (
             <div className="text-center py-16 text-muted space-y-2">
               <Info className="w-10 h-10 mx-auto opacity-40 text-primary" />
-              <p className="font-semibold text-sm">Belum Ada Tiket Bantuan</p>
-              <p className="text-xs max-w-[200px] mx-auto">Gunakan chatbot RestoBot atau klik tombol di atas untuk membuat tiket pengaduan baru.</p>
+              <p className="font-semibold text-sm">
+                {activeTab === 'riwayat' ? 'Tidak Ada Riwayat Tiket' : 'Belum Ada Tiket Bantuan'}
+              </p>
+              <p className="text-xs max-w-[200px] mx-auto">
+                {activeTab === 'riwayat' 
+                  ? 'Anda tidak memiliki riwayat tiket bantuan yang sudah selesai atau ditutup.' 
+                  : 'Gunakan chatbot RestoBot atau klik tombol di atas untuk membuat tiket pengaduan baru.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
-              {tickets.map((t) => (
+              {filteredTickets.map((t) => (
                 <div
                   key={t.id}
                   onClick={() => setActiveTicket(t)}
@@ -470,14 +554,27 @@ export default function CustomerSupportPage() {
                     Dibuat pada: {format(new Date(activeTicket.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
                   </p>
                 </div>
-                {activeTicket.sla_deadline && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && (
-                  <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      SLA: {format(new Date(activeTicket.sla_deadline), "dd MMM, HH:mm", { locale: localeId })} WIB
-                    </span>
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  {activeTicket.sla_deadline && !['completed', 'closed', 'expired'].includes(activeTicket.status) && (
+                    <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        SLA: {format(new Date(activeTicket.sla_deadline), "dd MMM, HH:mm", { locale: localeId })} WIB
+                      </span>
+                    </div>
+                  )}
+                  {!['completed', 'closed', 'expired'].includes(activeTicket.status) && (
+                    <button
+                      onClick={() => {
+                        setCancelReason('');
+                        setShowCancelModal(true);
+                      }}
+                      className="px-4 py-2 bg-red-650 hover:bg-red-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm bg-red-600 hover:bg-red-700"
+                    >
+                      Batalkan Tiket
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Detail Description */}
@@ -759,6 +856,63 @@ export default function CustomerSupportPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. CANCEL TICKET MODAL */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+            >
+              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
+                <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Batalkan Tiket Pengaduan</h3>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  title="Tutup formulir"
+                  aria-label="Tutup"
+                  className="text-muted hover:text-red-500 transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted uppercase">Alasan Pembatalan</label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Masukkan alasan Anda membatalkan tiket pengaduan ini..."
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelModal(false)}
+                    className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark text-muted font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleCancelTicket}
+                    disabled={cancelLoading || !cancelReason.trim()}
+                    className="bg-red-650 hover:bg-red-750 disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all bg-red-600 hover:bg-red-700"
+                  >
+                    {cancelLoading ? "Memproses..." : "Ya, Batalkan Tiket"}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

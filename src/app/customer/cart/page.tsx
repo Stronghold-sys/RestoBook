@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet, Lock, Search, ChevronDown } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, UtensilsCrossed, ArrowRight, Loader2, Store, CreditCard, Banknote, Smartphone, Landmark, QrCode, CheckCircle, AlertTriangle, RefreshCw, X, Receipt, Sparkles, ChevronRight, HelpCircle, Clock, Globe, Ticket, Wallet, Lock, Search, ChevronDown, MapPin } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,9 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/operationalHours";
+import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+
+declare const google: any;
 
 interface Table { id: string; table_number: number; capacity: number; status: string; }
 
@@ -160,6 +163,152 @@ function SearchableSelect({
   );
 }
 
+function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+}
+
+const parseAddressComponents = (place: any) => {
+  let province = "";
+  let regency = "";
+  let district = "";
+  let village = "";
+  let postalCode = "";
+
+  if (place.address_components) {
+    for (const comp of place.address_components) {
+      const types = comp.types;
+      if (types.includes("administrative_area_level_1")) {
+        province = comp.long_name.toUpperCase();
+      } else if (types.includes("administrative_area_level_2")) {
+        regency = comp.long_name.toUpperCase();
+      } else if (types.includes("administrative_area_level_3")) {
+        district = comp.long_name.toUpperCase();
+      } else if (types.includes("administrative_area_level_4") || types.includes("sublocality_level_1")) {
+        village = comp.long_name.toUpperCase();
+      } else if (types.includes("postal_code")) {
+        postalCode = comp.long_name;
+      }
+    }
+  }
+
+  return { province, regency, district, village, postalCode };
+};
+
+interface PlaceAutocompleteProps {
+  onPlaceSelect: (lat: number, lng: number, address: string, components: ReturnType<typeof parseAddressComponents>) => void;
+  placeholder?: string;
+}
+
+function PlaceAutocomplete({ onPlaceSelect, placeholder = "Cari alamat atau lokasi..." }: PlaceAutocompleteProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const placesLib = useMapsLibrary("places");
+  const autocompleteRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!placesLib || !inputRef.current) return;
+
+    const autocomplete = new placesLib.Autocomplete(inputRef.current, {
+      fields: ["geometry", "formatted_address", "address_components", "name"],
+      componentRestrictions: { country: "id" }
+    });
+    autocompleteRef.current = autocomplete;
+
+    const listener = autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const address = place.formatted_address || place.name || "";
+        const components = parseAddressComponents(place);
+        onPlaceSelect(lat, lng, address, components);
+      }
+    });
+
+    return () => {
+      if (listener) {
+        google.maps.event.removeListener(listener);
+      }
+    };
+  }, [placesLib]);
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder={placeholder}
+        className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-xs text-text-light dark:text-text-dark font-medium placeholder-muted"
+      />
+      <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+    </div>
+  );
+}
+
+interface DirectionsProps {
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+  onDistanceCalculated: (distanceKm: number) => void;
+}
+
+function Directions({ origin, destination, onDistanceCalculated }: DirectionsProps) {
+  const map = useMap();
+  const routesLib = useMapsLibrary("routes");
+  const [directionsRenderer, setDirectionsRenderer] = useState<any>(null);
+  const [directionsService, setDirectionsService] = useState<any>(null);
+
+  useEffect(() => {
+    if (!routesLib || !map) return;
+    const renderer = new routesLib.DirectionsRenderer({
+      map,
+      suppressMarkers: true,
+      polylineOptions: {
+        strokeColor: "#e85d04",
+        strokeWeight: 5
+      }
+    });
+    const service = new routesLib.DirectionsService();
+    setDirectionsRenderer(renderer);
+    setDirectionsService(service);
+    return () => {
+      renderer.setMap(null);
+    };
+  }, [routesLib, map]);
+
+  useEffect(() => {
+    if (!directionsService || !directionsRenderer) return;
+    
+    directionsService.route(
+      {
+        origin,
+        destination,
+        travelMode: google.maps.TravelMode.DRIVING
+      },
+      (result: any, status: string) => {
+        if (status === "OK" && result) {
+          directionsRenderer.setDirections(result);
+          const route = result.routes[0];
+          if (route && route.legs && route.legs[0]) {
+            const distance = route.legs[0].distance?.value ? route.legs[0].distance.value / 1000 : 0;
+            onDistanceCalculated(distance);
+          }
+        } else {
+          console.error("Directions request failed:", status);
+        }
+      }
+    );
+  }, [directionsService, directionsRenderer, origin, destination]);
+
+  return null;
+}
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, updateNotes, getTotal, clearCart } = useCartStore();
   
@@ -210,10 +359,21 @@ export default function CartPage() {
     if (!voucherCodeInput) return toast.error("Masukkan kode voucher terlebih dahulu");
     setIsApplyingVoucher(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      let customerId = null;
+      if (session?.user) {
+        const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.user.id).single();
+        if (profile) customerId = profile.id;
+      }
+
       const response = await fetch("/api/customer/vouchers/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: voucherCodeInput })
+        body: JSON.stringify({ 
+          code: voucherCodeInput,
+          subtotal: subtotal,
+          customerId: customerId
+        })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -241,11 +401,145 @@ export default function CartPage() {
   };
 
   const subtotal = getTotal();
-  const discountAmount = appliedVoucher ? Math.round(subtotal * appliedVoucher.discount_percent / 100) : 0;
-  const totalAmount = Math.max(0, subtotal - discountAmount);
+
+  useEffect(() => {
+    if (appliedVoucher && appliedVoucher.min_transaction && subtotal < appliedVoucher.min_transaction) {
+      setAppliedVoucher(null);
+      toast.error(`Voucher dilepas karena subtotal belanja kurang dari minimal transaksi Rp ${appliedVoucher.min_transaction.toLocaleString("id-ID")}`);
+    }
+  }, [subtotal, appliedVoucher]);
 
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash" | "wallet">("non_cash");
+
+  // Restaurant shipping settings
+  const [restoLat, setRestoLat] = useState<number>(-7.7829);
+  const [restoLng, setRestoLng] = useState<number>(110.3323);
+  const [shippingRate, setShippingRate] = useState<number>(2500);
+  const [minShippingDistance, setMinShippingDistance] = useState<number>(1);
+  const [maxShippingDistance, setMaxShippingDistance] = useState<number>(15);
+  const [additionalZoneCharge, setAdditionalZoneCharge] = useState<number>(0);
+  const [minOrderFreeShipping, setMinOrderFreeShipping] = useState<number>(100000);
+  const [isShippingEnabled, setIsShippingEnabled] = useState<boolean>(true);
+
+  // Delivery calculation states
+  const [customerCoords, setCustomerCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+
+  const shippingFee = (orderType === "delivery" && distanceKm !== null)
+    ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
+    : 0;
+
+  const shippingDiscount = (orderType === "delivery" && shippingFee > 0)
+    ? (subtotal >= minOrderFreeShipping
+        ? shippingFee
+        : (appliedVoucher && appliedVoucher.voucher_type === 'shipping'
+            ? (appliedVoucher.discount_type === 'percent'
+                ? Math.round(shippingFee * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
+                : Math.min(shippingFee, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
+            : 0))
+    : 0;
+
+  const discountAmount = (appliedVoucher && appliedVoucher.voucher_type !== 'shipping')
+    ? (appliedVoucher.discount_type === 'percent'
+        ? Math.round(subtotal * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
+        : Math.min(subtotal, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
+    : 0;
+
+  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee - shippingDiscount);
+
+  const prefillFromComponents = async (components: ReturnType<typeof parseAddressComponents>) => {
+    if (components.province) {
+      const foundProv = provincesList.find(p => p.name.includes(components.province) || components.province.includes(p.name));
+      if (foundProv) {
+        setDeliveryProvince(foundProv.name);
+        setLoadingRegencies(true);
+        try {
+          const res = await fetch(`/data/wilayah/provinces/${foundProv.id}.json`);
+          if (!res.ok) throw new Error("Gagal");
+          const data = await res.json();
+          if (data && Array.isArray(data.regencies)) {
+            setRegencies(data.regencies);
+            setActiveProvinceData(data);
+            
+            if (components.regency) {
+              const cleanName = (name: string) => name.replace(/^(KABUPATEN|KOTA)\s+/i, "").trim();
+              const foundReg = data.regencies.find((r: any) => cleanName(r.name).includes(cleanName(components.regency)) || cleanName(components.regency).includes(cleanName(r.name)));
+              if (foundReg) {
+                setDeliveryRegency(foundReg.name);
+                
+                const filteredDistricts = data.districts.filter((d: any) => d.regency_id === foundReg.id);
+                setDistricts(filteredDistricts);
+                
+                if (components.district) {
+                  const foundDist = filteredDistricts.find((d: any) => d.name.includes(components.district) || components.district.includes(d.name));
+                  if (foundDist) {
+                    setDeliveryDistrict(foundDist.name);
+                    
+                    const filteredVillages = data.villages.filter((v: any) => v.district_id === foundDist.id);
+                    setVillages(filteredVillages);
+                    
+                    if (components.village) {
+                      const foundVill = filteredVillages.find((v: any) => v.name.includes(components.village) || components.village.includes(v.name));
+                      if (foundVill) {
+                        setDeliveryVillage(foundVill.name);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingRegencies(false);
+        }
+      }
+    }
+    if (components.postalCode) {
+      setDeliveryPostalCode(components.postalCode);
+    }
+  };
+
+  const handleUseGPS = () => {
+    if (!navigator.geolocation) {
+      toast.error("Browser Anda tidak mendukung geolokasi (GPS)");
+      return;
+    }
+    
+    const gpsToast = toast.loading("Mendapatkan lokasi perangkat Anda...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setCustomerCoords({ lat, lng });
+        
+        const distance = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+        setDistanceKm(distance);
+        
+        toast.success("Berhasil mendapatkan lokasi GPS!", { id: gpsToast });
+        
+        if (typeof google !== "undefined" && google.maps) {
+          const geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+            if (status === "OK" && results && results[0]) {
+              const place = results[0];
+              setDeliveryAddress(place.formatted_address || "");
+              const components = parseAddressComponents(place);
+              prefillFromComponents(components);
+            }
+          });
+        }
+      },
+      (error) => {
+        console.error(error);
+        toast.error("Gagal mendapatkan lokasi GPS. Pastikan izin lokasi aktif.", { id: gpsToast });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const [profileData, setProfileData] = useState<any>(null);
   const [duitkuMethod, setDuitkuMethod] = useState("");
   const [openingTime, setOpeningTime] = useState<string | null>(null);
@@ -689,7 +983,7 @@ export default function CartPage() {
     }
   }, [items, appliedVoucher]);
 
-  // Realtime Operational Hours Sync
+  // Realtime Operational Hours & Shipping Settings Sync
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase.from("restaurant_settings").select("*").single();
@@ -704,6 +998,14 @@ export default function CartPage() {
         if (data.tax_percent !== undefined && data.tax_percent !== null) {
           setTaxPercent(Number(data.tax_percent));
         }
+        if (data.resto_latitude !== undefined && data.resto_latitude !== null) setRestoLat(Number(data.resto_latitude));
+        if (data.resto_longitude !== undefined && data.resto_longitude !== null) setRestoLng(Number(data.resto_longitude));
+        if (data.shipping_rate_per_km !== undefined && data.shipping_rate_per_km !== null) setShippingRate(Number(data.shipping_rate_per_km));
+        if (data.min_shipping_distance !== undefined && data.min_shipping_distance !== null) setMinShippingDistance(Number(data.min_shipping_distance));
+        if (data.max_shipping_distance !== undefined && data.max_shipping_distance !== null) setMaxShippingDistance(Number(data.max_shipping_distance));
+        if (data.additional_zone_charge !== undefined && data.additional_zone_charge !== null) setAdditionalZoneCharge(Number(data.additional_zone_charge));
+        if (data.min_order_for_free_shipping !== undefined && data.min_order_for_free_shipping !== null) setMinOrderFreeShipping(Number(data.min_order_for_free_shipping));
+        if (data.is_shipping_enabled !== undefined && data.is_shipping_enabled !== null) setIsShippingEnabled(!!data.is_shipping_enabled);
       }
     };
     fetchSettings();
@@ -721,6 +1023,14 @@ export default function CartPage() {
           if (payload.new.tax_percent !== undefined && payload.new.tax_percent !== null) {
             setTaxPercent(Number(payload.new.tax_percent));
           }
+          if (payload.new.resto_latitude !== undefined && payload.new.resto_latitude !== null) setRestoLat(Number(payload.new.resto_latitude));
+          if (payload.new.resto_longitude !== undefined && payload.new.resto_longitude !== null) setRestoLng(Number(payload.new.resto_longitude));
+          if (payload.new.shipping_rate_per_km !== undefined && payload.new.shipping_rate_per_km !== null) setShippingRate(Number(payload.new.shipping_rate_per_km));
+          if (payload.new.min_shipping_distance !== undefined && payload.new.min_shipping_distance !== null) setMinShippingDistance(Number(payload.new.min_shipping_distance));
+          if (payload.new.max_shipping_distance !== undefined && payload.new.max_shipping_distance !== null) setMaxShippingDistance(Number(payload.new.max_shipping_distance));
+          if (payload.new.additional_zone_charge !== undefined && payload.new.additional_zone_charge !== null) setAdditionalZoneCharge(Number(payload.new.additional_zone_charge));
+          if (payload.new.min_order_for_free_shipping !== undefined && payload.new.min_order_for_free_shipping !== null) setMinOrderFreeShipping(Number(payload.new.min_order_for_free_shipping));
+          if (payload.new.is_shipping_enabled !== undefined && payload.new.is_shipping_enabled !== null) setIsShippingEnabled(!!payload.new.is_shipping_enabled);
         }
       })
       .subscribe();
@@ -818,8 +1128,17 @@ export default function CartPage() {
     }
     if (orderType === "dine_in" && !selectedTable) return toast.error("Silakan pilih meja");
     if (orderType === "delivery") {
+      if (!isShippingEnabled) {
+        return toast.error("Layanan pengantaran saat ini sedang dinonaktifkan");
+      }
       if (!deliveryName || !deliveryPhone || !deliveryAddress || !deliveryProvince || !deliveryRegency || !deliveryDistrict || !deliveryVillage || !deliveryPostalCode) {
         return toast.error("Silakan lengkapi informasi pengiriman");
+      }
+      if (distanceKm === null) {
+        return toast.error("Silakan cari alamat Anda atau gunakan GPS untuk menghitung jarak");
+      }
+      if (distanceKm > maxShippingDistance) {
+        return toast.error(`Alamat pengantaran berada di luar batas jarak maksimal ${maxShippingDistance} km`);
       }
     }
 
@@ -837,163 +1156,21 @@ export default function CartPage() {
       if (!session?.user) throw new Error("Silakan login kembali");
       const { data: profile } = await supabase.from("profiles").select("id, full_name, email").eq("user_id", session.user.id).single();
       if (!profile) throw new Error("Profil tidak ditemukan");
- 
-      if (totalAmount === 0) {
-        toast.loading("Memproses pesanan gratis...", { id: loadingToast });
-        const finalNotes = `[Pesanan Gratis - Voucher Reward] ${orderNotes}`.trim();
-        
-        const { data: orderData, error: orderError } = await supabase.from("orders").insert({
-          customer_id: profile.id, 
-          table_id: orderType === "dine_in" ? selectedTable : null,
-          order_type: orderType, 
-          total_amount: 0, 
-          notes: finalNotes,
-          status: "pending", 
-          payment_method: 'voucher', 
-          payment_status: 'paid',
-          voucher_id: appliedVoucher ? appliedVoucher.id : null,
-          discount: discountAmount,
-          delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
-          delivery_phone: orderType === "delivery" ? deliveryPhone : null,
-          delivery_address: orderType === "delivery" ? deliveryAddress : null,
-          delivery_province: orderType === "delivery" ? deliveryProvince : null,
-          delivery_regency: orderType === "delivery" ? deliveryRegency : null,
-          delivery_district: orderType === "delivery" ? deliveryDistrict : null,
-          delivery_village: orderType === "delivery" ? deliveryVillage : null,
-          delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
-        }).select().single();
- 
-        if (orderError) throw orderError;
- 
-        const orderItems = items.map(item => ({
-          order_id: orderData.id, 
-          menu_item_id: item.id, 
-          quantity: item.quantity,
-          price: item.price, 
-          subtotal: item.price * item.quantity, 
-          notes: item.notes || null,
-        }));
-        
-        const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-        if (itemsError) throw itemsError;
- 
-        if (orderType === "dine_in") {
-          await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", selectedTable);
-        }
- 
-        // Trigger Notification (Awaited to prevent browser cancellation)
-        try {
-          await fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
-          });
-        } catch (err) {
-          console.error("Notification error:", err);
-        }
 
-        isOrderCompleted.current = true;
-        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-        clearCart();
- 
-        toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
-        router.push(`/customer/orders/${orderData.id}`);
-        return;
-      }
- 
-      if (paymentMethod === "wallet") {
-        toast.loading("Memproses pembayaran saldo dompet...", { id: loadingToast });
-        
-        const dbPaymentMethod = "wallet";
-        const detailedPaymentNotes = "[Pembayaran Saldo Dompet]";
-        const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
- 
-        const orderDataPayload = {
-          customer_id: profile.id,
-          table_id: orderType === "dine_in" ? selectedTable : null,
-          order_type: orderType,
-          total_amount: totalAmount,
-          notes: finalNotes,
-          voucher_id: appliedVoucher ? appliedVoucher.id : null,
-          discount: discountAmount,
-          delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
-          delivery_phone: orderType === "delivery" ? deliveryPhone : null,
-          delivery_address: orderType === "delivery" ? deliveryAddress : null,
-          delivery_province: orderType === "delivery" ? deliveryProvince : null,
-          delivery_regency: orderType === "delivery" ? deliveryRegency : null,
-          delivery_district: orderType === "delivery" ? deliveryDistrict : null,
-          delivery_village: orderType === "delivery" ? deliveryVillage : null,
-          delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
-        };
- 
-        const itemsDataPayload = items.map(item => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          subtotal: item.price * item.quantity,
-          notes: item.notes || null,
-        }));
- 
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create_wallet_order',
-            orderData: orderDataPayload,
-            itemsData: itemsDataPayload,
-            pin: enteredPin
-          })
-        });
- 
-        const result = await res.json();
-        if (!res.ok) {
-          if (result.code === 'WALLET_BLOCKED' || result.code === 'WALLET_BLOCKED_NOW') {
-            setShowPinPaymentModal(false);
-            toast.error(result.error || 'Akses Dompetku diblokir.', { id: loadingToast });
-            router.push('/customer/wallet');
-            return;
-          }
-          if (result.code === 'NO_PIN') {
-            setShowPinPaymentModal(false);
-            toast.error(result.error || 'Anda belum memiliki PIN.', { id: loadingToast });
-            router.push('/customer/wallet');
-            return;
-          }
-          if (result.code === 'WRONG_PIN') {
-            toast.error(result.error || 'PIN salah.', { id: loadingToast });
-            setPinRemainingAttempts(result.remaining);
-            setPaymentPin("");
-            return;
-          }
-          throw new Error(result.error || 'Gagal memproses pembayaran saldo dompet');
-        }
- 
-        isOrderCompleted.current = true;
-        if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-        clearCart();
-        setShowPinPaymentModal(false);
- 
-        toast.success("Pembayaran Berhasil via Saldo Dompet!", { id: loadingToast });
-        router.push(`/customer/orders/${result.order.id}`);
-        return;
-      }
-
-      const dbPaymentMethod = paymentMethod === "cash" ? "cash" : "non_cash";
-      
-      const detailedPaymentNotes = paymentMethod === "non_cash" ? "[Pembayaran Online]" : "[Tunai di Kasir]";
+      const detailedPaymentNotes = paymentMethod === "wallet" ? "[Pembayaran Saldo Dompet]" : paymentMethod === "non_cash" ? "[Pembayaran Online]" : paymentMethod === "cash" ? "[Tunai di Kasir]" : "[Voucher Reward]";
       const finalNotes = `${detailedPaymentNotes} ${orderNotes}`.trim();
 
-      const { data: orderData, error: orderError } = await supabase.from("orders").insert({
-        customer_id: profile.id, 
+      const orderDataPayload = {
+        customer_id: profile.id,
         table_id: orderType === "dine_in" ? selectedTable : null,
-        order_type: orderType, 
-        total_amount: totalAmount, 
+        order_type: orderType,
+        total_amount: totalAmount,
         notes: finalNotes,
-        status: "pending", 
-        payment_method: dbPaymentMethod, 
-        payment_status: 'unpaid',
         voucher_id: appliedVoucher ? appliedVoucher.id : null,
         discount: discountAmount,
+        distance_km: orderType === "delivery" ? distanceKm : null,
+        shipping_fee: orderType === "delivery" ? shippingFee : 0,
+        shipping_discount: orderType === "delivery" ? shippingDiscount : 0,
         delivery_recipient_name: orderType === "delivery" ? deliveryName : null,
         delivery_phone: orderType === "delivery" ? deliveryPhone : null,
         delivery_address: orderType === "delivery" ? deliveryAddress : null,
@@ -1002,157 +1179,171 @@ export default function CartPage() {
         delivery_district: orderType === "delivery" ? deliveryDistrict : null,
         delivery_village: orderType === "delivery" ? deliveryVillage : null,
         delivery_postal_code: orderType === "delivery" ? deliveryPostalCode : null,
-      }).select().single();
+      };
 
-      if (orderError) throw orderError;
-
-      const orderItems = items.map(item => ({
-        order_id: orderData.id, 
-        menu_item_id: item.id, 
+      const itemsDataPayload = items.map(item => ({
+        menu_item_id: item.id,
         quantity: item.quantity,
-        price: item.price, 
-        subtotal: item.price * item.quantity, 
         notes: item.notes || null,
       }));
-      
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-      if (itemsError) throw itemsError;
 
-      if (orderType === "dine_in") {
-        await supabase.from("tables").update({ status: "occupied", occupied_at: new Date().toISOString() }).eq("id", selectedTable);
+      const paymentMethodParam = totalAmount === 0 ? "free" : paymentMethod;
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_customer_order',
+          orderData: orderDataPayload,
+          itemsData: itemsDataPayload,
+          paymentMethod: paymentMethodParam,
+          pin: enteredPin,
+          customerLat: orderType === "delivery" && customerCoords ? customerCoords.lat : null,
+          customerLng: orderType === "delivery" && customerCoords ? customerCoords.lng : null
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        if (result.code === 'WALLET_BLOCKED' || result.code === 'WALLET_BLOCKED_NOW') {
+          setShowPinPaymentModal(false);
+          toast.error(result.error || 'Akses Dompetku diblokir.', { id: loadingToast });
+          router.push('/customer/wallet');
+          return;
+        }
+        if (result.code === 'NO_PIN') {
+          setShowPinPaymentModal(false);
+          toast.error(result.error || 'Anda belum memiliki PIN.', { id: loadingToast });
+          router.push('/customer/wallet');
+          return;
+        }
+        if (result.code === 'WRONG_PIN') {
+          toast.error(result.error || 'PIN salah.', { id: loadingToast });
+          setPinRemainingAttempts(result.remaining);
+          setPaymentPin("");
+          return;
+        }
+        throw new Error(result.error || 'Gagal memproses pembuatan pesanan');
       }
 
-      if (paymentMethod === "cash") {
-        isOrderCompleted.current = true;
-        // Trigger Notification (Awaited to prevent browser cancellation)
+      const createdOrder = result.order;
+
+      isOrderCompleted.current = true;
+      if (typeof window !== "undefined") localStorage.removeItem("selected_table");
+      clearCart();
+      setShowPinPaymentModal(false);
+
+      if (paymentMethodParam === "free") {
+        toast.success("Pesanan berhasil dibuat secara gratis!", { id: loadingToast });
+        router.push(`/customer/orders/${createdOrder.id}`);
+        return;
+      }
+
+      if (paymentMethodParam === "wallet") {
+        toast.success("Pembayaran Berhasil via Saldo Dompet!", { id: loadingToast });
+        router.push(`/customer/orders/${createdOrder.id}`);
+        return;
+      }
+
+      if (paymentMethodParam === "cash") {
         try {
           await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+            body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_created' }),
           });
         } catch (err) {
           console.error("Notification error:", err);
         }
-
-        toast.success("Pesanan berhasil dibuat! Silakan bayar tunai di kasir.", { id: loadingToast });
-        router.push(`/customer/orders/${orderData.id}`);
+        toast.success("Pesanan berhasil dibuat! Silakan bayar tunai.", { id: loadingToast });
+        router.push(`/customer/orders/${createdOrder.id}`);
         return;
       }
 
-      if (paymentMethod === "non_cash") {
+      if (paymentMethodParam === "non_cash") {
         toast.loading("Membangun portal pembayaran aman...", { id: loadingToast });
-        const res = await fetch('/api/payment/create-invoice', {
+        const invoiceRes = await fetch('/api/payment/create-invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            orderId: orderData.id,
+            orderId: createdOrder.id,
             paymentMethod: "", 
-            returnUrl: `${window.location.origin}/customer/orders/${orderData.id}`,
+            returnUrl: `${window.location.origin}/customer/orders/${createdOrder.id}`,
             customer_name: profile.full_name,
             customer_email: profile.email
           })
         });
-        const duitkuData = await res.json();
+        const duitkuData = await invoiceRes.json();
         
-        if (!res.ok) throw new Error(duitkuData.error || 'Gagal memicu gateway pembayaran');
+        if (!invoiceRes.ok) throw new Error(duitkuData.error || 'Gagal memicu gateway pembayaran');
         
         if (duitkuData.reference && typeof (window as any).checkout !== 'undefined') {
           toast.dismiss(loadingToast);
           setLoading(false);
           
-          // INJECT DUITKU POP SDK OVERLAY
           (window as any).checkout.process(duitkuData.reference, {
              successEvent: async function() {
-                // Trigger Notification (Awaited to prevent browser cancellation)
                 try {
                   await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+                    body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_created' }),
                   });
                 } catch (err) {
-                  console.error("Notification error:", err);
+                  console.error(err);
                 }
-
-                isOrderCompleted.current = true;
-                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-                clearCart();
-
                 toast.success("Pembayaran Berhasil!");
-                router.push(`/customer/orders/${orderData.id}`);
+                router.push(`/customer/orders/${createdOrder.id}`);
              },
              pendingEvent: async function() {
-                // Trigger Notification (Awaited to prevent browser cancellation)
                 try {
                   await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+                    body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_created' }),
                   });
                 } catch (err) {
-                  console.error("Notification error:", err);
+                  console.error(err);
                 }
-
-                isOrderCompleted.current = true;
-                if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-                clearCart();
-
-                router.push(`/customer/orders/${orderData.id}?status=pending`);
+                router.push(`/customer/orders/${createdOrder.id}?status=pending`);
              },
              errorEvent: async function() {
-               isOrderCompleted.current = true;
-               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-               clearCart();
-               toast.error("Pembayaran gagal. Pesanan disimpan sebagai Belum Bayar.");
-               // Kirim notifikasi Duitku ditutup tanpa selesai bayar
-               await fetch('/api/orders', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: orderData.id, action: 'notify_duitku_closed' })
-               });
-               router.push(`/customer/orders/${orderData.id}`);
+                toast.error("Pembayaran gagal. Pesanan disimpan sebagai Belum Bayar.");
+                await fetch('/api/orders', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_duitku_closed' })
+                });
+                router.push(`/customer/orders/${createdOrder.id}`);
              },
              closeEvent: async function() {
-               isOrderCompleted.current = true;
-               if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-               clearCart();
-               toast.success("Pesanan disimpan. Silakan selesaikan pembayaran Anda.");
-               // Proaktif cek status ke Duitku saat popup ditutup
-               const res = await fetch('/api/payment/check-status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: orderData.id })
-               });
-               const checkRes = await res.json();
-               if (checkRes.status !== 'paid') {
-                  // Kirim notifikasi Duitku ditutup tanpa selesai bayar
-                  await fetch('/api/orders', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ orderId: orderData.id, action: 'notify_duitku_closed' })
-                  });
-               }
-               router.push(`/customer/orders/${orderData.id}`);
+                toast.success("Pesanan disimpan. Silakan selesaikan pembayaran Anda.");
+                const checkRes = await fetch('/api/payment/check-status', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ orderId: createdOrder.id })
+                });
+                const checkStatus = await checkRes.json();
+                if (checkStatus.status !== 'paid') {
+                   await fetch('/api/orders', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_duitku_closed' })
+                   });
+                }
+                router.push(`/customer/orders/${createdOrder.id}`);
              }
           });
           return;
         } else if (duitkuData.paymentUrl) {
-          // Trigger Notification (Awaited to prevent browser cancellation)
           try {
             await fetch('/api/orders', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: orderData.id, action: 'notify_created' }),
+              body: JSON.stringify({ orderId: createdOrder.id, action: 'notify_created' }),
             });
           } catch (err) {
-            console.error("Notification error:", err);
+            console.error(err);
           }
-
-          isOrderCompleted.current = true;
-          if (typeof window !== "undefined") localStorage.removeItem("selected_table");
-          clearCart();
-
           toast.success("Mengalihkan ke halaman pembayaran...", { id: loadingToast });
           window.location.href = duitkuData.paymentUrl;
           return;
@@ -1222,10 +1413,24 @@ export default function CartPage() {
             
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-muted text-sm"><span>Subtotal</span><span className="font-semibold text-text-light dark:text-text-dark">Rp {subtotal.toLocaleString("id-ID")}</span></div>
-              {appliedVoucher && (
+              {discountAmount > 0 && appliedVoucher && (
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-sm">
-                  <span>Diskon ({appliedVoucher.discount_percent}%)</span>
+                  <span>Diskon Voucher ({appliedVoucher.code})</span>
                   <span className="font-bold">-Rp {discountAmount.toLocaleString("id-ID")}</span>
+                </div>
+              )}
+              {orderType === "delivery" && (
+                <div className="flex justify-between text-muted text-sm">
+                  <span>Ongkos Kirim {distanceKm !== null ? `(${distanceKm.toFixed(1)} km)` : ""}</span>
+                  <span className="font-semibold text-text-light dark:text-text-dark">
+                    {distanceKm !== null ? `Rp ${shippingFee.toLocaleString("id-ID")}` : "Menghitung..."}
+                  </span>
+                </div>
+              )}
+              {orderType === "delivery" && shippingDiscount > 0 && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-sm">
+                  <span>Potongan Ongkir {subtotal >= minOrderFreeShipping ? "(Free Ongkir)" : appliedVoucher ? `(Voucher ${appliedVoucher.code})` : ""}</span>
+                  <span className="font-bold">-Rp {shippingDiscount.toLocaleString("id-ID")}</span>
                 </div>
               )}
               <div className="flex justify-between text-muted text-sm">
@@ -1340,6 +1545,158 @@ export default function CartPage() {
                 {orderType === "delivery" && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 space-y-3 text-left">
                     <h4 className="text-xs font-bold text-primary uppercase tracking-widest block mb-2">Informasi Pengiriman</h4>
+                    
+                    {/* Google Maps & GPS Integration */}
+                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Cari & Tentukan Lokasi Anda</label>
+                        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
+                          <PlaceAutocomplete 
+                            onPlaceSelect={(lat, lng, address, components) => {
+                              setCustomerCoords({ lat, lng });
+                              setDeliveryAddress(address);
+                              prefillFromComponents(components);
+                              const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+                              setDistanceKm(dist);
+                            }}
+                          />
+                          
+                          {/* Map container */}
+                          <div className="w-full h-60 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark relative bg-background-light dark:bg-background-dark">
+                            <Map
+                              defaultCenter={{ lat: restoLat, lng: restoLng }}
+                              center={customerCoords ? { lat: customerCoords.lat, lng: customerCoords.lng } : { lat: restoLat, lng: restoLng }}
+                              defaultZoom={13}
+                              gestureHandling={'cooperative'}
+                            >
+                              {/* Restaurant Marker */}
+                              <Marker 
+                                position={{ lat: restoLat, lng: restoLng }}
+                                title="Restoran Kami"
+                              />
+                              
+                              {/* Customer Marker */}
+                              {customerCoords && (
+                                <Marker 
+                                  position={{ lat: customerCoords.lat, lng: customerCoords.lng }}
+                                  draggable={true}
+                                  title="Lokasi Anda (Geser untuk menyesuaikan)"
+                                  onDragEnd={(e) => {
+                                    if (e.latLng) {
+                                      const lat = e.latLng.lat();
+                                      const lng = e.latLng.lng();
+                                      setCustomerCoords({ lat, lng });
+                                      
+                                      const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+                                      setDistanceKm(dist);
+                                      
+                                      if (typeof google !== "undefined" && google.maps) {
+                                        const geocoder = new google.maps.Geocoder();
+                                        geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+                                          if (status === "OK" && results && results[0]) {
+                                            const place = results[0];
+                                            setDeliveryAddress(place.formatted_address || "");
+                                            const components = parseAddressComponents(place);
+                                            prefillFromComponents(components);
+                                          }
+                                        });
+                                      }
+                                    }
+                                  }}
+                                />
+                              )}
+                              
+                              {/* Directions route renderer */}
+                              {customerCoords && (
+                                <Directions 
+                                  origin={{ lat: restoLat, lng: restoLng }}
+                                  destination={{ lat: customerCoords.lat, lng: customerCoords.lng }}
+                                  onDistanceCalculated={(dist) => {
+                                    setDistanceKm(dist);
+                                  }}
+                                />
+                              )}
+                            </Map>
+                          </div>
+                        </APIProvider>
+                      </div>
+                    ) : (
+                      <div className="p-4 border border-dashed border-amber-300 bg-amber-500/10 rounded-2xl text-center space-y-2">
+                        <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto animate-pulse" />
+                        <p className="text-xs font-bold text-text-light dark:text-text-dark">Google Maps API Key Belum Dikonfigurasi</p>
+                        <p className="text-[10px] text-muted leading-relaxed">
+                          Anda dapat memasukkan koordinat alamat Anda secara manual di bawah ini untuk menghitung jarak pengiriman.
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <div>
+                            <label className="text-[9px] font-bold text-muted uppercase tracking-wider block mb-1">Latitude</label>
+                            <input 
+                              type="number" 
+                              step="any"
+                              placeholder="Contoh: -7.7829" 
+                              value={customerCoords?.lat || ""}
+                              onChange={e => {
+                                const lat = Number(e.target.value);
+                                const lng = customerCoords?.lng || 0;
+                                setCustomerCoords({ lat, lng });
+                                const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+                                setDistanceKm(dist);
+                              }}
+                              className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 text-xs outline-none text-text-light dark:text-text-dark font-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-muted uppercase tracking-wider block mb-1">Longitude</label>
+                            <input 
+                              type="number" 
+                              step="any"
+                              placeholder="Contoh: 110.3323" 
+                              value={customerCoords?.lng || ""}
+                              onChange={e => {
+                                const lat = customerCoords?.lat || 0;
+                                const lng = Number(e.target.value);
+                                setCustomerCoords({ lat, lng });
+                                const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+                                setDistanceKm(dist);
+                              }}
+                              className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3.5 py-2 text-xs outline-none text-text-light dark:text-text-dark font-medium"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleUseGPS}
+                        className="flex-1 bg-primary/10 hover:bg-primary hover:text-white border border-primary/20 text-primary rounded-xl px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                      >
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        Gunakan GPS Perangkat Anda
+                      </button>
+                    </div>
+
+                    {distanceKm !== null && (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800/40 border border-border-light dark:border-border-dark rounded-xl flex items-center justify-between text-xs">
+                        <span className="text-muted font-bold">Jarak Pengantaran:</span>
+                        <span className="font-extrabold text-primary">{distanceKm.toFixed(2)} km</span>
+                      </div>
+                    )}
+
+                    {distanceKm !== null && distanceKm > maxShippingDistance && (
+                      <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-550 rounded-2xl flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+                        <div>
+                          <p className="text-xs font-bold text-red-600 dark:text-red-400">Jarak Pengiriman Terlalu Jauh</p>
+                          <p className="text-[10px] text-muted leading-relaxed mt-0.5">
+                            Jarak pengiriman ({distanceKm.toFixed(2)} km) melebihi batas layanan maksimal kami yaitu {maxShippingDistance} km. Silakan ganti alamat atau pilih opsi penjemputan lainnya.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] font-semibold text-muted/80 uppercase block mb-1">Nama Penerima</label>
@@ -1535,14 +1892,16 @@ export default function CartPage() {
             </div>
 
             <motion.button 
-              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 1.02 } : {}} 
-              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) ? { scale: 0.98 } : {}} 
+              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 1.02 } : {}} 
+              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 0.98 } : {}} 
               onClick={() => totalAmount > 0 && paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
-              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)}
+              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) || (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)}
               className={`w-full py-4 rounded-2xl font-black text-sm lg:text-xs xl:text-sm flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 !isOpen 
                   ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
                   : (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
+                  ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
+                  : (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
                   : "bg-primary hover:bg-primary-hover text-white shadow-xl shadow-primary/30 cursor-pointer"
               }`}
@@ -1550,6 +1909,8 @@ export default function CartPage() {
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
               {totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
                 <><AlertTriangle className="w-4 h-4 shrink-0" /> Saldo Dompet Kurang</>
+              ) : orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance ? (
+                <><AlertTriangle className="w-4 h-4 shrink-0" /> Jarak Diluar Jangkauan</>
               ) : (
                 <>{isOpen ? (totalAmount === 0 ? "Konfirmasi Pesanan Gratis" : "Lanjut ke Pembayaran") : "Restoran Tutup"} {isOpen && <ArrowRight className="w-6 h-6" />}</>
               )}

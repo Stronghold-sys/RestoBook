@@ -481,6 +481,28 @@ export default function CashierOrders() {
                   <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Status Bayar</p><span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${selectedOrder.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{selectedOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span></div>
                 </div>
 
+                {selectedOrder.order_type === "delivery" && (
+                  <div className="p-6 bg-primary/5 border border-primary/20 rounded-3xl space-y-3 text-xs">
+                    <p className="font-black text-primary uppercase text-[10px] tracking-widest">Detail Pengiriman</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-muted block">Nama Penerima</span>
+                        <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_recipient_name || "-"}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted block">No. HP Penerima</span>
+                        <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_phone || "-"}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted block">Alamat Lengkap</span>
+                      <span className="font-bold text-text-light dark:text-text-dark">
+                        {selectedOrder.delivery_address || ""}, Kel. {selectedOrder.delivery_village || ""}, Kec. {selectedOrder.delivery_district || ""}, {selectedOrder.delivery_regency || ""}, {selectedOrder.delivery_province || ""} {selectedOrder.delivery_postal_code || ""}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {selectedOrder.status === "cancelled" && selectedOrder.cancel_reason && (
                   <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-3xl flex gap-4">
                     <Ban className="w-6 h-6 text-red-500 shrink-0" />
@@ -507,8 +529,44 @@ export default function CashierOrders() {
                 </div>
               </div>
 
-              <div className="p-8 border-t border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="flex justify-between items-center mb-8">
+              <div className="p-8 border-t border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/30 space-y-4">
+                {(() => {
+                  const foodSubtotal = orderItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+                  const foodDiscount = Number(selectedOrder.discount || 0);
+                  const shipFee = Number(selectedOrder.shipping_fee || 0);
+                  const shipDiscount = Number(selectedOrder.shipping_discount || 0);
+                  
+                  return (
+                    <div className="space-y-2 text-xs font-bold text-muted border-b border-border-light dark:border-border-dark pb-4">
+                      <div className="flex justify-between">
+                        <span>Subtotal Hidangan:</span>
+                        <span className="text-text-light dark:text-text-dark">Rp {foodSubtotal.toLocaleString("id-ID")}</span>
+                      </div>
+                      {foodDiscount > 0 && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>Diskon Voucher:</span>
+                          <span>-Rp {foodDiscount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      {selectedOrder.order_type === "delivery" && (
+                        <>
+                          <div className="flex justify-between">
+                            <span>Biaya Pengiriman ({Number(selectedOrder.distance_km || 0).toFixed(1)} km):</span>
+                            <span className="text-text-light dark:text-text-dark">Rp {shipFee.toLocaleString("id-ID")}</span>
+                          </div>
+                          {shipDiscount > 0 && (
+                            <div className="flex justify-between text-green-600 dark:text-green-400">
+                              <span>Diskon Ongkir:</span>
+                              <span>-Rp {shipDiscount.toLocaleString("id-ID")}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <div className="flex justify-between items-center mb-4">
                   <span className="font-black text-muted uppercase tracking-widest">Total Bayar</span>
                   <span className="font-black text-3xl text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
                 </div>

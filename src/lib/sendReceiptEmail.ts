@@ -122,6 +122,73 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
       displayPayment = 'TUNAI';
     }
 
+    let deliveryInfoHtml = '';
+    if (order.order_type === 'delivery') {
+      const fullAddress = `${order.delivery_address || ''}, Kel. ${order.delivery_village || ''}, Kec. ${order.delivery_district || ''}, ${order.delivery_regency || ''}, ${order.delivery_province || ''} ${order.delivery_postal_code || ''}`;
+      deliveryInfoHtml = `
+        <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#444;">
+          <p style="margin:0 0 8px 0; font-weight:bold; color:#ff5722; font-size:14px;">INFORMASI PENGIRIMAN</p>
+          <table style="width:100%;">
+            <tr><td style="padding:4px 0; font-weight:bold; width:35%;">Penerima</td><td style="padding:4px 0;">${order.delivery_recipient_name || '-'}</td></tr>
+            <tr><td style="padding:4px 0; font-weight:bold;">No. HP</td><td style="padding:4px 0;">${order.delivery_phone || '-'}</td></tr>
+            <tr><td style="padding:4px 0; font-weight:bold;">Jarak</td><td style="padding:4px 0;">${Number(order.distance_km || 0).toFixed(1)} km</td></tr>
+            <tr><td style="padding:4px 0; font-weight:bold; vertical-align:top;">Alamat</td><td style="padding:4px 0; line-height:1.4;">${fullAddress}</td></tr>
+          </table>
+        </div>
+      `;
+    }
+
+    const subtotal = items.reduce((sum: number, item: any) => {
+      const price = Number(item.price || item.menu_items?.price || 0);
+      const qty = item.quantity;
+      return sum + (item.subtotal || price * qty);
+    }, 0);
+    const discount = Number(order.discount || 0);
+    const shippingFee = Number(order.shipping_fee || 0);
+    const shippingDiscount = Number(order.shipping_discount || 0);
+
+    let totalsBreakdownHtml = `
+      <table style="width:100%; font-size:13px; color:#444; border-collapse:collapse; margin-top:15px;">
+        <tr>
+          <td style="padding:6px 0; text-align:right;">Subtotal Hidangan:</td>
+          <td style="padding:6px 10px 6px 0; text-align:right; font-weight:bold; width:30%;">Rp ${subtotal.toLocaleString('id-ID')}</td>
+        </tr>
+    `;
+
+    if (discount > 0) {
+      totalsBreakdownHtml += `
+        <tr>
+          <td style="padding:6px 0; text-align:right; color:#2e7d32;">Diskon Voucher:</td>
+          <td style="padding:6px 10px 6px 0; text-align:right; font-weight:bold; color:#2e7d32;">-Rp ${discount.toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    }
+
+    if (order.order_type === 'delivery') {
+      totalsBreakdownHtml += `
+        <tr>
+          <td style="padding:6px 0; text-align:right;">Biaya Pengiriman:</td>
+          <td style="padding:6px 10px 6px 0; text-align:right; font-weight:bold;">Rp ${shippingFee.toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+      if (shippingDiscount > 0) {
+        totalsBreakdownHtml += `
+          <tr>
+            <td style="padding:6px 0; text-align:right; color:#2e7d32;">Diskon Ongkir:</td>
+            <td style="padding:6px 10px 6px 0; text-align:right; font-weight:bold; color:#2e7d32;">-Rp ${shippingDiscount.toLocaleString('id-ID')}</td>
+          </tr>
+        `;
+      }
+    }
+
+    totalsBreakdownHtml += `
+      </table>
+      <div style="background:#fff5f2; border:2px solid #ff5722; border-radius:8px; padding:15px; text-align:right; margin:15px 0;">
+        <span style="font-size:14px; color:#333; font-weight:bold;">TOTAL PEMBAYARAN: </span>
+        <span style="font-size:22px; font-weight:bold; color:#ff5722;">Rp ${totalAmount.toLocaleString('id-ID')}</span>
+      </div>
+    `;
+
     const emailPayload: any = {
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
@@ -141,13 +208,16 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
             <p style="color:#555; font-size:13px; line-height:1.6;">
               Terima kasih atas pesanan Anda di <strong>${restoName}</strong>. Berikut adalah kwitansi resmi Anda:
             </p>
+            
+            ${deliveryInfoHtml}
+
             <table style="width:100%; margin:15px 0; font-size:13px; color:#444;">
               <tr><td style="padding:6px 0; font-weight:bold; width:45%;">No. Pesanan</td><td style="padding:6px 0;">#${orderId8}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tanggal</td><td style="padding:6px 0;">${orderDate}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Tipe</td><td style="padding:6px 0; text-transform:capitalize;">${order.order_type?.replace('_', ' ') || '-'}</td></tr>
               <tr><td style="padding:6px 0; font-weight:bold;">Pembayaran</td><td style="padding:6px 0; font-weight:bold;">${displayPayment}</td></tr>
             </table>
-
+ 
             <table style="width:100%; border-collapse:collapse; margin:15px 0; font-size:13px;">
               <thead>
                 <tr style="background:#f5f5f5;">
@@ -159,11 +229,9 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
               </thead>
               <tbody>${itemsHtml}</tbody>
             </table>
+ 
+            ${totalsBreakdownHtml}
 
-            <div style="background:#fff5f2; border:2px solid #ff5722; border-radius:8px; padding:15px; text-align:right; margin:15px 0;">
-              <span style="font-size:14px; color:#333;">TOTAL: </span>
-              <span style="font-size:22px; font-weight:bold; color:#ff5722;">Rp ${totalAmount.toLocaleString('id-ID')}</span>
-            </div>
             <p style="font-size:12px; color:#888; margin-top:20px; line-height:1.5;">
               Kwitansi ini dikirim secara otomatis setelah pembayaran dikonfirmasi. Simpan email ini sebagai bukti pembayaran resmi Anda.
             </p>

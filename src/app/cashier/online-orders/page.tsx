@@ -514,10 +514,42 @@ export default function OnlineOrdersPage() {
 
                   {/* Pricing Summary */}
                   <div className="pt-6 border-t-2 border-dashed border-border-light dark:border-border-dark space-y-3">
-                    <div className="flex justify-between items-center text-sm font-bold text-muted uppercase tracking-wider">
-                      <span>Subtotal</span>
-                      <span className="text-text-light dark:text-text-dark">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>
-                    </div>
+                    {(() => {
+                      const foodSubtotal = selectedOrder.order_items?.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0) || 0;
+                      const foodDiscount = Number(selectedOrder.discount || 0);
+                      const shipFee = Number(selectedOrder.shipping_fee || 0);
+                      const shipDiscount = Number(selectedOrder.shipping_discount || 0);
+                      
+                      return (
+                        <div className="space-y-2 text-xs font-bold text-muted border-b border-border-light dark:border-border-dark pb-4">
+                          <div className="flex justify-between">
+                            <span>Subtotal Hidangan:</span>
+                            <span className="text-text-light dark:text-text-dark">Rp {foodSubtotal.toLocaleString("id-ID")}</span>
+                          </div>
+                          {foodDiscount > 0 && (
+                            <div className="flex justify-between text-green-600 dark:text-green-400">
+                              <span>Diskon Voucher:</span>
+                              <span>-Rp {foodDiscount.toLocaleString("id-ID")}</span>
+                            </div>
+                          )}
+                          {selectedOrder.order_type === "delivery" && (
+                            <>
+                              <div className="flex justify-between">
+                                <span>Biaya Pengiriman ({Number(selectedOrder.distance_km || 0).toFixed(1)} km):</span>
+                                <span className="text-text-light dark:text-text-dark">Rp {shipFee.toLocaleString("id-ID")}</span>
+                              </div>
+                              {shipDiscount > 0 && (
+                                <div className="flex justify-between text-green-600 dark:text-green-400">
+                                  <span>Diskon Ongkir:</span>
+                                  <span>-Rp {shipDiscount.toLocaleString("id-ID")}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-black text-text-light dark:text-text-dark uppercase tracking-tight">Total Akhir</span>
                       <span className="text-3xl font-black text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString('id-ID')}</span>

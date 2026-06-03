@@ -11,6 +11,7 @@ import {
   ArrowLeft, Ban, Camera, RotateCcw
 } from "lucide-react";
 import toast from "react-hot-toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { format, formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
@@ -37,6 +38,10 @@ interface ChatRoom {
     notes: string | null;
     created_at: string;
     tables: { table_number: string } | null;
+    distance_km: number | null;
+    shipping_fee: number;
+    shipping_discount: number;
+    discount: number;
   };
   customer: {
     id: string;
@@ -97,6 +102,7 @@ export default function CashierChatPage() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingOrderItems, setLoadingOrderItems] = useState(false);
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
+  const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
@@ -720,11 +726,7 @@ export default function CashierChatPage() {
 
                   {!selectedChat.is_blocked ? (
                     <button
-                      onClick={() => {
-                        if (confirm("Yakin ingin memblokir chat pelanggan ini karena spam?")) {
-                          performAction("block", "Pelanggan diblokir");
-                        }
-                      }}
+                      onClick={() => setConfirmBlockOpen(true)}
                       title="Blokir pelanggan (spam)"
                       aria-label="Blokir pelanggan"
                       disabled={actionLoading}
@@ -1080,6 +1082,43 @@ export default function CashierChatPage() {
                           </div>
                         ))}
 
+                        {/* Breakdown */}
+                        {(() => {
+                          const foodSubtotal = orderItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+                          const foodDiscount = Number(selectedChat.order.discount || 0);
+                          const shipFee = Number(selectedChat.order.shipping_fee || 0);
+                          const shipDiscount = Number(selectedChat.order.shipping_discount || 0);
+                          
+                          return (
+                            <div className="space-y-1.5 text-[11px] font-bold text-muted border-t border-border-light dark:border-border-dark pt-3 mt-3">
+                              <div className="flex justify-between">
+                                <span>Subtotal Hidangan:</span>
+                                <span className="text-text-light dark:text-text-dark">Rp {foodSubtotal.toLocaleString("id-ID")}</span>
+                              </div>
+                              {foodDiscount > 0 && (
+                                <div className="flex justify-between text-green-600 dark:text-green-400">
+                                  <span>Diskon Voucher:</span>
+                                  <span>-Rp {foodDiscount.toLocaleString("id-ID")}</span>
+                                </div>
+                              )}
+                              {selectedChat.order.order_type === "delivery" && (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>Biaya Pengiriman ({Number(selectedChat.order.distance_km || 0).toFixed(1)} km):</span>
+                                    <span className="text-text-light dark:text-text-dark">Rp {shipFee.toLocaleString("id-ID")}</span>
+                                  </div>
+                                  {shipDiscount > 0 && (
+                                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                                      <span>Diskon Ongkir:</span>
+                                      <span>-Rp {shipDiscount.toLocaleString("id-ID")}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         {/* Total */}
                         <div className="flex justify-between items-center p-3 bg-primary/10 rounded-xl border border-primary/20 mt-2">
                           <span className="text-xs font-black text-primary uppercase tracking-wider">Total</span>
@@ -1109,6 +1148,19 @@ export default function CashierChatPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmBlockOpen}
+        title="Blokir Pelanggan"
+        message="Apakah Anda yakin ingin memblokir chat pelanggan ini karena indikasi penyalahgunaan? Pelanggan tidak dapat mengirim pesan baru."
+        confirmText="Ya, Blokir"
+        onConfirm={() => {
+          performAction("block", "Pelanggan diblokir");
+          setConfirmBlockOpen(false);
+        }}
+        onClose={() => setConfirmBlockOpen(false)}
+        type="danger"
+      />
     </div>
   );
 }

@@ -21,21 +21,44 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, discount_percent, usage_limit, max_usage_per_user, expires_at, is_active } = body;
+    const { 
+      code, 
+      discount_percent, 
+      usage_limit, 
+      max_usage_per_user, 
+      expires_at, 
+      is_active,
+      voucher_type,
+      discount_type,
+      discount_value,
+      min_transaction
+    } = body;
 
-    if (!code || !discount_percent || !expires_at) {
-      return NextResponse.json({ error: 'Kode, persen diskon, dan tanggal kedaluwarsa harus diisi' }, { status: 400 });
+    if (!code || !expires_at) {
+      return NextResponse.json({ error: 'Kode dan tanggal kedaluwarsa harus diisi' }, { status: 400 });
+    }
+
+    if (discount_type === 'percent' && !discount_percent) {
+      return NextResponse.json({ error: 'Persentase diskon harus diisi untuk voucher bertipe persen' }, { status: 400 });
+    }
+
+    if (discount_type === 'nominal' && !discount_value) {
+      return NextResponse.json({ error: 'Nilai diskon rupiah harus diisi untuk voucher bertipe nominal' }, { status: 400 });
     }
 
     const { data: voucher, error } = await supabaseAdmin
       .from('vouchers')
       .insert({
         code: code.toUpperCase().trim(),
-        discount_percent: Number(discount_percent),
+        discount_percent: discount_type === 'percent' ? Number(discount_percent) : 0,
         usage_limit: usage_limit ? Number(usage_limit) : 100,
         max_usage_per_user: max_usage_per_user ? Number(max_usage_per_user) : 1,
         expires_at,
         is_active: is_active !== undefined ? is_active : true,
+        voucher_type: voucher_type || 'general',
+        discount_type: discount_type || 'percent',
+        discount_value: discount_type === 'nominal' ? Number(discount_value) : 0,
+        min_transaction: min_transaction ? Number(min_transaction) : 0
       })
       .select()
       .single();
@@ -66,10 +89,20 @@ export async function POST(req: NextRequest) {
             .from('customer_vouchers')
             .upsert(inserts, { onConflict: 'customer_id,voucher_id' });
 
+          const discountText = voucher.discount_type === 'percent' 
+            ? `${voucher.discount_percent}%` 
+            : `Rp ${Number(voucher.discount_value).toLocaleString('id-ID')}`;
+
+          const isShipping = voucher.voucher_type === 'shipping';
+          const notifTitle = isShipping ? 'Voucher Ongkir Baru!' : 'Voucher Baru Dikirim!';
+          const notifMessage = isShipping
+            ? `Voucher diskon ongkir ${voucher.code} sebesar ${discountText} telah dikirim ke akun Anda. Gunakan saat checkout!`
+            : `Voucher diskon ${voucher.code} sebesar ${discountText} telah dikirim ke akun Anda. Gunakan saat checkout!`;
+
           const notifications = customers.map((c: any) => ({
             user_id: c.id,
-            title: 'Voucher Baru Dikirim!',
-            message: `Voucher diskon ${voucher.code} sebesar ${voucher.discount_percent}% telah dikirim ke akun Anda. Gunakan saat checkout!`,
+            title: notifTitle,
+            message: notifMessage,
             type: 'voucher',
             reference_id: voucher.id
           }));
@@ -78,7 +111,6 @@ export async function POST(req: NextRequest) {
         }
       } catch (distError) {
         console.error('Auto-distribution error:', distError);
-        // Do not fail the whole voucher creation if distribution notifications fail
       }
     }
 
@@ -140,17 +172,25 @@ export async function PUT(req: NextRequest) {
       // Fetch voucher info first
       const { data: voucherInfo } = await supabaseAdmin
         .from('vouchers')
-        .select('code, discount_percent')
+        .select('code, discount_percent, voucher_type, discount_type, discount_value')
         .eq('id', voucherId)
         .single();
 
       const notifCode = voucherInfo?.code || 'Baru';
-      const notifPercent = voucherInfo?.discount_percent || 0;
+      const discountText = voucherInfo?.discount_type === 'percent' 
+        ? `${voucherInfo?.discount_percent}%` 
+        : `Rp ${Number(voucherInfo?.discount_value || 0).toLocaleString('id-ID')}`;
+
+      const isShipping = voucherInfo?.voucher_type === 'shipping';
+      const notifTitle = isShipping ? 'Voucher Ongkir Baru!' : 'Voucher Baru Dikirim!';
+      const notifMessage = isShipping
+        ? `Voucher diskon ongkir ${notifCode} sebesar ${discountText} telah dikirim ke akun Anda. Gunakan saat checkout!`
+        : `Voucher diskon ${notifCode} sebesar ${discountText} telah dikirim ke akun Anda. Gunakan saat checkout!`;
 
       const notifications = customers.map((c: any) => ({
         user_id: c.id,
-        title: 'Voucher Baru Dikirim!',
-        message: `Voucher diskon ${notifCode} sebesar ${notifPercent}% telah dikirim ke akun Anda. Gunakan saat checkout!`,
+        title: notifTitle,
+        message: notifMessage,
         type: 'voucher',
         reference_id: voucherId
       }));

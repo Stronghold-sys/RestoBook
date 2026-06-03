@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('support_tickets')
-      .select('*, profiles(full_name, email)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -45,7 +45,24 @@ export async function GET(req: NextRequest) {
     const { data: tickets, error } = await query;
     if (error) throw error;
 
-    let filteredTickets = tickets || [];
+    // Fetch profiles separately to ensure all tickets are retrieved
+    const customerIds = tickets
+      .map((t: any) => t.customer_id)
+      .filter((value: any, index: number, self: any[]) => self.indexOf(value) === index);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', customerIds);
+
+    const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+      acc[p.id] = p;
+      return acc;
+    }, {});
+
+    let filteredTickets = tickets.map((ticket: any) => ({
+      ...ticket,
+      profiles: profileMap[ticket.customer_id] || null
+    }));
 
     // Client-side filtering if search term is provided (covers customer name or ticket number)
     if (search) {

@@ -55,6 +55,7 @@ export default function AdminSupportPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'tickets' | 'settings'>('tickets');
   const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [ticketViewTab, setTicketViewTab] = useState<'aktif' | 'riwayat'>('aktif');
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState('');
@@ -503,6 +504,11 @@ export default function AdminSupportPage() {
     }
   };
 
+  const filteredTickets = tickets.filter(t => {
+    const isHistory = ['completed', 'closed', 'expired'].includes(t.status);
+    return ticketViewTab === 'riwayat' ? isHistory : !isHistory;
+  });
+
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
       
@@ -782,18 +788,52 @@ export default function AdminSupportPage() {
               </div>
             </div>
 
+            {/* Tab Selector */}
+            <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark mb-4">
+              <button
+                onClick={() => {
+                  setTicketViewTab('aktif');
+                  setActiveTicket(null);
+                }}
+                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                  ticketViewTab === 'aktif'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-muted hover:text-primary'
+                }`}
+              >
+                Antrean Aktif
+              </button>
+              <button
+                onClick={() => {
+                  setTicketViewTab('riwayat');
+                  setActiveTicket(null);
+                }}
+                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                  ticketViewTab === 'riwayat'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-muted hover:text-primary'
+                }`}
+              >
+                Riwayat
+              </button>
+            </div>
+
             {/* Queue List */}
             {loading ? (
               <div className="text-center py-10 text-muted">Memuat antrian tiket...</div>
-            ) : tickets.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <div className="text-center py-16 text-muted space-y-2">
                 <Info className="w-8 h-8 text-primary mx-auto opacity-40" />
-                <p className="font-bold text-sm">Tidak Ada Tiket Terkait</p>
-                <p className="text-xs">Ubah filter pencarian Anda di atas.</p>
+                <p className="font-bold text-sm">
+                  {ticketViewTab === 'riwayat' ? 'Tidak Ada Riwayat Tiket' : 'Tidak Ada Tiket Terkait'}
+                </p>
+                <p className="text-xs">
+                  {ticketViewTab === 'riwayat' ? 'Tidak ada tiket bantuan yang sudah selesai atau ditutup.' : 'Ubah filter pencarian Anda di atas.'}
+                </p>
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
-                {tickets.map((t) => (
+                {filteredTickets.map((t) => (
                   <div
                     key={t.id}
                     onClick={() => setActiveTicket(t)}

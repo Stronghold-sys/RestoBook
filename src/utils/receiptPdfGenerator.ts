@@ -40,7 +40,10 @@ export async function downloadReceiptPDF({
   const phone = activeSettings?.phone || "-";
   
   // Calculate heights dynamically
-  const baseHeight = 90; // Header, info, totals, footer
+  let baseHeight = 90; // Header, info, totals, footer
+  if (order.order_type === "delivery") {
+    baseHeight += 35;
+  }
   const itemHeight = orderItems.length * 12;
   const pageHeight = baseHeight + itemHeight;
   
@@ -102,6 +105,23 @@ export async function downloadReceiptPDF({
     y += 4;
     doc.text(`Kasir: ${cashierName.toUpperCase()}`, 5, y);
   }
+
+  if (order.order_type === "delivery") {
+    y += 4;
+    doc.text(`Penerima: ${order.delivery_recipient_name?.toUpperCase() || "-"}`, 5, y);
+    y += 4;
+    doc.text(`No. HP: ${order.delivery_phone || "-"}`, 5, y);
+    y += 4;
+    doc.text(`Jarak: ${Number(order.distance_km || 0).toFixed(1)} km`, 5, y);
+    y += 4;
+    doc.text(`Alamat:`, 5, y);
+    const fullAddress = `${order.delivery_address || ""}, Kel. ${order.delivery_village || ""}, Kec. ${order.delivery_district || ""}, ${order.delivery_regency || ""}, ${order.delivery_province || ""} ${order.delivery_postal_code || ""}`;
+    const addrLines = doc.splitTextToSize(fullAddress, 70);
+    addrLines.forEach((line: string) => {
+      y += 3.5;
+      doc.text(line, 5, y);
+    });
+  }
   
   y += 3;
   doc.text("------------------------------------------", 40, y, { align: "center" });
@@ -152,6 +172,18 @@ export async function downloadReceiptPDF({
     y += 4;
     doc.text(`Potongan Voucher:`, 5, y);
     doc.text(`-Rp ${discount.toLocaleString("id-ID")}`, 75, y, { align: "right" });
+  }
+
+  if (order.order_type === "delivery") {
+    y += 4;
+    doc.text(`Ongkos Kirim:`, 5, y);
+    doc.text(`Rp ${Number(order.shipping_fee || 0).toLocaleString("id-ID")}`, 75, y, { align: "right" });
+    
+    if (Number(order.shipping_discount || 0) > 0) {
+      y += 4;
+      doc.text(`Potongan Ongkir:`, 5, y);
+      doc.text(`-Rp ${Number(order.shipping_discount).toLocaleString("id-ID")}`, 75, y, { align: "right" });
+    }
   }
   
   y += 4;

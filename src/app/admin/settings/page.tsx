@@ -13,6 +13,7 @@ import { formatToIndonesianDate } from "@/utils/operationalHours";
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useRef } from "react";
+import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,15 @@ export default function AdminSettingsPage() {
     maintenance_start_time: "",
     maintenance_end_time: "",
     maintenance_message: "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
-    maintenance_estimated_hours: "2 Jam"
+    maintenance_estimated_hours: "2 Jam",
+    resto_latitude: -7.7829,
+    resto_longitude: 110.3323,
+    shipping_rate_per_km: 2500,
+    min_shipping_distance: 1,
+    max_shipping_distance: 15,
+    additional_zone_charge: 0,
+    min_order_for_free_shipping: 100000,
+    is_shipping_enabled: true
   });
 
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
@@ -118,7 +127,15 @@ export default function AdminSettingsPage() {
           maintenance_start_time: data.maintenance_start_time ? new Date(data.maintenance_start_time).toISOString().substring(0, 16) : "",
           maintenance_end_time: data.maintenance_end_time ? new Date(data.maintenance_end_time).toISOString().substring(0, 16) : "",
           maintenance_message: data.maintenance_message || "Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.",
-          maintenance_estimated_hours: data.maintenance_estimated_hours || "2 Jam"
+          maintenance_estimated_hours: data.maintenance_estimated_hours || "2 Jam",
+          resto_latitude: data.resto_latitude !== null && data.resto_latitude !== undefined ? Number(data.resto_latitude) : -7.7829,
+          resto_longitude: data.resto_longitude !== null && data.resto_longitude !== undefined ? Number(data.resto_longitude) : 110.3323,
+          shipping_rate_per_km: data.shipping_rate_per_km !== null && data.shipping_rate_per_km !== undefined ? Number(data.shipping_rate_per_km) : 2500,
+          min_shipping_distance: data.min_shipping_distance !== null && data.min_shipping_distance !== undefined ? Number(data.min_shipping_distance) : 1,
+          max_shipping_distance: data.max_shipping_distance !== null && data.max_shipping_distance !== undefined ? Number(data.max_shipping_distance) : 15,
+          additional_zone_charge: data.additional_zone_charge !== null && data.additional_zone_charge !== undefined ? Number(data.additional_zone_charge) : 0,
+          min_order_for_free_shipping: data.min_order_for_free_shipping !== null && data.min_order_for_free_shipping !== undefined ? Number(data.min_order_for_free_shipping) : 100000,
+          is_shipping_enabled: data.is_shipping_enabled !== undefined && data.is_shipping_enabled !== null ? !!data.is_shipping_enabled : true,
         });
         const totalSec = Math.round(expiryMin * 60);
         setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
@@ -245,6 +262,14 @@ export default function AdminSettingsPage() {
         maintenance_end_time: settings.maintenance_end_time ? new Date(settings.maintenance_end_time).toISOString() : null,
         maintenance_message: settings.maintenance_message,
         maintenance_estimated_hours: settings.maintenance_estimated_hours,
+        resto_latitude: Number(settings.resto_latitude || -7.7829),
+        resto_longitude: Number(settings.resto_longitude || 110.3323),
+        shipping_rate_per_km: Number(settings.shipping_rate_per_km || 0),
+        min_shipping_distance: Number(settings.min_shipping_distance || 0),
+        max_shipping_distance: Number(settings.max_shipping_distance || 0),
+        additional_zone_charge: Number(settings.additional_zone_charge || 0),
+        min_order_for_free_shipping: Number(settings.min_order_for_free_shipping || 0),
+        is_shipping_enabled: settings.is_shipping_enabled,
       }).eq("id", settings.id);
       if (error) throw error;
 
@@ -794,6 +819,141 @@ export default function AdminSettingsPage() {
               <p className="text-[11px] text-muted mt-1">Target tanggal distribusi upah karyawan.</p>
             </div>
           </div>
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* SECTION: Pengaturan Pengiriman & Ongkir */}
+      {/* ═══════════════════════════════════════ */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-700 p-5 flex items-center gap-3 text-white">
+          <MapPin className="w-6 h-6 shrink-0" />
+          <div>
+            <h2 className="text-lg font-bold">Pengaturan Layanan Pengantaran & Ongkir</h2>
+            <p className="text-white/75 text-xs">Kelola biaya pengiriman otomatis berdasarkan jarak Google Maps</p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-6">
+          <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-text-light dark:text-text-dark">Aktifkan Layanan Pengiriman (Delivery)</p>
+              <p className="text-[11px] text-muted">Izinkan pelanggan memilih metode pengantaran makanan ke alamat tujuan saat checkout</p>
+            </div>
+            <Toggle checked={settings.is_shipping_enabled || false} onChange={v => setSettings({ ...settings, is_shipping_enabled: v })} title="Layanan Pengiriman" />
+          </div>
+
+          <AnimatePresence>
+            {settings.is_shipping_enabled && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border-light dark:border-border-dark pt-4">
+                  <div>
+                    <label htmlFor="shippingRate" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tarif Ongkir Per KM (Rp)</label>
+                    <input id="shippingRate" type="number" min="0" value={settings.shipping_rate_per_km}
+                      onChange={e => setSettings({ ...settings, shipping_rate_per_km: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="minShippingDist" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Jarak Layanan Minimum (KM)</label>
+                    <input id="minShippingDist" type="number" min="0" value={settings.min_shipping_distance}
+                      onChange={e => setSettings({ ...settings, min_shipping_distance: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                    <p className="text-[10px] text-muted mt-1">Jarak minimum yang akan tetap dikenakan tarif minimum.</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="maxShippingDist" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Jarak Layanan Maksimum (KM)</label>
+                    <input id="maxShippingDist" type="number" min="0" value={settings.max_shipping_distance}
+                      onChange={e => setSettings({ ...settings, max_shipping_distance: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                    <p className="text-[10px] text-muted mt-1">Batas terjauh jangkauan pengiriman restoran.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="additionalCharge" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Biaya Zona Tambahan (Rp)</label>
+                    <input id="additionalCharge" type="number" min="0" value={settings.additional_zone_charge}
+                      onChange={e => setSettings({ ...settings, additional_zone_charge: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                  </div>
+
+                  <div>
+                    <label htmlFor="minOrderFreeShipping" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Min. Belanja Gratis Ongkir (Rp)</label>
+                    <input id="minOrderFreeShipping" type="number" min="0" value={settings.min_order_for_free_shipping}
+                      onChange={e => setSettings({ ...settings, min_order_for_free_shipping: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                  </div>
+                </div>
+
+                <div className="border-t border-border-light dark:border-border-dark pt-4">
+                  <h3 className="text-sm font-bold text-text-light dark:text-text-dark mb-3">Koordinat Lokasi Restoran</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label htmlFor="restoLatitude" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Latitude</label>
+                      <input id="restoLatitude" type="number" step="any" value={settings.resto_latitude}
+                        onChange={e => setSettings({ ...settings, resto_latitude: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                    </div>
+                    <div>
+                      <label htmlFor="restoLongitude" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Longitude</label>
+                      <input id="restoLongitude" type="number" step="any" value={settings.resto_longitude}
+                        onChange={e => setSettings({ ...settings, resto_longitude: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+                    </div>
+                  </div>
+
+                  {/* PETA INTERAKTIF */}
+                  <div className="w-full h-80 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark relative bg-background-light dark:bg-background-dark flex items-center justify-center">
+                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
+                        <Map
+                          defaultCenter={{ lat: settings.resto_latitude, lng: settings.resto_longitude }}
+                          defaultZoom={15}
+                          gestureHandling={'cooperative'}
+                          onClick={(e) => {
+                            if (e.detail.latLng) {
+                              setSettings(prev => ({
+                                ...prev,
+                                resto_latitude: e.detail.latLng!.lat,
+                                resto_longitude: e.detail.latLng!.lng
+                              }));
+                            }
+                          }}
+                        >
+                          <Marker
+                            position={{ lat: settings.resto_latitude, lng: settings.resto_longitude }}
+                            draggable={true}
+                            onDragEnd={(e) => {
+                              if (e.latLng) {
+                                setSettings(prev => ({
+                                  ...prev,
+                                  resto_latitude: e.latLng!.lat(),
+                                  resto_longitude: e.latLng!.lng()
+                                }));
+                              }
+                            }}
+                          />
+                        </Map>
+                      </APIProvider>
+                    ) : (
+                      <div className="p-8 text-center max-w-md">
+                        <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-text-light dark:text-text-dark">Peta Interaktif Dinonaktifkan</p>
+                        <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                          Kunci API Google Maps tidak terdeteksi. Silakan atur koordinat secara manual di kolom atas, atau tambahkan <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> pada file konfigurasi environment (.env.local).
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted mt-1.5 italic">
+                    Tips: Klik di peta atau geser penanda merah untuk menentukan koordinat lokasi restoran Anda secara presisi.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 

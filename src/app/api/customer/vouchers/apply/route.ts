@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, customerId } = body;
+    const { code, customerId, subtotal } = body;
 
     if (!code) {
       return NextResponse.json({ error: 'Kode voucher tidak boleh kosong' }, { status: 400 });
@@ -78,6 +78,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 7. Periksa minimal transaksi
+    if (voucher.min_transaction && subtotal !== undefined && Number(subtotal) < Number(voucher.min_transaction)) {
+      return NextResponse.json({ 
+        error: `Minimal transaksi untuk menggunakan voucher ini adalah Rp ${Number(voucher.min_transaction).toLocaleString('id-ID')}` 
+      }, { status: 400 });
+    }
+
     // Jika semua lolos validasi, kembalikan detail voucher dan diskon
     return NextResponse.json({
       success: true,
@@ -87,7 +94,11 @@ export async function POST(req: NextRequest) {
         discount_percent: voucher.discount_percent,
         usage_limit: voucher.usage_limit,
         max_usage_per_user: voucher.max_usage_per_user,
-        used_count: voucher.used_count
+        used_count: voucher.used_count,
+        voucher_type: voucher.voucher_type || 'general',
+        discount_type: voucher.discount_type || 'percent',
+        discount_value: Number(voucher.discount_value || 0),
+        min_transaction: Number(voucher.min_transaction || 0)
       },
       message: 'Voucher berhasil digunakan!'
     });

@@ -172,6 +172,28 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
             <span className="font-bold uppercase">{resolvedCashierName}</span>
           </div>
         )}
+        {order.order_type === "delivery" && (
+          <div className="pt-1.5 mt-1.5 border-t border-gray-100 space-y-1.5">
+            <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#666' }}>Penerima:</span>
+              <span className="font-bold uppercase">{order.delivery_recipient_name}</span>
+            </div>
+            <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#666' }}>No. HP:</span>
+              <span className="font-bold">{order.delivery_phone}</span>
+            </div>
+            <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#666' }}>Jarak:</span>
+              <span className="font-bold">{Number(order.distance_km || 0).toFixed(1)} km</span>
+            </div>
+            <div className="text-left text-[11px] text-gray-600 pt-1 leading-normal" style={{ textAlign: 'left', fontSize: '11px', color: '#555' }}>
+              <span className="block font-bold" style={{ color: '#666' }}>Alamat Pengiriman:</span>
+              <span className="block whitespace-pre-wrap">
+                {order.delivery_address}, Kel. {order.delivery_village}, Kec. {order.delivery_district}, {order.delivery_regency}, {order.delivery_province} {order.delivery_postal_code}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="dashed-line" />
@@ -219,6 +241,18 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
               <span className="font-bold">Rp {Number(order.discount).toLocaleString("id-ID")}</span>
             </div>
           </>
+        )}
+        {order.order_type === "delivery" && (
+          <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span>Ongkos Kirim:</span>
+            <span className="font-bold">Rp {Number(order.shipping_fee || 0).toLocaleString("id-ID")}</span>
+          </div>
+        )}
+        {order.order_type === "delivery" && Number(order.shipping_discount || 0) > 0 && (
+          <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#059669' }}>
+            <span>Potongan Ongkir:</span>
+            <span className="font-bold">-Rp {Number(order.shipping_discount).toLocaleString("id-ID")}</span>
+          </div>
         )}
         <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
           <span>Pajak ({taxPercent}%):</span>

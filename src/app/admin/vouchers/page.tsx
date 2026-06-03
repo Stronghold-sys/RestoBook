@@ -41,7 +41,11 @@ export default function AdminVouchersPage() {
     usage_limit: "100",
     max_usage_per_user: "1",
     expires_at: "",
-    is_active: true
+    is_active: true,
+    voucher_type: "general",
+    discount_type: "percent",
+    discount_value: "",
+    min_transaction: "0"
   });
 
   const generateRandomCode = (showToast = true) => {
@@ -102,19 +106,31 @@ export default function AdminVouchersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.code || !form.discount_percent || !form.expires_at) {
-      return toast.error("Semua field wajib diisi");
+    if (!form.code || !form.expires_at) {
+      return toast.error("Kode dan tanggal kedaluwarsa wajib diisi");
     }
 
-    const discountVal = Number(form.discount_percent);
-    if (isNaN(discountVal) || discountVal <= 0 || discountVal > 100) {
-      return toast.error("Persentase diskon harus bernilai antara 1 dan 100");
+    if (form.discount_type === "percent") {
+      if (!form.discount_percent) return toast.error("Persentase diskon wajib diisi");
+      const discountVal = Number(form.discount_percent);
+      if (isNaN(discountVal) || discountVal <= 0 || discountVal > 100) {
+        return toast.error("Persentase diskon harus bernilai antara 1 dan 100");
+      }
+    } else {
+      if (!form.discount_value) return toast.error("Nominal diskon wajib diisi");
+      const discountVal = Number(form.discount_value);
+      if (isNaN(discountVal) || discountVal <= 0) {
+        return toast.error("Nominal diskon harus bernilai lebih besar dari 0");
+      }
     }
 
     setIsSubmitting(true);
     try {
       const formattedForm = {
         ...form,
+        discount_percent: form.discount_type === "percent" ? Number(form.discount_percent) : 0,
+        discount_value: form.discount_type === "nominal" ? Number(form.discount_value) : 0,
+        min_transaction: Number(form.min_transaction || 0),
         expires_at: new Date(form.expires_at).toISOString()
       };
 
@@ -135,7 +151,11 @@ export default function AdminVouchersPage() {
         usage_limit: "100",
         max_usage_per_user: "1",
         expires_at: "",
-        is_active: true
+        is_active: true,
+        voucher_type: "general",
+        discount_type: "percent",
+        discount_value: "",
+        min_transaction: "0"
       });
       
       fetchVouchers();
@@ -273,25 +293,90 @@ export default function AdminVouchersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="discount_percent" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Diskon (%)</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="discount_percent"
-                      name="discount_percent"
-                      min="1"
-                      max="100"
-                      placeholder="10"
-                      title="Diskon (%)"
-                      value={form.discount_percent}
-                      onChange={handleInputChange}
-                      className="w-full pl-4 pr-10 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      required
-                    />
-                    <Percent className="absolute right-3 top-3.5 w-4 h-4 text-muted" />
-                  </div>
+                  <label htmlFor="voucher_type" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Tipe Voucher</label>
+                  <select
+                    id="voucher_type"
+                    name="voucher_type"
+                    value={form.voucher_type}
+                    onChange={(e) => setForm(prev => ({ ...prev, voucher_type: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs"
+                  >
+                    <option value="general">Umum / Potongan Belanja</option>
+                    <option value="shipping">Ongkir / Potongan Pengiriman</option>
+                  </select>
                 </div>
 
+                <div>
+                  <label htmlFor="discount_type" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Tipe Potongan</label>
+                  <select
+                    id="discount_type"
+                    name="discount_type"
+                    value={form.discount_type}
+                    onChange={(e) => setForm(prev => ({ ...prev, discount_type: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs"
+                  >
+                    <option value="percent">Persentase (%)</option>
+                    <option value="nominal">Nominal (Rupiah)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {form.discount_type === "percent" ? (
+                  <div>
+                    <label htmlFor="discount_percent" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Diskon (%)</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        id="discount_percent"
+                        name="discount_percent"
+                        min="1"
+                        max="100"
+                        placeholder="10"
+                        title="Diskon (%)"
+                        value={form.discount_percent}
+                        onChange={handleInputChange}
+                        className="w-full pl-4 pr-10 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
+                      />
+                      <Percent className="absolute right-3 top-3.5 w-4 h-4 text-muted" />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="discount_value" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Diskon (Rp)</label>
+                    <input
+                      type="number"
+                      id="discount_value"
+                      name="discount_value"
+                      min="1"
+                      placeholder="10000"
+                      title="Diskon (Rp)"
+                      value={form.discount_value}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="min_transaction" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Min. Belanja (Rp)</label>
+                  <input
+                    type="number"
+                    id="min_transaction"
+                    name="min_transaction"
+                    min="0"
+                    placeholder="0"
+                    title="Minimal Transaksi"
+                    value={form.min_transaction}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="usage_limit" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Limit Global</label>
                   <input
@@ -307,9 +392,7 @@ export default function AdminVouchersPage() {
                     required
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="max_usage_per_user" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Limit Per User</label>
                   <input
@@ -325,7 +408,9 @@ export default function AdminVouchersPage() {
                     required
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1">
                 <div>
                   <label htmlFor="expires_at" className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Masa Aktif</label>
                   <div className="relative">
@@ -401,7 +486,9 @@ export default function AdminVouchersPage() {
                   <thead>
                     <tr className="border-b border-border-light dark:border-border-dark">
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Kode</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Tipe</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Diskon</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Min. Belanja</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Pemakaian</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">Berakhir Pada</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider text-center whitespace-nowrap">Status</th>
@@ -424,9 +511,23 @@ export default function AdminVouchersPage() {
                             </span>
                           </td>
                           <td className="py-4 text-center whitespace-nowrap">
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                              {voucher.discount_percent}%
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              voucher.voucher_type === "shipping" 
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400" 
+                                : "bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400"
+                            }`}>
+                              {voucher.voucher_type === "shipping" ? "Ongkir" : "Umum"}
                             </span>
+                          </td>
+                          <td className="py-4 text-center whitespace-nowrap">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              {voucher.discount_type === "nominal" 
+                                ? `Rp ${Number(voucher.discount_value || 0).toLocaleString("id-ID")}` 
+                                : `${voucher.discount_percent}%`}
+                            </span>
+                          </td>
+                          <td className="py-4 text-center text-sm text-text-light dark:text-text-dark whitespace-nowrap">
+                            Rp {Number(voucher.min_transaction || 0).toLocaleString("id-ID")}
                           </td>
                           <td className="py-4 text-center text-sm whitespace-nowrap">
                             <div className="flex flex-col items-center whitespace-nowrap">

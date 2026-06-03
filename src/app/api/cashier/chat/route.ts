@@ -126,6 +126,13 @@ export async function POST(req: NextRequest) {
       
       if (action === 'mark_completed') {
         updateData.status = 'completed';
+        // Kirim pesan sistem otomatis
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chatId,
+          sender_role: 'ai',
+          message: 'Percakapan ini telah diselesaikan oleh kasir. Jika Anda masih memerlukan bantuan, silakan hubungi kami melalui menu Pengaduan & Bantuan di aplikasi.',
+          is_read: false
+        });
       } else if (action === 'need_admin') {
         updateData.status = 'need_admin';
       } else if (action === 'waiting_customer') {

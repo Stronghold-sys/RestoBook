@@ -1761,7 +1761,15 @@ export default function OrderTrackingPage() {
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
-                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map(i=>({...i.menu_items, quantity: i.quantity, subtotal: i.subtotal}))} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
+                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map((i: any) => {
+                     const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                     return {
+                       name: i.menu_items?.name || i.name,
+                       price: resolvedPrice,
+                       quantity: i.quantity,
+                       subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                     };
+                   })} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
                 </div>
             </motion.div>
           </div>

@@ -768,7 +768,15 @@ export default function OnlineOrdersPage() {
                 <Receipt 
                   ref={receiptRef} 
                   order={selectedOrder} 
-                  orderItems={selectedOrder.order_items} 
+                  orderItems={selectedOrder.order_items.map((i: any) => {
+                    const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                    return {
+                      name: i.menu_items?.name || i.name,
+                      price: resolvedPrice,
+                      quantity: i.quantity,
+                      subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                    };
+                  })} 
                   customerName={selectedOrder.profiles?.full_name || "Guest"} 
                   cashierName={cashierName} 
                 />

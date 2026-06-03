@@ -476,7 +476,15 @@ export default function CashierTransactionsPage() {
                   <ReceiptComponent 
                     ref={receiptRef} 
                     order={selectedOrder} 
-                    orderItems={selectedOrder.order_items.map((i:any)=>({...i.menu_items, quantity: i.quantity, subtotal: i.price * i.quantity}))} 
+                    orderItems={selectedOrder.order_items.map((i: any) => {
+                      const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                      return {
+                        name: i.menu_items?.name || i.name,
+                        price: resolvedPrice,
+                        quantity: i.quantity,
+                        subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                      };
+                    })} 
                     customerName={getCustomerName(selectedOrder)} 
                     cashierName={cashierName} 
                   />

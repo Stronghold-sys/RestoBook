@@ -678,7 +678,15 @@ export default function CashierOrders() {
                   <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-hover shadow-md transition-all uppercase"><Printer className="w-4 h-4" /> Cetak</button>
                 </div>
               </div>
-              <Receipt ref={receiptRef} order={selectedOrder} orderItems={orderItems} customerName={customerName || selectedOrder.profiles?.full_name || "Guest"} cashierName={cashierName} />
+              <Receipt ref={receiptRef} order={selectedOrder} orderItems={orderItems.map((i: any) => {
+                const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                return {
+                  name: i.menu_items?.name || i.name,
+                  price: resolvedPrice,
+                  quantity: i.quantity,
+                  subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                };
+              })} customerName={customerName || selectedOrder.profiles?.full_name || "Guest"} cashierName={cashierName} />
             </motion.div>
           </motion.div>
         )}

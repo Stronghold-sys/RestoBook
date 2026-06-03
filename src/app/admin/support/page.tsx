@@ -257,6 +257,25 @@ export default function AdminSupportPage() {
       return () => {
         supabase.removeChannel(orderChatChannel);
       };
+    } else if (ticketViewTab === 'riwayat') {
+      // Riwayat: gabungkan tiket support selesai + bantuan admin selesai/kedaluwarsa
+      fetchAdminAndTickets();
+      fetchEscalatedChatsHistory();
+      fetchSupportSettings();
+
+      const ticketChannel = supabase
+        .channel('admin-tickets-riwayat-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+          fetchTicketsOnly();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'order_chats' }, () => {
+          fetchEscalatedChatsHistory();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ticketChannel);
+      };
     } else {
       fetchAdminAndTickets();
       fetchSupportSettings();
@@ -485,6 +504,7 @@ export default function AdminSupportPage() {
   };
 
   const fetchEscalatedChats = async () => {
+    // Hanya ambil chat yang masih aktif (need_admin) untuk tab Bantuan Admin
     try {
       const { data, error } = await supabase
         .from('order_chats')
@@ -509,7 +529,7 @@ export default function AdminSupportPage() {
             avatar_url
           )
         `)
-        .in('status', ['need_admin', 'completed', 'expired'])
+        .in('status', ['need_admin'])
         .order('updated_at', { ascending: false });
 
       if (!error && data) {
@@ -521,8 +541,9 @@ export default function AdminSupportPage() {
           category: 'Bantuan Kasir',
           subcategory: chat.order?.order_type || undefined,
           description: `Kasir memerlukan bantuan admin untuk menyelesaikan kendala pada pesanan ini. Catatan Pesanan: ${chat.order?.notes || '-'}`,
-          status: chat.status === 'need_admin' ? 'pending' : chat.status,
+          status: 'pending',
           urgency: 'high',
+          source: 'manual',
           created_at: chat.created_at,
           updated_at: chat.updated_at,
           chat_started_at: chat.created_at,
@@ -535,6 +556,70 @@ export default function AdminSupportPage() {
           is_order_chat: true
         } as any));
         setTickets(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchEscalatedChatsHistory = async () => {
+    // Ambil riwayat bantuan admin yang sudah selesai/kedaluwarsa, gabungkan ke tickets
+    try {
+      const { data, error } = await supabase
+        .from('order_chats')
+        .select(`
+          *,
+          order:orders(
+            id, 
+            order_type, 
+            status, 
+            total_amount, 
+            payment_method, 
+            payment_status, 
+            notes,
+            created_at,
+            tables(table_number)
+          ),
+          customer:profiles!order_chats_customer_id_fkey(
+            id,
+            full_name,
+            email,
+            phone,
+            avatar_url
+          )
+        `)
+        .in('status', ['completed', 'expired'])
+        .order('updated_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped: Ticket[] = data.map(chat => ({
+          id: chat.id,
+          ticket_number: `ORDER-${chat.order_id?.substring(0, 8).toUpperCase()}`,
+          customer_id: chat.customer_id,
+          title: `Bantuan Order #${chat.order_id?.substring(0, 8).toUpperCase()}`,
+          category: 'Bantuan Kasir',
+          subcategory: chat.order?.order_type || undefined,
+          description: `Riwayat bantuan admin untuk pesanan ini. Catatan: ${chat.order?.notes || '-'}`,
+          status: chat.status,
+          urgency: 'high',
+          source: 'manual',
+          created_at: chat.created_at,
+          updated_at: chat.updated_at,
+          chat_started_at: chat.created_at,
+          chat_closed_at: chat.chat_closed_at,
+          chat_history_deleted_at: chat.chat_history_deleted_at,
+          profiles: {
+            full_name: chat.customer?.full_name || 'Pelanggan',
+            email: chat.customer?.email || '-'
+          },
+          is_order_chat: true
+        } as any));
+        // Gabungkan dengan tiket support yang ada (append)
+        setTickets(prev => {
+          const existingIds = new Set(prev.map(t => t.id));
+          const newChats = mapped.filter(c => !existingIds.has(c.id));
+          return [...prev, ...newChats];
+        });
       }
     } catch (e) {
       console.error(e);
@@ -1020,9 +1105,17 @@ export default function AdminSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    if (ticketViewTab === 'bantuan_admin') return true;
+    if (ticketViewTab === 'bantuan_admin') {
+      // Bantuan Admin aktif: hanya tampilkan yang masih need_admin (dipetakan ke 'pending')
+      return t.status === 'pending' && (t as any).is_order_chat;
+    }
     const isHistory = ['completed', 'closed', 'expired', 'rejected', 'approved'].includes(t.status);
-    return ticketViewTab === 'riwayat' ? isHistory : !isHistory;
+    if (ticketViewTab === 'riwayat') {
+      // Riwayat: tiket support selesai + bantuan admin yang sudah selesai/kedaluwarsa
+      return isHistory;
+    }
+    // Aktif: hanya tiket support yang belum selesai (bukan is_order_chat)
+    return !isHistory && !(t as any).is_order_chat;
   });
 
   return (
@@ -1427,10 +1520,18 @@ export default function AdminSupportPage() {
               <div className="text-center py-16 text-muted space-y-2">
                 <Info className="w-8 h-8 text-primary mx-auto opacity-40" />
                 <p className="font-bold text-sm">
-                  {ticketViewTab === 'riwayat' ? 'Tidak Ada Riwayat Tiket' : 'Tidak Ada Tiket Terkait'}
+                  {ticketViewTab === 'riwayat' 
+                    ? 'Tidak Ada Riwayat' 
+                    : ticketViewTab === 'bantuan_admin' 
+                    ? 'Tidak Ada Permintaan Bantuan Aktif'
+                    : 'Tidak Ada Tiket Terkait'}
                 </p>
                 <p className="text-xs">
-                  {ticketViewTab === 'riwayat' ? 'Tidak ada tiket bantuan yang sudah selesai atau ditutup.' : 'Ubah filter pencarian Anda di atas.'}
+                  {ticketViewTab === 'riwayat' 
+                    ? 'Belum ada tiket support atau bantuan admin yang selesai/kedaluwarsa.'
+                    : ticketViewTab === 'bantuan_admin'
+                    ? 'Tidak ada kasir yang memerlukan bantuan admin saat ini. Chat yang selesai bisa dilihat di tab Riwayat.'
+                    : 'Ubah filter pencarian Anda di atas.'}
                 </p>
               </div>
             ) : (
@@ -1459,12 +1560,14 @@ export default function AdminSupportPage() {
                         {getStatusLabel(t.status)}
                       </span>
                       <span className="flex items-center gap-1">
-                        {t.source === 'ai' ? (
+                        {(t as any).is_order_chat ? (
+                          <span className="bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1 py-0.5 rounded font-black text-[8px] uppercase tracking-wide">Bantuan Admin</span>
+                        ) : t.source === 'ai' ? (
                           <span className="bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded font-black text-[8px] uppercase tracking-wide">RestoBot AI</span>
                         ) : (
                           <span className="bg-blue-500/10 text-blue-500 px-1 py-0.5 rounded font-black text-[8px] uppercase tracking-wide">Manual</span>
                         )}
-                        <span>{format(new Date(t.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })}</span>
+                        <span>{format(new Date(t.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</span>
                       </span>
                     </div>
                   </div>

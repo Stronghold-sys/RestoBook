@@ -114,7 +114,7 @@ export async function PUT(
     if (assigned_to !== undefined && isAdmin) updateFields.assigned_to = assigned_to;
 
     // Handle closing/locking/approval/rejection logic
-    if (status === 'completed' || status === 'closed') {
+    if (['completed', 'closed', 'approved', 'rejected'].includes(status)) {
       updateFields.chat_closed_at = new Date().toISOString();
 
       // Read support settings to compute deletion time
@@ -133,7 +133,9 @@ export async function PUT(
       }
 
       updateFields.chat_history_deleted_at = new Date(Date.now() + delayMs).toISOString();
+    }
 
+    if (status === 'completed' || status === 'closed') {
       // Create notification for customer
       await supabase.from('notifications').insert({
         user_id: currentTicket.customer_id,

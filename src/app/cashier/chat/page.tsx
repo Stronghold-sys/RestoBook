@@ -27,6 +27,7 @@ interface ChatRoom {
   status: string;
   is_replied_manually: boolean;
   is_blocked: boolean;
+  ai_chat_status: 'ai_active' | 'waiting_customer_choice' | 'waiting_cashier' | 'cashier_active' | null;
   chat_closed_at?: string;
   chat_history_deleted_at?: string;
   created_at: string;
@@ -771,13 +772,29 @@ export default function CashierChatPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : typeStyle.bg}`}>
                             {typeStyle.label}
                           </span>
                           <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : getChatStatusStyle(chat.status)}`}>
                             {getChatStatusLabel(chat.status)}
                           </span>
+                          {/* Badge AI/Kasir status */}
+                          {chat.ai_chat_status === 'waiting_cashier' && !chat.is_replied_manually && (
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase animate-pulse ${isSelected ? "bg-white/30 text-white" : "bg-orange-100 text-orange-700"}`}>
+                              Minta Kasir!
+                            </span>
+                          )}
+                          {chat.ai_chat_status === 'waiting_customer_choice' && !chat.is_replied_manually && (
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"}`}>
+                              Konfirmasi
+                            </span>
+                          )}
+                          {(!chat.ai_chat_status || chat.ai_chat_status === 'ai_active') && !chat.is_replied_manually && (
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700"}`}>
+                              AI
+                            </span>
+                          )}
                           {chat.is_blocked && (
                             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${isSelected ? "bg-white/20 text-white" : "bg-red-100 text-red-700"}`}>
                               Diblokir
@@ -842,9 +859,25 @@ export default function CashierChatPage() {
                     <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${getChatStatusStyle(selectedChat.status)}`}>
                       {getChatStatusLabel(selectedChat.status)}
                     </span>
-                    {!selectedChat.is_replied_manually && (
+                    {/* AI State Machine badge */}
+                    {selectedChat.ai_chat_status === 'waiting_cashier' && !selectedChat.is_replied_manually && (
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded-md uppercase bg-orange-500 text-white animate-pulse">
+                        ⚡ Minta Kasir
+                      </span>
+                    )}
+                    {selectedChat.ai_chat_status === 'waiting_customer_choice' && !selectedChat.is_replied_manually && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase bg-amber-100 text-amber-700">
+                        Konfirmasi Transfer
+                      </span>
+                    )}
+                    {(selectedChat.ai_chat_status === 'ai_active' || !selectedChat.ai_chat_status) && !selectedChat.is_replied_manually && (
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase bg-violet-100 text-violet-700">
                         AI Aktif
+                      </span>
+                    )}
+                    {selectedChat.is_replied_manually && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase bg-blue-100 text-blue-700">
+                        Kasir Aktif
                       </span>
                     )}
                     {selectedChat.is_blocked && (

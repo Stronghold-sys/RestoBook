@@ -8,10 +8,167 @@ const VULGAR_WORDS = [
   'kntl', 'ajg', 'gblk', 'bgst'
 ];
 
+// Kata kunci yang memicu penawaran cepat ke kasir
+const URGENT_KEYWORDS = [
+  'komplain', 'marah', 'salah', 'belum diterima', 'refund', 'batal',
+  'kecewa', 'jelek', 'lama sekali', 'tidak sesuai', 'rambut', 'benda asing',
+  'keracunan', 'mual', 'gatal', 'kotor', 'basi', 'tidak enak', 'ancur'
+];
+
+// Kata kunci yang menandakan pelanggan ingin bicara ke kasir
+const CASHIER_CONNECT_KEYWORDS = [
+  'kasir', 'manusia', 'orang', 'staff', 'hubungi kasir', 'bicara kasir',
+  'hubungkan', 'ingin kasir', 'minta kasir', 'terhubung kasir',
+  'sambungkan', 'panggil kasir', 'ada staf', 'ada staff'
+];
+
 function containsProfanity(text: string): boolean {
   if (!text) return false;
   const cleanText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
   return VULGAR_WORDS.some(word => cleanText.includes(word));
+}
+
+function containsUrgentKeyword(text: string): boolean {
+  const lower = text.toLowerCase();
+  return URGENT_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+function containsCashierRequest(text: string): boolean {
+  const lower = text.toLowerCase();
+  return CASHIER_CONNECT_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+const AI_GREETING_MESSAGES = [
+  'Halo! Saya RestoBot, asisten bantuan pesanan Anda. Saya siap membantu menjawab pertanyaan seputar pesanan Anda.',
+  'Jika Anda memiliki pertanyaan tentang status pesanan, estimasi selesai, pembayaran, atau hal lainnya, silakan sampaikan kepada saya.',
+  'Anda juga bisa langsung menghubungi kasir kami jika diperlukan bantuan lebih lanjut.'
+];
+
+const CASHIER_OFFER_MESSAGES = [
+  'Baik, saya bisa hubungkan Anda ke kasir untuk mendapatkan bantuan langsung dari staf kami.',
+  'Apakah Anda ingin dihubungkan ke kasir sekarang?'
+];
+
+async function sendAIGreeting(supabase: any, chatId: string) {
+  for (const msg of AI_GREETING_MESSAGES) {
+    await supabase.from('order_chat_messages').insert({
+      chat_id: chatId,
+      sender_role: 'ai',
+      message: msg,
+      is_read: false
+    });
+  }
+  // Update chat status to ai_active
+  await supabase.from('order_chats').update({
+    ai_chat_status: 'ai_active',
+    updated_at: new Date().toISOString()
+  }).eq('id', chatId);
+}
+
+async function sendAIResponse(supabase: any, chatId: string, orderId: string, message: string, chatStatus: string) {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) return;
+
+  const { data: orderDetails } = await supabase
+    .from('orders')
+    .select('*, tables(table_number)')
+    .eq('id', orderId)
+    .single();
+
+  const { data: orderItems } = await supabase
+    .from('order_items')
+    .select('*, menu_items(name)')
+    .eq('order_id', orderId);
+
+  const itemsStr = (orderItems || []).map((item: any) => {
+    return `- ${item.quantity}x ${item.menu_items?.name || 'Item'} (Subtotal: Rp ${Number(item.subtotal).toLocaleString('id-ID')})`;
+  }).join('\n');
+
+  const systemPrompt = `Kamu adalah RestoBot AI, asisten bantuan otomatis pelanggan restoran RestoBook.
+Tugasmu membantu pelanggan ini secara ramah mengenai pesanan mereka.
+
+INFORMASI PESANAN PELANGGAN:
+- Nomor Pesanan: #${orderDetails?.id?.substring(0, 8).toUpperCase()}
+- Jenis Order: ${orderDetails?.order_type === 'dine_in' ? 'Dine In (Makan di Tempat)' : orderDetails?.order_type === 'takeaway' ? 'Take Away (Bawa Pulang)' : 'Delivery (Pengantaran)'}
+- Meja Makan: ${orderDetails?.tables?.table_number || 'Tidak Ada (Bukan Dine In)'}
+- Status Pesanan Saat Ini: ${
+    orderDetails?.status === 'pending' ? 'Menunggu Konfirmasi' :
+    orderDetails?.status === 'confirmed' ? 'Dikonfirmasi (Mulai Diproses)' :
+    orderDetails?.status === 'processing' ? 'Sedang Diproses oleh Koki' :
+    orderDetails?.status === 'ready' ? 'Siap Disajikan/Diambil' :
+    orderDetails?.status === 'completed' ? 'Selesai' : 'Dibatalkan'
+  }
+- Status Pembayaran: ${orderDetails?.payment_status === 'paid' ? 'Sudah Lunas' : 'Belum Bayar'}
+- Metode Pembayaran: ${orderDetails?.payment_method === 'cash' ? 'Tunai (Bayar di Kasir/Kurir)' : 'Non-Tunai (Digital/Transfer)'}
+- Catatan Tambahan Pesanan: ${orderDetails?.notes || 'Tidak ada catatan'}
+- Total Transaksi: Rp ${Number(orderDetails?.total_amount).toLocaleString('id-ID')}
+- Daftar Menu yang Dipesan:
+${itemsStr}
+
+STATUS PERCAKAPAN SAAT INI: ${chatStatus}
+
+ATURAN MENJAWAB (WAJIB DIPATUHI):
+1. Jawab secara sopan, sangat singkat, padat, dan jelas menggunakan Bahasa Indonesia. Maksimal 100 kata.
+2. Jawab HANYA hal yang berkaitan dengan pesanan mereka, operasional restoran, menu, estimasi, pembayaran, komplain, atau bantuan teknis.
+3. DILARANG KERAS menjawab topik umum di luar operasional restoran/pesanan. Jika ditanya hal ini, jawab halus bahwa kamu hanya asisten pemesanan.
+4. DILARANG KERAS menggunakan karakter emoji atau ikon emoji apa pun.
+5. DILARANG menggunakan tanda bintang (*) atau format markdown (seperti **, _, __). Gunakan HURUF KAPITAL jika ingin menekankan kata penting.
+6. Jika pertanyaan memerlukan tindakan manual staf, tawarkan koneksi ke kasir.
+7. Jangan mengulangi salam setiap pesan, cukup jawab pertanyaannya saja.
+`;
+
+  const { data: historyMsgs } = await supabase
+    .from('order_chat_messages')
+    .select('sender_role, message')
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: true })
+    .limit(12);
+
+  const history = (historyMsgs || []).map((msg: any) => ({
+    role: msg.sender_role === 'customer' ? 'user' : 'assistant',
+    content: msg.message || ''
+  }));
+
+  try {
+    const aiRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'mistral-tiny',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...history
+        ],
+        max_tokens: 350,
+        temperature: 0.5
+      })
+    });
+
+    if (aiRes.ok) {
+      const aiData = await aiRes.json();
+      let aiReply = aiData.choices?.[0]?.message?.content || '';
+      
+      // Bersihkan format markdown dan emoji
+      aiReply = aiReply
+        .replace(/\*{1,3}/g, '')
+        .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
+        .trim();
+
+      if (aiReply) {
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chatId,
+          sender_role: 'ai',
+          message: aiReply,
+          is_read: false
+        });
+      }
+    }
+  } catch (aiErr) {
+    console.error('Mistral AI execution failed in order chat:', aiErr);
+  }
 }
 
 export async function GET(
@@ -39,7 +196,7 @@ export async function GET(
     // 1. Verifikasi pesanan ada dan milik user ini
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, customer_id')
+      .select('id, customer_id, status, order_type, total_amount')
       .eq('id', orderId)
       .single();
 
@@ -60,6 +217,7 @@ export async function GET(
 
     if (chatErr) throw chatErr;
 
+    let isNewChat = false;
     if (!chat) {
       const { data: newChat, error: createChatErr } = await supabase
         .from('order_chats')
@@ -67,6 +225,7 @@ export async function GET(
           order_id: orderId,
           customer_id: profile.id,
           status: 'active',
+          ai_chat_status: 'ai_active',
           is_replied_manually: false,
           is_blocked: false
         })
@@ -75,18 +234,31 @@ export async function GET(
 
       if (createChatErr) throw createChatErr;
       chat = newChat;
+      isNewChat = true;
     }
 
-    // 3. Ambil riwayat pesan
+    // 3. Jika chat baru atau belum ada pesan AI pembuka, kirim greeting
+    if (isNewChat && chat) {
+      await sendAIGreeting(supabase, chat.id);
+    }
+
+    // 4. Ambil riwayat pesan
     const { data: messages, error: msgErr } = await supabase
       .from('order_chat_messages')
       .select('*, sender:profiles(role, full_name)')
-      .eq('chat_id', chat.id)
+      .eq('chat_id', chat!.id)
       .order('created_at', { ascending: true });
 
     if (msgErr) throw msgErr;
 
-    return NextResponse.json({ chat, messages });
+    // Refresh chat data after potential greeting insert
+    const { data: freshChat } = await supabase
+      .from('order_chats')
+      .select('*')
+      .eq('id', chat!.id)
+      .single();
+
+    return NextResponse.json({ chat: freshChat || chat, messages });
   } catch (error: any) {
     console.error('GET order chat error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -118,7 +290,7 @@ export async function POST(
     // 1. Verifikasi pesanan ada dan milik user ini
     const { data: order } = await supabase
       .from('orders')
-      .select('id, customer_id, status')
+      .select('id, customer_id, status, order_type, total_amount')
       .eq('id', orderId)
       .single();
 
@@ -141,13 +313,100 @@ export async function POST(
       return NextResponse.json({ error: 'Akses chat Anda diblokir oleh kasir karena indikasi penyalahgunaan' }, { status: 403 });
     }
 
-    if (chat.status === 'completed' || ['completed', 'cancelled'].includes(order.status)) {
+    if (chat.status === 'completed' || chat.status === 'expired' || ['completed', 'cancelled'].includes(order.status)) {
       return NextResponse.json({ error: 'Percakapan ini telah selesai. Jika masih memerlukan bantuan, silakan buat tiket pengaduan.' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { message, attachment_url } = body;
+    const { message, attachment_url, action } = body;
 
+    // --- Penanganan aksi khusus ---
+    if (action === 'request_cashier') {
+      // Pelanggan meminta dihubungkan ke kasir - tampilkan konfirmasi
+      await supabase.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: 'Baik, saya bisa hubungkan Anda ke kasir untuk mendapatkan bantuan langsung dari staf kami. Apakah Anda ingin dihubungkan ke kasir sekarang?',
+        is_read: false
+      });
+      
+      await supabase.from('order_chats').update({
+        ai_chat_status: 'waiting_customer_choice',
+        updated_at: new Date().toISOString()
+      }).eq('id', chat.id);
+
+      return NextResponse.json({ success: true, action: 'cashier_offer_sent' });
+    }
+
+    if (action === 'confirm_transfer') {
+      // Pelanggan mengkonfirmasi ingin terhubung ke kasir
+      await supabase.from('order_chats').update({
+        ai_chat_status: 'waiting_cashier',
+        updated_at: new Date().toISOString()
+      }).eq('id', chat.id);
+
+      // Kirim pesan transisi dari AI
+      await supabase.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: 'Baik, Anda akan dihubungkan ke kasir. Pesan Anda sudah diteruskan. Mohon tunggu sebentar, kasir akan segera membalas.',
+        is_read: false
+      });
+
+      // Ambil detail pesanan untuk notifikasi kasir
+      const { data: orderDetails } = await supabase
+        .from('orders')
+        .select('*, tables(table_number)')
+        .eq('id', orderId)
+        .single();
+
+      const { data: lastMsg } = await supabase
+        .from('order_chat_messages')
+        .select('message')
+        .eq('chat_id', chat.id)
+        .eq('sender_role', 'customer')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Notifikasi realtime ke semua kasir
+      const { data: cashiers } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('role', ['cashier', 'admin']);
+
+      if (cashiers && cashiers.length > 0) {
+        const notifs = cashiers.map((c: any) => ({
+          user_id: c.id,
+          title: 'Pelanggan Meminta Kasir',
+          message: `${profile.full_name || 'Pelanggan'} meminta dihubungkan ke kasir. Pesanan #${orderId.substring(0, 8).toUpperCase()} (${orderDetails?.order_type === 'dine_in' ? 'Dine In' : orderDetails?.order_type === 'takeaway' ? 'Takeaway' : 'Delivery'}). Pesan terakhir: "${lastMsg?.message || '-'}"`,
+          type: 'cashier_chat_request',
+          reference_id: chat.id
+        }));
+        await supabase.from('notifications').insert(notifs);
+      }
+
+      return NextResponse.json({ success: true, action: 'transfer_confirmed' });
+    }
+
+    if (action === 'cancel_transfer') {
+      // Pelanggan membatalkan permintaan ke kasir
+      await supabase.from('order_chats').update({
+        ai_chat_status: 'ai_active',
+        updated_at: new Date().toISOString()
+      }).eq('id', chat.id);
+
+      await supabase.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: 'Baik, saya tetap di sini membantu Anda. Silakan sampaikan pertanyaan atau keluhan Anda kepada saya.',
+        is_read: false
+      });
+
+      return NextResponse.json({ success: true, action: 'transfer_cancelled' });
+    }
+
+    // --- Kirim pesan biasa ---
     if (!message && !attachment_url) {
       return NextResponse.json({ error: 'Pesan atau lampiran wajib diisi' }, { status: 400 });
     }
@@ -188,113 +447,57 @@ export async function POST(
 
     if (insertError) throw insertError;
 
-    // 6. Integrasi AI (Mistral AI Auto-Responder) jika belum dijawab manual oleh kasir
-    if (!chat.is_replied_manually) {
-      const apiKey = process.env.MISTRAL_API_KEY;
-      if (apiKey) {
-        // Ambil detail pesanan & item untuk disuntikkan ke konteks AI
-        const { data: orderDetails } = await supabase
-          .from('orders')
-          .select('*, tables(table_number)')
-          .eq('id', orderId)
-          .single();
+    const currentAiStatus = chat.ai_chat_status || 'ai_active';
 
-        const { data: orderItems } = await supabase
-          .from('order_items')
-          .select('*, menu_items(name)')
-          .eq('order_id', orderId);
-
-        const itemsStr = (orderItems || []).map(item => {
-          return `- ${item.quantity}x ${item.menu_items?.name || 'Item'} (Subtotal: Rp ${Number(item.subtotal).toLocaleString('id-ID')})`;
-        }).join('\n');
-
-        const systemPrompt = `Kamu adalah RestoBot AI, asisten bantuan otomatis pelanggan restoran RestoBook.
-Tugasmu membantu pelanggan ini secara ramah mengenai pesanan mereka.
-
-INFORMASI PESANAN PELANGGAN:
-- Nomor Pesanan: #${orderDetails.id.substring(0, 8).toUpperCase()}
-- Jenis Order: ${orderDetails.order_type === 'dine_in' ? 'Dine In (Makan di Tempat)' : orderDetails.order_type === 'takeaway' ? 'Take Away (Bawa Pulang)' : 'Delivery (Pengantaran)'}
-- Meja Makan: ${orderDetails.tables?.table_number || 'Tidak Ada (Bukan Dine In)'}
-- Status Pesanan Saat Ini: ${
-          orderDetails.status === 'pending' ? 'Menunggu Konfirmasi' :
-          orderDetails.status === 'confirmed' ? 'Dikonfirmasi (Mulai Diproses)' :
-          orderDetails.status === 'processing' ? 'Sedang Diproses oleh Koki' :
-          orderDetails.status === 'ready' ? 'Siap Disajikan/Diambil' :
-          orderDetails.status === 'completed' ? 'Selesai' : 'Dibatalkan'
-        }
-- Status Pembayaran: ${orderDetails.payment_status === 'paid' ? 'Sudah Lunas' : 'Belum Bayar'}
-- Metode Pembayaran: ${orderDetails.payment_method === 'cash' ? 'Tunai (Bayar di Kasir/Kurir)' : 'Non-Tunai (Digital/Transfer)'}
-- Catatan Tambahan Pesanan: ${orderDetails.notes || 'Tidak ada catatan'}
-- Total Transaksi: Rp ${Number(orderDetails.total_amount).toLocaleString('id-ID')}
-- Daftar Menu yang Dipesan:
-${itemsStr}
-
-ATURAN MENJAWAB (WAJIB DIPATUHI):
-1. Jawab secara sopan, sangat singkat, padat, dan jelas menggunakan Bahasa Indonesia. Maksimal 120 kata.
-2. Jawab HANYA hal yang berkaitan dengan pesanan mereka, operasional restoran, menu, estimasi, pembayaran, komplain, atau bantuan teknis.
-3. DILARANG KERAS menjawab topik umum di luar operasional restoran/pesanan (seperti menulis kode pemrograman, membahas berita, politik, dll). Jika ditanya hal ini, jawab halus bahwa kamu hanya asisten pemesanan.
-4. DILARANG KERAS menggunakan karakter emoji atau ikon emoji apa pun.
-5. DILARANG menggunakan tanda bintang (*) atau format markdown (seperti **, _, __). Gunakan HURUF KAPITAL jika ingin menekankan kata penting.
-6. Jika pertanyaan pelanggan memerlukan tindakan manual staf (seperti ubah pesanan, pembatalan sepihak, refund saldo, komplain rasa/rambut di makanan), beri tahu pelanggan bahwa kasir/staf kami akan segera menindaklanjuti secara manual di ruang chat ini.
-`;
-
-        // Ambil riwayat chat terakhir untuk memori percakapan
-        const { data: historyMsgs } = await supabase
-          .from('order_chat_messages')
-          .select('sender_role, message')
-          .eq('chat_id', chat.id)
-          .order('created_at', { ascending: true })
-          .limit(10);
-
-        const history = (historyMsgs || []).map(msg => ({
-          role: msg.sender_role === 'customer' ? 'user' : 'assistant',
-          content: msg.message || ''
-        }));
-
-        try {
-          const aiRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: 'mistral-tiny',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...history
-              ],
-              max_tokens: 400,
-              temperature: 0.5
-            })
-          });
-
-          if (aiRes.ok) {
-            const aiData = await aiRes.json();
-            let aiReply = aiData.choices?.[0]?.message?.content || '';
-            
-            // Bersihkan format markdown dan emoji
-            aiReply = aiReply
-              .replace(/\*{1,3}/g, '')
-              .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
-              .trim();
-
-            if (aiReply) {
-              await supabase
-                .from('order_chat_messages')
-                .insert({
-                  chat_id: chat.id,
-                  sender_role: 'ai',
-                  message: aiReply,
-                  is_read: false
-                });
-            }
-          }
-        } catch (aiErr) {
-          console.error('Mistral AI execution failed in order chat:', aiErr);
-        }
+    // 6. Logika respons berdasarkan status AI chat
+    if (currentAiStatus === 'ai_active' && !chat.is_replied_manually) {
+      // Cek apakah pelanggan ingin bicara ke kasir
+      if (message && containsCashierRequest(message)) {
+        // Tawaran ke kasir
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chat.id,
+          sender_role: 'ai',
+          message: 'Baik, saya bisa hubungkan Anda ke kasir untuk mendapatkan bantuan langsung dari staf kami. Apakah Anda ingin dihubungkan ke kasir sekarang?',
+          is_read: false
+        });
+        await supabase.from('order_chats').update({
+          ai_chat_status: 'waiting_customer_choice',
+          updated_at: new Date().toISOString()
+        }).eq('id', chat.id);
+      } else if (message && containsUrgentKeyword(message)) {
+        // Pesan mendesak - jawab AI + langsung tawarkan kasir
+        await sendAIResponse(supabase, chat.id, orderId, message, currentAiStatus);
+        // Tawaran cepat ke kasir setelah jawaban AI
+        setTimeout(async () => {
+          try {
+            await supabase.from('order_chat_messages').insert({
+              chat_id: chat.id,
+              sender_role: 'ai',
+              message: 'Jika Anda memerlukan penanganan lebih lanjut, saya dapat menghubungkan Anda langsung ke kasir kami. Apakah Anda ingin dihubungkan?',
+              is_read: false
+            });
+            await supabase.from('order_chats').update({
+              ai_chat_status: 'waiting_customer_choice',
+              updated_at: new Date().toISOString()
+            }).eq('id', chat.id);
+          } catch (e) {}
+        }, 100);
+      } else {
+        // Jawab normal oleh AI
+        await sendAIResponse(supabase, chat.id, orderId, message || '', currentAiStatus);
+      }
+    } else if (currentAiStatus === 'waiting_cashier') {
+      // Sudah dalam antrian kasir - kirim pesan pengingat jika belum ada kasir
+      if (!chat.is_replied_manually) {
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chat.id,
+          sender_role: 'ai',
+          message: 'Pesan Anda sudah diterima. Kasir akan membalas secepatnya, terima kasih atas kesabaran Anda.',
+          is_read: false
+        });
       }
     }
+    // Jika CASHIER_ACTIVE (is_replied_manually = true), AI tidak ikut campur
 
     return NextResponse.json({ success: true, message: newMsg });
   } catch (error: any) {

@@ -1,154 +1,218 @@
-Buatkan fitur ONGKIR / BIAYA PENGIRIMAN pada halaman pembayaran pelanggan, dengan perhitungan berbasis jarak real dari lokasi resto ke alamat tujuan pelanggan yang dipilih saat checkout. Fitur ini harus realtime, sinkron antara pelanggan dan admin, mudah diatur, dan terintegrasi penuh dengan sistem pembayaran, voucher, reward, dan kwitansi.
+Buatkan fitur CHAT KASIR yang interaktif, realtime, modern, dan terhubung dengan AI assistant terlebih dahulu sebelum diarahkan ke kasir manusia. Saat pelanggan menekan menu “Chat Kasir”, sistem harus langsung membuka tampilan chat, lalu AI wajib menyapa otomatis tanpa menunggu pelanggan mengetik dulu.
 
-NAMA FITUR:
-Ongkir Otomatis Berdasarkan Jarak
+TUJUAN FITUR:
 
-TUJUAN UTAMA:
+- Memberi sambutan otomatis saat chat dibuka.
+- Membantu pelanggan menjelaskan kebutuhan pesanan.
+- Menjawab pertanyaan dasar terkait pesanan.
+- Menawarkan opsi untuk langsung terhubung ke kasir manusia.
+- Jika pelanggan setuju, AI langsung meneruskan percakapan ke kasir.
+- Saat terhubung ke kasir, pelanggan diminta menunggu sampai kasir membalas.
+- Semua percakapan harus sopan, jelas, ramah, dan sesuai konteks order.
 
-1. Saat pelanggan memilih alamat pengiriman, sistem langsung menghitung ongkir otomatis berdasarkan jarak antara lokasi resto dan alamat pelanggan.
-2. Perhitungan ongkir menggunakan satuan per KM.
-3. Admin dapat mengatur tarif ongkir per 1 KM dari dashboard admin.
-4. Ongkir harus muncul jelas di halaman pembayaran, ringkasan checkout, detail pesanan, dan kwitansi.
-5. Jika pelanggan memakai voucher diskon, termasuk voucher diskon ongkir, maka ongkir juga harus ikut terpotong sesuai aturan voucher.
-6. Total akhir yang dibayar pelanggan harus dihitung ulang secara otomatis dan realtime.
-7. Data jarak dan rute pengiriman harus diambil menggunakan integrasi peta dari Google Maps dengan implementasi yang kompatibel memakai library dari:
-   <https://github.com/visgl/react-google-maps>
-8. Fitur harus sinkron penuh antara pelanggan dan admin.
+ALUR UTAMA:
 
-LOGIKA PERHITUNGAN ONGKIR:
+1. Saat pelanggan membuka menu Chat Kasir:
+   - Sistem langsung membuka room chat.
+   - AI mengirim pesan pertama secara otomatis.
+   - Status awal chat = AI_ACTIVE.
+   - AI menyapa, menjelaskan bantuan yang tersedia, lalu menampilkan quick reply.
 
-1. Sistem mengambil koordinat lokasi resto dari pengaturan admin.
-2. Sistem mengambil alamat pelanggan yang dipilih saat checkout.
-3. Sistem mengonversi alamat pelanggan menjadi koordinat geografis.
-4. Sistem menghitung jarak pengiriman dari resto ke alamat pelanggan dalam KM.
-5. Ongkir dihitung menggunakan rumus:
-   Ongkir = Jarak KM x Tarif per KM
-6. Contoh:
-   - Tarif per KM = Rp2.500
-   - Jarak = 10 KM
-   - Ongkir = Rp25.000
-7. Jika ada pembulatan, gunakan aturan yang jelas dan konsisten, misalnya pembulatan ke atas ke dua angka desimal atau ke KM utuh sesuai pengaturan admin.
-8. Jika pelanggan memakai voucher diskon ongkir, maka ongkir dikurangi terlebih dahulu sebelum total akhir dihitung.
-9. Jika voucher bersifat umum, diskon harus tetap berpengaruh ke total pembayaran akhir termasuk ongkir sesuai aturan promo yang dibuat.
+2. Saat pelanggan mengirim pesan:
+   - AI membalas sesuai konteks.
+   - AI harus bisa memahami maksud pesan, seperti:
+     - status pesanan
+     - estimasi selesai
+     - ubah pesanan
+     - komplain
+     - pembatalan
+     - refund
+     - pesanan salah
+     - ingin bicara ke kasir
+     - pertanyaan umum
 
-FITUR PELANGGAN:
+3. Jika pelanggan ingin langsung menghubungi kasir:
+   - AI tidak langsung memindahkan chat.
+   - AI harus meminta konfirmasi dulu.
+   - Jika pelanggan setuju, barulah chat dialihkan ke kasir.
 
-1. Saat memilih alamat pengiriman, tampil estimasi ongkir otomatis.
-2. Tampilkan rincian:
-   - jarak pengiriman
-   - tarif per KM
-   - subtotal makanan
-   - ongkir
-   - diskon
-   - total akhir
-3. Jika pelanggan mengganti alamat, ongkir harus dihitung ulang secara realtime.
-4. Jika pelanggan memakai voucher diskon ongkir, tampil potongan ongkir secara jelas.
-5. Jika pelanggan memakai voucher lain, sistem harus menghitung ulang total pembayaran secara benar.
-6. Total akhir yang harus dibayar pelanggan hanya hasil perhitungan final setelah semua diskon diterapkan.
-7. Ongkir dan diskon ongkir wajib muncul di kwitansi.
-8. Tampilkan notifikasi jika jarak terlalu jauh atau melebihi batas layanan pengiriman.
-9. Jika alamat tidak valid atau tidak dapat dipetakan, tampilkan pesan kesalahan yang jelas dan minta pelanggan memperbaiki alamat.
+4. Saat chat sudah diteruskan ke kasir:
+   - AI berhenti menjadi penjawab utama.
+   - Semua pesan pelanggan diteruskan realtime ke dashboard kasir.
+   - Pelanggan diberi status menunggu yang sopan.
+   - Kasir menerima notifikasi realtime.
 
-FITUR ADMIN:
+LOGIKA STATUS CHAT:
+Gunakan state/status berikut:
 
-1. Tambahkan pengaturan untuk menentukan besaran ongkir per KM.
-2. Tambahkan pengaturan minimum dan maksimum jarak pengiriman jika diperlukan.
-3. Tambahkan pengaturan area layanan pengiriman.
-4. Tambahkan pengaturan biaya tambahan opsional, misalnya:
-   - biaya zona tertentu
-   - biaya minimum order
-   - biaya akhir pembulatan
-5. Admin dapat mengaktifkan atau menonaktifkan voucher diskon ongkir.
-6. Admin dapat membuat voucher ongkir yang bisa diredeem pelanggan.
-7. Admin dapat mengatur:
-   - nominal voucher
-   - persentase voucher
-   - minimal transaksi
-   - batas penggunaan
-   - masa berlaku
-   - hanya untuk area tertentu
-8. Admin dapat melihat log perhitungan ongkir per pesanan.
-9. Admin dapat mengubah tarif per KM kapan saja, dan sistem harus langsung memakai tarif terbaru.
+- AI_ACTIVE = AI sedang membalas otomatis
+- WAITING_CUSTOMER_CHOICE = AI menawarkan sambungan ke kasir
+- TRANSFER_REQUESTED = pelanggan setuju untuk dihubungkan
+- WAITING_CASHIER = chat sudah diteruskan ke kasir, menunggu balasan
+- CASHIER_ACTIVE = kasir sudah mengambil percakapan
+- CLOSED = chat selesai
 
-LOGIKA VOUCHER:
+LOGIKA PEMBUKAAN CHAT:
+Saat chat dibuka, AI wajib mengirim pesan pembuka otomatis seperti:
 
-1. Jika pelanggan memakai voucher diskon ongkir, potongan langsung diterapkan pada ongkir.
-2. Jika voucher berupa diskon umum, sistem menghitung diskon sesuai aturan lalu total akhir diperbarui.
-3. Jika voucher berlaku untuk ongkir dan subtotal sekaligus, sistem harus membaginya sesuai logika promo yang ditentukan.
-4. Jika ada lebih dari satu promo, sistem harus menentukan prioritas penggunaan voucher dengan aturan yang jelas.
-5. Jika voucher tidak valid, expired, atau melebihi kuota, tampilkan pesan yang jelas.
-6. Semua potongan harus tercermin di kwitansi.
-7. Total pembayaran akhir harus selalu akurat dan tidak boleh dihitung manual oleh pelanggan.
+- “Halo! Saya RestoBot, asisten bantuan pesanan Anda. Ada yang bisa saya bantu?”
+- “Selamat datang di layanan chat kasir. Saya siap membantu pesanan Anda.”
+- “Silakan jelaskan kebutuhan Anda, saya akan bantu secepat mungkin.”
+- “Jika Anda ingin berbicara langsung dengan kasir, saya juga bisa menghubungkan Anda.”
 
-KWITANSI / STRUK:
+AI juga harus menampilkan quick reply seperti:
 
-1. Tampilkan rincian ongkir secara jelas di kwitansi.
-2. Tampilkan:
-   - subtotal
-   - ongkir
-   - diskon ongkir
-   - voucher lain
-   - total akhir
-3. Jika pelanggan memakai voucher, tampilkan nominal potongannya.
-4. Kwitansi harus tersinkron dengan data transaksi yang tersimpan di sistem.
-5. Kwitansi harus bisa diunduh atau dicetak.
+- Status pesanan
+- Estimasi selesai
+- Ubah pesanan
+- Batalkan pesanan
+- Hubungi kasir
+- Komplain
+- Lainnya
 
-REALTIME DAN SINKRONISASI:
+KATA-KATA SAAT MENAWARKAN HUBUNGAN KE KASIR:
 
-1. Perubahan alamat harus langsung mengubah ongkir tanpa reload.
-2. Perubahan tarif per KM oleh admin harus langsung berlaku pada transaksi baru.
-3. Jika admin mengubah aturan voucher atau area layanan, pelanggan harus melihat update sesuai status terbaru.
-4. Semua data ongkir, jarak, voucher, dan total akhir harus sinkron antara pelanggan, admin, dan kasir.
-5. Status pembayaran harus realtime.
-6. Jika pesanan batal, hangus, atau dikoreksi, rincian ongkir harus ikut diperbarui.
+- “Baik, saya bisa hubungkan Anda ke kasir. Apakah Anda ingin melanjutkan?”
+- “Saya akan meneruskan chat ini ke kasir agar dibantu langsung. Lanjutkan?”
+- “Jika Anda ingin bantuan lebih lanjut, saya bisa menghubungkan Anda ke kasir.”
+- “Silakan pilih ‘Hubungkan ke kasir’ bila ingin dibantu langsung oleh petugas.”
 
-INTEGRASI PETA:
+TOMBOL KONFIRMASI:
 
-1. Gunakan integrasi peta berbasis Google Maps melalui library:
-   <https://github.com/visgl/react-google-maps>
-2. Tampilkan peta saat pelanggan memilih alamat.
-3. Gunakan data lokasi untuk menghitung jarak pengiriman.
-4. Tampilkan marker resto dan marker alamat pelanggan.
-5. Tampilkan estimasi rute dan jarak pengiriman.
-6. Jika memungkinkan, gunakan rute jalan sebenarnya, bukan hanya jarak lurus.
-7. Jika layanan peta gagal, sediakan fallback yang aman dan tampilkan pesan peringatan.
+- Ya, hubungkan
+- Batal
 
-FITUR TAMBAHAN YANG HARUS ADA:
+JIKA PELANGGAN MEMILIH “YA, HUBUNGKAN”:
 
-1. Validasi alamat lengkap agar ongkir tidak salah hitung.
-2. Auto-complete alamat pelanggan.
-3. Deteksi area layanan pengiriman.
-4. Peringatan jika alamat di luar jangkauan.
-5. Riwayat perubahan ongkir untuk audit.
-6. Pengaturan voucher ongkir di menu reward admin.
-7. Pengaturan harga per KM bisa diubah kapan saja.
-8. Preview perhitungan ongkir sebelum pelanggan konfirmasi pembayaran.
-9. Simpan log:
-   - alamat tujuan
-   - jarak
-   - tarif per KM
-   - diskon
-   - total akhir
-10. Buat tampilan modern, responsif, mudah dipahami di mobile dan desktop.
+- Status chat berubah menjadi TRANSFER_REQUESTED.
+- Sistem mengirim notifikasi ke kasir.
+- AI mengirim pesan transisi:
+  - “Baik, Anda akan dihubungkan ke kasir. Mohon tunggu sebentar.”
+  - “Pesan Anda sudah diteruskan. Silakan menunggu balasan kasir.”
+- Setelah itu AI berhenti menjadi responder utama.
 
-LOGIKA SISTEM SECARA RINGKAS:
+SAAT MENUNGGU BALASAN KASIR:
 
-1. Pelanggan pilih alamat pengiriman.
-2. Sistem membaca lokasi resto dan alamat pelanggan.
-3. Sistem menghitung jarak pengiriman.
-4. Sistem mengalikan jarak dengan tarif per KM yang diatur admin.
-5. Jika ada voucher diskon ongkir, ongkir dipotong otomatis.
-6. Jika ada voucher lain, sistem menghitung ulang total akhir.
-7. Ringkasan pembayaran dan kwitansi diperbarui realtime.
-8. Admin dan pelanggan melihat data yang sama secara sinkron.
+- Status chat = WAITING_CASHIER.
+- Tampilkan pesan:
+  - “Mohon tunggu sebentar, kasir sedang memproses pesan Anda.”
+  - “Pesan Anda sudah diterima, silakan menunggu balasan kasir.”
+  - “Kami sedang menghubungkan Anda ke kasir, harap bersabar.”
+  - “Kasir akan membalas secepatnya, terima kasih atas pengertiannya.”
+- Tampilkan indikator loading atau status menunggu.
+- Jika kasir belum membalas dalam beberapa waktu, tampilkan reminder sopan:
+  - “Terima kasih sudah menunggu, pesan Anda masih dalam antrean kasir.”
+  - “Kasir masih belum membalas, mohon tunggu sebentar.”
 
-ATURAN PENTING:
+SAAT KASIR MULAI MEMBALAS:
 
-1. Fitur harus aman dan akurat.
-2. Perhitungan tidak boleh dilakukan sembarangan di sisi tampilan saja; harus ada logika backend yang valid.
-3. Data ongkir harus tersimpan di database bersama pesanan.
-4. Semua perubahan harus konsisten antara pelanggan, admin, dan kasir.
-5. Pastikan hasil akhirnya siap dipakai untuk transaksi nyata.
+- Status berubah menjadi CASHIER_ACTIVE.
+- Label pengirim berubah menjadi “Kasir”.
+- Semua pesan berikutnya dikirim sebagai pesan kasir, bukan AI.
+- AI berhenti mengirim respons otomatis.
 
-HASIL AKHIR YANG DIINGINKAN:
-Buatkan fitur ongkir otomatis berbasis jarak yang realtime, sinkron, mudah diatur admin, mendukung voucher diskon ongkir dan voucher lain, menampilkan ongkir di kwitansi, serta terintegrasi dengan peta Google Maps dan sistem pembayaran secara penuh.
+SAAT CHAT SELESAI:
+
+- Status berubah menjadi CLOSED.
+- Pelanggan tidak bisa mengirim pesan baru di sesi yang sama.
+- Tampilkan pesan:
+  - “Chat telah selesai.”
+  - “Terima kasih telah menghubungi kasir.”
+
+FITUR TAMBAHAN YANG WAJIB ADA:
+
+1. Status percakapan:
+   - AI aktif
+   - Menunggu konfirmasi
+   - Terhubung ke kasir
+   - Menunggu balasan kasir
+   - Selesai
+
+2. Quick reply / pesan cepat:
+   - Status pesanan
+   - Estimasi selesai
+   - Hubungi kasir
+   - Ubah pesanan
+   - Batalkan pesanan
+   - Komplain
+   - Selesai
+
+3. Notifikasi realtime ke kasir:
+   - Saat pelanggan meminta sambungan, kasir menerima notifikasi realtime.
+   - Notifikasi harus berisi:
+     - nama pelanggan
+     - nomor pesanan
+     - jenis order
+     - isi pesan terakhir
+     - waktu pesan
+     - tingkat urgensi jika ada
+
+4. Riwayat chat:
+   - Simpan percakapan AI, pelanggan, dan kasir.
+   - Tandai pengirim dengan jelas.
+   - Simpan timestamp pada setiap pesan.
+
+5. Penanganan pesan penting:
+   - Jika pesan mengandung kata seperti:
+     - komplain
+     - marah
+     - pesanan salah
+     - belum diterima
+     - refund
+     - batal
+     maka AI harus lebih cepat menawarkan koneksi ke kasir.
+
+6. Pesan sopan dan profesional:
+   - Gunakan bahasa yang ramah, singkat, jelas, dan mudah dipahami pelanggan Indonesia.
+   - Hindari bahasa yang kaku.
+   - Hindari balasan yang terlalu panjang.
+
+7. Anti-spam dan pengendalian chat:
+   - Jika pelanggan mengirim pesan berulang sama, AI harus menenangkan dengan sopan.
+   - Jika kasir belum membalas, sistem hanya mengirim pengingat berkala, bukan spam.
+
+LOGIKA SISTEM LENGKAP:
+
+- Jika chat dibuka -> AI menyapa otomatis.
+- Jika pelanggan bertanya status -> AI menjawab berdasarkan data order.
+- Jika pelanggan ingin bicara ke manusia -> AI meminta konfirmasi.
+- Jika dikonfirmasi -> chat dialihkan ke kasir.
+- Jika kasir sudah mengambil chat -> AI berhenti membalas.
+- Jika kasir selesai -> status chat menjadi selesai.
+- Jika koneksi realtime terputus -> pesan disimpan sementara lalu disinkronkan kembali.
+- Jika order sudah selesai -> AI tidak boleh menawarkan transfer lagi kecuali admin mengaktifkan ulang chat.
+
+LOGIKA BACKEND:
+
+- Simpan status chat.
+- Simpan riwayat pesan.
+- Kirim update realtime via websocket/socket.
+- Tangani transfer dari AI ke kasir.
+- Tangani notifikasi masuk ke kasir.
+- Simpan waktu balasan dan status pesan.
+- Pisahkan pesan AI, pelanggan, dan kasir.
+- Validasi agar pesan tidak double terkirim.
+- Pastikan chat tetap aman dan stabil.
+
+LOGIKA FRONTEND:
+
+- Saat halaman chat dibuka, AI langsung menyapa otomatis.
+- Tampilkan bubble pesan yang berbeda untuk AI, pelanggan, dan kasir.
+- Tampilkan status chat dan indikator menunggu.
+- Tampilkan quick reply.
+- Tampilkan tombol hubungi kasir.
+- Tampilkan pesan transisi saat dialihkan ke kasir.
+- UI tetap rapi di desktop dan mobile.
+- Desain modern, bersih, dan nyaman dibaca.
+
+OUTPUT YANG DIHARAPKAN:
+Implementasikan seluruh alur ini agar:
+
+- AI menyapa otomatis saat chat dibuka
+- AI bisa menjawab pertanyaan dasar
+- pelanggan bisa memilih untuk terhubung ke kasir
+- saat dikonfirmasi, chat langsung dialihkan ke kasir
+- pelanggan diminta menunggu sampai kasir membalas
+- ada status realtime yang jelas
+- ada pesan sopan saat menunggu
+- sistem stabil, rapi, dan profesional

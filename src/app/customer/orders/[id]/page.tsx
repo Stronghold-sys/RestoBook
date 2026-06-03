@@ -88,6 +88,8 @@ export default function OrderTrackingPage() {
   const [chatCountdownText, setChatCountdownText] = useState("");
   const [chatAttachmentUrl, setChatAttachmentUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [chatActionLoading, setChatActionLoading] = useState(false);
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<any>(null);
 
@@ -134,6 +136,10 @@ export default function OrderTrackingPage() {
         });
         setSenderRoles(prev => ({ ...prev, ...roles }));
       }
+      // Auto-scroll ke bawah setelah pesan dimuat
+      setTimeout(() => {
+        chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (e: any) {
       console.error(e.message);
     } finally {
@@ -228,6 +234,10 @@ export default function OrderTrackingPage() {
               return currentRoles;
             });
           }
+          // Auto-scroll ke bawah saat ada pesan baru
+          setTimeout(() => {
+            chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 80);
           return [...prev, newMsg];
         });
       })
@@ -451,6 +461,30 @@ export default function OrderTrackingPage() {
       setChatSending(false);
     }
   };
+
+  const handleChatAction = async (action: 'request_cashier' | 'confirm_transfer' | 'cancel_transfer') => {
+    if (chatActionLoading) return;
+    setChatActionLoading(true);
+    try {
+      const res = await fetch(`/api/customer/orders/${id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Gagal melakukan aksi");
+      } else {
+        fetchChatMessages();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Terjadi kesalahan");
+    } finally {
+      setChatActionLoading(false);
+    }
+  };
+
+
 
   const fetchProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1814,21 +1848,46 @@ export default function OrderTrackingPage() {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="relative w-full max-w-md h-full bg-card-light dark:bg-card-dark shadow-2xl border-l border-border-light dark:border-border-dark flex flex-col z-10"
             >
-              {/* Header */}
-              <div className="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+              {/* Header - dinamis berdasarkan status AI */}
+              <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm">
-                    K
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm text-text-light dark:text-text-dark uppercase tracking-tight">Layanan Chat Kasir</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`w-2 h-2 rounded-full ${cashiersOnlineCount > 0 ? "bg-green-500" : "bg-gray-400"}`} />
-                      <span className="text-[10px] font-bold text-muted uppercase">
-                        {cashiersOnlineCount > 0 ? "Kasir Aktif" : "Offline"}
-                      </span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const aiStatus = chatRoom?.ai_chat_status || 'ai_active';
+                    const isCashierMode = chatRoom?.is_replied_manually || aiStatus === 'cashier_active';
+                    const isWaitingCashier = aiStatus === 'waiting_cashier';
+                    return (
+                      <>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 ${isCashierMode ? 'bg-blue-600' : isWaitingCashier ? 'bg-amber-500' : 'bg-primary'}`}>
+                          {isCashierMode ? 'K' : isWaitingCashier ? '⏳' : 'AI'}
+                        </div>
+                        <div>
+                          <h3 className="font-black text-sm text-text-light dark:text-text-dark uppercase tracking-tight">
+                            {isCashierMode ? 'Chat Kasir Langsung' : isWaitingCashier ? 'Menunggu Kasir' : 'RestoBot AI'}
+                          </h3>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {isCashierMode ? (
+                              <>
+                                <span className={`w-2 h-2 rounded-full ${cashiersOnlineCount > 0 ? "bg-green-500" : "bg-gray-400"}`} />
+                                <span className="text-[10px] font-bold text-muted uppercase">
+                                  {cashiersOnlineCount > 0 ? "Kasir Aktif" : "Offline"}
+                                </span>
+                              </>
+                            ) : isWaitingCashier ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                <span className="text-[10px] font-bold text-amber-500 uppercase">Menunggu Respons Kasir</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">AI Aktif • Siap Membantu</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={() => setShowChatDrawer(false)}
@@ -1841,10 +1900,13 @@ export default function OrderTrackingPage() {
               </div>
 
               {/* Message List */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {chatLoading ? (
-                  <div className="h-full flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <div className="h-full flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    </div>
+                    <p className="text-xs font-bold text-muted uppercase tracking-wider">Memuat Percakapan...</p>
                   </div>
                 ) : chatRoom?.status === 'expired' ? (
                   <div className="text-center py-12 text-muted text-xs h-full flex flex-col items-center justify-center">
@@ -1853,91 +1915,152 @@ export default function OrderTrackingPage() {
                     <p className="text-xs text-muted max-w-[300px] mx-auto mt-1">Sesuai dengan kebijakan privasi dan keamanan sistem RestoBook.</p>
                   </div>
                 ) : chatMessages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-muted space-y-2 p-6">
-                    <MessageSquare className="w-12 h-12 text-muted/50" />
-                    <p className="font-bold text-xs uppercase tracking-wider">Mulai Percakapan</p>
-                    <p className="text-[11px] font-medium leading-relaxed max-w-xs">
-                      Tanyakan tentang status pesanan, pembayaran, atau komplain Anda langsung ke Kasir/RestoBot di sini.
-                    </p>
+                  <div className="h-full flex flex-col items-center justify-center text-center text-muted space-y-3 p-6">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <MessageSquare className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-black text-sm text-text-light dark:text-text-dark">Mulai Percakapan</p>
+                      <p className="text-[11px] font-medium leading-relaxed max-w-xs mt-1">
+                        RestoBot AI siap membantu Anda seputar pesanan, pembayaran, dan pertanyaan lainnya.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <>
                     {chatMessages.map((msg: any) => {
                       const isMe = msg.sender_role === 'customer';
                       const isAi = msg.sender_role === 'ai';
+                      const isSystem = msg.sender_role === 'system';
                       return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-                            isMe ? 'bg-primary text-white rounded-tr-none' : 
-                            isAi ? 'bg-amber-50 dark:bg-amber-950/20 text-text-light dark:text-text-dark border border-amber-200/40 rounded-tl-none' : 
-                            'bg-gray-150 dark:bg-gray-800 text-text-light dark:text-text-dark rounded-tl-none'
-                          }`}>
-                            <div className="flex items-center gap-1.5 mb-1 opacity-70 text-[9px] font-bold uppercase tracking-wider">
-                              {isMe ? 'Anda' : isAi ? 'RestoBot AI' : (senderRoles[msg.sender_id] === 'admin' ? 'Admin' : 'Kasir')}
-                              <span>•</span>
-                              <span>{format(new Date(msg.created_at), "HH:mm")}</span>
+                          {/* Avatar for non-customer messages */}
+                          {!isMe && (
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs mr-2 shrink-0 mt-1 ${isAi ? 'bg-primary' : isSystem ? 'bg-gray-400' : 'bg-blue-600'}`}>
+                              {isAi ? 'AI' : isSystem ? '!' : 'K'}
                             </div>
-                            
-                            {msg.attachment_url && (
-                              <div className="mb-2">
-                                {(() => {
-                                  const url = msg.attachment_url;
-                                  const ext = url.split('.').pop()?.toLowerCase();
-                                  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
-                                  if (isImg) {
-                                    return (
-                                      <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px]">
-                                        <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-800 border-border-light dark:border-border-dark text-primary'}`}>
-                                        <FileText className="w-4 h-4 shrink-0" />
-                                        <span className="truncate max-w-[150px]">Lihat Dokumen</span>
-                                      </a>
-                                    );
-                                  }
-                                })()}
+                          )}
+                          <div className={`max-w-[80%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                            <div className={`rounded-2xl px-4 py-3 shadow-sm ${
+                              isMe ? 'bg-primary text-white rounded-tr-none' : 
+                              isAi ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 text-text-light dark:text-text-dark border border-amber-200/60 dark:border-amber-700/30 rounded-tl-none' : 
+                              isSystem ? 'bg-gray-100 dark:bg-gray-800/60 text-muted border border-gray-200/80 dark:border-gray-700 rounded-tl-none italic' :
+                              'bg-blue-50 dark:bg-blue-950/20 text-text-light dark:text-text-dark border border-blue-200/40 dark:border-blue-700/30 rounded-tl-none'
+                            }`}>
+                              {/* Sender label */}
+                              <div className={`flex items-center gap-1 mb-1 text-[9px] font-black uppercase tracking-wider ${isMe ? 'text-white/70 justify-end' : isAi ? 'text-amber-600 dark:text-amber-400' : isSystem ? 'text-gray-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                {isMe ? 'Anda' : isAi ? '🤖 RestoBot AI' : isSystem ? 'Sistem' : (senderRoles[msg.sender_id] === 'admin' ? '👤 Admin' : '👤 Kasir')}
+                                <span className="opacity-60 ml-1">• {format(new Date(msg.created_at), "HH:mm")}</span>
                               </div>
-                            )}
-                            
-                            {msg.message && (
-                              <p className="text-xs leading-relaxed font-medium whitespace-pre-wrap">{msg.message}</p>
-                            )}
+                              
+                              {msg.attachment_url && (
+                                <div className="mb-2">
+                                  {(() => {
+                                    const url = msg.attachment_url;
+                                    const ext = url.split('.').pop()?.toLowerCase();
+                                    const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                    if (isImg) {
+                                      return (
+                                        <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px]">
+                                          <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-800 border-border-light dark:border-border-dark text-primary'}`}>
+                                          <FileText className="w-4 h-4 shrink-0" />
+                                          <span className="truncate max-w-[150px]">Lihat Dokumen</span>
+                                        </a>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
+                              
+                              {msg.message && (
+                                <p className="text-xs leading-relaxed font-medium whitespace-pre-wrap">{msg.message}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
                     })}
+
+                    {/* Typing indicator (hanya kasir) */}
                     {chatTyping && (
                       <div className="flex justify-start">
-                        <div className="bg-gray-150 dark:bg-gray-800 text-muted rounded-2xl rounded-tl-none px-4 py-2.5 flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold uppercase">Kasir sedang mengetik</span>
-                          <span className="flex gap-0.5">
-                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-xs mr-2 shrink-0 mt-1">K</div>
+                        <div className="bg-blue-50 dark:bg-blue-950/20 text-muted rounded-2xl rounded-tl-none px-4 py-2.5 flex items-center gap-1.5 border border-blue-200/40">
+                          <span className="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Kasir sedang mengetik</span>
+                          <span className="flex gap-0.5 ml-1">
+                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                           </span>
                         </div>
                       </div>
                     )}
+
+                    {/* Tombol konfirmasi transfer ke kasir - muncul saat waiting_customer_choice */}
+                    {chatRoom?.ai_chat_status === 'waiting_customer_choice' && !chatRoom?.is_replied_manually && (
+                      <div className="flex justify-start">
+                        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs mr-2 shrink-0 mt-1">AI</div>
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl rounded-tl-none p-3 max-w-[75%]">
+                          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase mb-2">Pilih Tindakan</p>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => handleChatAction('confirm_transfer')}
+                              disabled={chatActionLoading}
+                              className="px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-md shadow-primary/20"
+                            >
+                              {chatActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                              Ya, Hubungkan ke Kasir
+                            </button>
+                            <button
+                              onClick={() => handleChatAction('cancel_transfer')}
+                              disabled={chatActionLoading}
+                              className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-muted text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
+                            >
+                              Tidak, Lanjut Chat AI
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tombol "Hubungi Kasir" - muncul saat ai_active dan belum dijawab manual */}
+                    {(chatRoom?.ai_chat_status === 'ai_active' || !chatRoom?.ai_chat_status) && !chatRoom?.is_replied_manually && chatMessages.length > 0 && (
+                      <div className="flex justify-center my-2">
+                        <button
+                          onClick={() => handleChatAction('request_cashier')}
+                          disabled={chatActionLoading}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-700/30 rounded-full text-[10px] font-black uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-all disabled:opacity-50"
+                        >
+                          {chatActionLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
+                          Hubungi Kasir Langsung
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Auto-scroll anchor */}
+                    <div ref={chatMessagesEndRef} />
                   </>
                 )}
               </div>
 
               {/* File Upload Preview */}
               {uploadingFile && (
-                <div className="px-6 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center justify-between text-xs font-bold text-muted">
+                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center justify-between text-xs font-bold text-muted">
                   <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" /> Mengunggah gambar...
                   </span>
                 </div>
               )}
               {chatAttachmentUrl && (
-                <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center gap-4">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border-light dark:border-border-dark shrink-0">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center gap-3">
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-border-light dark:border-border-dark shrink-0">
                     <img src={chatAttachmentUrl} alt="Upload Preview" className="w-full h-full object-cover" />
-                    <button onClick={() => setChatAttachmentUrl("")} className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black/85 rounded-full text-white" title="Hapus gambar">
+                    <button onClick={() => setChatAttachmentUrl("")} className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 hover:bg-black/85 rounded-full text-white" title="Hapus gambar">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -1949,13 +2072,13 @@ export default function OrderTrackingPage() {
 
               {/* Footer Input */}
               {chatRoom?.is_blocked ? (
-                <div className="p-6 border-t border-border-light dark:border-border-dark bg-red-50 dark:bg-red-950/20 text-center">
+                <div className="p-5 border-t border-border-light dark:border-border-dark bg-red-50 dark:bg-red-950/20 text-center">
                   <p className="text-xs font-bold text-red-600 dark:text-red-400">
                     Obrolan dinonaktifkan oleh Kasir karena indikasi penyalahgunaan.
                   </p>
                 </div>
               ) : chatRoom?.status === 'completed' || ['completed', 'cancelled'].includes(order?.status) ? (
-                <div className="p-6 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
+                <div className="p-5 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
                   <p className="text-xs font-bold text-muted">
                     Percakapan telah selesai.
                   </p>
@@ -1969,81 +2092,93 @@ export default function OrderTrackingPage() {
                   </p>
                 </div>
               ) : chatRoom?.status === 'expired' ? (
-                <div className="p-6 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
+                <div className="p-5 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
                   <p className="text-xs font-bold text-red-500">
                     Riwayat obrolan telah dihapus permanen.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={sendChatMessage} className="p-4 border-t border-border-light dark:border-border-dark flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <label htmlFor="order-chat-file-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Pilih File dari Perangkat">
-                      <Paperclip className="w-4 h-4" />
+                <div className="border-t border-border-light dark:border-border-dark">
+                  {/* Status bar */}
+                  {chatRoom?.ai_chat_status === 'waiting_cashier' && !chatRoom?.is_replied_manually && (
+                    <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/40 dark:border-amber-700/20 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin text-amber-500 shrink-0" />
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Menunggu kasir bergabung... Anda masih bisa mengirim pesan.</p>
+                    </div>
+                  )}
+                  <form onSubmit={sendChatMessage} className="p-3 flex items-center gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <label htmlFor="order-chat-file-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Pilih File dari Perangkat">
+                        <Paperclip className="w-4 h-4" />
+                        <input
+                          type="file"
+                          id="order-chat-file-input"
+                          className="hidden"
+                          disabled={uploadingFile}
+                          onChange={(e) => handleChatFileUpload(e, false)}
+                          title="Pilih File dari Perangkat"
+                          aria-label="Pilih File dari Perangkat"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        disabled={uploadingFile}
+                        onClick={() => {
+                          if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
+                            setIsCameraModalOpen(true);
+                          } else {
+                            document.getElementById('order-chat-camera-input')?.click();
+                          }
+                        }}
+                        className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`}
+                        title="Ambil Foto dari Kamera"
+                        aria-label="Ambil Foto dari Kamera"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
                       <input
                         type="file"
-                        id="order-chat-file-input"
+                        id="order-chat-camera-input"
+                        accept="image/*"
+                        capture="environment"
                         className="hidden"
                         disabled={uploadingFile}
-                        onChange={(e) => handleChatFileUpload(e, false)}
-                        title="Pilih File dari Perangkat"
-                        aria-label="Pilih File dari Perangkat"
+                        onChange={(e) => handleChatFileUpload(e, true)}
+                        title="Ambil Foto dari Kamera"
+                        aria-label="Ambil Foto dari Kamera"
                       />
-                    </label>
-
-                    <button
-                      type="button"
-                      disabled={uploadingFile}
-                      onClick={() => {
-                        if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
-                          setIsCameraModalOpen(true);
-                        } else {
-                          document.getElementById('order-chat-camera-input')?.click();
-                        }
-                      }}
-                      className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`}
-                      title="Ambil Foto dari Kamera"
-                      aria-label="Ambil Foto dari Kamera"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
+                    </div>
                     <input
-                      type="file"
-                      id="order-chat-camera-input"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      disabled={uploadingFile}
-                      onChange={(e) => handleChatFileUpload(e, true)}
-                      title="Ambil Foto dari Kamera"
-                      aria-label="Ambil Foto dari Kamera"
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => {
+                        setChatInput(e.target.value);
+                        handleTypingEvent();
+                      }}
+                      placeholder={chatSending ? "Mengirim..." : chatRoom?.is_replied_manually ? "Tulis pesan ke Kasir..." : "Tanya RestoBot AI atau Kasir..."}
+                      disabled={chatSending}
+                      className="flex-1 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-medium"
                     />
-                  </div>
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => {
-                      setChatInput(e.target.value);
-                      handleTypingEvent();
-                    }}
-                    placeholder={chatSending ? "Mengirim..." : "Tulis pesan ke Kasir..."}
-                    disabled={chatSending}
-                    className="flex-1 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark font-medium"
-                  />
-                  <button
-                    type="submit"
-                    disabled={chatSending || (!chatInput.trim() && !chatAttachmentUrl)}
-                    title="Kirim Pesan"
-                    aria-label="Kirim"
-                    className="bg-primary hover:bg-primary-hover disabled:opacity-50 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      disabled={chatSending || (!chatInput.trim() && !chatAttachmentUrl)}
+                      title="Kirim Pesan"
+                      aria-label="Kirim"
+                      className="bg-primary hover:bg-primary-hover disabled:opacity-50 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-primary/20"
+                    >
+                      {chatSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </form>
+                </div>
               )}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+
+
 
       <CameraCaptureModal
         isOpen={isCameraModalOpen}

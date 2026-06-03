@@ -34,6 +34,10 @@ export async function GET(req: NextRequest) {
           payment_status, 
           notes,
           created_at,
+          distance_km,
+          shipping_fee,
+          shipping_discount,
+          discount,
           tables(table_number)
         ),
         customer:profiles!order_chats_customer_id_fkey(
@@ -224,6 +228,7 @@ export async function POST(req: NextRequest) {
         is_replied_manually: true,
         cashier_id: profile.id,
         status: 'active',
+        ai_chat_status: 'cashier_active',
         updated_at: new Date().toISOString()
       })
       .eq('id', chatId);

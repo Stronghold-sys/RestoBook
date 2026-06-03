@@ -4,25 +4,45 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   try {
-    const { email, otp, newPassword, userId } = await req.json();
+    const { email, otp, newPassword, userId, isAdminBypass } = await req.json();
 
-    if (!email || !otp || !newPassword || !userId) {
+    if (!email || !newPassword || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 0. Verify OTP from Database
-    const { data: otpData, error: otpError } = await supabaseAdmin
-      .from('otp_codes')
-      .select('*')
-      .eq('email', email)
-      .eq('code', otp)
-      .eq('type', 'forgot_password') // Gunakan tipe yang valid di DB
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString())
-      .single();
+    if (isAdminBypass) {
+      // Security Check: Verify that the user actually has the admin role in database
+      const { data: prof, error: profErr } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+        
+      if (profErr || prof?.role !== 'admin') {
+        return NextResponse.json({ error: 'Akses ditolak. Hanya admin yang dapat melewati verifikasi OTP.' }, { status: 403 });
+      }
+    } else {
+      if (!otp) {
+        return NextResponse.json({ error: 'Kode OTP wajib diisi' }, { status: 400 });
+      }
 
-    if (otpError || !otpData) {
-      return NextResponse.json({ error: 'Kode OTP tidak valid atau sudah kadaluwarsa' }, { status: 400 });
+      // 0. Verify OTP from Database (accept both change_password and forgot_password)
+      const { data: otpData, error: otpError } = await supabaseAdmin
+        .from('otp_codes')
+        .select('*')
+        .eq('email', email)
+        .eq('code', otp)
+        .in('type', ['change_password', 'forgot_password'])
+        .eq('is_used', false)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (otpError || !otpData) {
+        return NextResponse.json({ error: 'Kode OTP tidak valid atau sudah kadaluwarsa' }, { status: 400 });
+      }
+
+      // Mark OTP as used
+      await supabaseAdmin.from('otp_codes').update({ is_used: true }).eq('id', otpData.id);
     }
 
     // 1. Update Password in Supabase Auth
@@ -31,9 +51,6 @@ export async function POST(req: Request) {
     });
 
     if (authError) throw authError;
-
-    // 2. Mark OTP as used
-    await supabaseAdmin.from('otp_codes').update({ is_used: true }).eq('id', otpData.id);
 
     // 3. Kirim Notifikasi Sukses
     try {

@@ -353,6 +353,7 @@ export default function ProfileContent() {
       }
 
       toast.success("Profil diperbarui!");
+      fetchProfile();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -415,6 +416,13 @@ export default function ProfileContent() {
       });
       if (signInError) throw new Error("Password lama tidak sesuai. Silakan coba kembali.");
 
+      // Bypass OTP send if user is admin
+      if (profile.role === "admin") {
+        toast.success("Password lama terverifikasi! Masukkan password baru Anda.");
+        setStep("verify");
+        return;
+      }
+
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -442,7 +450,7 @@ export default function ProfileContent() {
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) return toast.error("Password baru minimal 6 karakter");
-    if (otp.length < 6) return toast.error("Masukkan kode OTP 6 digit");
+    if (profile.role !== "admin" && otp.length < 6) return toast.error("Masukkan kode OTP 6 digit");
     setSubmittingPass(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -451,9 +459,10 @@ export default function ProfileContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: profile.email,
-          otp,
+          otp: profile.role === "admin" ? undefined : otp,
           newPassword,
-          userId: session?.user.id
+          userId: session?.user.id,
+          isAdminBypass: profile.role === "admin"
         })
       });
       const result = await res.json();
@@ -682,10 +691,10 @@ export default function ProfileContent() {
                       id="emailAddr"
                       type="email"
                       value={profile.email}
-                      disabled={!profile.email_unlocked}
+                      disabled={profile.role !== "admin" && !profile.email_unlocked}
                       onChange={e => setProfile({ ...profile, email: e.target.value })}
                       className={`w-full pl-12 pr-4 py-3.5 border rounded-2xl outline-none transition-all ${
-                        profile.email_unlocked
+                        profile.role === "admin" || profile.email_unlocked
                           ? "bg-background-light dark:bg-background-dark border-primary focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark"
                           : "bg-gray-50 dark:bg-gray-800/50 border-border-light dark:border-border-dark text-muted cursor-not-allowed"
                       }`}
@@ -1034,15 +1043,17 @@ export default function ProfileContent() {
                   </div>
                   
                   <button onClick={handleSendOTP} disabled={submittingPass || !oldPassword.trim()} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50">
-                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Kirim OTP"}
+                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : profile.role === "admin" ? "Verifikasi Password" : "Verifikasi & Kirim OTP"}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label htmlFor="otpInput" className="text-xs font-black uppercase text-muted ml-1">Kode OTP</label>
-                    <input id="otpInput" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} type="text" inputMode="numeric" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px]" placeholder="000000" title="Masukkan Kode OTP" />
-                  </div>
+                  {profile.role !== "admin" && (
+                    <div className="space-y-1.5">
+                      <label htmlFor="otpInput" className="text-xs font-black uppercase text-muted ml-1">Kode OTP</label>
+                      <input id="otpInput" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} type="text" inputMode="numeric" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px]" placeholder="000000" title="Masukkan Kode OTP" />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     <label htmlFor="newPasswordInput" className="text-xs font-black uppercase text-muted ml-1">Password Baru</label>
                     <div className="relative">
@@ -1065,23 +1076,27 @@ export default function ProfileContent() {
                   </button>
                   
                   <div className="text-center space-y-2 mt-4">
-                    <p className="text-[10px] font-black uppercase text-muted">Belum menerima kode?</p>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => { setOtpMethod("email"); handleSendOTP(); }} 
-                        disabled={countdown > 0 || submittingPass}
-                        className="text-[11px] font-bold text-primary hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl"
-                      >
-                        <Mail className="w-3.5 h-3.5" /> {countdown > 0 ? `Kirim Ulang Email (${countdown}s)` : "Kirim Ulang via Email"}
-                      </button>
-                      <button 
-                        onClick={() => { setOtpMethod("whatsapp"); handleSendOTP(); }} 
-                        disabled={waCountdown > 0 || submittingPass}
-                        className="text-[11px] font-bold text-green-600 hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" /> {waCountdown > 0 ? `Kirim via WhatsApp (${waCountdown}s)` : "Kirim via WhatsApp Saja"}
-                      </button>
-                    </div>
+                    {profile.role !== "admin" && (
+                      <>
+                        <p className="text-[10px] font-black uppercase text-muted">Belum menerima kode?</p>
+                        <div className="flex flex-col gap-2">
+                          <button 
+                            onClick={() => { setOtpMethod("email"); handleSendOTP(); }} 
+                            disabled={countdown > 0 || submittingPass}
+                            className="text-[11px] font-bold text-primary hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl"
+                          >
+                            <Mail className="w-3.5 h-3.5" /> {countdown > 0 ? `Kirim Ulang Email (${countdown}s)` : "Kirim Ulang via Email"}
+                          </button>
+                          <button 
+                            onClick={() => { setOtpMethod("whatsapp"); handleSendOTP(); }} 
+                            disabled={waCountdown > 0 || submittingPass}
+                            className="text-[11px] font-bold text-green-600 hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> {waCountdown > 0 ? `Kirim via WhatsApp (${waCountdown}s)` : "Kirim via WhatsApp Saja"}
+                          </button>
+                        </div>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setStep("request"); setOtp(""); setNewPassword(""); }}

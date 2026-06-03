@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // 1. Fetch current profile data
     const { data: profile, error: profileErr } = await supabaseAdmin
       .from('profiles')
-      .select('id, email, email_unlocked, full_name')
+      .select('id, email, email_unlocked, full_name, role')
       .eq('user_id', userId)
       .single();
 
@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
 
     // Check if email is being updated
     if (finalEmail && finalEmail !== profile.email) {
-      // Rule: cannot update if locked
-      if (!profile.email_unlocked) {
+      // Rule: cannot update if locked (unless user is admin)
+      if (!profile.email_unlocked && profile.role !== 'admin') {
         return NextResponse.json({ error: 'Akses ditolak. Pengeditan alamat email terkunci.' }, { status: 403 });
       }
 
@@ -73,6 +73,11 @@ export async function POST(req: NextRequest) {
     if (emailChanged) {
       updateFields.email = finalEmail;
       updateFields.email_unlocked = false; // relock field
+    }
+
+    // Lock role as admin if the current profile is admin to guarantee role preservation
+    if (profile.role === 'admin') {
+      updateFields.role = 'admin';
     }
 
     const { error: updateErr } = await supabaseAdmin

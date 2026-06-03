@@ -128,7 +128,7 @@ export async function sendReservationEmail(
       statusPillText = 'DIKONFIRMASI / AKTIF';
       statusPillBg = '#d1fae5';
       statusPillColor = '#059669';
-      statusDesc = 'Kabar baik! Reservasi meja Anda telah **dikonfirmasi dan disetujui** oleh kasir. Meja Anda telah kami kunci dan siapkan.';
+      statusDesc = 'Kabar baik! Reservasi meja Anda telah <strong>dikonfirmasi dan disetujui</strong> oleh kasir. Meja Anda telah kami kunci dan siapkan.';
     } else if (status === 'completed') {
       subject = `Reservasi Meja Selesai - Terima Kasih - ${restoName}`;
       titleHeader = 'Terima Kasih Atas Kunjungan Anda!';
@@ -136,7 +136,7 @@ export async function sendReservationEmail(
       statusPillText = 'SELESAI';
       statusPillBg = '#dbeafe';
       statusPillColor = '#2563eb';
-      statusDesc = 'Reservasi meja Anda telah ditandai **selesai**. Terima kasih banyak telah berkunjung ke restoran kami. Semoga pelayanan dan hidangan kami memuaskan Anda!';
+      statusDesc = 'Reservasi meja Anda telah ditandai <strong>selesai</strong>. Terima kasih banyak telah berkunjung ke restoran kami. Semoga pelayanan dan hidangan kami memuaskan Anda!';
     } else if (status === 'cancelled') {
       subject = `Reservasi Meja DIBATALKAN - ${restoName} - #${reservationId.substring(0, 8).toUpperCase()}`;
       titleHeader = 'Reservasi Dibatalkan';
@@ -157,7 +157,7 @@ export async function sendReservationEmail(
         entityName = 'Anda (Pelanggan)';
       }
       
-      statusDesc = `Reservasi meja Anda telah **dibatalkan oleh ${entityName}**.<br/><br/><strong>Alasan Pembatalan/Penolakan:</strong> <span style="color:#ef4444;">${cancelReason}</span>`;
+      statusDesc = `Reservasi meja Anda telah <strong>dibatalkan oleh ${entityName}</strong>.<br/><br/><strong>Alasan Pembatalan/Penolakan:</strong> <span style="color:#ef4444;">${cancelReason}</span>`;
     }
 
     const emailPayload = {

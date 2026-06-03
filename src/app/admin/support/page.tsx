@@ -618,7 +618,7 @@ export default function AdminSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const isHistory = ['completed', 'closed', 'expired', 'rejected'].includes(t.status);
+    const isHistory = ['completed', 'closed', 'expired', 'rejected', 'approved'].includes(t.status);
     return ticketViewTab === 'riwayat' ? isHistory : !isHistory;
   });
 
@@ -891,12 +891,6 @@ export default function AdminSupportPage() {
                   className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
                 >
                   <option value="">Semua Kategori</option>
-                  <option value="Pembayaran">Pembayaran</option>
-                  <option value="Makanan">Makanan</option>
-                  <option value="Reservasi">Reservasi</option>
-                  <option value="Pelayanan">Pelayanan</option>
-                  <option value="Teknis">Teknis</option>
-                  <option value="Akun">Akun</option>
                   <option value="perubahan email">Perubahan Email</option>
                   <option value="perubahan nama">Perubahan Nama</option>
                   <option value="perubahan nomor telepon">Perubahan Nomor Telepon</option>
@@ -904,6 +898,10 @@ export default function AdminSupportPage() {
                   <option value="koreksi data profil">Koreksi Data Profil</option>
                   <option value="verifikasi ulang">Verifikasi Ulang</option>
                   <option value="bantuan login">Bantuan Login</option>
+                  <option value="pembayaran">Masalah Pembayaran</option>
+                  <option value="pesanan">Masalah Pesanan</option>
+                  <option value="reward">Masalah Reward / Poin</option>
+                  <option value="lainnya">Lainnya</option>
                 </select>
               </div>
             </div>
@@ -1013,7 +1011,7 @@ export default function AdminSupportPage() {
                         <Play className="w-3.5 h-3.5" /> Mulai Chat
                       </button>
                     )}
-                    {activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'approved' && activeTicket.status !== 'rejected' && (() => {
+                    {activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'rejected' && (() => {
                       const isProfileCategory = [
                         'perubahan email',
                         'perubahan nama',
@@ -1026,7 +1024,8 @@ export default function AdminSupportPage() {
 
                       return (
                         <>
-                          {isProfileCategory ? (
+                          {/* For profile change categories: show Approve/Reject or Tandai Selesai if already approved */}
+                          {isProfileCategory && activeTicket.status !== 'approved' ? (
                             <>
                               <button
                                 onClick={() => handleOpenDecisionModal('approved')}
@@ -1042,6 +1041,7 @@ export default function AdminSupportPage() {
                               </button>
                             </>
                           ) : (
+                            /* For non-profile categories OR approved profile tickets: show Tandai Selesai */
                             <button
                               onClick={() => handleUpdateTicketStatus(activeTicket.id, 'completed')}
                               className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
@@ -1049,18 +1049,23 @@ export default function AdminSupportPage() {
                               <CheckCircle className="w-3.5 h-3.5" /> Tandai Selesai
                             </button>
                           )}
-                          <button
-                            onClick={() => handleUpdateTicketStatus(activeTicket.id, 'waiting_info')}
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                          >
-                            <Info className="w-3.5 h-3.5" /> Butuh Info
-                          </button>
-                          <button
-                            onClick={() => handleEscalateTicket(activeTicket.id)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                          >
-                            <ShieldAlert className="w-3.5 h-3.5" /> Eskalasi
-                          </button>
+                          {/* Extra actions only for non-approved statuses */}
+                          {activeTicket.status !== 'approved' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateTicketStatus(activeTicket.id, 'waiting_info')}
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                              >
+                                <Info className="w-3.5 h-3.5" /> Butuh Info
+                              </button>
+                              <button
+                                onClick={() => handleEscalateTicket(activeTicket.id)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                              >
+                                <ShieldAlert className="w-3.5 h-3.5" /> Eskalasi
+                              </button>
+                            </>
+                          )}
                         </>
                       );
                     })()}
@@ -1180,10 +1185,10 @@ export default function AdminSupportPage() {
                 </div>
 
                 {/* Expiry / Lock Status */}
-                {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired' || activeTicket.status === 'rejected') && (
+                {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired' || activeTicket.status === 'rejected' || activeTicket.status === 'approved') && (
                   <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border-t border-b border-amber-100 dark:border-amber-900/30 text-center text-xs">
                     <span className="font-bold text-amber-700 dark:text-amber-400">
-                      {activeTicket.status === 'rejected' ? 'Permintaan Ditolak. Percakapan Terkunci.' : 'Tiket Selesai / Ditutup. Percakapan Terkunci.'}
+                      {activeTicket.status === 'rejected' ? 'Permintaan Ditolak. Percakapan Terkunci.' : activeTicket.status === 'approved' ? 'Permintaan Disetujui. Percakapan Terkunci.' : 'Tiket Selesai / Ditutup. Percakapan Terkunci.'}
                     </span>
                     {activeTicket.chat_history_deleted_at && activeTicket.status !== 'expired' && (
                       <p className="text-[10px] text-muted mt-1">
@@ -1197,7 +1202,7 @@ export default function AdminSupportPage() {
                 )}
 
                 {/* Quick Reply Templates */}
-                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && (
+                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'approved' && (
                   <div className="px-4 py-2 border-t border-border-light dark:border-border-dark bg-background-light/40 dark:bg-background-dark/20 flex gap-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
                     {QUICK_REPLIES.map((reply, idx) => (
                       <button
@@ -1213,7 +1218,7 @@ export default function AdminSupportPage() {
                 )}
 
                 {/* Message Input Box */}
-                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'rejected' && (
+                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'rejected' && activeTicket.status !== 'approved' && (
                   <form onSubmit={handleSendMessage} className="p-3 border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark flex items-center gap-3">
                     <div className="flex items-center gap-1.5 shrink-0">
                       <label htmlFor="admin-chat-file-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Pilih File dari Perangkat">

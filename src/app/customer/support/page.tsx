@@ -301,7 +301,7 @@ export default function CustomerSupportPage() {
       
       // Reset form
       setFormTitle('');
-      setFormCategory('Pembayaran');
+      setFormCategory('perubahan email');
       setFormSubcategory('');
       setFormDescription('');
       setFormUrgency('medium');
@@ -482,7 +482,7 @@ export default function CustomerSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const isHistory = ['rejected', 'completed', 'closed', 'expired'].includes(t.status);
+    const isHistory = ['rejected', 'completed', 'closed', 'expired', 'approved'].includes(t.status);
     return activeTab === 'riwayat' ? isHistory : !isHistory;
   });
 
@@ -746,7 +746,7 @@ export default function CustomerSupportPage() {
               </div>
 
               {/* Chat Expiry Warning / Locked Panel */}
-              {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired') && (
+              {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired' || activeTicket.status === 'approved' || activeTicket.status === 'rejected') && (
                 <div className="p-4 bg-red-50 dark:bg-red-950/20 border-t border-b border-red-100 dark:border-red-900/30 text-center space-y-1">
                   <p className="text-sm font-bold text-red-600 dark:text-red-400">Percakapan telah berakhir.</p>
                   <p className="text-xs text-red-500/80">Anda tidak dapat mengirim pesan lagi pada tiket ini.</p>
@@ -764,7 +764,7 @@ export default function CustomerSupportPage() {
               )}
 
               {/* Chat Input Area */}
-              {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && (
+              {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'approved' && activeTicket.status !== 'rejected' && (
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark flex items-center gap-3">
                   <div className="flex items-center gap-1.5 shrink-0">
                     <label htmlFor="chat-file-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Pilih File dari Perangkat">
@@ -879,6 +879,10 @@ export default function CustomerSupportPage() {
                       <option value="koreksi data profil">Koreksi Data Profil</option>
                       <option value="verifikasi ulang">Verifikasi Ulang</option>
                       <option value="bantuan login">Bantuan Login</option>
+                      <option value="pembayaran">Masalah Pembayaran</option>
+                      <option value="pesanan">Masalah Pesanan</option>
+                      <option value="reward">Masalah Reward / Poin</option>
+                      <option value="lainnya">Lainnya</option>
                     </select>
                   </div>
                 </div>

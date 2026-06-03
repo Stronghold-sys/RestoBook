@@ -727,7 +727,7 @@ export default function CustomerRewardsPage() {
                                       <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
                                       Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} telah dikreditkan ke Saldo Dompet Anda.
                                     </div>
-                                  ) : category === "voucher" || category === "food" ? (
+                                  ) : category === "voucher" || category === "food" || category === "shipping" ? (
                                     <div className="space-y-2">
                                       <div className="p-4 bg-green-50 dark:bg-green-950/10 border border-green-200 dark:border-green-900/50 rounded-2xl text-xs text-green-800 dark:text-green-400 font-bold flex items-center gap-2">
                                         <CheckCircle className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
@@ -809,7 +809,7 @@ export default function CustomerRewardsPage() {
                                         <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
                                           Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} siap untuk diklaim ke Saldo Dompet Anda. Silakan klik tombol di bawah untuk menggunakan.
                                         </div>
-                                      ) : category === "voucher" || category === "food" ? (
+                                      ) : category === "voucher" || category === "food" || category === "shipping" ? (
                                         <div className="p-3.5 bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
                                           Voucher &ldquo;{red.rewards?.title}&rdquo; siap untuk diaktifkan dan dimasukkan ke menu Voucher Saya Anda. Silakan klik tombol di bawah untuk menggunakan.
                                         </div>
@@ -834,7 +834,7 @@ export default function CustomerRewardsPage() {
                                     >
                                       {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : isExpired ? "Cashback Kadaluarsa" : <><Wallet className="w-4 h-4" /> Gunakan Cashback</>}
                                     </button>
-                                  ) : category === "voucher" || category === "food" ? (
+                                  ) : category === "voucher" || category === "food" || category === "shipping" ? (
                                     <button
                                       onClick={() => handleClaimCashback(red.id)}
                                       disabled={submitting || isExpired}
@@ -934,7 +934,7 @@ export default function CustomerRewardsPage() {
                                 <div className="bg-green-50/30 dark:bg-green-950/10 border border-green-200/30 dark:border-green-900/30 rounded-2xl p-3 text-xs text-green-750 dark:text-green-400 font-bold leading-relaxed">
                                   Dana cashback sebesar Rp {cashbackVal.toLocaleString("id-ID")} telah berhasil diklaim dan dikreditkan ke Saldo Dompet Anda.
                                 </div>
-                              ) : category === "voucher" || category === "food" ? (
+                              ) : category === "voucher" || category === "food" || category === "shipping" ? (
                                 <div className="space-y-2">
                                   {red.code && (
                                     <div className="bg-gray-50/50 dark:bg-gray-800/20 border border-border-light/30 dark:border-border-dark/30 rounded-2xl p-3">

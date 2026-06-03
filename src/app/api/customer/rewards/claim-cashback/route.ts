@@ -140,34 +140,49 @@ export async function POST(req: NextRequest) {
         newBalance
       });
 
-    } else if (category === 'voucher' || category === 'food') {
-      // --- LOGIKA VOUCHER / MAKANAN GRATIS ---
+    } else if (category === 'voucher' || category === 'food' || category === 'shipping') {
+      // --- LOGIKA VOUCHER / MAKANAN GRATIS / DISKON ONGKIR ---
       let voucherCode = '';
       let discountPercent = 10;
+      let voucherType = 'general';
 
       if (category === 'food') {
         // Generate FREEFOOD-XXXXXX code (6 random alphanum)
         const randStr = Math.random().toString(36).substring(2, 8).toUpperCase();
         voucherCode = `FREEFOOD-${randStr}`;
         discountPercent = 100; // Makanan gratis diskon 100%
+        voucherType = 'general';
+      } else if (category === 'shipping') {
+        // Generate SHIP-XXXXXXXX code (8 random alphanum)
+        const randStr = Math.random().toString(36).substring(2, 10).toUpperCase();
+        voucherCode = `SHIP-${randStr}`;
+        discountPercent = Number(redemption.rewards?.discount_percent || 10);
+        voucherType = 'shipping';
       } else {
         // Generate RWD-XXXXXXXX code (8 random alphanum)
         const randStr = Math.random().toString(36).substring(2, 10).toUpperCase();
         voucherCode = `RWD-${randStr}`;
         discountPercent = Number(redemption.rewards?.discount_percent || 10);
+        voucherType = 'general';
       }
+
+      const expiryDays = redemption.rewards?.expiry_days || 30;
 
       // 1. Buat data voucher di tabel vouchers
       const { data: voucher, error: vErr } = await supabaseAdmin
         .from('vouchers')
         .insert({
           code: voucherCode,
+          voucher_type: voucherType,
+          discount_type: 'percent',
           discount_percent: discountPercent,
+          discount_value: 0,
+          min_transaction: 0,
           usage_limit: 99999,
           used_count: 0,
           max_usage_per_user: 1,
           is_active: true,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Berlaku 30 hari
+          expires_at: new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString()
         })
         .select()
         .single();

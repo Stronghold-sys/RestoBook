@@ -12,6 +12,7 @@ import {
   Mail, Calendar, Download, RefreshCw, Settings, ChevronRight,
   Paperclip, Camera
 } from "lucide-react";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
 
 interface Ticket {
   id: string;
@@ -36,6 +37,7 @@ interface Ticket {
     full_name: string;
     email: string;
   };
+  is_order_chat?: boolean;
 }
 
 interface Message {
@@ -56,7 +58,8 @@ export default function AdminSupportPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'tickets' | 'settings'>('tickets');
   const [adminProfile, setAdminProfile] = useState<any>(null);
-  const [ticketViewTab, setTicketViewTab] = useState<'aktif' | 'riwayat'>('aktif');
+  const [ticketViewTab, setTicketViewTab] = useState<'aktif' | 'riwayat' | 'bantuan_admin'>('aktif');
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState('');
@@ -143,45 +146,65 @@ export default function AdminSupportPage() {
 
   // Fetch initial data
   useEffect(() => {
-    fetchAdminAndTickets();
-    fetchSupportSettings();
+    if (ticketViewTab === 'bantuan_admin') {
+      fetchEscalatedChats();
+      // Subscribe to order_chats table changes
+      const orderChatChannel = supabase
+        .channel('admin-order-chats-realtime')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'order_chats',
+          filter: 'status=eq.need_admin'
+        }, () => {
+          fetchEscalatedChats();
+        })
+        .subscribe();
 
-    // Subscribe to support tickets changes
-    const ticketChannel = supabase
-      .channel('admin-tickets-realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'support_tickets'
-      }, (payload: any) => {
-        fetchTicketsOnly();
+      return () => {
+        supabase.removeChannel(orderChatChannel);
+      };
+    } else {
+      fetchAdminAndTickets();
+      fetchSupportSettings();
 
-        // sound trigger for new ticket
-        if (payload.eventType === 'INSERT') {
-          if (payload.new.source === 'ai') {
-            playAdminSound('ai_ticket');
-            toast.success(`Tiket Baru dibuat otomatis oleh AI: ${payload.new.ticket_number}`);
-          } else {
-            playAdminSound('customer_chat');
-            toast.success(`Tiket Manual Baru Masuk: ${payload.new.ticket_number}`);
-          }
-        }
+      // Subscribe to support tickets changes
+      const ticketChannel = supabase
+        .channel('admin-tickets-realtime')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'support_tickets'
+        }, (payload: any) => {
+          fetchTicketsOnly();
 
-        if (payload.new && payload.new.id) {
-          setActiveTicket((current) => {
-            if (current && current.id === payload.new.id) {
-              return { ...current, ...payload.new };
+          // sound trigger for new ticket
+          if (payload.eventType === 'INSERT') {
+            if (payload.new.source === 'ai') {
+              playAdminSound('ai_ticket');
+              toast.success(`Tiket Baru dibuat otomatis oleh AI: ${payload.new.ticket_number}`);
+            } else {
+              playAdminSound('customer_chat');
+              toast.success(`Tiket Manual Baru Masuk: ${payload.new.ticket_number}`);
             }
-            return current;
-          });
-        }
-      })
-      .subscribe();
+          }
 
-    return () => {
-      supabase.removeChannel(ticketChannel);
-    };
-  }, [filterStatus, filterUrgency, filterCategory, searchTerm]);
+          if (payload.new && payload.new.id) {
+            setActiveTicket((current) => {
+              if (current && current.id === payload.new.id) {
+                return { ...current, ...payload.new };
+              }
+              return current;
+            });
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ticketChannel);
+      };
+    }
+  }, [ticketViewTab, filterStatus, filterUrgency, filterCategory, searchTerm]);
 
   // Subscribe to messages when activeTicket changes
   useEffect(() => {
@@ -190,25 +213,43 @@ export default function AdminSupportPage() {
       return;
     }
 
-    fetchMessages(activeTicket.id);
+    if (activeTicket.is_order_chat) {
+      fetchOrderChatMessages(activeTicket.id);
+    } else {
+      fetchMessages(activeTicket.id);
+    }
+
+    const channelName = activeTicket.is_order_chat 
+      ? `admin-order-chat-messages-${activeTicket.id}` 
+      : `admin-ticket-messages-${activeTicket.id}`;
 
     const messageChannel = supabase
-      .channel(`admin-ticket-messages-${activeTicket.id}`)
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'ticket_messages',
-        filter: `ticket_id=eq.${activeTicket.id}`
+        table: activeTicket.is_order_chat ? 'order_chat_messages' : 'ticket_messages',
+        filter: activeTicket.is_order_chat ? `chat_id=eq.${activeTicket.id}` : `ticket_id=eq.${activeTicket.id}`
       }, (payload: any) => {
-        const newMsg = payload.new as Message;
+        const newMsg = payload.new;
+        const formattedMsg = activeTicket.is_order_chat ? {
+          id: newMsg.id,
+          ticket_id: newMsg.chat_id,
+          sender_id: newMsg.sender_id || '',
+          message: newMsg.message || '',
+          attachment_url: newMsg.attachment_url || undefined,
+          is_read: newMsg.is_read,
+          created_at: newMsg.created_at
+        } : newMsg;
+
         setMessages(prev => {
-          if (prev.some(m => m.id === newMsg.id)) return prev;
+          if (prev.some(m => m.id === formattedMsg.id)) return prev;
 
           // Sound trigger for customer message (different from admin sender_id)
-          if (adminProfile && newMsg.sender_id !== adminProfile.id) {
+          if (adminProfile && formattedMsg.sender_id !== adminProfile.id) {
             playAdminSound('customer_chat');
           }
-          return [...prev, newMsg];
+          return [...prev, formattedMsg];
         });
       })
       .subscribe();
@@ -301,6 +342,82 @@ export default function AdminSupportPage() {
     } catch (e) {}
   };
 
+  const fetchEscalatedChats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('order_chats')
+        .select(`
+          *,
+          order:orders(
+            id, 
+            order_type, 
+            status, 
+            total_amount, 
+            payment_method, 
+            payment_status, 
+            notes,
+            created_at,
+            tables(table_number)
+          ),
+          customer:profiles!order_chats_customer_id_fkey(
+            id,
+            full_name,
+            email,
+            phone,
+            avatar_url
+          )
+        `)
+        .eq('status', 'need_admin')
+        .order('updated_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped: Ticket[] = data.map(chat => ({
+          id: chat.id,
+          ticket_number: `ORDER-${chat.order_id?.substring(0, 8).toUpperCase()}`,
+          customer_id: chat.customer_id,
+          title: `Bantuan Order #${chat.order_id?.substring(0, 8).toUpperCase()}`,
+          category: 'Bantuan Kasir',
+          subcategory: chat.order?.order_type || undefined,
+          description: `Kasir memerlukan bantuan admin untuk menyelesaikan kendala pada pesanan ini. Catatan Pesanan: ${chat.order?.notes || '-'}`,
+          status: chat.status === 'need_admin' ? 'pending' : chat.status,
+          urgency: 'high',
+          created_at: chat.created_at,
+          updated_at: chat.updated_at,
+          chat_started_at: chat.created_at,
+          profiles: {
+            full_name: chat.customer?.full_name || 'Pelanggan',
+            email: chat.customer?.email || '-'
+          },
+          is_order_chat: true
+        } as any));
+        setTickets(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchOrderChatMessages = async (chatId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('order_chat_messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+      if (!error && data) {
+        setMessages(data.map(m => ({
+          id: m.id,
+          ticket_id: m.chat_id,
+          sender_id: m.sender_id || '',
+          message: m.message || '',
+          attachment_url: m.attachment_url || undefined,
+          is_read: m.is_read,
+          created_at: m.created_at
+        })));
+      }
+    } catch (e) {}
+  };
+
   const fetchSupportSettings = async () => {
     try {
       const res = await fetch('/api/admin/support/settings');
@@ -371,19 +488,46 @@ export default function AdminSupportPage() {
 
   const handleUpdateTicketStatus = async (ticketId: string, status: string) => {
     try {
-      const res = await fetch(`/api/support/ticket/${ticketId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(`Status tiket berhasil diubah menjadi: ${getStatusLabel(status)}`);
-        setActiveTicket(data.ticket);
-        fetchMessages(ticketId);
-        fetchTicketsOnly();
+      if (activeTicket?.is_order_chat) {
+        let action = '';
+        if (status === 'completed') action = 'mark_completed';
+        else if (status === 'waiting_info') action = 'waiting_customer';
+        else if (status === 'active') action = 'reactivate';
+
+        if (!action) {
+          toast.error("Aksi status tidak didukung untuk obrolan order");
+          return;
+        }
+
+        const res = await fetch('/api/cashier/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId: ticketId, action })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success(`Status obrolan berhasil diubah`);
+          setActiveTicket((prev: any) => prev ? { ...prev, status } : null);
+          fetchOrderChatMessages(ticketId);
+          fetchEscalatedChats();
+        } else {
+          toast.error(data.error || "Gagal memperbarui status obrolan");
+        }
       } else {
-        toast.error(data.error || "Gagal memperbarui status");
+        const res = await fetch(`/api/support/ticket/${ticketId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success(`Status tiket berhasil diubah menjadi: ${getStatusLabel(status)}`);
+          setActiveTicket(data.ticket);
+          fetchMessages(ticketId);
+          fetchTicketsOnly();
+        } else {
+          toast.error(data.error || "Gagal memperbarui status");
+        }
       }
     } catch (e) {
       toast.error("Terjadi kesalahan koneksi");
@@ -485,31 +629,115 @@ export default function AdminSupportPage() {
 
       const publicUrl = result.url;
 
-      const resMsg = await fetch(`/api/support/ticket/${activeTicket!.id}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
-          attachment_url: publicUrl
-        })
-      });
+      if (activeTicket?.is_order_chat) {
+        const resMsg = await fetch('/api/cashier/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: activeTicket.id,
+            message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+            attachment_url: publicUrl
+          })
+        });
+        const dataMsg = await resMsg.json();
+        if (!resMsg.ok) throw new Error(dataMsg.error || "Gagal mengirim pesan");
+        
+        toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
+        fetchOrderChatMessages(activeTicket.id);
+      } else {
+        const resMsg = await fetch(`/api/support/ticket/${activeTicket!.id}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+            attachment_url: publicUrl
+          })
+        });
 
-      const dataMsg = await resMsg.json();
-      if (!resMsg.ok) {
-        throw new Error(dataMsg.error || "Gagal mengirim pesan");
+        const dataMsg = await resMsg.json();
+        if (!resMsg.ok) {
+          throw new Error(dataMsg.error || "Gagal mengirim pesan");
+        }
+
+        toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
+        
+        setMessages(prev => {
+          if (prev.some(m => m.id === dataMsg.message.id)) return prev;
+          return [...prev, dataMsg.message];
+        });
       }
-
-      toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
-      
-      setMessages(prev => {
-        if (prev.some(m => m.id === dataMsg.message.id)) return prev;
-        return [...prev, dataMsg.message];
-      });
     } catch (err: any) {
       toast.error(err.message || "Gagal mengunggah file", { id: toastId });
     } finally {
       setUploadingFile(false);
       e.target.value = "";
+    }
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    if (!activeTicket) return;
+    setUploadingFile(true);
+    const toastId = toast.loading("Mengunggah foto...");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) throw new Error("Sesi tidak ditemukan");
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', session.session.user.id);
+      formData.append('isProfile', 'false');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah foto");
+
+      const publicUrl = result.url;
+
+      if (activeTicket.is_order_chat) {
+        const resMsg = await fetch('/api/cashier/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: activeTicket.id,
+            message: "Mengirim foto dari kamera",
+            attachment_url: publicUrl
+          })
+        });
+        const dataMsg = await resMsg.json();
+        if (!resMsg.ok) throw new Error(dataMsg.error || "Gagal mengirim pesan");
+        
+        toast.success("Foto berhasil diambil dan dikirim!", { id: toastId });
+        fetchOrderChatMessages(activeTicket.id);
+      } else {
+        const resMsg = await fetch(`/api/support/ticket/${activeTicket.id}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: "Mengirim foto dari kamera",
+            attachment_url: publicUrl
+          })
+        });
+
+        const dataMsg = await resMsg.json();
+        if (!resMsg.ok) {
+          throw new Error(dataMsg.error || "Gagal mengirim pesan");
+        }
+
+        toast.success("Foto berhasil diambil dan dikirim!", { id: toastId });
+        
+        setMessages(prev => {
+          if (prev.some(m => m.id === dataMsg.message.id)) return prev;
+          return [...prev, dataMsg.message];
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah foto", { id: toastId });
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -521,20 +749,37 @@ export default function AdminSupportPage() {
     setNewMessage('');
 
     try {
-      const res = await fetch(`/api/support/ticket/${activeTicket.id}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Gagal mengirim pesan');
-      } else {
-        setMessages(prev => {
-          if (prev.some(m => m.id === data.message.id)) return prev;
-          return [...prev, data.message];
+      if (activeTicket.is_order_chat) {
+        const res = await fetch('/api/cashier/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: activeTicket.id,
+            message: messageText
+          })
         });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || 'Gagal mengirim pesan');
+        } else {
+          fetchOrderChatMessages(activeTicket.id);
+        }
+      } else {
+        const res = await fetch(`/api/support/ticket/${activeTicket.id}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: messageText })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || 'Gagal mengirim pesan');
+        } else {
+          setMessages(prev => {
+            if (prev.some(m => m.id === data.message.id)) return prev;
+            return [...prev, data.message];
+          });
+        }
       }
     } catch (err) {
       toast.error('Gagal mengirim pesan chat');
@@ -618,6 +863,7 @@ export default function AdminSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
+    if (ticketViewTab === 'bantuan_admin') return true;
     const isHistory = ['completed', 'closed', 'expired', 'rejected', 'approved'].includes(t.status);
     return ticketViewTab === 'riwayat' ? isHistory : !isHistory;
   });
@@ -934,6 +1180,19 @@ export default function AdminSupportPage() {
               >
                 Riwayat
               </button>
+              <button
+                onClick={() => {
+                  setTicketViewTab('bantuan_admin');
+                  setActiveTicket(null);
+                }}
+                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                  ticketViewTab === 'bantuan_admin'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-muted hover:text-primary'
+                }`}
+              >
+                Bantuan Admin
+              </button>
             </div>
 
             {/* Queue List */}
@@ -1050,7 +1309,7 @@ export default function AdminSupportPage() {
                             </button>
                           )}
                           {/* Extra actions only for non-approved statuses */}
-                          {activeTicket.status !== 'approved' && (
+                          {activeTicket.status !== 'approved' && !activeTicket.is_order_chat && (
                             <>
                               <button
                                 onClick={() => handleUpdateTicketStatus(activeTicket.id, 'waiting_info')}
@@ -1234,20 +1493,33 @@ export default function AdminSupportPage() {
                         />
                       </label>
 
-                      <label htmlFor="admin-chat-camera-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Ambil Foto dari Kamera">
+                      <button
+                        type="button"
+                        disabled={uploadingFile}
+                        onClick={() => {
+                          if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
+                            setIsCameraModalOpen(true);
+                          } else {
+                            document.getElementById('admin-chat-camera-input')?.click();
+                          }
+                        }}
+                        className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark"
+                        title="Ambil Foto dari Kamera"
+                        aria-label="Ambil Foto dari Kamera"
+                      >
                         <Camera className="w-4 h-4" />
-                        <input
-                          type="file"
-                          id="admin-chat-camera-input"
-                          accept="image/*"
-                          capture="environment"
-                          className="hidden"
-                          disabled={uploadingFile}
-                          onChange={(e) => handleChatFileUpload(e, true)}
-                          title="Ambil Foto dari Kamera"
-                          aria-label="Ambil Foto dari Kamera"
-                        />
-                      </label>
+                      </button>
+                      <input
+                        type="file"
+                        id="admin-chat-camera-input"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, true)}
+                        title="Ambil Foto dari Kamera"
+                        aria-label="Ambil Foto dari Kamera"
+                      />
                     </div>
 
                     <input
@@ -1359,6 +1631,12 @@ export default function AdminSupportPage() {
           </div>
         )}
       </AnimatePresence>
+
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
+      />
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar {

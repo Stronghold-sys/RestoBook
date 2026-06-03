@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
         await supabase.from('order_chat_messages').insert({
           chat_id: chatId,
           sender_role: 'ai',
-          message: 'Percakapan ini telah diselesaikan oleh kasir. Jika Anda masih memerlukan bantuan, silakan hubungi kami melalui menu Pengaduan & Bantuan di aplikasi.',
+          message: 'Bantuan admin telah selesai diproses. Sesi obrolan ini ditutup secara resmi. Jika Anda masih memiliki kendala lainnya, silakan gunakan menu Pengaduan & Bantuan kembali. Terima kasih!',
           is_read: false
         });
       } else if (action === 'need_admin') {

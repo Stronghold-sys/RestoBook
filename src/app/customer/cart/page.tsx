@@ -425,6 +425,7 @@ export default function CartPage() {
   // Delivery calculation states
   const [customerCoords, setCustomerCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const shippingFee = (orderType === "delivery" && distanceKm !== null)
     ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
@@ -1006,6 +1007,7 @@ export default function CartPage() {
         if (data.additional_zone_charge !== undefined && data.additional_zone_charge !== null) setAdditionalZoneCharge(Number(data.additional_zone_charge));
         if (data.min_order_for_free_shipping !== undefined && data.min_order_for_free_shipping !== null) setMinOrderFreeShipping(Number(data.min_order_for_free_shipping));
         if (data.is_shipping_enabled !== undefined && data.is_shipping_enabled !== null) setIsShippingEnabled(!!data.is_shipping_enabled);
+        setSettingsLoaded(true);
       }
     };
     fetchSettings();
@@ -1031,6 +1033,7 @@ export default function CartPage() {
           if (payload.new.additional_zone_charge !== undefined && payload.new.additional_zone_charge !== null) setAdditionalZoneCharge(Number(payload.new.additional_zone_charge));
           if (payload.new.min_order_for_free_shipping !== undefined && payload.new.min_order_for_free_shipping !== null) setMinOrderFreeShipping(Number(payload.new.min_order_for_free_shipping));
           if (payload.new.is_shipping_enabled !== undefined && payload.new.is_shipping_enabled !== null) setIsShippingEnabled(!!payload.new.is_shipping_enabled);
+          setSettingsLoaded(true);
         }
       })
       .subscribe();
@@ -1563,60 +1566,66 @@ export default function CartPage() {
                           
                           {/* Map container */}
                           <div className="w-full h-60 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark relative bg-background-light dark:bg-background-dark">
-                            <Map
-                              defaultCenter={{ lat: restoLat, lng: restoLng }}
-                              center={customerCoords ? { lat: customerCoords.lat, lng: customerCoords.lng } : { lat: restoLat, lng: restoLng }}
-                              defaultZoom={13}
-                              gestureHandling={'cooperative'}
-                            >
-                              {/* Restaurant Marker */}
-                              <Marker 
-                                position={{ lat: restoLat, lng: restoLng }}
-                                title="Restoran Kami"
-                              />
-                              
-                              {/* Customer Marker */}
-                              {customerCoords && (
+                            {settingsLoaded ? (
+                              <Map
+                                defaultCenter={{ lat: restoLat, lng: restoLng }}
+                                center={customerCoords ? { lat: customerCoords.lat, lng: customerCoords.lng } : { lat: restoLat, lng: restoLng }}
+                                defaultZoom={13}
+                                gestureHandling={'cooperative'}
+                              >
+                                {/* Restaurant Marker */}
                                 <Marker 
-                                  position={{ lat: customerCoords.lat, lng: customerCoords.lng }}
-                                  draggable={true}
-                                  title="Lokasi Anda (Geser untuk menyesuaikan)"
-                                  onDragEnd={(e) => {
-                                    if (e.latLng) {
-                                      const lat = e.latLng.lat();
-                                      const lng = e.latLng.lng();
-                                      setCustomerCoords({ lat, lng });
-                                      
-                                      const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-                                      setDistanceKm(dist);
-                                      
-                                      if (typeof google !== "undefined" && google.maps) {
-                                        const geocoder = new google.maps.Geocoder();
-                                        geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
-                                          if (status === "OK" && results && results[0]) {
-                                            const place = results[0];
-                                            setDeliveryAddress(place.formatted_address || "");
-                                            const components = parseAddressComponents(place);
-                                            prefillFromComponents(components);
-                                          }
-                                        });
+                                  position={{ lat: restoLat, lng: restoLng }}
+                                  title="Restoran Kami"
+                                />
+                                
+                                {/* Customer Marker */}
+                                {customerCoords && (
+                                  <Marker 
+                                    position={{ lat: customerCoords.lat, lng: customerCoords.lng }}
+                                    draggable={true}
+                                    title="Lokasi Anda (Geser untuk menyesuaikan)"
+                                    onDragEnd={(e) => {
+                                      if (e.latLng) {
+                                        const lat = e.latLng.lat();
+                                        const lng = e.latLng.lng();
+                                        setCustomerCoords({ lat, lng });
+                                        
+                                        const dist = calculateHaversineDistance(restoLat, restoLng, lat, lng);
+                                        setDistanceKm(dist);
+                                        
+                                        if (typeof google !== "undefined" && google.maps) {
+                                          const geocoder = new google.maps.Geocoder();
+                                          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+                                            if (status === "OK" && results && results[0]) {
+                                              const place = results[0];
+                                              setDeliveryAddress(place.formatted_address || "");
+                                              const components = parseAddressComponents(place);
+                                              prefillFromComponents(components);
+                                            }
+                                          });
+                                        }
                                       }
-                                    }
-                                  }}
-                                />
-                              )}
-                              
-                              {/* Directions route renderer */}
-                              {customerCoords && (
-                                <Directions 
-                                  origin={{ lat: restoLat, lng: restoLng }}
-                                  destination={{ lat: customerCoords.lat, lng: customerCoords.lng }}
-                                  onDistanceCalculated={(dist) => {
-                                    setDistanceKm(dist);
-                                  }}
-                                />
-                              )}
-                            </Map>
+                                    }}
+                                  />
+                                )}
+                                
+                                {/* Directions route renderer */}
+                                {customerCoords && (
+                                  <Directions 
+                                    origin={{ lat: restoLat, lng: restoLng }}
+                                    destination={{ lat: customerCoords.lat, lng: customerCoords.lng }}
+                                    onDistanceCalculated={(dist) => {
+                                      setDistanceKm(dist);
+                                    }}
+                                  />
+                                )}
+                              </Map>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                              </div>
+                            )}
                           </div>
                         </APIProvider>
                       </div>

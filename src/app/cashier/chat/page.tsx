@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
 import { format, formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
@@ -103,6 +104,7 @@ export default function CashierChatPage() {
   const [loadingOrderItems, setLoadingOrderItems] = useState(false);
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
   const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
@@ -424,6 +426,47 @@ export default function CashierChatPage() {
     }
   };
 
+  const handleCameraCapture = async (file: File) => {
+    setUploadingFile(true);
+    const toastId = toast.loading("Mengunggah foto...");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "profiles");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah foto");
+
+      const publicUrl = result.url;
+
+      const resMsg = await fetch("/api/cashier/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: selectedChat!.id,
+          message: "Mengirim foto dari kamera",
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) {
+        throw new Error(dataMsg.error || "Gagal mengirim pesan");
+      }
+
+      toast.success("Foto berhasil diambil dan dikirim!", { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah foto", { id: toastId });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   // --- Aksi chat (blokir, selesai, dll) ---
   const performAction = async (action: string, successMsg: string) => {
     if (!selectedChat) return;
@@ -448,6 +491,7 @@ export default function CashierChatPage() {
 
   // --- Filter daftar chat ---
   const filteredChats = chats.filter(chat => {
+    if (chat.status === "need_admin") return false;
     if (activeOrderType !== "all" && chat.order?.order_type !== activeOrderType) return false;
     if (activeChatStatus !== "all" && chat.status !== activeChatStatus) return false;
     if (searchQuery) {
@@ -554,7 +598,6 @@ export default function CashierChatPage() {
               { id: "all", label: "Semua Status" },
               { id: "active", label: "Aktif" },
               { id: "waiting_customer", label: "Menunggu" },
-              { id: "need_admin", label: "Perlu Admin" },
               { id: "completed", label: "Selesai" },
             ] as { id: ChatStatus; label: string }[]).map(tab => (
               <button
@@ -972,20 +1015,33 @@ export default function CashierChatPage() {
                       />
                     </label>
 
-                    <label htmlFor="cashier-chat-camera-input" className={`p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Ambil Foto dari Kamera">
+                    <button
+                      type="button"
+                      disabled={uploadingFile}
+                      onClick={() => {
+                        if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
+                          setIsCameraModalOpen(true);
+                        } else {
+                          document.getElementById('cashier-chat-camera-input')?.click();
+                        }
+                      }}
+                      className={`p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`}
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    >
                       <Camera className="w-4 h-4" />
-                      <input
-                        type="file"
-                        id="cashier-chat-camera-input"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        disabled={uploadingFile}
-                        onChange={(e) => handleChatFileUpload(e, true)}
-                        title="Ambil Foto dari Kamera"
-                        aria-label="Ambil Foto dari Kamera"
-                      />
-                    </label>
+                    </button>
+                    <input
+                      type="file"
+                      id="cashier-chat-camera-input"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={uploadingFile}
+                      onChange={(e) => handleChatFileUpload(e, true)}
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    />
                   </div>
 
                   {/* Tombol quick reply */}
@@ -1215,6 +1271,12 @@ export default function CashierChatPage() {
         }}
         onClose={() => setConfirmBlockOpen(false)}
         type="danger"
+      />
+
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
       />
     </div>
   );

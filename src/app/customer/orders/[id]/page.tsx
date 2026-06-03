@@ -14,6 +14,7 @@ import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
 
 declare const google: any;
 
@@ -122,6 +123,8 @@ export default function OrderTrackingPage() {
   const [taxPercent, setTaxPercent] = useState<number>(10.00);
   const [restoLat, setRestoLat] = useState<number>(-7.7829);
   const [restoLng, setRestoLng] = useState<number>(110.3323);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [paymentExpiryMinutes, setPaymentExpiryMinutes] = useState<number>(60);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
@@ -351,6 +354,47 @@ export default function OrderTrackingPage() {
     }
   };
 
+  const handleCameraCapture = async (file: File) => {
+    setUploadingFile(true);
+    const toastId = toast.loading("Mengunggah foto...");
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'profiles');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengunggah foto");
+
+      const publicUrl = data.url;
+
+      const resMsg = await fetch(`/api/customer/orders/${id}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: "Mengirim foto dari kamera",
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) throw new Error(dataMsg.error || "Gagal mengirim pesan");
+
+      toast.success("Foto berhasil diambil dan dikirim!", { id: toastId });
+      fetchChatMessages();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah foto", { id: toastId });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const containsProfanity = (text: string) => {
     const cleanText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
     const vulgarWords = ['anjing', 'babi', 'bangsat', 'goblok', 'tolol', 'kontol', 'memek', 'pantek', 'jancok'];
@@ -576,6 +620,7 @@ export default function OrderTrackingPage() {
         if (data.resto_longitude !== null && data.resto_longitude !== undefined) {
           setRestoLng(Number(data.resto_longitude));
         }
+        setSettingsLoaded(true);
       }
     };
     fetchSettings();
@@ -1168,7 +1213,7 @@ export default function OrderTrackingPage() {
           </div>
 
           {/* Google Maps Route Display */}
-          {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+          {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && settingsLoaded && (
             <div className="w-full h-72 rounded-2xl overflow-hidden border border-border-light dark:border-border-dark mt-4">
               <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
                 <Map
@@ -1937,20 +1982,33 @@ export default function OrderTrackingPage() {
                       />
                     </label>
 
-                    <label htmlFor="order-chat-camera-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Ambil Foto dari Kamera">
+                    <button
+                      type="button"
+                      disabled={uploadingFile}
+                      onClick={() => {
+                        if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
+                          setIsCameraModalOpen(true);
+                        } else {
+                          document.getElementById('order-chat-camera-input')?.click();
+                        }
+                      }}
+                      className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`}
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    >
                       <Camera className="w-4 h-4" />
-                      <input
-                        type="file"
-                        id="order-chat-camera-input"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        disabled={uploadingFile}
-                        onChange={(e) => handleChatFileUpload(e, true)}
-                        title="Ambil Foto dari Kamera"
-                        aria-label="Ambil Foto dari Kamera"
-                      />
-                    </label>
+                    </button>
+                    <input
+                      type="file"
+                      id="order-chat-camera-input"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={uploadingFile}
+                      onChange={(e) => handleChatFileUpload(e, true)}
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    />
                   </div>
                   <input
                     type="text"
@@ -1978,6 +2036,12 @@ export default function OrderTrackingPage() {
           </div>
         )}
       </AnimatePresence>
+
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
+      />
 
     </div>
   );

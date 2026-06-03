@@ -10,8 +10,9 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   LifeBuoy, Plus, ClipboardList, Send, FileText,
   User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2,
-  Paperclip, Camera
+  Paperclip, Camera, Upload, Trash2, Loader2
 } from "lucide-react";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
 
 interface Ticket {
   id: string;
@@ -24,7 +25,7 @@ interface Ticket {
   attachment_url?: string;
   urgency: 'low' | 'medium' | 'high' | 'urgent';
   contact_info?: string;
-  status: 'pending' | 'processing' | 'waiting_info' | 'completed' | 'closed' | 'expired';
+  status: 'pending' | 'processing' | 'waiting_info' | 'completed' | 'closed' | 'expired' | 'approved' | 'rejected';
   sla_deadline?: string;
   source: 'manual' | 'ai';
   created_at: string;
@@ -66,6 +67,8 @@ export default function CustomerSupportPage() {
   const [formUrgency, setFormUrgency] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [formContactInfo, setFormContactInfo] = useState('');
   const [formAttachmentUrl, setFormAttachmentUrl] = useState('');
+  const [uploadingFormFile, setUploadingFormFile] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   // Audio settings
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -384,6 +387,51 @@ export default function CustomerSupportPage() {
       }
     } catch (err) {
       toast.error('Gagal mengirim pesan chat');
+    }
+  };
+
+  const handleFormFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    let file: File | undefined;
+    if (e instanceof File) {
+      file = e;
+    } else {
+      file = e.target.files?.[0];
+    }
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingFormFile(true);
+    const toastId = toast.loading("Mengunggah berkas bukti...");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session?.session?.user?.id || 'anon';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+      formData.append('isProfile', 'false');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah berkas");
+
+      setFormAttachmentUrl(result.url);
+      toast.success("Berkas bukti berhasil diunggah!", { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah berkas", { id: toastId });
+    } finally {
+      setUploadingFormFile(false);
+      if (!(e instanceof File) && e.target) {
+        e.target.value = "";
+      }
     }
   };
 
@@ -780,20 +828,33 @@ export default function CustomerSupportPage() {
                       />
                     </label>
 
-                    <label htmlFor="chat-camera-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Ambil Foto dari Kamera">
+                    <button
+                      type="button"
+                      disabled={uploadingFile}
+                      onClick={() => {
+                        if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
+                          setIsCameraModalOpen(true);
+                        } else {
+                          document.getElementById('chat-camera-input')?.click();
+                        }
+                      }}
+                      className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark"
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    >
                       <Camera className="w-4 h-4" />
-                      <input
-                        type="file"
-                        id="chat-camera-input"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        disabled={uploadingFile}
-                        onChange={(e) => handleChatFileUpload(e, true)}
-                        title="Ambil Foto dari Kamera"
-                        aria-label="Ambil Foto dari Kamera"
-                      />
-                    </label>
+                    </button>
+                    <input
+                      type="file"
+                      id="chat-camera-input"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={uploadingFile}
+                      onChange={(e) => handleChatFileUpload(e, true)}
+                      title="Ambil Foto dari Kamera"
+                      aria-label="Ambil Foto dari Kamera"
+                    />
                   </div>
 
                   <input
@@ -941,14 +1002,50 @@ export default function CustomerSupportPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">URL Lampiran Bukti (Opsional)</label>
-                    <input
-                      type="text"
-                      placeholder="Masukkan URL foto/dokumen jika ada"
-                      value={formAttachmentUrl}
-                      onChange={(e) => setFormAttachmentUrl(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                    <label className="text-xs font-bold text-muted uppercase">Lampiran Bukti (Opsional)</label>
+                    <div className="flex flex-col gap-2">
+                      {formAttachmentUrl ? (
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
+                          {formAttachmentUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)/i) ? (
+                            <img src={formAttachmentUrl} alt="Preview Bukti" className="w-12 h-12 object-cover rounded-lg border border-border-light dark:border-border-dark" />
+                          ) : (
+                            <FileText className="w-8 h-8 text-primary" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-text-light dark:text-text-dark truncate">Bukti Terunggah</p>
+                            <a href={formAttachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline block truncate">{formAttachmentUrl}</a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFormAttachmentUrl('')}
+                            className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-lg transition-all"
+                            title="Hapus Bukti"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className={`w-full py-4 border-2 border-dashed border-border-light dark:border-border-dark hover:border-primary/50 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${uploadingFormFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                          {uploadingFormFile ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          ) : (
+                            <Upload className="w-6 h-6 text-muted" />
+                          )}
+                          <span className="text-xs font-black text-text-light dark:text-text-dark uppercase tracking-wider">
+                            {uploadingFormFile ? 'Mengunggah Berkas...' : 'Pilih Berkas Bukti'}
+                          </span>
+                          <span className="text-[10px] text-muted text-center max-w-xs px-4">
+                            Lampirkan berkas, foto, atau screenshot bukti kendala keluhan Anda (Maks. 5MB)
+                          </span>
+                          <input
+                            type="file"
+                            disabled={uploadingFormFile}
+                            className="hidden"
+                            onChange={handleFormFileUpload}
+                          />
+                        </label>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1030,6 +1127,59 @@ export default function CustomerSupportPage() {
           </div>
         )}
       </AnimatePresence>
+
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={async (file) => {
+          setUploadingFile(true);
+          const toastId = toast.loading("Mengunggah foto kamera...");
+          try {
+            const { data: session } = await supabase.auth.getSession();
+            if (!session?.session?.user) throw new Error("Sesi tidak ditemukan");
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', session.session.user.id);
+            formData.append('isProfile', 'false');
+
+            const res = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error || "Gagal mengunggah foto");
+
+            const publicUrl = result.url;
+
+            const resMsg = await fetch(`/api/support/ticket/${activeTicket!.id}/chat`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: "Mengirim foto dari kamera",
+                attachment_url: publicUrl
+              })
+            });
+
+            const dataMsg = await resMsg.json();
+            if (!resMsg.ok) {
+              throw new Error(dataMsg.error || "Gagal mengirim pesan");
+            }
+
+            toast.success("Foto berhasil diambil dan dikirim!", { id: toastId });
+            
+            setMessages(prev => {
+              if (prev.some(m => m.id === dataMsg.message.id)) return prev;
+              return [...prev, dataMsg.message];
+            });
+          } catch (err: any) {
+            toast.error(err.message || "Gagal mengunggah foto", { id: toastId });
+          } finally {
+            setUploadingFile(false);
+          }
+        }}
+      />
 
     </div>
   );

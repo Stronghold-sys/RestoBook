@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Gift, Trophy, Award, Calendar, AlertCircle, Clock, 
   CheckCircle, HelpCircle, RefreshCw, Loader2, ArrowRight,
-  Sparkles, Wallet, Ticket, ShoppingBag, CreditCard, ChevronRight
+  Sparkles, Wallet, Ticket, ShoppingBag, CreditCard, ChevronRight, Truck
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -314,6 +314,7 @@ export default function CustomerRewardsPage() {
       case "food": return <Sparkles className="w-6 h-6 text-amber-500" />;
       case "cashback": return <Wallet className="w-6 h-6 text-emerald-500" />;
       case "product": return <ShoppingBag className="w-6 h-6 text-blue-500" />;
+      case "shipping": return <Truck className="w-6 h-6 text-cyan-500" />;
       default: return <Gift className="w-6 h-6 text-purple-500" />;
     }
   };

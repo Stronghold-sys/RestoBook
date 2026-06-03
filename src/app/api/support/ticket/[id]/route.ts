@@ -38,7 +38,7 @@ export async function GET(
     const ticketId = params.id;
     const { data: ticket, error } = await supabase
       .from('support_tickets')
-      .select('*, profiles(full_name, email)')
+      .select('*, profiles!customer_id(full_name, email)')
       .eq('id', ticketId)
       .single();
 
@@ -81,7 +81,7 @@ export async function PUT(
     const ticketId = params.id;
     const { data: currentTicket, error: fetchError } = await supabase
       .from('support_tickets')
-      .select('*, profiles(full_name, email)')
+      .select('*, profiles!customer_id(full_name, email)')
       .eq('id', ticketId)
       .single();
 

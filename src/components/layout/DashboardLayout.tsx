@@ -632,14 +632,14 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsSidebarOpen(false)}
-                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+                className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm lg:hidden"
               />
               <motion.aside
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed left-0 top-0 z-50 h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden"
+                className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden"
               >
                 <div className="mb-10 flex items-center justify-between px-2">
                   <button

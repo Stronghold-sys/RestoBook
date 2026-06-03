@@ -1250,6 +1250,8 @@ export default function AdminSupportPage() {
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Tulis pesan tanggapan admin..."
+                      title="Pesan tanggapan admin"
+                      aria-label="Pesan tanggapan admin"
                       className="flex-1 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
                     />
                     <button
@@ -1280,7 +1282,7 @@ export default function AdminSupportPage() {
       {/* Decision (Approve/Reject) Confirmation Modal */}
       <AnimatePresence>
         {showApprovalModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

@@ -7,7 +7,7 @@ import {
   CheckCircle, HelpCircle, RefreshCw, Loader2, Plus, Edit2,
   Trash2, Settings, Users, BarChart3, ShieldAlert, X,
   Save, Ban, Unlock, RefreshCcw, Wallet, ArrowDown, ArrowUp,
-  Ticket, Sparkles, ShoppingBag
+  Ticket, Sparkles, ShoppingBag, Truck
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -260,6 +260,9 @@ export default function AdminRewardsPage() {
       desc = `${title || "Menu spesial ini"} hadir sebagai hadiah eksklusif untuk pelanggan setia RestoBook! Tukarkan minimal ${pts} poin Anda dan nikmati sajian istimewa dari kami. ${exp}`;
     } else if (category === "cashback") {
       desc = `Tukarkan ${pts} poin untuk mendapatkan saldo Dompetku. ${exp}`;
+    } else if (category === "shipping") {
+      const disc = Number(discountPercent) || 0;
+      desc = `${title || "Reward ini"} memberikan diskon ongkos kirim sebesar ${disc}% untuk pesanan delivery RestoBook. Dapat ditukar dengan minimal ${pts} poin. ${exp}`;
     } else if (category === "product") {
       desc = `${title || "Produk promo eksklusif ini"} tersedia khusus untuk pelanggan RestoBook. Tukarkan minimal ${pts} poin dan dapatkan produk pilihan kami. ${exp}`;
     } else {
@@ -830,6 +833,7 @@ export default function AdminRewardsPage() {
                                  reward.category === "food" ? <Sparkles className="w-6 h-6 text-amber-500" /> :
                                  reward.category === "cashback" ? <Wallet className="w-6 h-6 text-emerald-500" /> :
                                  reward.category === "product" ? <ShoppingBag className="w-6 h-6 text-blue-500" /> :
+                                 reward.category === "shipping" ? <Truck className="w-6 h-6 text-cyan-500" /> :
                                  <Gift className="w-6 h-6 text-purple-500" />}
                               </div>
                               <div>
@@ -847,9 +851,9 @@ export default function AdminRewardsPage() {
                             {reward.description || "Tidak ada deskripsi."}
                           </p>
 
-                          {reward.category === "voucher" && (
+                          {(reward.category === "voucher" || reward.category === "shipping") && (
                             <div className="bg-orange-50/50 dark:bg-orange-950/10 p-3 rounded-xl text-xs text-orange-700 dark:text-orange-400 font-bold">
-                              Potongan Voucher: {reward.discount_percent || 10}% Diskon
+                              {reward.category === "shipping" ? "Diskon Ongkir: " : "Potongan Voucher: "}{reward.discount_percent || 10}%{reward.category === "shipping" ? " untuk pesanan Delivery" : " Diskon"}
                             </div>
                           )}
 
@@ -1502,13 +1506,16 @@ export default function AdminRewardsPage() {
                     <option value="food">Makanan / Minuman</option>
                     <option value="cashback">Cashback Saldo</option>
                     <option value="product">Produk Promo</option>
+                    <option value="shipping">Diskon Ongkir (Delivery)</option>
                     <option value="custom">Reward Custom</option>
                   </select>
                 </div>
 
-                {rewardForm.category === "voucher" && (
+                {(rewardForm.category === "voucher" || rewardForm.category === "shipping") && (
                   <div>
-                    <label htmlFor="rewardDiscountPercent" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Diskon (%)</label>
+                    <label htmlFor="rewardDiscountPercent" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                      {rewardForm.category === "shipping" ? "Diskon Ongkir (%)" : "Diskon (%)"}
+                    </label>
                     <input 
                       id="rewardDiscountPercent"
                       type="number" 
@@ -1517,9 +1524,12 @@ export default function AdminRewardsPage() {
                       value={rewardForm.discountPercent} 
                       onChange={e => setRewardForm({ ...rewardForm, discountPercent: e.target.value })} 
                       placeholder="10"
-                      title="Diskon (%)"
+                      title={rewardForm.category === "shipping" ? "Diskon Ongkir (%)" : "Diskon (%)"}
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                     />
+                    {rewardForm.category === "shipping" && (
+                      <p className="text-[10px] text-muted mt-1.5">Diskon ini akan diterapkan pada biaya ongkos kirim pesanan delivery pelanggan.</p>
+                    )}
                   </div>
                 )}
  

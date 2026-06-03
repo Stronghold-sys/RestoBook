@@ -173,14 +173,30 @@ export default function OrderTrackingPage() {
       return;
     }
 
+    if (chatRoom.status === 'expired') {
+      setChatCountdownText('');
+      return;
+    }
+
     const deletionTime = new Date(chatRoom.chat_history_deleted_at).getTime();
     const initialDiff = deletionTime - Date.now();
 
-    if (initialDiff <= 0 && chatRoom.status !== 'expired') {
+    if (initialDiff <= 0) {
       setChatCountdownText('00:00:00');
       triggerOrderChatCronCleanup();
       return;
     }
+
+    // Set initial text immediately (before first interval tick)
+    const computeText = (diff: number) => {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      const pad = (num: number) => num.toString().padStart(2, '0');
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    setChatCountdownText(computeText(initialDiff));
 
     const interval = setInterval(() => {
       const diff = deletionTime - Date.now();
@@ -190,12 +206,7 @@ export default function OrderTrackingPage() {
         clearInterval(interval);
         triggerOrderChatCronCleanup();
       } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        const pad = (num: number) => num.toString().padStart(2, '0');
-        setChatCountdownText(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+        setChatCountdownText(computeText(diff));
       }
     }, 1000);
 
@@ -2139,24 +2150,22 @@ export default function OrderTrackingPage() {
                   </p>
                 </div>
               ) : chatRoom?.status === 'completed' || ['completed', 'cancelled'].includes(order?.status) ? (
-                <div className="p-5 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
-                  <p className="text-xs font-bold text-muted">
-                    Percakapan telah selesai.
-                  </p>
-                  {chatCountdownText && chatRoom?.status !== 'expired' && (
-                    <p className="text-[10px] text-muted mt-1">
-                      Riwayat chat akan dibersihkan dalam: <strong className="font-mono text-red-500">{chatCountdownText}</strong>
-                    </p>
-                  )}
-                  <p className="text-[10px] text-muted mt-1">
-                    Jika masih memerlukan bantuan, silakan gunakan menu Pengaduan dan Bantuan.
-                  </p>
+                <div className="border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50">
+                  <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-muted">🔒 Percakapan telah selesai.</p>
+                      <p className="text-[10px] text-muted/70 mt-0.5">Gunakan menu Pengaduan & Bantuan jika masih butuh bantuan.</p>
+                    </div>
+                    {chatRoom?.chat_history_deleted_at && chatRoom?.status !== 'expired' && chatCountdownText && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[10px] font-mono font-bold rounded-lg border border-amber-200/60 dark:border-amber-800/30 whitespace-nowrap shrink-0">
+                        ⏳ Hapus dalam: {chatCountdownText}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : chatRoom?.status === 'expired' ? (
                 <div className="p-5 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-900/50 text-center">
-                  <p className="text-xs font-bold text-red-500">
-                    Riwayat obrolan telah dihapus permanen.
-                  </p>
+                  <p className="text-xs font-bold text-red-500">🗑️ Riwayat obrolan telah dihapus permanen.</p>
                 </div>
               ) : (
                 <div className="border-t border-border-light dark:border-border-dark">

@@ -219,14 +219,29 @@ export default function CustomerSupportPage() {
       return;
     }
 
+    if (activeTicket.status === 'expired') {
+      setCountdownText('');
+      return;
+    }
+
     const deletionTime = new Date(activeTicket.chat_history_deleted_at).getTime();
     const initialDiff = deletionTime - Date.now();
 
-    if (initialDiff <= 0 && activeTicket.status !== 'expired') {
+    if (initialDiff <= 0) {
       setCountdownText('00 jam 00 menit 00 detik');
       triggerCronCleanup();
       return;
     }
+
+    const computeText = (diff: number) => {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      const pad = (num: number) => num.toString().padStart(2, '0');
+      return `${pad(hours)} jam ${pad(minutes)} menit ${pad(seconds)} detik`;
+    };
+
+    setCountdownText(computeText(initialDiff));
 
     const interval = setInterval(() => {
       const diff = deletionTime - Date.now();
@@ -236,12 +251,7 @@ export default function CustomerSupportPage() {
         clearInterval(interval);
         triggerCronCleanup();
       } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        const pad = (num: number) => num.toString().padStart(2, '0');
-        setCountdownText(`${pad(hours)} jam ${pad(minutes)} menit ${pad(seconds)} detik`);
+        setCountdownText(computeText(diff));
       }
     }, 1000);
 
@@ -712,27 +722,38 @@ export default function CustomerSupportPage() {
                 </div>
 
                 {/* Row 2: Title & Actions */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border-light/40 dark:border-border-dark/40 sm:border-0 sm:pt-0">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-bold text-text-light dark:text-text-dark">{activeTicket.title}</h2>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pt-3 border-t border-border-light/40 dark:border-border-dark/40 sm:border-0 sm:pt-0">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-text-light dark:text-text-dark leading-tight">{activeTicket.title}</h2>
                     <p className="text-xs text-muted">
-                      Dibuat pada: {format(new Date(activeTicket.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
+                      Dibuat: {format(new Date(activeTicket.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })} WIB
                     </p>
                   </div>
                   {!['completed', 'closed', 'expired', 'approved', 'rejected'].includes(activeTicket.status) && (
-                    <button
-                      disabled={['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at}
-                      onClick={() => {
-                        setCancelReason('');
-                        setShowCancelModal(true);
-                      }}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-sm self-start sm:self-auto whitespace-nowrap"
-                      title={(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at) ? "Tiket sedang diproses oleh admin dan tidak dapat dibatalkan" : "Batalkan Tiket"}
-                    >
-                      {(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at)
-                        ? "Tiket Sedang Diproses (Tidak Dapat Dibatalkan)"
-                        : "Batalkan Tiket"}
-                    </button>
+                    <div className="shrink-0 self-start">
+                      {(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at) ? (
+                        <div
+                          className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 rounded-xl text-xs font-bold border border-gray-200 dark:border-gray-700/50 cursor-not-allowed"
+                          title="Tiket sedang diproses oleh admin dan tidak dapat dibatalkan"
+                        >
+                          <XCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span className="hidden sm:inline">Tidak Dapat Dibatalkan</span>
+                          <span className="sm:hidden">Diproses</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setCancelReason('');
+                            setShowCancelModal(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                          title="Batalkan Tiket"
+                        >
+                          <XCircle className="w-3.5 h-3.5 shrink-0" />
+                          Batalkan Tiket
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -853,19 +874,22 @@ export default function CustomerSupportPage() {
 
               {/* Chat Expiry Warning / Locked Panel */}
               {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired' || activeTicket.status === 'approved' || activeTicket.status === 'rejected') && (
-                <div className="p-4 bg-red-50 dark:bg-red-950/20 border-t border-b border-red-100 dark:border-red-900/30 text-center space-y-1">
-                  <p className="text-sm font-bold text-red-600 dark:text-red-400">Percakapan telah berakhir.</p>
-                  <p className="text-xs text-red-500/80">Anda tidak dapat mengirim pesan lagi pada tiket ini.</p>
-                  {activeTicket.chat_history_deleted_at && activeTicket.status !== 'expired' && (
-                    <p className="text-[11px] font-mono text-red-600 dark:text-red-400 mt-1">
-                      Riwayat chat akan dihapus otomatis dalam: {countdownText}
-                    </p>
-                  )}
-                  {activeTicket.status === 'expired' && (
-                    <p className="text-[11px] font-mono text-red-500 mt-1">
-                      Riwayat chat telah dihapus permanen.
-                    </p>
-                  )}
+                <div className="px-4 py-3 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/10 border-t border-red-100 dark:border-red-900/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-red-600 dark:text-red-400">🔒 Percakapan telah berakhir.</p>
+                      <p className="text-[10px] text-red-500/80 mt-0.5">Anda tidak dapat mengirim pesan lagi pada tiket ini.</p>
+                    </div>
+                    {activeTicket.status === 'expired' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 dark:bg-red-950/40 text-red-500 dark:text-red-400 text-[10px] font-black rounded-lg border border-red-200/60 dark:border-red-800/30 whitespace-nowrap">
+                        🗑️ Riwayat chat dihapus permanen
+                      </span>
+                    ) : activeTicket.chat_history_deleted_at && countdownText ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[10px] font-mono font-bold rounded-lg border border-amber-200/60 dark:border-amber-800/30 whitespace-nowrap">
+                        ⏳ Hapus dalam: {countdownText}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               )}
 

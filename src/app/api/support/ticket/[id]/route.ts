@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { sendTicketEmail } from '@/lib/sendTicketEmail';
 
 async function checkAdmin(supabase: any) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -80,7 +81,7 @@ export async function PUT(
     const ticketId = params.id;
     const { data: currentTicket, error: fetchError } = await supabase
       .from('support_tickets')
-      .select('*')
+      .select('*, profiles(full_name, email)')
       .eq('id', ticketId)
       .single();
 
@@ -90,7 +91,7 @@ export async function PUT(
 
     // Check permissions: only admin can modify ticket fields for now, or customer can close their own ticket
     const body = await req.json();
-    const { status, urgency, assigned_to } = body;
+    const { status, urgency, assigned_to, reason } = body;
 
     const isOwner = currentTicket.customer_id === profile.id;
     const isAdmin = profile.role === 'admin';
@@ -112,7 +113,7 @@ export async function PUT(
     if (urgency && isAdmin) updateFields.urgency = urgency;
     if (assigned_to !== undefined && isAdmin) updateFields.assigned_to = assigned_to;
 
-    // Handle closing/locking logic
+    // Handle closing/locking/approval/rejection logic
     if (status === 'completed' || status === 'closed') {
       updateFields.chat_closed_at = new Date().toISOString();
 
@@ -144,8 +145,83 @@ export async function PUT(
         reference_id: currentTicket.id,
         status_badge: status === 'completed' ? 'Selesai' : 'Batal'
       });
+    } else if (status === 'approved' && isAdmin) {
+      // 1. Open customer profile email input
+      await supabase
+        .from('profiles')
+        .update({ email_unlocked: true, updated_at: new Date().toISOString() })
+        .eq('id', currentTicket.customer_id);
+
+      // 2. Fetch current email to log
+      const { data: customerProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', currentTicket.customer_id)
+        .single();
+
+      // 3. Write into profile_audit_logs
+      await supabase.from('profile_audit_logs').insert({
+        ticket_id: currentTicket.id,
+        ticket_number: currentTicket.ticket_number,
+        category: currentTicket.category,
+        customer_id: currentTicket.customer_id,
+        approved_by: profile.id,
+        approved_at: new Date().toISOString(),
+        old_email: customerProfile?.email || currentTicket.profiles?.email || '',
+        status_before: currentTicket.status,
+        status_after: 'approved',
+        reason: reason || 'Disetujui oleh admin'
+      });
+
+      // 4. Create internal System Notifications for customer
+      await supabase.from('notifications').insert([
+        {
+          user_id: currentTicket.customer_id,
+          title: 'Permintaan Perubahan Disetujui',
+          message: 'Permintaan perubahan data akun Anda telah disetujui. Silakan periksa kembali profil Anda untuk melanjutkan pembaruan data yang diizinkan.',
+          type: 'support_status',
+          reference_id: currentTicket.id,
+          status_badge: 'Disetujui'
+        },
+        {
+          user_id: currentTicket.customer_id,
+          title: 'Kolom Edit Dibuka',
+          message: 'Beberapa kolom yang terkait telah dibuka sementara agar Anda dapat melanjutkan proses pembaruan sesuai persetujuan admin.',
+          type: 'support_status',
+          reference_id: currentTicket.id,
+          status_badge: 'Edit Aktif'
+        }
+      ]);
+    } else if (status === 'rejected' && isAdmin) {
+      // 1. Ensure profile remains locked
+      await supabase
+        .from('profiles')
+        .update({ email_unlocked: false, updated_at: new Date().toISOString() })
+        .eq('id', currentTicket.customer_id);
+
+      // 2. Write into profile_audit_logs
+      await supabase.from('profile_audit_logs').insert({
+        ticket_id: currentTicket.id,
+        ticket_number: currentTicket.ticket_number,
+        category: currentTicket.category,
+        customer_id: currentTicket.customer_id,
+        approved_by: profile.id,
+        approved_at: new Date().toISOString(),
+        status_before: currentTicket.status,
+        status_after: 'rejected',
+        reason: reason || 'Ditolak oleh admin'
+      });
+
+      // 3. Create notification for customer
+      await supabase.from('notifications').insert({
+        user_id: currentTicket.customer_id,
+        title: 'Permintaan Perubahan Ditolak',
+        message: 'Mohon maaf, permintaan perubahan data akun Anda belum dapat disetujui saat ini.',
+        type: 'support_status',
+        reference_id: currentTicket.id,
+        status_badge: 'Ditolak'
+      });
     } else if (status === 'processing') {
-      // If status moved back to processing or set to processing
       if (!currentTicket.chat_started_at) {
         updateFields.chat_started_at = new Date().toISOString();
       }
@@ -154,7 +230,7 @@ export async function PUT(
       await supabase.from('notifications').insert({
         user_id: currentTicket.customer_id,
         title: 'Tiket Sedang Diproses',
-        message: `Tiket ${currentTicket.ticket_number} Anda sedang diproses oleh tim bantuan kami.`,
+        message: 'Permintaan perubahan data akun Anda sedang ditinjau oleh admin.',
         type: 'support_status',
         reference_id: currentTicket.id,
         status_badge: 'Diproses'
@@ -196,15 +272,33 @@ export async function PUT(
           status === 'pending' ? 'Menunggu Tanggapan' :
           status === 'processing' ? 'Diproses' :
           status === 'waiting_info' ? 'Menunggu Informasi Tambahan' :
+          status === 'approved' ? 'Disetujui' :
+          status === 'rejected' ? 'Ditolak' :
           status === 'completed' ? 'Selesai' : status
-        } oleh ${profile.full_name || 'Admin'}.`;
+        } oleh Admin ${profile.full_name || 'Admin'}.`;
       }
       
       await supabase.from('ticket_messages').insert({
         ticket_id: ticketId,
-        sender_id: profile.id, // System updates logged under updater
+        sender_id: profile.id,
         message: systemMsg
       });
+
+      // Send email notification to user about status change
+      const targetEmail = currentTicket.profiles?.email;
+      const targetName = currentTicket.profiles?.full_name || 'Pelanggan';
+      
+      if (targetEmail && targetEmail.includes('@')) {
+        await sendTicketEmail({
+          email: targetEmail,
+          name: targetName,
+          ticketNumber: currentTicket.ticket_number,
+          category: currentTicket.category,
+          title: currentTicket.title,
+          status: status,
+          reason: reason || body.cancellation_reason
+        }).catch(err => console.error('[sendTicketEmail] Error sending status email:', err));
+      }
     }
 
     return NextResponse.json({ success: true, ticket: updatedTicket });

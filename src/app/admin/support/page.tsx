@@ -23,7 +23,7 @@ interface Ticket {
   attachment_url?: string;
   urgency: 'low' | 'medium' | 'high' | 'urgent';
   contact_info?: string;
-  status: 'pending' | 'processing' | 'waiting_info' | 'completed' | 'closed' | 'expired';
+  status: 'pending' | 'processing' | 'waiting_info' | 'completed' | 'closed' | 'expired' | 'approved' | 'rejected';
   sla_deadline?: string;
   source: 'manual' | 'ai';
   created_at: string;
@@ -80,6 +80,12 @@ export default function AdminSupportPage() {
 
   // Countdown timer for completed/closed tickets
   const [countdownText, setCountdownText] = useState('');
+
+  // States for ticket approval/rejection decision
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalType, setApprovalType] = useState<'approved' | 'rejected'>('approved');
+  const [decisionReason, setDecisionReason] = useState('');
+  const [decisionLoading, setDecisionLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
@@ -404,6 +410,49 @@ export default function AdminSupportPage() {
     }
   };
 
+  const handleOpenDecisionModal = (type: 'approved' | 'rejected') => {
+    setApprovalType(type);
+    setDecisionReason('');
+    setShowApprovalModal(true);
+  };
+
+  const handleDecisionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTicket) return;
+    if (!decisionReason.trim()) {
+      toast.error("Alasan wajib diisi");
+      return;
+    }
+
+    setDecisionLoading(true);
+    try {
+      const res = await fetch(`/api/support/ticket/${activeTicket.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: approvalType,
+          reason: decisionReason.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Permintaan berhasil ${approvalType === 'approved' ? 'disetujui' : 'ditolak'}`);
+        setShowApprovalModal(false);
+        setDecisionReason('');
+        setActiveTicket(data.ticket);
+        fetchMessages(activeTicket.id);
+        fetchTicketsOnly();
+      } else {
+        toast.error(data.error || "Gagal memproses keputusan");
+      }
+    } catch (error: any) {
+      toast.error("Terjadi kesalahan koneksi");
+    } finally {
+      setDecisionLoading(false);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeTicket) return;
@@ -477,6 +526,8 @@ export default function AdminSupportPage() {
       case 'pending': return 'Menunggu Tanggapan Admin';
       case 'processing': return 'Diproses';
       case 'waiting_info': return 'Menunggu Informasi Tambahan';
+      case 'approved': return 'Disetujui';
+      case 'rejected': return 'Ditolak';
       case 'completed': return 'Selesai';
       case 'closed': return 'Ditutup';
       case 'expired': return 'Kedaluwarsa';
@@ -489,6 +540,8 @@ export default function AdminSupportPage() {
       case 'pending': return 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/30';
       case 'processing': return 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30';
       case 'waiting_info': return 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30';
+      case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30';
+      case 'rejected': return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30';
       case 'completed': return 'bg-green-50 text-green-600 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30';
       case 'closed': return 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30';
       default: return 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700/50';
@@ -505,7 +558,7 @@ export default function AdminSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const isHistory = ['completed', 'closed', 'expired'].includes(t.status);
+    const isHistory = ['completed', 'closed', 'expired', 'rejected'].includes(t.status);
     return ticketViewTab === 'riwayat' ? isHistory : !isHistory;
   });
 
@@ -784,6 +837,13 @@ export default function AdminSupportPage() {
                   <option value="Pelayanan">Pelayanan</option>
                   <option value="Teknis">Teknis</option>
                   <option value="Akun">Akun</option>
+                  <option value="perubahan email">Perubahan Email</option>
+                  <option value="perubahan nama">Perubahan Nama</option>
+                  <option value="perubahan nomor telepon">Perubahan Nomor Telepon</option>
+                  <option value="perubahan alamat">Perubahan Alamat</option>
+                  <option value="koreksi data profil">Koreksi Data Profil</option>
+                  <option value="verifikasi ulang">Verifikasi Ulang</option>
+                  <option value="bantuan login">Bantuan Login</option>
                 </select>
               </div>
             </div>
@@ -893,28 +953,57 @@ export default function AdminSupportPage() {
                         <Play className="w-3.5 h-3.5" /> Mulai Chat
                       </button>
                     )}
-                    {activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && (
-                      <>
-                        <button
-                          onClick={() => handleUpdateTicketStatus(activeTicket.id, 'completed')}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" /> Tandai Selesai
-                        </button>
-                        <button
-                          onClick={() => handleUpdateTicketStatus(activeTicket.id, 'waiting_info')}
-                          className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <Info className="w-3.5 h-3.5" /> Butuh Info
-                        </button>
-                        <button
-                          onClick={() => handleEscalateTicket(activeTicket.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <ShieldAlert className="w-3.5 h-3.5" /> Eskalasi
-                        </button>
-                      </>
-                    )}
+                    {activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'approved' && activeTicket.status !== 'rejected' && (() => {
+                      const isProfileCategory = [
+                        'perubahan email',
+                        'perubahan nama',
+                        'perubahan nomor telepon',
+                        'perubahan alamat',
+                        'koreksi data profil',
+                        'verifikasi ulang',
+                        'bantuan login'
+                      ].includes(activeTicket.category);
+
+                      return (
+                        <>
+                          {isProfileCategory ? (
+                            <>
+                              <button
+                                onClick={() => handleOpenDecisionModal('approved')}
+                                className="bg-emerald-650 hover:bg-emerald-755 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" /> Setujui Permintaan
+                              </button>
+                              <button
+                                onClick={() => handleOpenDecisionModal('rejected')}
+                                className="bg-rose-650 hover:bg-rose-755 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 bg-red-600 hover:bg-red-700"
+                              >
+                                <XCircle className="w-3.5 h-3.5" /> Tolak Permintaan
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => handleUpdateTicketStatus(activeTicket.id, 'completed')}
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Tandai Selesai
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleUpdateTicketStatus(activeTicket.id, 'waiting_info')}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          >
+                            <Info className="w-3.5 h-3.5" /> Butuh Info
+                          </button>
+                          <button
+                            onClick={() => handleEscalateTicket(activeTicket.id)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5" /> Eskalasi
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1003,9 +1092,11 @@ export default function AdminSupportPage() {
                 </div>
 
                 {/* Expiry / Lock Status */}
-                {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired') && (
+                {(activeTicket.status === 'completed' || activeTicket.status === 'closed' || activeTicket.status === 'expired' || activeTicket.status === 'rejected') && (
                   <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border-t border-b border-amber-100 dark:border-amber-900/30 text-center text-xs">
-                    <span className="font-bold text-amber-700 dark:text-amber-400">Tiket Selesai / Ditutup. Percakapan Terkunci.</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-400">
+                      {activeTicket.status === 'rejected' ? 'Permintaan Ditolak. Percakapan Terkunci.' : 'Tiket Selesai / Ditutup. Percakapan Terkunci.'}
+                    </span>
                     {activeTicket.chat_history_deleted_at && activeTicket.status !== 'expired' && (
                       <p className="text-[10px] text-muted mt-1">
                         Riwayat chat akan dibersihkan dalam: <strong className="font-mono text-red-500">{countdownText}</strong>
@@ -1034,7 +1125,7 @@ export default function AdminSupportPage() {
                 )}
 
                 {/* Message Input Box */}
-                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && (
+                {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'rejected' && (
                   <form onSubmit={handleSendMessage} className="p-3 border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark flex items-center gap-3">
                     <input
                       type="text"
@@ -1067,6 +1158,82 @@ export default function AdminSupportPage() {
 
         </div>
       )}
+
+      {/* Decision (Approve/Reject) Confirmation Modal */}
+      <AnimatePresence>
+        {showApprovalModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+            >
+              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
+                <h3 className="text-lg font-bold text-text-light dark:text-text-dark">
+                  {approvalType === 'approved' ? 'Setujui Permintaan Perubahan' : 'Tolak Permintaan Perubahan'}
+                </h3>
+                <button
+                  onClick={() => setShowApprovalModal(false)}
+                  title="Tutup dialog"
+                  aria-label="Tutup"
+                  className="text-muted hover:text-red-500 transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleDecisionSubmit} className="space-y-4">
+                <p className="text-xs text-muted leading-relaxed">
+                  {approvalType === 'approved'
+                    ? 'Menyetujui permintaan ini akan membuka kolom input data yang bersangkutan pada halaman profil pelanggan secara sementara.'
+                    : 'Menolak permintaan ini akan membatalkan proses perubahan data dan kolom input pada profil pelanggan akan tetap terkunci.'}
+                </p>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="decisionReason" className="text-xs font-bold text-muted uppercase">
+                    {approvalType === 'approved' ? 'Alasan Persetujuan' : 'Alasan Penolakan'}
+                  </label>
+                  <textarea
+                    id="decisionReason"
+                    required
+                    placeholder={
+                      approvalType === 'approved'
+                        ? 'Masukkan alasan persetujuan (contoh: Dokumen verifikasi valid)'
+                        : 'Masukkan alasan penolakan (contoh: Dokumen lampiran tidak sesuai)'
+                    }
+                    value={decisionReason}
+                    onChange={(e) => setDecisionReason(e.target.value)}
+                    rows={3}
+                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3 text-xs text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
+                  <button
+                    type="button"
+                    onClick={() => setShowApprovalModal(false)}
+                    className="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-xs font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={decisionLoading || !decisionReason.trim()}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md ${
+                      approvalType === 'approved'
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {decisionLoading ? 'Memproses...' : approvalType === 'approved' ? 'Setujui' : 'Tolak'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar {

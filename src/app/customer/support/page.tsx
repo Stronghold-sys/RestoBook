@@ -59,7 +59,7 @@ export default function CustomerSupportPage() {
 
   // Form states
   const [formTitle, setFormTitle] = useState('');
-  const [formCategory, setFormCategory] = useState('Pembayaran');
+  const [formCategory, setFormCategory] = useState('perubahan email');
   const [formSubcategory, setFormSubcategory] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formUrgency, setFormUrgency] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
@@ -390,6 +390,8 @@ export default function CustomerSupportPage() {
       case 'pending': return 'Menunggu Tanggapan Admin';
       case 'processing': return 'Diproses';
       case 'waiting_info': return 'Menunggu Informasi Tambahan';
+      case 'approved': return 'Disetujui';
+      case 'rejected': return 'Ditolak';
       case 'completed': return 'Selesai';
       case 'closed': return 'Ditutup';
       case 'expired': return 'Kedaluwarsa';
@@ -402,6 +404,8 @@ export default function CustomerSupportPage() {
       case 'pending': return 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/30';
       case 'processing': return 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30';
       case 'waiting_info': return 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30';
+      case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30';
+      case 'rejected': return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30';
       case 'completed': return 'bg-green-50 text-green-600 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30';
       case 'closed': return 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30';
       default: return 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700/50';
@@ -418,7 +422,7 @@ export default function CustomerSupportPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const isHistory = ['completed', 'closed', 'expired'].includes(t.status);
+    const isHistory = ['rejected', 'completed', 'closed', 'expired'].includes(t.status);
     return activeTab === 'riwayat' ? isHistory : !isHistory;
   });
 
@@ -763,13 +767,13 @@ export default function CustomerSupportPage() {
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      <option value="Pembayaran">Pembayaran</option>
-                      <option value="Makanan">Makanan</option>
-                      <option value="Reservasi">Reservasi</option>
-                      <option value="Pelayanan">Pelayanan</option>
-                      <option value="Teknis">Teknis</option>
-                      <option value="Akun">Akun</option>
-                      <option value="Lainnya">Lainnya</option>
+                      <option value="perubahan email">Perubahan Email</option>
+                      <option value="perubahan nama">Perubahan Nama</option>
+                      <option value="perubahan nomor telepon">Perubahan Nomor Telepon</option>
+                      <option value="perubahan alamat">Perubahan Alamat</option>
+                      <option value="koreksi data profil">Koreksi Data Profil</option>
+                      <option value="verifikasi ulang">Verifikasi Ulang</option>
+                      <option value="bantuan login">Bantuan Login</option>
                     </select>
                   </div>
                 </div>

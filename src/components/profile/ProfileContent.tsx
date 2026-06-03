@@ -131,7 +131,7 @@ export default function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [profile, setProfile] = useState({ id: "", full_name: "", phone: "", avatar_url: "", email: "", role: "", employee_id: "" });
+  const [profile, setProfile] = useState({ id: "", full_name: "", phone: "", avatar_url: "", email: "", role: "", employee_id: "", email_unlocked: false });
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -218,7 +218,50 @@ export default function ProfileContent() {
     return () => clearInterval(timer);
   }, [waCountdown]);
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => {
+    fetchProfile();
+
+    // Subscribe to profiles changes for realtime sync
+    let channel: any;
+
+    const setupProfileSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      channel = supabase
+        .channel(`profile-realtime-sync-${session.user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `user_id=eq.${session.user.id}`
+          },
+          (payload: any) => {
+            if (payload.new) {
+              setProfile((prev) => ({
+                ...prev,
+                full_name: payload.new.full_name || "",
+                phone: payload.new.phone || "",
+                avatar_url: payload.new.avatar_url || "",
+                email: payload.new.email || "",
+                role: payload.new.role || "customer",
+                employee_id: payload.new.employee_id || "",
+                email_unlocked: !!payload.new.email_unlocked
+              }));
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupProfileSubscription();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasChecked || !checkId) return;
@@ -267,7 +310,8 @@ export default function ProfileContent() {
           avatar_url: data.avatar_url || "",
           email: data.email || session.user.email || "",
           role: data.role || "customer",
-          employee_id: data.employee_id || ""
+          employee_id: data.employee_id || "",
+          email_unlocked: !!data.email_unlocked
         });
         setPreviewUrl(data.avatar_url || "");
         if (data.employee_id) {
@@ -292,11 +336,22 @@ export default function ProfileContent() {
           userId: session?.user.id,
           fullName: profile.full_name,
           phone: profile.phone,
-          avatarUrl: profile.avatar_url
+          avatarUrl: profile.avatar_url,
+          email: profile.email
         }),
       });
 
-      if (!response.ok) throw new Error('Gagal menyimpan profil');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Gagal menyimpan profil');
+
+      if (result.data) {
+        setProfile(prev => ({
+          ...prev,
+          email: result.data.email || prev.email,
+          email_unlocked: false // lock field immediately
+        }));
+      }
+
       toast.success("Profil diperbarui!");
     } catch (e: any) {
       toast.error(e.message);
@@ -614,11 +669,29 @@ export default function ProfileContent() {
                     </div>
                   </div>
                 </div>
+                {profile.email_unlocked && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-2xl text-xs font-bold leading-relaxed mb-4">
+                    Beberapa kolom yang terkait telah dibuka sementara agar Anda dapat melanjutkan proses pembaruan sesuai persetujuan admin.
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label htmlFor="emailAddr" className="text-xs font-black uppercase text-muted ml-1">Alamat Email</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                    <input id="emailAddr" type="email" value={profile.email} disabled className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-2xl text-muted cursor-not-allowed" placeholder="email@contoh.com" title="Alamat Email" />
+                    <input
+                      id="emailAddr"
+                      type="email"
+                      value={profile.email}
+                      disabled={!profile.email_unlocked}
+                      onChange={e => setProfile({ ...profile, email: e.target.value })}
+                      className={`w-full pl-12 pr-4 py-3.5 border rounded-2xl outline-none transition-all ${
+                        profile.email_unlocked
+                          ? "bg-background-light dark:bg-background-dark border-primary focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark"
+                          : "bg-gray-50 dark:bg-gray-800/50 border-border-light dark:border-border-dark text-muted cursor-not-allowed"
+                      }`}
+                      placeholder="email@contoh.com"
+                      title="Alamat Email"
+                    />
                   </div>
                 </div>
                 

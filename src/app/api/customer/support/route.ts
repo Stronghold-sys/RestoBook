@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { sendTicketEmail } from '@/lib/sendTicketEmail';
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, email')
       .eq('user_id', user.id)
       .single();
 
@@ -122,6 +123,19 @@ export async function POST(req: NextRequest) {
         status_badge: 'Baru'
       }));
       await supabase.from('notifications').insert(notifs);
+    }
+
+    // 5. Send email notification to customer
+    const targetEmail = profile.email || user.email;
+    if (targetEmail && targetEmail.includes('@')) {
+      await sendTicketEmail({
+        email: targetEmail,
+        name: profile.full_name || 'Pelanggan',
+        ticketNumber: ticketNumber,
+        category: category,
+        title: title,
+        status: 'pending'
+      }).catch(err => console.error('[sendTicketEmail] Error sending ticket creation email:', err));
     }
 
     return NextResponse.json({

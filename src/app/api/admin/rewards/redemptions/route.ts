@@ -59,7 +59,40 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { redemptionId, isBlocked, blockReason } = body;
+    const { action, redemptionIds, redemptionId, isBlocked, blockReason } = body;
+
+    if (action === 'cancel_redemptions') {
+      if (!redemptionIds || !Array.isArray(redemptionIds) || redemptionIds.length === 0) {
+        return NextResponse.json({ error: 'Daftar ID Penukaran kosong' }, { status: 400 });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('reward_redemptions')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', redemptionIds)
+        .select();
+
+      if (error) throw error;
+
+      // Send notifications for each cancelled redemption
+      for (const red of data || []) {
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: red.customer_id,
+            title: 'Penukaran Dibatalkan',
+            message: `Kuota penukaran Anda telah disesuaikan oleh admin.`,
+            type: 'point',
+            reference_id: red.id,
+            status_badge: 'Batal'
+          });
+      }
+
+      return NextResponse.json({ success: true, updated: data });
+    }
 
     if (!redemptionId) {
       return NextResponse.json({ error: 'ID Penukaran harus diisi' }, { status: 400 });

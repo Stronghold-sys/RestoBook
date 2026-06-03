@@ -86,7 +86,7 @@ export default function AdminRewardsPage() {
   const [customerTxLogs, setCustomerTxLogs] = useState<any[]>([]);
   const [customerWalletTxLogs, setCustomerWalletTxLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
-  const [activeLogsTab, setActiveLogsTab] = useState<"points" | "wallet">("points");
+  const [activeLogsTab, setActiveLogsTab] = useState<"points" | "wallet" | "quota">("points");
 
   // Custom delete confirmation modal
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -522,6 +522,70 @@ export default function AdminRewardsPage() {
       toast.success("Penukaran reward berhasil dihapus!", { id: loadingToast });
       setShowDeleteRedemptionConfirm(false);
       setSelectedRedemptionForDelete(null);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const getCustomerActiveRedemptionsCount = (reward: any, customerId: string) => {
+    if (!reward.redeem_limit || reward.redeem_limit <= 0) return [];
+    const limitValue = reward.redeem_limit_value || 1;
+    const period = reward.redeem_limit_period || "all";
+
+    const userReds = redemptions.filter(
+      (r: any) => r.customer_id === customerId && r.reward_id === reward.id && r.status !== "cancelled"
+    );
+
+    if (period === "all") {
+      return userReds;
+    }
+
+    const now = Date.now();
+    let offsetMs = 0;
+    if (period === "minute") offsetMs = limitValue * 60 * 1000;
+    else if (period === "hour") offsetMs = limitValue * 60 * 60 * 1000;
+    else if (period === "day") offsetMs = limitValue * 24 * 60 * 60 * 1000;
+    else if (period === "week") offsetMs = limitValue * 7 * 24 * 60 * 60 * 1000;
+    else if (period === "month") {
+      const boundary = new Date();
+      boundary.setMonth(boundary.getMonth() - limitValue);
+      return userReds.filter((r: any) => new Date(r.created_at) >= boundary);
+    }
+
+    const boundaryTime = now - offsetMs;
+    return userReds.filter((r: any) => new Date(r.created_at).getTime() >= boundaryTime);
+  };
+
+  const handleAdjustQuota = async (actionType: 'reset' | 'reduce', reward: any, customerId: string) => {
+    const activeReds = getCustomerActiveRedemptionsCount(reward, customerId);
+    if (activeReds.length === 0) {
+      toast.error("Tidak ada kuota penukaran aktif yang bisa disesuaikan.");
+      return;
+    }
+
+    let targetIds: string[] = [];
+    if (actionType === 'reset') {
+      targetIds = activeReds.map((r: any) => r.id);
+    } else {
+      activeReds.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      targetIds = [activeReds[0].id];
+    }
+
+    const loadingToast = toast.loading("Menyesuaikan kuota penukaran...");
+    try {
+      const res = await fetch("/api/admin/rewards/redemptions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: 'cancel_redemptions',
+          redemptionIds: targetIds
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyesuaikan kuota");
+
+      toast.success(actionType === 'reset' ? "Kuota berhasil direset ke 0!" : "Kuota berhasil dikurangi 1!", { id: loadingToast });
       fetchAdminData();
     } catch (err: any) {
       toast.error(err.message, { id: loadingToast });
@@ -1703,7 +1767,7 @@ export default function AdminRewardsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-2">
                       <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat</h4>
-                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px]">
+                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px] shrink-0">
                         <button
                           type="button"
                           onClick={() => setActiveLogsTab("points")}
@@ -1721,6 +1785,15 @@ export default function AdminRewardsPage() {
                           }`}
                         >
                           Dompet ({customerWalletTxLogs.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveLogsTab("quota")}
+                          className={`px-2 py-1 rounded font-bold transition-all ${
+                            activeLogsTab === "quota" ? "bg-primary text-white" : "text-muted"
+                          }`}
+                        >
+                          Kuota Reward
                         </button>
                       </div>
                     </div>
@@ -1745,7 +1818,7 @@ export default function AdminRewardsPage() {
                           ))}
                         </div>
                       )
-                    ) : (
+                    ) : activeLogsTab === "wallet" ? (
                       customerWalletTxLogs.length === 0 ? (
                         <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas dompet</div>
                       ) : (
@@ -1769,6 +1842,67 @@ export default function AdminRewardsPage() {
                               </div>
                             );
                           })}
+                        </div>
+                      )
+                    ) : (
+                      rewards.filter(r => r.redeem_limit !== null && r.redeem_limit > 0).length === 0 ? (
+                        <div className="text-center py-10 text-muted text-[11px]">Belum ada reward dengan batas kuota penukaran</div>
+                      ) : (
+                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                          {rewards
+                            .filter(r => r.redeem_limit !== null && r.redeem_limit > 0)
+                            .map((reward) => {
+                              const activeReds = getCustomerActiveRedemptionsCount(reward, selectedCustomer.id);
+                              const count = activeReds.length;
+                              const limit = reward.redeem_limit;
+                              const period = reward.redeem_limit_period;
+                              const value = reward.redeem_limit_value || 1;
+
+                              let periodLabel = "";
+                              if (period === "all") periodLabel = "selamanya";
+                              else {
+                                const unitLabel = 
+                                  period === "minute" ? "menit" :
+                                  period === "hour" ? "jam" :
+                                  period === "day" ? "hari" :
+                                  period === "week" ? "minggu" :
+                                  period === "month" ? "bulan" : "periode";
+                                periodLabel = `per ${value} ${unitLabel}`;
+                              }
+
+                              return (
+                                <div key={reward.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] space-y-2">
+                                  <div className="flex justify-between items-start gap-2">
+                                    <div>
+                                      <p className="font-bold text-text-light dark:text-text-dark">{reward.title}</p>
+                                      <p className="text-[9px] text-muted font-medium uppercase tracking-wide">Limit: {limit}x {periodLabel}</p>
+                                    </div>
+                                    <span className={`font-mono font-black text-xs shrink-0 px-2 py-0.5 rounded ${count >= limit ? "bg-red-50 text-red-600 border border-red-200" : "bg-primary/10 text-primary"}`}>
+                                      {count}/{limit} Aktif
+                                    </span>
+                                  </div>
+                                  
+                                  {count > 0 && (
+                                    <div className="flex gap-2 justify-end pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAdjustQuota('reduce', reward, selectedCustomer.id)}
+                                        className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                      >
+                                        Kurangi 1
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAdjustQuota('reset', reward, selectedCustomer.id)}
+                                        className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                      >
+                                        Reset Kuota (0)
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                         </div>
                       )
                     )}

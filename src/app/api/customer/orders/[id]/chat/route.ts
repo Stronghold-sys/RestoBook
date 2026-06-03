@@ -80,7 +80,7 @@ export async function GET(
     // 3. Ambil riwayat pesan
     const { data: messages, error: msgErr } = await supabase
       .from('order_chat_messages')
-      .select('*')
+      .select('*, sender:profiles(role, full_name)')
       .eq('chat_id', chat.id)
       .order('created_at', { ascending: true });
 

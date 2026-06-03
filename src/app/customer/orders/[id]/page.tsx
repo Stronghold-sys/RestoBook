@@ -150,6 +150,7 @@ export default function OrderTrackingPage() {
   const [chatSending, setChatSending] = useState(false);
   const [chatTyping, setChatTyping] = useState(false);
   const [chatRoom, setChatRoom] = useState<any>(null);
+  const [senderRoles, setSenderRoles] = useState<Record<string, string>>({});
   const [cashiersOnlineCount, setCashiersOnlineCount] = useState(0);
   const [chatAttachmentUrl, setChatAttachmentUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -190,6 +191,15 @@ export default function OrderTrackingPage() {
       if (!res.ok) throw new Error(data.error || "Gagal memuat obrolan");
       setChatRoom(data.chat);
       setChatMessages(data.messages || []);
+      if (data.messages) {
+        const roles: Record<string, string> = {};
+        data.messages.forEach((msg: any) => {
+          if (msg.sender_id && msg.sender?.role) {
+            roles[msg.sender_id] = msg.sender.role;
+          }
+        });
+        setSenderRoles(prev => ({ ...prev, ...roles }));
+      }
     } catch (e: any) {
       console.error(e.message);
     } finally {
@@ -215,12 +225,32 @@ export default function OrderTrackingPage() {
         table: 'order_chat_messages',
         filter: `chat_id=eq.${chatRoom.id}`
       }, (payload: any) => {
+        const newMsg = payload.new;
         setChatMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          if (payload.new.sender_role !== 'customer') {
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          if (newMsg.sender_role !== 'customer') {
             playPingSound();
           }
-          return [...prev, payload.new];
+          // Fetch sender role in background if not cached
+          const senderId = newMsg.sender_id;
+          if (senderId) {
+            setSenderRoles(currentRoles => {
+              if (!currentRoles[senderId]) {
+                supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', senderId)
+                  .single()
+                  .then(({ data }) => {
+                    if (data?.role) {
+                      setSenderRoles(prev => ({ ...prev, [senderId]: data.role }));
+                    }
+                  });
+              }
+              return currentRoles;
+            });
+          }
+          return [...prev, newMsg];
         });
       })
       .on('postgres_changes', {
@@ -1876,7 +1906,7 @@ export default function OrderTrackingPage() {
                             'bg-gray-150 dark:bg-gray-800 text-text-light dark:text-text-dark rounded-tl-none'
                           }`}>
                             <div className="flex items-center gap-1.5 mb-1 opacity-70 text-[9px] font-bold uppercase tracking-wider">
-                              {isMe ? 'Anda' : isAi ? 'RestoBot AI' : 'Kasir'}
+                              {isMe ? 'Anda' : isAi ? 'RestoBot AI' : (senderRoles[msg.sender_id] === 'admin' ? 'Admin' : 'Kasir')}
                               <span>•</span>
                               <span>{format(new Date(msg.created_at), "HH:mm")}</span>
                             </div>

@@ -95,6 +95,7 @@ export default function CashierChatPage() {
   const [messageInput, setMessageInput] = useState("");
   const [sending, setSending] = useState(false);
   const [isCustomerTyping, setIsCustomerTyping] = useState(false);
+  const [senderRoles, setSenderRoles] = useState<Record<string, string>>({});
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -214,11 +215,20 @@ export default function CashierChatPage() {
       setLoadingMessages(true);
       const { data } = await supabase
         .from("order_chat_messages")
-        .select("*")
+        .select("*, sender:profiles(role, full_name)")
         .eq("chat_id", selectedChat.id)
         .order("created_at", { ascending: true });
       setMessages(data || []);
       setLoadingMessages(false);
+      if (data) {
+        const roles: Record<string, string> = {};
+        data.forEach((msg: any) => {
+          if (msg.sender_id && msg.sender?.role) {
+            roles[msg.sender_id] = msg.sender.role;
+          }
+        });
+        setSenderRoles(prev => ({ ...prev, ...roles }));
+      }
 
       // Tandai semua pesan pelanggan sebagai dibaca
       await supabase
@@ -244,14 +254,34 @@ export default function CashierChatPage() {
         table: "order_chat_messages",
         filter: `chat_id=eq.${selectedChat.id}`
       }, (payload: any) => {
+        const newMsg = payload.new;
         setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          if (payload.new.sender_role === "customer") {
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          if (newMsg.sender_role === "customer") {
             playPingSound();
             // Auto-tandai sebagai dibaca karena sedang dibuka
-            supabase.from("order_chat_messages").update({ is_read: true }).eq("id", payload.new.id);
+            supabase.from("order_chat_messages").update({ is_read: true }).eq("id", newMsg.id);
           }
-          return [...prev, payload.new];
+          // Fetch sender role in background if not cached
+          const senderId = newMsg.sender_id;
+          if (senderId) {
+            setSenderRoles(currentRoles => {
+              if (!currentRoles[senderId]) {
+                supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', senderId)
+                  .single()
+                  .then(({ data }) => {
+                    if (data?.role) {
+                      setSenderRoles(prev => ({ ...prev, [senderId]: data.role }));
+                    }
+                  });
+              }
+              return currentRoles;
+            });
+          }
+          return [...prev, newMsg];
         });
         fetchChats();
       })
@@ -844,7 +874,10 @@ export default function CashierChatPage() {
                         <div className={`max-w-[75%] ${isCashier ? "items-end" : "items-start"} flex flex-col gap-1`}>
                           {/* Label pengirim */}
                           <span className="text-[10px] font-bold text-muted px-1">
-                            {isCashier ? "Anda (Kasir)" : isAI ? "RestoBot (AI)" : selectedChat.customer?.full_name || "Pelanggan"}
+                             {isAI ? "RestoBot (AI)" : 
+                              msg.sender_role === "customer" ? (selectedChat.customer?.full_name || "Pelanggan") :
+                              msg.sender_id === chatProfile.current?.id ? "Anda" :
+                              senderRoles[msg.sender_id || ''] === 'admin' ? "Admin" : "Kasir"}
                           </span>
 
                           {/* Bubble */}

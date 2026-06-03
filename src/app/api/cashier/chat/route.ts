@@ -135,6 +135,13 @@ export async function POST(req: NextRequest) {
         });
       } else if (action === 'need_admin') {
         updateData.status = 'need_admin';
+        // Kirim pesan sistem otomatis
+        await supabase.from('order_chat_messages').insert({
+          chat_id: chatId,
+          sender_role: 'ai',
+          message: 'Pertanyaan atau kendala Anda telah kami teruskan ke Admin Support untuk bantuan lebih lanjut. Mohon tunggu sebentar, Admin kami akan segera menghubungi Anda di sini.',
+          is_read: false
+        });
       } else if (action === 'waiting_customer') {
         updateData.status = 'waiting_customer';
       } else if (action === 'reactivate') {

@@ -681,33 +681,39 @@ export default function AdminVouchersPage() {
                               )}
                             </button>
                           </td>
-                          <td className="py-4 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => handleEditClick(voucher)}
-                              title="Edit Voucher"
-                              className="inline-flex items-center justify-center p-2 rounded-xl text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white transition-all"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDistribute(voucher.id, voucher.code)}
-                              disabled={distributingId === voucher.id || isExpired || !voucher.is_active}
-                              title="Kirim ke Semua Pelanggan"
-                              className="inline-flex items-center justify-center p-2 rounded-xl text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none"
-                            >
-                              {distributingId === voucher.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Send className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(voucher.id, voucher.code)}
-                              title="Hapus Voucher"
-                              className="inline-flex items-center justify-center p-2 rounded-xl text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <td className="py-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleEditClick(voucher)}
+                                title="Edit Voucher"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-500/10 hover:bg-amber-600 hover:text-white transition-all shadow-sm hover:shadow-amber-500/10"
+                              >
+                                <Pencil className="w-3.5 h-3.5" /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDistribute(voucher.id, voucher.code)}
+                                disabled={distributingId === voucher.id || isExpired || !voucher.is_active}
+                                title="Kirim ke Semua Pelanggan"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all shadow-sm hover:shadow-primary/10 disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                {distributingId === voucher.id ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengirim
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send className="w-3.5 h-3.5" /> Kirim
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(voucher.id, voucher.code)}
+                                title="Hapus Voucher"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-500/10 hover:bg-rose-600 hover:text-white transition-all shadow-sm hover:shadow-rose-500/10"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Hapus
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

@@ -183,7 +183,8 @@ export default function CartPage() {
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [availableVouchers, setAvailableVouchers] = useState<any[]>([]);
-
+  const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash" | "wallet">("non_cash");
   useEffect(() => {
     const fetchAvailableVouchers = async () => {
       try {
@@ -238,7 +239,8 @@ export default function CartPage() {
         body: JSON.stringify({ 
           code: voucherCodeInput,
           subtotal: subtotal,
-          customerId: customerId
+          customerId: customerId,
+          orderType: orderType
         })
       });
       const data = await response.json();
@@ -275,8 +277,14 @@ export default function CartPage() {
     }
   }, [subtotal, appliedVoucher]);
 
-  const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "non_cash" | "wallet">("non_cash");
+  useEffect(() => {
+    if (appliedVoucher && appliedVoucher.voucher_type === 'shipping' && orderType !== 'delivery') {
+      setAppliedVoucher(null);
+      toast.error("Voucher diskon ongkir dilepas karena tipe pesanan diubah ke non-delivery");
+    }
+  }, [orderType, appliedVoucher]);
+
+
 
   // Restaurant shipping settings
   const [restoLat, setRestoLat] = useState<number>(-7.7829);
@@ -298,20 +306,16 @@ export default function CartPage() {
     ? Math.round(Math.max(distanceKm, minShippingDistance) * shippingRate) + additionalZoneCharge
     : 0;
 
-  const shippingDiscount = (orderType === "delivery" && shippingFee > 0)
-    ? (subtotal >= minOrderFreeShipping
-        ? shippingFee
-        : (appliedVoucher && appliedVoucher.voucher_type === 'shipping'
-            ? (appliedVoucher.discount_type === 'percent'
-                ? Math.round(shippingFee * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
-                : Math.min(shippingFee, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
-            : 0))
+  const shippingDiscount = (orderType === "delivery" && shippingFee > 0 && appliedVoucher && appliedVoucher.voucher_type === 'shipping')
+    ? (appliedVoucher.discount_type === 'percent'
+        ? Math.round(shippingFee * Number(appliedVoucher.discount_percent || 0) / 100)
+        : Math.min(shippingFee, Number(appliedVoucher.discount_value || 0)))
     : 0;
 
   const discountAmount = (appliedVoucher && appliedVoucher.voucher_type !== 'shipping')
     ? (appliedVoucher.discount_type === 'percent'
-        ? Math.round(subtotal * (appliedVoucher.discount_percent || appliedVoucher.discount_value || 0) / 100)
-        : Math.min(subtotal, appliedVoucher.discount_value || appliedVoucher.discount_percent || 0))
+        ? Math.round(subtotal * Number(appliedVoucher.discount_percent || 0) / 100)
+        : Math.min(subtotal, Number(appliedVoucher.discount_value || 0)))
     : 0;
 
   const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee - shippingDiscount);
@@ -1302,7 +1306,7 @@ export default function CartPage() {
               )}
               {orderType === "delivery" && shippingDiscount > 0 && (
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-sm">
-                  <span>Potongan Ongkir {subtotal >= minOrderFreeShipping ? "(Free Ongkir)" : appliedVoucher ? `(Voucher ${appliedVoucher.code})` : ""}</span>
+                  <span>Potongan Ongkir {appliedVoucher ? `(Voucher ${appliedVoucher.code})` : ""}</span>
                   <span className="font-bold">-Rp {shippingDiscount.toLocaleString("id-ID")}</span>
                 </div>
               )}
@@ -1348,7 +1352,7 @@ export default function CartPage() {
                               }}
                               className="text-[9px] font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all uppercase"
                             >
-                              {v.code} ({v.discount_percent}%)
+                              {v.code} ({v.voucher_type === 'shipping' ? "Ongkir " : ""}{v.discount_type === 'percent' ? `${v.discount_percent}%` : `Rp ${Number(v.discount_value || 0).toLocaleString("id-ID")}`})
                             </button>
                           ))}
                         </div>
@@ -1361,7 +1365,12 @@ export default function CartPage() {
                       <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <div>
                         <span className="font-mono font-black text-xs text-emerald-700 dark:text-emerald-300 uppercase">{appliedVoucher.code}</span>
-                        <span className="block text-[9px] text-emerald-600 dark:text-emerald-400">Hemat {appliedVoucher.discount_percent}%</span>
+                        <span className="block text-[9px] text-emerald-600 dark:text-emerald-400">
+                          {appliedVoucher.voucher_type === 'shipping' ? 'Potongan Ongkir ' : 'Hemat '}
+                          {appliedVoucher.discount_type === 'percent'
+                            ? `${appliedVoucher.discount_percent}%`
+                            : `Rp ${Number(appliedVoucher.discount_value || 0).toLocaleString("id-ID")}`}
+                        </span>
                       </div>
                     </div>
                     <button

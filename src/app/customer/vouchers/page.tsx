@@ -127,54 +127,72 @@ export default function CustomerVouchersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {activeVouchers.map((item) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-lg flex flex-col justify-between overflow-hidden group hover:shadow-xl hover:border-primary/30 transition-all duration-300"
-              >
-                {/* Background Ticket Notch Effect */}
-                <div className="absolute top-1/2 -left-3 w-6 h-6 rounded-full bg-background-light dark:bg-background-dark border-r border-border-light dark:border-border-dark -translate-y-1/2 z-10" />
-                <div className="absolute top-1/2 -right-3 w-6 h-6 rounded-full bg-background-light dark:bg-background-dark border-l border-border-light dark:border-border-dark -translate-y-1/2 z-10" />
+            {activeVouchers.map((item) => {
+              const isShipping = item.voucher_type === "shipping";
+              const isPercent = item.discount_type === "percent";
+              const discountStr = isPercent 
+                ? `${item.discount_percent}%` 
+                : `Rp ${Number(item.discount_value || 0).toLocaleString("id-ID")}`;
+              const typeLabel = isShipping ? "Gratis/Potongan Ongkir" : "Potongan Belanja";
+              const description = isShipping
+                ? `Gunakan kode ini saat checkout untuk mendapatkan potongan ongkos pengiriman sebesar ${discountStr} (Khusus Delivery).`
+                : `Gunakan kode ini saat checkout untuk mendapatkan potongan belanja sebesar ${discountStr} (Dine In, Takeaway, Delivery).`;
 
-                <div>
-                  <div className="flex justify-between items-start gap-2 mb-3">
-                    <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                      {item.discount_percent}% <span className="text-xs font-bold text-muted uppercase tracking-wider block">Diskon</span>
-                    </span>
-                    <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20 uppercase tracking-wider">
-                      Dapat Digunakan
-                    </span>
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 shadow-lg flex flex-col justify-between overflow-hidden group hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+                >
+                  {/* Background Ticket Notch Effect */}
+                  <div className="absolute top-1/2 -left-3 w-6 h-6 rounded-full bg-background-light dark:bg-background-dark border-r border-border-light dark:border-border-dark -translate-y-1/2 z-10" />
+                  <div className="absolute top-1/2 -right-3 w-6 h-6 rounded-full bg-background-light dark:bg-background-dark border-l border-border-light dark:border-border-dark -translate-y-1/2 z-10" />
+
+                  <div>
+                    <div className="flex justify-between items-start gap-2 mb-3">
+                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        {discountStr} <span className="text-xs font-bold text-muted uppercase tracking-wider block">{isShipping ? "Potongan Ongkir" : "Diskon"}</span>
+                      </span>
+                      <span className={`px-2.5 py-1 text-[10px] font-black rounded-lg uppercase tracking-wider ${isShipping ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200/20' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200/20'}`}>
+                        {typeLabel}
+                      </span>
+                    </div>
+
+                    <h3 className="font-mono text-xl font-black text-text-light dark:text-text-dark tracking-wide uppercase flex items-center gap-2 mb-2">
+                      {item.code}
+                      <button
+                        onClick={() => handleCopyCode(item.code)}
+                        title="Salin Kode Voucher"
+                        className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/20 text-primary transition-all group-hover:scale-105"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </h3>
+                    
+                    <p className="text-xs text-muted leading-relaxed">
+                      {description}
+                    </p>
+
+                    {item.min_transaction > 0 && (
+                      <span className="block mt-2 text-[10px] font-bold text-rose-500">
+                        Min. Belanja: Rp {Number(item.min_transaction).toLocaleString("id-ID")}
+                      </span>
+                    )}
                   </div>
 
-                  <h3 className="font-mono text-xl font-black text-text-light dark:text-text-dark tracking-wide uppercase flex items-center gap-2 mb-2">
-                    {item.code}
-                    <button
-                      onClick={() => handleCopyCode(item.code)}
-                      title="Salin Kode Voucher"
-                      className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/20 text-primary transition-all group-hover:scale-105"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </h3>
-                  
-                  <p className="text-xs text-muted leading-relaxed">
-                    Gunakan kode ini saat proses checkout di keranjang belanja untuk mendapatkan potongan sebesar {item.discount_percent}% dari total transaksi Anda.
-                  </p>
-                </div>
-
-                <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-                  <span className="text-muted flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    Batas: {format(new Date(item.expires_at), "dd MMM yyyy, HH:mm", { locale: id })}
-                  </span>
-                  <span className="text-muted font-bold flex items-center gap-1">
-                    Pemakaian Anda: {item.used_count} / {item.max_usage_per_user} kali
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="mt-6 border-t border-border-light dark:border-border-dark pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+                    <span className="text-muted flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      Batas: {format(new Date(item.expires_at), "dd MMM yyyy, HH:mm", { locale: id })}
+                    </span>
+                    <span className="text-muted font-bold flex items-center gap-1">
+                      Pemakaian Anda: {item.used_count} / {item.max_usage_per_user} kali
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )
       ) : (
@@ -190,6 +208,12 @@ export default function CustomerVouchersPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-75">
             {historyVouchers.map((item) => {
+              const isShipping = item.voucher_type === "shipping";
+              const isPercent = item.discount_type === "percent";
+              const discountStr = isPercent 
+                ? `${item.discount_percent}%` 
+                : `Rp ${Number(item.discount_value || 0).toLocaleString("id-ID")}`;
+
               let badgeColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/20";
               let badgeText = "Kadaluarsa";
 
@@ -215,8 +239,8 @@ export default function CustomerVouchersPage() {
 
                   <div>
                     <div className="flex justify-between items-start gap-2 mb-3">
-                      <span className="text-3xl font-black text-muted">
-                        {item.discount_percent}% <span className="text-xs font-bold text-muted uppercase tracking-wider block">Diskon</span>
+                      <span className="text-2xl font-black text-muted">
+                        {discountStr} <span className="text-xs font-bold text-muted uppercase tracking-wider block">{isShipping ? "Potongan Ongkir" : "Diskon"}</span>
                       </span>
                       <span className={`px-2.5 py-1 text-[10px] font-black rounded-lg uppercase tracking-wider ${badgeColor}`}>
                         {badgeText}
@@ -232,6 +256,12 @@ export default function CustomerVouchersPage() {
                         ? `Voucher ini telah sukses Anda gunakan untuk menghemat pesanan Anda.`
                         : `Voucher ini sudah tidak dapat digunakan lagi karena statusnya yang telah ${badgeText.toLowerCase()}.`}
                     </p>
+
+                    {item.min_transaction > 0 && (
+                      <span className="block mt-2 text-[10px] font-bold text-muted/60">
+                        Min. Belanja: Rp {Number(item.min_transaction).toLocaleString("id-ID")}
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-6 border-t border-border-light/50 dark:border-border-dark/50 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted">

@@ -77,7 +77,11 @@ export async function GET(req: NextRequest) {
             used_count: userUsedCount,
             max_usage_per_user: v.max_usage_per_user,
             status, // 'used', 'expired', 'exhausted', 'inactive'
-            created_at: v.created_at
+            created_at: v.created_at,
+            voucher_type: v.voucher_type || 'general',
+            discount_type: v.discount_type || 'percent',
+            discount_value: Number(v.discount_value || 0),
+            min_transaction: Number(v.min_transaction || 0)
           });
         }
       } else {
@@ -90,7 +94,11 @@ export async function GET(req: NextRequest) {
           used_count: userUsedCount,
           max_usage_per_user: v.max_usage_per_user,
           global_used: v.used_count,
-          global_limit: v.usage_limit
+          global_limit: v.usage_limit,
+          voucher_type: v.voucher_type || 'general',
+          discount_type: v.discount_type || 'percent',
+          discount_value: Number(v.discount_value || 0),
+          min_transaction: Number(v.min_transaction || 0)
         });
       }
     }

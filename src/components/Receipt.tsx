@@ -233,7 +233,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         {order.discount > 0 && (
           <>
             <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#059669' }}>
-              <span>Potongan Voucher:</span>
+              <span>Potongan Voucher{order.vouchers?.code ? ` (${order.vouchers.code})` : ''}:</span>
               <span className="font-bold">-Rp {Number(order.discount).toLocaleString("id-ID")}</span>
             </div>
             <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#059669' }}>
@@ -250,7 +250,7 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, orderItems, c
         )}
         {order.order_type === "delivery" && Number(order.shipping_discount || 0) > 0 && (
           <div className="flex justify-between flex-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#059669' }}>
-            <span>Potongan Ongkir:</span>
+            <span>Potongan Ongkir{order.vouchers?.code ? ` (${order.vouchers.code})` : ''}:</span>
             <span className="font-bold">-Rp {Number(order.shipping_discount).toLocaleString("id-ID")}</span>
           </div>
         )}

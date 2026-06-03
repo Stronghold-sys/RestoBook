@@ -860,7 +860,7 @@ export default function CashierChatPage() {
                     </span>
                     {(selectedChat.ai_chat_status === 'waiting_cashier' || selectedChat.ai_chat_status === 'transfer_requested') && !selectedChat.is_replied_manually && (
                       <span className="text-[9px] font-black px-2 py-0.5 rounded-md uppercase bg-orange-500 text-white animate-pulse">
-                        ⚡ Minta Kasir
+                         Minta Kasir
                       </span>
                     )}
                     {selectedChat.ai_chat_status === 'waiting_customer_choice' && !selectedChat.is_replied_manually && (

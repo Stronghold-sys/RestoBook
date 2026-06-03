@@ -722,7 +722,7 @@ export default function OrderTrackingPage() {
     try {
       const { data: orderData, error } = await supabase
         .from("orders")
-        .select("*, tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
+        .select("*, tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name), vouchers(code, voucher_type)")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -1908,7 +1908,7 @@ export default function OrderTrackingPage() {
                     return (
                       <>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 ${isCashierMode ? 'bg-blue-600' : isWaitingCashier ? 'bg-amber-500' : 'bg-primary'}`}>
-                          {isCashierMode ? 'K' : isWaitingCashier ? '⏳' : 'AI'}
+                          {isCashierMode ? 'K' : isWaitingCashier ? '' : 'AI'}
                         </div>
                         <div>
                           <h3 className="font-black text-sm text-text-light dark:text-text-dark uppercase tracking-tight">
@@ -1999,7 +1999,7 @@ export default function OrderTrackingPage() {
                             }`}>
                               {/* Sender label */}
                               <div className={`flex items-center gap-1 mb-1 text-[9px] font-black uppercase tracking-wider ${isMe ? 'text-white/70 justify-end' : isAi ? 'text-amber-600 dark:text-amber-400' : isSystem ? 'text-gray-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                                {isMe ? 'Anda' : isAi ? '🤖 RestoBot AI' : isSystem ? 'Sistem' : (senderRoles[msg.sender_id] === 'admin' ? '👤 Admin' : '👤 Kasir')}
+                                {isMe ? 'Anda' : isAi ? ' RestoBot AI' : isSystem ? 'Sistem' : (senderRoles[msg.sender_id] === 'admin' ? ' Admin' : ' Kasir')}
                                 <span className="opacity-60 ml-1">• {format(new Date(msg.created_at), "HH:mm")}</span>
                               </div>
                               

@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, customerId, subtotal } = body;
+    const { code, customerId, subtotal, orderType } = body;
 
     if (!code) {
       return NextResponse.json({ error: 'Kode voucher tidak boleh kosong' }, { status: 400 });
@@ -75,6 +75,17 @@ export async function POST(req: NextRequest) {
 
       if (cv && cv.used_count >= voucher.max_usage_per_user) {
         return NextResponse.json({ error: 'Anda telah mencapai batas maksimal penggunaan voucher ini!' }, { status: 400 });
+      }
+    }
+
+    // 6.5 Periksa tipe pesanan berdasarkan tipe voucher
+    if (voucher.voucher_type === 'shipping') {
+      if (orderType !== 'delivery') {
+        return NextResponse.json({ error: 'Voucher ongkir hanya dapat digunakan untuk tipe pesanan Delivery!' }, { status: 400 });
+      }
+    } else if (voucher.voucher_type === 'general' || !voucher.voucher_type) {
+      if (orderType && !['dine_in', 'takeaway', 'delivery'].includes(orderType)) {
+        return NextResponse.json({ error: 'Voucher umum hanya dapat digunakan untuk tipe pesanan Dine In, Takeaway, dan Delivery!' }, { status: 400 });
       }
     }
 

@@ -170,7 +170,8 @@ export async function downloadReceiptPDF({
   
   if (discount > 0) {
     y += 4;
-    doc.text(`Potongan Voucher:`, 5, y);
+    const vCode = order.vouchers?.code ? ` (${order.vouchers.code})` : '';
+    doc.text(`Potongan Voucher${vCode}:`, 5, y);
     doc.text(`-Rp ${discount.toLocaleString("id-ID")}`, 75, y, { align: "right" });
   }
 
@@ -181,7 +182,8 @@ export async function downloadReceiptPDF({
     
     if (Number(order.shipping_discount || 0) > 0) {
       y += 4;
-      doc.text(`Potongan Ongkir:`, 5, y);
+      const vCode = order.vouchers?.code ? ` (${order.vouchers.code})` : '';
+      doc.text(`Potongan Ongkir${vCode}:`, 5, y);
       doc.text(`-Rp ${Number(order.shipping_discount).toLocaleString("id-ID")}`, 75, y, { align: "right" });
     }
   }

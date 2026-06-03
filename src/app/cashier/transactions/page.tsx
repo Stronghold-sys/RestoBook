@@ -50,6 +50,7 @@ export default function CashierTransactionsPage() {
         .select(`
           *, 
           profiles!orders_customer_id_fkey(full_name),
+          vouchers(code, voucher_type),
           order_items(
             quantity, 
             price, 

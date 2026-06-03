@@ -22,16 +22,17 @@ async function inspect() {
   }
 
   try {
-    const { data: rowChat, error: errChat } = await supabase.from('order_chats').select('*').limit(1);
-    console.log("Order Chats columns after alter:", rowChat && rowChat.length > 0 ? Object.keys(rowChat[0] || {}) : "No order_chats rows found");
-    if (rowChat && rowChat.length > 0) console.log("Sample Row:", rowChat[0]);
-    if (errChat) console.error("Error order_chats select:", errChat);
+    const { data: rowVoucher, error: errVoucher } = await supabase.from('vouchers').select('*').limit(1);
+    console.log("Vouchers columns:", rowVoucher && rowVoucher.length > 0 ? Object.keys(rowVoucher[0] || {}) : "No vouchers rows found");
+    if (rowVoucher && rowVoucher.length > 0) console.log("Sample Voucher:", rowVoucher[0]);
+    if (errVoucher) console.error("Error vouchers select:", errVoucher);
   } catch (e) {
     console.error("Err:", e);
   }
 }
 
 inspect();
+
 
 
 

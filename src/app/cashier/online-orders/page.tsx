@@ -100,7 +100,7 @@ export default function OnlineOrdersPage() {
 
     const { data, error } = await supabase
       .from('orders')
-      .select('*, profiles:customer_id(full_name, email, phone), order_items(*, menu_items(*)), tables(table_number)')
+      .select('*, profiles:customer_id(full_name, email, phone), order_items(*, menu_items(*)), tables(table_number), vouchers(code, voucher_type)')
       .in('order_type', ['delivery', 'takeaway', 'dine_in'])
       .order('created_at', { ascending: false });
 

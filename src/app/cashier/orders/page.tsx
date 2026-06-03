@@ -83,7 +83,7 @@ export default function CashierOrders() {
 
       const { data } = await supabase
         .from("orders")
-        .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name)")
+        .select("*, profiles!orders_customer_id_fkey(full_name), tables(table_number), cashier:profiles!orders_cashier_id_fkey(full_name), vouchers(code, voucher_type)")
         .order("created_at", { ascending: false });
       
       const filtered = (data || []).filter((o: any) => !(o.payment_method === 'non_cash' && o.payment_status === 'unpaid'));

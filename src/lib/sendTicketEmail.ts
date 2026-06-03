@@ -73,7 +73,7 @@ export async function sendTicketEmail(options: SendTicketEmailOptions): Promise<
             <p>Terima kasih, <strong>${name}</strong>. Permintaan <strong>${categoryLabel}</strong> Anda telah kami terima dan sedang dalam antrian peninjauan oleh admin.</p>
             <p>Tim dukungan kami akan segera meninjau permohonan Anda dan memperbarui status tiket secara berkala. Anda juga dapat memantau perkembangan tiket ini melalui menu <strong>Bantuan</strong> di aplikasi RestoBook.</p>
             <div style="background: #fff8e7; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f59e0b;">
-              <p style="margin: 0; font-size: 13px; color: #92400e;">⏳ Harap menunggu, proses persetujuan data akun biasanya memerlukan waktu <strong>1×24 jam kerja</strong>.</p>
+              <p style="margin: 0; font-size: 13px; color: #92400e;"> Harap menunggu, proses persetujuan data akun biasanya memerlukan waktu <strong>1×24 jam kerja</strong>.</p>
             </div>
           `;
         } else {
@@ -81,7 +81,7 @@ export async function sendTicketEmail(options: SendTicketEmailOptions): Promise<
             <p>Halo <strong>${name}</strong>, laporan atau pertanyaan Anda untuk kategori <strong>${categoryLabel}</strong> telah berhasil kami terima.</p>
             <p>Tim dukungan RestoBook akan segera menindaklanjuti dan menghubungi Anda melalui live chat di aplikasi atau melalui email ini. Harap pantau pembaruan tiket Anda secara berkala.</p>
             <div style="background: #fffbeb; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #fbbf24;">
-              <p style="margin: 0; font-size: 13px; color: #78350f;">💬 Anda dapat membalas atau menambahkan informasi melalui fitur Live Chat di halaman Bantuan aplikasi RestoBook.</p>
+              <p style="margin: 0; font-size: 13px; color: #78350f;"> Anda dapat membalas atau menambahkan informasi melalui fitur Live Chat di halaman Bantuan aplikasi RestoBook.</p>
             </div>
           `;
         }
@@ -112,7 +112,7 @@ export async function sendTicketEmail(options: SendTicketEmailOptions): Promise<
           <p>Halo <strong>${name}</strong>, tim dukungan RestoBook memerlukan informasi atau klarifikasi tambahan terkait tiket Anda mengenai <strong>${categoryLabel}</strong>.</p>
           <p>Silakan buka aplikasi RestoBook, kunjungi menu <strong>Bantuan</strong>, pilih tiket ini, dan balas melalui fitur live chat dengan memberikan informasi yang dibutuhkan.</p>
           <div style="background: #fff7ed; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f97316;">
-            <p style="margin: 0; font-size: 13px; color: #9a3412;">⚠️ Tiket akan otomatis kedaluwarsa jika tidak ada respons dalam batas waktu SLA yang telah ditentukan. Segera balas untuk menghindari penutupan tiket otomatis.</p>
+            <p style="margin: 0; font-size: 13px; color: #9a3412;">️ Tiket akan otomatis kedaluwarsa jika tidak ada respons dalam batas waktu SLA yang telah ditentukan. Segera balas untuk menghindari penutupan tiket otomatis.</p>
           </div>
           ${reason ? `<div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #6b7280;"><strong>Catatan dari Admin:</strong> ${reason}</div>` : ''}
         `;
@@ -126,7 +126,7 @@ export async function sendTicketEmail(options: SendTicketEmailOptions): Promise<
           <p>Kabar baik, <strong>${name}</strong>! Permintaan <strong>${categoryLabel}</strong> Anda telah <strong style="color: #10b981;">disetujui</strong> oleh admin RestoBook.</p>
           <p style="font-weight: bold; color: #ff5722;">Beberapa kolom yang terkait telah dibuka sementara di profil Anda. Silakan segera login dan lakukan perubahan data yang diinginkan.</p>
           <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #10b981;">
-            <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: bold; color: #065f46;">📋 Langkah Selanjutnya:</p>
+            <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: bold; color: #065f46;"> Langkah Selanjutnya:</p>
             <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #047857; line-height: 1.8;">
               <li>Login ke aplikasi RestoBook</li>
               <li>Kunjungi menu <strong>Profil Saya</strong></li>
@@ -174,7 +174,7 @@ export async function sendTicketEmail(options: SendTicketEmailOptions): Promise<
             <p>Tiket bantuan Anda mengenai <strong>${categoryLabel}</strong> telah berhasil diselesaikan oleh tim dukungan RestoBook. Terima kasih atas kesabaran Anda.</p>
             <p>Kami berharap permasalahan Anda telah teratasi dengan baik. Jika masih ada kendala atau pertanyaan, Anda dapat membuat tiket pengaduan baru kapan saja melalui menu <strong>Bantuan</strong> di aplikasi.</p>
             <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #10b981;">
-              <p style="margin: 0; font-size: 13px; color: #065f46;">⭐ Terima kasih telah menggunakan layanan RestoBook. Kami senang dapat membantu Anda!</p>
+              <p style="margin: 0; font-size: 13px; color: #065f46;"> Terima kasih telah menggunakan layanan RestoBook. Kami senang dapat membantu Anda!</p>
             </div>
           `;
         }

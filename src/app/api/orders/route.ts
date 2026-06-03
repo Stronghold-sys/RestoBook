@@ -208,29 +208,30 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Minimal transaksi voucher tidak terpenuhi' }, { status: 400 });
         }
 
-        const val = Number(voucher.discount_value || voucher.discount_percent || 0);
+        const discountVal = voucher.discount_type === 'percent'
+          ? Number(voucher.discount_percent || 0)
+          : Number(voucher.discount_value || 0);
+
         if (voucher.voucher_type === 'shipping') {
           if (orderData.order_type !== 'delivery') {
-            return NextResponse.json({ error: 'Voucher pengiriman hanya dapat digunakan untuk pengiriman' }, { status: 400 });
+            return NextResponse.json({ error: 'Voucher pengiriman hanya dapat digunakan untuk tipe pesanan Delivery!' }, { status: 400 });
           }
           if (voucher.discount_type === 'percent') {
-            calculatedShippingDiscount = Math.round(calculatedShippingFee * val / 100);
+            calculatedShippingDiscount = Math.round(calculatedShippingFee * discountVal / 100);
           } else {
-            calculatedShippingDiscount = Math.min(calculatedShippingFee, val);
+            calculatedShippingDiscount = Math.min(calculatedShippingFee, discountVal);
           }
         } else {
           // General
+          if (orderData.order_type && !['dine_in', 'takeaway', 'delivery'].includes(orderData.order_type)) {
+            return NextResponse.json({ error: 'Voucher umum hanya dapat digunakan untuk tipe pesanan Dine In, Takeaway, dan Delivery!' }, { status: 400 });
+          }
           if (voucher.discount_type === 'percent') {
-            serverDiscount = Math.round(serverSubtotal * val / 100);
+            serverDiscount = Math.round(serverSubtotal * discountVal / 100);
           } else {
-            serverDiscount = Math.min(serverSubtotal, val);
+            serverDiscount = Math.min(serverSubtotal, discountVal);
           }
         }
-      }
-
-      // Cek gratis ongkir minimal order
-      if (orderData.order_type === 'delivery' && serverSubtotal >= Number(settings.min_order_for_free_shipping || 100000)) {
-        calculatedShippingDiscount = calculatedShippingFee;
       }
 
       // 5. Hitung total akhir
@@ -709,6 +710,8 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
+      await autoCloseOrderChat(orderId, supabaseAdmin, 'cancelled');
+
       // Add Notification
       if (order.customer_id) {
         await supabaseAdmin.from('notifications').insert({
@@ -742,6 +745,10 @@ export async function POST(req: NextRequest) {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      if (['completed', 'shipping', 'cancelled'].includes(status)) {
+        await autoCloseOrderChat(orderId, supabaseAdmin, status);
+      }
 
       // Add Notification
       if (order.customer_id) {
@@ -790,6 +797,10 @@ export async function POST(req: NextRequest) {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      if (['completed', 'shipping', 'cancelled'].includes(oStatus)) {
+        await autoCloseOrderChat(orderId, supabaseAdmin, oStatus);
+      }
 
       if (pStatus === 'paid') {
         const payMethodName = pMethod === 'cash' ? 'Tunai' : pMethod === 'wallet' ? 'Dompetku' : 'Pembayaran Online';
@@ -1086,5 +1097,61 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Order update error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+async function autoCloseOrderChat(orderId: string, supabaseAdmin: any, newStatus: string) {
+  try {
+    const { data: chat } = await supabaseAdmin
+      .from('order_chats')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    if (chat && chat.status !== 'completed' && chat.status !== 'expired') {
+      const { data: settings } = await supabaseAdmin
+        .from('support_settings')
+        .select('*')
+        .eq('id', '77777777-7777-7777-7777-777777777777')
+        .single();
+
+      const hours = settings?.order_chat_expiry_hours ?? 0;
+      const minutes = settings?.order_chat_expiry_minutes ?? 30;
+      const seconds = settings?.order_chat_expiry_seconds ?? 0;
+
+      const now = new Date();
+      const closedAt = now.toISOString();
+      const deletedAt = new Date(now.getTime() + (hours * 3600 + minutes * 60 + seconds) * 1000).toISOString();
+
+      await supabaseAdmin
+        .from('order_chats')
+        .update({
+          status: 'completed',
+          chat_closed_at: closedAt,
+          chat_history_deleted_at: deletedAt,
+          updated_at: now.toISOString()
+        })
+        .eq('id', chat.id);
+
+      let wordingTime = '';
+      if (hours > 0) wordingTime += `${hours} jam `;
+      if (minutes > 0) wordingTime += `${minutes} menit `;
+      if (seconds > 0) wordingTime += `${seconds} detik`;
+      if (!wordingTime) wordingTime = 'beberapa saat';
+
+      let statusMsgText = 'diperbarui';
+      if (newStatus === 'completed') statusMsgText = 'selesai';
+      else if (newStatus === 'shipping') statusMsgText = 'terkirim';
+      else if (newStatus === 'cancelled') statusMsgText = 'dibatalkan';
+
+      await supabaseAdmin.from('order_chat_messages').insert({
+        chat_id: chat.id,
+        sender_role: 'ai',
+        message: `Sesi obrolan ini ditutup otomatis karena status pesanan telah ${statusMsgText}. Seluruh riwayat pesan akan dihapus otomatis secara permanen dalam ${wordingTime.trim()}. Terima kasih!`,
+        is_read: false
+      });
+    }
+  } catch (e) {
+    console.error("Gagal menutup obrolan order secara otomatis:", e);
   }
 }

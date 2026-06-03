@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
           shipping_fee,
           shipping_discount,
           discount,
-          tables(table_number)
+          tables(table_number),
+          vouchers(code, voucher_type)
         ),
         customer:profiles!order_chats_customer_id_fkey(
           id,
@@ -156,10 +157,15 @@ export async function POST(req: NextRequest) {
         if (!wordingTime) wordingTime = 'beberapa saat';
 
         // Kirim pesan sistem otomatis
+        let systemMessage = `Sesi obrolan ini telah dinyatakan selesai. Sesi obrolan ditutup secara resmi, dan seluruh riwayat pesan akan dihapus otomatis secara permanen dalam ${wordingTime.trim()}. Terima kasih!`;
+        if (chat.status === 'need_admin' || profile.role === 'admin') {
+          systemMessage = `Bantuan admin telah selesai diproses. Sesi obrolan ini ditutup secara resmi. Jika Anda masih memiliki kendala lainnya, silakan gunakan menu Pengaduan & Bantuan kembali. Terima kasih!`;
+        }
+
         await supabase.from('order_chat_messages').insert({
           chat_id: chatId,
           sender_role: 'ai',
-          message: `Sesi obrolan ini telah dinyatakan selesai. Sesi obrolan ditutup secara resmi, dan seluruh riwayat pesan akan dihapus otomatis secara permanen dalam ${wordingTime.trim()}. Terima kasih!`,
+          message: systemMessage,
           is_read: false
         });
       } else if (action === 'need_admin') {

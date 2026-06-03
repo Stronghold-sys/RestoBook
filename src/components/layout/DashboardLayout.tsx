@@ -5,7 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet, LifeBuoy
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -36,6 +36,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [pendingTicketCount, setPendingTicketCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -332,9 +333,48 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           .eq("user_id", profile.id)
           .eq("is_read", false);
         setUnreadNotifCount(count || 0);
+      } else if (profile.role === "admin") {
+        const { count } = await supabase
+          .from('support_tickets')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        setPendingTicketCount(count || 0);
       }
     }
   };
+
+  const fetchPendingTicketCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('support_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingTicketCount(count || 0);
+    } catch (e) {
+      console.error("Error fetching pending ticket count:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!userProfile?.id || role !== "admin") return;
+
+    fetchPendingTicketCount();
+
+    const channel = supabase
+      .channel('admin-support-tickets-badge')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_tickets'
+      }, () => {
+        fetchPendingTicketCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id, role]);
 
   const handleLogout = async () => {
     try {
@@ -365,6 +405,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Refund", href: "/admin/refunds", icon: RotateCcw },
           { name: "Reviews", href: "/admin/reviews", icon: Star },
           { name: "Reward Point", href: "/admin/rewards", icon: Gift },
+          { name: "Pengaduan & Bantuan", href: "/admin/support", icon: LifeBuoy, badge: pendingTicketCount },
           { name: "Settings", href: "/admin/settings", icon: Settings },
           { name: "Profil", href: "/admin/profile", icon: UserIcon },
         ];
@@ -398,6 +439,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
           { name: "Notifikasi", href: "/customer/notifications", icon: Bell, badge: unreadNotifCount },
+          { name: "Pengaduan & Bantuan", href: "/customer/support", icon: LifeBuoy },
           { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];
       default:

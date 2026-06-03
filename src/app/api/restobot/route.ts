@@ -103,6 +103,26 @@ const MISTRAL_TOOLS = [
         required: ["customer_id", "target_email"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_support_ticket",
+      description: "Membuat tiket pengaduan/bantuan baru otomatis di RestoBook saat pelanggan mengeluh, mengalami error, meminta refund, kendala pembayaran, akun bermasalah, atau meminta staff/admin bantuan.",
+      parameters: {
+        type: "object",
+        properties: {
+          customer_id: { type: "string", description: "ID Profile pelanggan dari DATA USER AKTIF." },
+          title: { type: "string", description: "Judul singkat pengaduan (misal: Kendala Pembayaran e-Wallet)." },
+          category: { type: "string", description: "Kategori keluhan (misal: Pembayaran, Makanan, Reservasi, Pelayanan, Teknis, Akun, Lainnya)." },
+          subcategory: { type: "string", description: "Subkategori jika ada." },
+          description: { type: "string", description: "Deskripsi lengkap keluhan atau bantuan yang dibutuhkan." },
+          urgency: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "Tingkat urgensi masalah." },
+          contact_info: { type: "string", description: "Nomor telepon atau kontak pelanggan yang bisa dihubungi." }
+        },
+        required: ["customer_id", "title", "category", "description"]
+      }
+    }
   }
 ];
 
@@ -831,6 +851,97 @@ async function executeTool(name: string, args: any) {
       message: 'Rincian transaksi & saldo dompetku berhasil dikirim ke email.',
       email_sent: emailSent,
       email_target: target_email
+    };
+  }
+
+  if (name === 'create_support_ticket') {
+    const { customer_id, title, category, subcategory, description, urgency, contact_info } = args;
+
+    const ticketUrgency = urgency || 'medium';
+
+    // 1. Get Support Settings to compute SLA
+    const { data: settings } = await supabase
+      .from('support_settings')
+      .select('*')
+      .eq('id', '77777777-7777-7777-7777-777777777777')
+      .single();
+
+    let slaHours = 24;
+    if (settings) {
+      if (ticketUrgency === 'low') slaHours = settings.sla_hours_low ?? 48;
+      else if (ticketUrgency === 'medium') slaHours = settings.sla_hours_medium ?? 24;
+      else if (ticketUrgency === 'high') slaHours = settings.sla_hours_high ?? 12;
+      else if (ticketUrgency === 'urgent') slaHours = settings.sla_hours_urgent ?? 4;
+    }
+
+    const now = new Date();
+    const slaDeadline = new Date(now.getTime() + slaHours * 60 * 60 * 1000).toISOString();
+
+    // 2. Generate unique Ticket Number (numeric code like TKT-YYYYMMDD-XXXX)
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randCode = Math.floor(1000 + Math.random() * 9000);
+    const ticketNumber = `TKT-${dateStr}-${randCode}`;
+
+    // 3. Save to database
+    const { data: ticket, error: insertErr } = await supabase
+      .from('support_tickets')
+      .insert({
+        ticket_number: ticketNumber,
+        customer_id: customer_id,
+        title,
+        category,
+        subcategory: subcategory || null,
+        description,
+        attachment_url: null,
+        urgency: ticketUrgency,
+        contact_info: contact_info || null,
+        status: 'pending',
+        sla_deadline: slaDeadline,
+        source: 'ai'
+      })
+      .select()
+      .single();
+
+    if (insertErr || !ticket) {
+      return { success: false, error: 'Gagal membuat tiket otomatis: ' + (insertErr?.message || 'Unknown error') };
+    }
+
+    // Get customer's name for notification
+    const { data: custProf } = await supabase.from('profiles').select('full_name').eq('id', customer_id).single();
+    const custName = custProf?.full_name || 'Pelanggan';
+
+    // Create notifications for all admins
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin');
+
+    if (admins && admins.length > 0) {
+      const notifs = admins.map((adm) => ({
+        user_id: adm.id,
+        title: 'Pengaduan Baru (Dari AI)',
+        message: `Tiket ${ticketNumber} dibuat otomatis oleh AI untuk ${custName}. Masalah: ${title}. Kategori: ${category}.`,
+        type: 'admin_support_ai',
+        reference_id: ticket.id,
+        status_badge: 'Baru'
+      }));
+      await supabase.from('notifications').insert(notifs);
+    }
+
+    // Also notify customer themselves
+    await supabase.from('notifications').insert({
+      user_id: customer_id,
+      title: 'Tiket Bantuan Berhasil Dibuat',
+      message: `Terima kasih, keluhan Anda telah kami catat. Tiket bantuan Anda berhasil dibuat dengan nomor: ${ticketNumber}. Silakan pantau status tiket di menu Pengaduan.`,
+      type: 'support_status_ai',
+      reference_id: ticket.id,
+      status_badge: 'Baru'
+    });
+
+    return {
+      success: true,
+      ticket_number: ticketNumber,
+      message: `Terima kasih, bantuan Anda telah dicatat. Tiket bantuan Anda berhasil dibuat dengan nomor: ${ticketNumber}. Silakan pantau status tiket di menu Pengaduan.`
     };
   }
 

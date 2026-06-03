@@ -600,6 +600,8 @@ export default function CustomerSupportPage() {
                   <button
                     type="submit"
                     disabled={!newMessage.trim()}
+                    title="Kirim pesan"
+                    aria-label="Kirim pesan"
                     className="bg-primary hover:bg-primary-hover disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white p-2.5 rounded-xl transition-all flex items-center justify-center"
                   >
                     <Send className="w-5 h-5" />
@@ -631,7 +633,12 @@ export default function CustomerSupportPage() {
             >
               <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
                 <h3 className="text-xl font-bold text-text-light dark:text-text-dark">Formulir Pengaduan Baru</h3>
-                <button onClick={() => setShowCreateModal(false)} className="text-muted hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  title="Tutup formulir"
+                  aria-label="Tutup"
+                  className="text-muted hover:text-red-500 transition-colors"
+                >
                   <XCircle className="w-6 h-6" />
                 </button>
               </div>
@@ -651,8 +658,10 @@ export default function CustomerSupportPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Kategori Keluhan</label>
+                    <label htmlFor="formCategory" className="text-xs font-bold text-muted uppercase">Kategori Keluhan</label>
                     <select
+                      id="formCategory"
+                      title="Kategori Keluhan"
                       value={formCategory}
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
@@ -681,8 +690,10 @@ export default function CustomerSupportPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Tingkat Urgensi</label>
+                    <label htmlFor="formUrgency" className="text-xs font-bold text-muted uppercase">Tingkat Urgensi</label>
                     <select
+                      id="formUrgency"
+                      title="Tingkat Urgensi"
                       value={formUrgency}
                       onChange={(e: any) => setFormUrgency(e.target.value)}
                       className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"

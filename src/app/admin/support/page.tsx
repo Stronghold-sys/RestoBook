@@ -551,8 +551,11 @@ export default function AdminSupportPage() {
               <h3 className="text-sm font-bold text-text-light dark:text-text-dark">Waktu Penghapusan Riwayat Chat (Setelah Tiket Selesai)</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Jam</label>
+                  <label htmlFor="chatExpiryHours" className="text-xs font-bold text-muted uppercase">Jam</label>
                   <input
+                    id="chatExpiryHours"
+                    title="Jam"
+                    placeholder="0"
                     type="number"
                     min="0"
                     max="23"
@@ -562,8 +565,11 @@ export default function AdminSupportPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Menit</label>
+                  <label htmlFor="chatExpiryMinutes" className="text-xs font-bold text-muted uppercase">Menit</label>
                   <input
+                    id="chatExpiryMinutes"
+                    title="Menit"
+                    placeholder="30"
                     type="number"
                     min="0"
                     max="59"
@@ -573,8 +579,11 @@ export default function AdminSupportPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Detik</label>
+                  <label htmlFor="chatExpirySeconds" className="text-xs font-bold text-muted uppercase">Detik</label>
                   <input
+                    id="chatExpirySeconds"
+                    title="Detik"
+                    placeholder="0"
                     type="number"
                     min="0"
                     max="59"
@@ -591,8 +600,11 @@ export default function AdminSupportPage() {
               <h3 className="text-sm font-bold text-text-light dark:text-text-dark">Batas Waktu SLA Penanganan (Jam)</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Urgent</label>
+                  <label htmlFor="slaHoursUrgent" className="text-xs font-bold text-muted uppercase">Urgent</label>
                   <input
+                    id="slaHoursUrgent"
+                    title="SLA Urgent"
+                    placeholder="4"
                     type="number"
                     min="1"
                     value={slaHoursUrgent}
@@ -601,8 +613,11 @@ export default function AdminSupportPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">High</label>
+                  <label htmlFor="slaHoursHigh" className="text-xs font-bold text-muted uppercase">High</label>
                   <input
+                    id="slaHoursHigh"
+                    title="SLA High"
+                    placeholder="12"
                     type="number"
                     min="1"
                     value={slaHoursHigh}
@@ -611,8 +626,11 @@ export default function AdminSupportPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Medium</label>
+                  <label htmlFor="slaHoursMedium" className="text-xs font-bold text-muted uppercase">Medium</label>
                   <input
+                    id="slaHoursMedium"
+                    title="SLA Medium"
+                    placeholder="24"
                     type="number"
                     min="1"
                     value={slaHoursMedium}
@@ -621,8 +639,11 @@ export default function AdminSupportPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted uppercase">Low</label>
+                  <label htmlFor="slaHoursLow" className="text-xs font-bold text-muted uppercase">Low</label>
                   <input
+                    id="slaHoursLow"
+                    title="SLA Low"
+                    placeholder="48"
                     type="number"
                     min="1"
                     value={slaHoursLow}
@@ -646,6 +667,9 @@ export default function AdminSupportPage() {
                     {isAudioMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                   </button>
                   <input
+                    id="audioVolume"
+                    title="Volume Suara"
+                    placeholder="0.6"
                     type="range"
                     min="0"
                     max="1"
@@ -705,6 +729,7 @@ export default function AdminSupportPage() {
                 <Search className="w-4 h-4 text-muted mr-2" />
                 <input
                   type="text"
+                  title="Cari Tiket"
                   placeholder="Cari tiket atau pelanggan..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -715,6 +740,7 @@ export default function AdminSupportPage() {
               <div className="grid grid-cols-3 gap-2">
                 <select
                   value={filterStatus}
+                  title="Filter Status"
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
                 >
@@ -728,6 +754,7 @@ export default function AdminSupportPage() {
 
                 <select
                   value={filterUrgency}
+                  title="Filter Urgensi"
                   onChange={(e) => setFilterUrgency(e.target.value)}
                   className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
                 >
@@ -740,6 +767,7 @@ export default function AdminSupportPage() {
 
                 <select
                   value={filterCategory}
+                  title="Filter Kategori"
                   onChange={(e) => setFilterCategory(e.target.value)}
                   className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
                 >
@@ -978,7 +1006,9 @@ export default function AdminSupportPage() {
                     <button
                       type="submit"
                       disabled={!newMessage.trim()}
-                      className="bg-primary hover:bg-primary-hover disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white p-2.5 rounded-xl transition-all"
+                      title="Kirim tanggapan"
+                      aria-label="Kirim"
+                      className="bg-primary hover:bg-primary-hover disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white p-2.5 rounded-xl transition-all flex items-center justify-center"
                     >
                       <Send className="w-4 h-4" />
                     </button>

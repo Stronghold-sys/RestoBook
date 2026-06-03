@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -64,6 +64,248 @@ export default function OrderTrackingPage() {
   const [showPinPaymentModal, setShowPinPaymentModal] = useState(false);
   const [paymentPin, setPaymentPin] = useState("");
   const [pinRemainingAttempts, setPinRemainingAttempts] = useState<number | null>(null);
+
+  // Live Chat States
+  const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
+  const [chatTyping, setChatTyping] = useState(false);
+  const [chatRoom, setChatRoom] = useState<any>(null);
+  const [cashiersOnlineCount, setCashiersOnlineCount] = useState(0);
+  const [chatAttachmentUrl, setChatAttachmentUrl] = useState("");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const typingChannelRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<any>(null);
+
+  const playPingSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playTone = (freq: number, start: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.15, start + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + duration);
+      };
+
+      const now = ctx.currentTime;
+      playTone(659.25, now, 0.4); // E5
+      playTone(880.00, now + 0.12, 0.5); // A5
+    } catch (err) {}
+  };
+
+  const fetchChatMessages = async () => {
+    setChatLoading(true);
+    try {
+      const res = await fetch(`/api/customer/orders/${id}/chat`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memuat obrolan");
+      setChatRoom(data.chat);
+      setChatMessages(data.messages || []);
+    } catch (e: any) {
+      console.error(e.message);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showChatDrawer) {
+      fetchChatMessages();
+    }
+  }, [showChatDrawer]);
+
+  // Realtime messages subscription
+  useEffect(() => {
+    if (!showChatDrawer || !chatRoom?.id) return;
+
+    const channel = supabase
+      .channel(`chat-messages-${chatRoom.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'order_chat_messages',
+        filter: `chat_id=eq.${chatRoom.id}`
+      }, (payload: any) => {
+        setChatMessages(prev => {
+          if (prev.some(m => m.id === payload.new.id)) return prev;
+          if (payload.new.sender_role !== 'customer') {
+            playPingSound();
+          }
+          return [...prev, payload.new];
+        });
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'order_chats',
+        filter: `id=eq.${chatRoom.id}`
+      }, (payload: any) => {
+        setChatRoom(payload.new);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [showChatDrawer, chatRoom?.id]);
+
+  // Realtime typing broadcast & listener
+  useEffect(() => {
+    if (!showChatDrawer || !chatRoom?.id) return;
+
+    const channel = supabase.channel(`order-chat-typing-${chatRoom.id}`);
+    typingChannelRef.current = channel;
+
+    channel
+      .on('broadcast', { event: 'typing' }, (payload: any) => {
+        if (payload.payload.sender === 'cashier') {
+          setChatTyping(payload.payload.isTyping);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      typingChannelRef.current = null;
+    };
+  }, [showChatDrawer, chatRoom?.id]);
+
+  // Track presence for online cashier status
+  useEffect(() => {
+    const presenceChannel = supabase.channel('online-presence');
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        let count = 0;
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            if (['cashier', 'admin'].includes(presence.role)) {
+              count++;
+            }
+          });
+        });
+        setCashiersOnlineCount(count);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ online_at: new Date().toISOString(), role: 'customer' });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, []);
+
+  const sendTypingStatus = (isTyping: boolean) => {
+    if (typingChannelRef.current) {
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { sender: 'customer', isTyping }
+      });
+    }
+  };
+
+  const handleTypingEvent = () => {
+    sendTypingStatus(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingStatus(false);
+    }, 2000);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran gambar maksimal adalah 5MB");
+      return;
+    }
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', 'profiles');
+    
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengunggah file");
+      setChatAttachmentUrl(data.url);
+      toast.success("Gambar berhasil diunggah!");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah gambar");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const containsProfanity = (text: string) => {
+    const cleanText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const vulgarWords = ['anjing', 'babi', 'bangsat', 'goblok', 'tolol', 'kontol', 'memek', 'pantek', 'jancok'];
+    return vulgarWords.some(word => cleanText.includes(word));
+  };
+
+  const sendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() && !chatAttachmentUrl) return;
+
+    if (chatInput && containsProfanity(chatInput)) {
+      toast.error("Pesan Anda mengandung kata-kata tidak sopan. Harap gunakan bahasa yang baik.");
+      return;
+    }
+
+    setChatSending(true);
+    const textToSend = chatInput;
+    const attachmentToSend = chatAttachmentUrl;
+    
+    setChatInput("");
+    setChatAttachmentUrl("");
+    sendTypingStatus(false);
+
+    try {
+      const res = await fetch(`/api/customer/orders/${id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: textToSend || null,
+          attachment_url: attachmentToSend || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Gagal mengirim pesan");
+        setChatInput(textToSend);
+        setChatAttachmentUrl(attachmentToSend);
+      } else {
+        fetchChatMessages();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengirim pesan");
+      setChatInput(textToSend);
+      setChatAttachmentUrl(attachmentToSend);
+    } finally {
+      setChatSending(false);
+    }
+  };
 
   const fetchProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1027,6 +1269,12 @@ export default function OrderTrackingPage() {
 
         {/* FOOTER ACTIONS (CANCEL, REFUND, REVIEW) */}
         <div className="mt-6 flex flex-wrap gap-4 border-t border-border-light dark:border-border-dark pt-6">
+          <button 
+            onClick={() => setShowChatDrawer(true)}
+            className="flex items-center gap-2 text-primary hover:text-white font-bold text-xs uppercase tracking-wider bg-primary/5 hover:bg-primary px-4 py-2.5 rounded-xl border border-primary/20 hover:border-primary transition-all shadow-sm"
+          >
+            <MessageSquare className="w-4 h-4" /> Chat Kasir
+          </button>
           {!isCancelled && (
             <>
               {order.status === "pending" ? (
@@ -1375,6 +1623,173 @@ export default function OrderTrackingPage() {
                   {payingViaWallet ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Sliding Chat Drawer Sisi Kanan */}
+      <AnimatePresence>
+        {showChatDrawer && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowChatDrawer(false)}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md h-full bg-card-light dark:bg-card-dark shadow-2xl border-l border-border-light dark:border-border-dark flex flex-col z-10"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm">
+                    K
+                  </div>
+                  <div>
+                    <h3 className="font-black text-sm text-text-light dark:text-text-dark uppercase tracking-tight">Layanan Chat Kasir</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`w-2 h-2 rounded-full ${cashiersOnlineCount > 0 ? "bg-green-500" : "bg-gray-400"}`} />
+                      <span className="text-[10px] font-bold text-muted uppercase">
+                        {cashiersOnlineCount > 0 ? "Kasir Aktif" : "Offline"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowChatDrawer(false)}
+                  className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"
+                  title="Tutup Chat"
+                  aria-label="Tutup"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Message List */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {chatLoading ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-muted space-y-2 p-6">
+                    <MessageSquare className="w-12 h-12 text-muted/50" />
+                    <p className="font-bold text-xs uppercase tracking-wider">Mulai Percakapan</p>
+                    <p className="text-[11px] font-medium leading-relaxed max-w-xs">
+                      Tanyakan tentang status pesanan, pembayaran, atau komplain Anda langsung ke Kasir/RestoBot di sini.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {chatMessages.map((msg: any) => {
+                      const isMe = msg.sender_role === 'customer';
+                      const isAi = msg.sender_role === 'ai';
+                      return (
+                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                            isMe ? 'bg-primary text-white rounded-tr-none' : 
+                            isAi ? 'bg-amber-50 dark:bg-amber-950/20 text-text-light dark:text-text-dark border border-amber-200/40 rounded-tl-none' : 
+                            'bg-gray-150 dark:bg-gray-800 text-text-light dark:text-text-dark rounded-tl-none'
+                          }`}>
+                            <div className="flex items-center gap-1.5 mb-1 opacity-70 text-[9px] font-bold uppercase tracking-wider">
+                              {isMe ? 'Anda' : isAi ? 'RestoBot AI' : 'Kasir'}
+                              <span>•</span>
+                              <span>{format(new Date(msg.created_at), "HH:mm")}</span>
+                            </div>
+                            
+                            {msg.attachment_url && (
+                              <div className="mb-2 rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px]">
+                                <img src={msg.attachment_url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in" onClick={() => window.open(msg.attachment_url)} />
+                              </div>
+                            )}
+                            
+                            {msg.message && (
+                              <p className="text-xs leading-relaxed font-medium whitespace-pre-wrap">{msg.message}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {chatTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-150 dark:bg-gray-800 text-muted rounded-2xl rounded-tl-none px-4 py-2.5 flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold uppercase">Kasir sedang mengetik</span>
+                          <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* File Upload Preview */}
+              {uploadingFile && (
+                <div className="px-6 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center justify-between text-xs font-bold text-muted">
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Mengunggah gambar...
+                  </span>
+                </div>
+              )}
+              {chatAttachmentUrl && (
+                <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-border-light dark:border-border-dark flex items-center gap-4">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border-light dark:border-border-dark shrink-0">
+                    <img src={chatAttachmentUrl} alt="Upload Preview" className="w-full h-full object-cover" />
+                    <button onClick={() => setChatAttachmentUrl("")} className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black/85 rounded-full text-white" title="Hapus gambar">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="text-[10px] font-bold text-muted uppercase">
+                    Gambar siap dikirim
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Input */}
+              {chatRoom?.is_blocked ? (
+                <div className="p-6 border-t border-border-light dark:border-border-dark bg-red-50 dark:bg-red-950/20 text-center">
+                  <p className="text-xs font-bold text-red-600 dark:text-red-400">
+                    Obrolan dinonaktifkan oleh Kasir karena indikasi penyalahgunaan.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={sendChatMessage} className="p-4 border-t border-border-light dark:border-border-dark flex items-center gap-3">
+                  <label className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer shrink-0" title="Lampirkan Gambar">
+                    <Camera className="w-5 h-5" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => {
+                      setChatInput(e.target.value);
+                      handleTypingEvent();
+                    }}
+                    placeholder={chatSending ? "Mengirim..." : "Tulis pesan ke Kasir..."}
+                    disabled={chatSending}
+                    className="flex-1 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark font-medium"
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatSending || (!chatInput.trim() && !chatAttachmentUrl)}
+                    title="Kirim Pesan"
+                    aria-label="Kirim"
+                    className="bg-primary hover:bg-primary-hover disabled:opacity-50 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </form>
+              )}
             </motion.div>
           </div>
         )}

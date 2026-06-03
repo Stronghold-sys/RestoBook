@@ -5,7 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, 
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet, LifeBuoy
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [pendingTicketCount, setPendingTicketCount] = useState(0);
+  const [unreadLiveChatCount, setUnreadLiveChatCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -339,6 +340,9 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending');
         setPendingTicketCount(count || 0);
+        fetchUnreadLiveChatCount();
+      } else if (profile.role === "cashier") {
+        fetchUnreadLiveChatCount();
       }
     }
   };
@@ -355,6 +359,19 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     }
   };
 
+  const fetchUnreadLiveChatCount = async () => {
+    try {
+      const { count } = await supabase
+        .from("order_chat_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false)
+        .eq("sender_role", "customer");
+      setUnreadLiveChatCount(count || 0);
+    } catch (e) {
+      console.error("Error fetching unread live chat count:", e);
+    }
+  };
+
   useEffect(() => {
     if (!userProfile?.id || role !== "admin") return;
 
@@ -368,6 +385,27 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         table: 'support_tickets'
       }, () => {
         fetchPendingTicketCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id, role]);
+
+  useEffect(() => {
+    if (!userProfile?.id || !['cashier', 'admin'].includes(role || '')) return;
+
+    fetchUnreadLiveChatCount();
+
+    const channel = supabase
+      .channel('cashier-live-chat-badge')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_chat_messages'
+      }, () => {
+        fetchUnreadLiveChatCount();
       })
       .subscribe();
 
@@ -423,6 +461,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           },
           { name: "Antrian Dapur", href: "/cashier/queue", icon: ListOrdered },
           { name: "Reservasi", href: "/cashier/reservations", icon: CalendarDays },
+          { name: "Live Chat", href: "/cashier/chat", icon: MessageSquare, badge: unreadLiveChatCount },
           { name: "Transaksi", href: "/cashier/transactions", icon: Receipt },
           { name: "Absensi", href: "/cashier/attendance", icon: ClipboardList },
           { name: "Profil", href: "/cashier/profile", icon: UserIcon },

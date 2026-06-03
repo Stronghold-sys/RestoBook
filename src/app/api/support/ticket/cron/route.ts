@@ -3,28 +3,44 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET(req: NextRequest) {
-  return handleCron();
+  const { searchParams } = new URL(req.url);
+  const chatId = searchParams.get('chatId') || undefined;
+  const ticketId = searchParams.get('ticketId') || undefined;
+  return handleCron(chatId, ticketId);
 }
 
 export async function POST(req: NextRequest) {
-  return handleCron();
+  try {
+    const body = await req.json().catch(() => ({}));
+    return handleCron(body.chatId, body.ticketId);
+  } catch (e) {
+    return handleCron();
+  }
 }
 
-async function handleCron() {
+async function handleCron(targetChatId?: string, targetTicketId?: string) {
   try {
     const supabase = getSupabaseAdmin();
-    const nowStr = new Date().toISOString();
+    // Allow 15 seconds of leeway for client-server clock drift
+    const nowStr = new Date(Date.now() + 15000).toISOString();
     let processedTicketsCount = 0;
     let processedOrderChatsCount = 0;
     const deletedTicketNumbers: string[] = [];
 
     // 1. Process support tickets
-    const { data: expiredTickets, error: fetchError } = await supabase
+    let ticketQuery = supabase
       .from('support_tickets')
       .select('id, ticket_number, customer_id')
       .not('status', 'eq', 'expired')
-      .not('chat_history_deleted_at', 'is', null)
-      .lte('chat_history_deleted_at', nowStr);
+      .not('chat_history_deleted_at', 'is', null);
+
+    if (targetTicketId) {
+      ticketQuery = ticketQuery.eq('id', targetTicketId).lte('chat_history_deleted_at', nowStr);
+    } else {
+      ticketQuery = ticketQuery.lte('chat_history_deleted_at', nowStr);
+    }
+
+    const { data: expiredTickets, error: fetchError } = await ticketQuery;
 
     if (fetchError) throw fetchError;
 
@@ -62,12 +78,19 @@ async function handleCron() {
     }
 
     // 2. Process order chats
-    const { data: expiredOrderChats, error: fetchOrderError } = await supabase
+    let orderChatQuery = supabase
       .from('order_chats')
       .select('id, order_id, customer_id')
       .not('status', 'eq', 'expired')
-      .not('chat_history_deleted_at', 'is', null)
-      .lte('chat_history_deleted_at', nowStr);
+      .not('chat_history_deleted_at', 'is', null);
+
+    if (targetChatId) {
+      orderChatQuery = orderChatQuery.eq('id', targetChatId).lte('chat_history_deleted_at', nowStr);
+    } else {
+      orderChatQuery = orderChatQuery.lte('chat_history_deleted_at', nowStr);
+    }
+
+    const { data: expiredOrderChats, error: fetchOrderError } = await orderChatQuery;
 
     if (fetchOrderError) throw fetchOrderError;
 

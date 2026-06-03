@@ -156,7 +156,11 @@ export default function OrderTrackingPage() {
 
   const triggerOrderChatCronCleanup = async () => {
     try {
-      await fetch('/api/support/ticket/cron', { method: 'POST' });
+      await fetch('/api/support/ticket/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chatRoom?.id })
+      });
       fetchChatMessages();
     } catch (e) {
       console.error("Gagal menjalankan auto-cleanup obrolan order:", e);
@@ -197,6 +201,13 @@ export default function OrderTrackingPage() {
 
     return () => clearInterval(interval);
   }, [chatRoom?.chat_history_deleted_at, chatRoom?.status]);
+
+  // Efek untuk membersihkan pesan chat saat chatRoom kedaluwarsa (expired) secara real-time
+  useEffect(() => {
+    if (chatRoom?.status === 'expired') {
+      setChatMessages([]);
+    }
+  }, [chatRoom?.status]);
 
   // Efek untuk memperbarui durasi tunggu pelanggan di antrean secara real-time
   useEffect(() => {

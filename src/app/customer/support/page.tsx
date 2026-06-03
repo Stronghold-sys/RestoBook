@@ -190,7 +190,11 @@ export default function CustomerSupportPage() {
   // Countdown timer logic and trigger cleanup
   const triggerCronCleanup = async () => {
     try {
-      const res = await fetch('/api/support/ticket/cron', { method: 'POST' });
+      const res = await fetch('/api/support/ticket/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId: activeTicket?.id })
+      });
       if (res.ok) {
         fetchProfileAndTickets();
         if (activeTicket) {
@@ -243,6 +247,13 @@ export default function CustomerSupportPage() {
 
     return () => clearInterval(interval);
   }, [activeTicket?.chat_history_deleted_at, activeTicket?.status]);
+
+  // Efek untuk membersihkan pesan chat saat tiket kedaluwarsa (expired) secara real-time
+  useEffect(() => {
+    if (activeTicket?.status === 'expired') {
+      setMessages([]);
+    }
+  }, [activeTicket?.status]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -681,28 +692,33 @@ export default function CustomerSupportPage() {
             <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl overflow-hidden flex flex-col h-[650px] shadow-sm">
               
               {/* Ticket Meta Info */}
-              <div className="p-5 border-b border-border-light dark:border-border-dark bg-background-light/20 dark:bg-background-dark/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-primary">{activeTicket.ticket_number}</span>
-                    <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase rounded border ${getStatusColor(activeTicket.status)}`}>
+              <div className="p-5 border-b border-border-light dark:border-border-dark bg-background-light/20 dark:bg-background-dark/20 flex flex-col gap-4">
+                {/* Row 1: Identifier & Deadline */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-sm font-bold text-primary whitespace-nowrap">{activeTicket.ticket_number}</span>
+                    <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase rounded border whitespace-nowrap ${getStatusColor(activeTicket.status)}`}>
                       {getStatusLabel(activeTicket.status)}
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-text-light dark:text-text-dark mt-1.5">{activeTicket.title}</h2>
-                  <p className="text-xs text-muted mt-1">
-                    Dibuat pada: {format(new Date(activeTicket.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
                   {activeTicket.sla_deadline && !['completed', 'closed', 'expired', 'approved', 'rejected'].includes(activeTicket.status) && (
-                    <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30">
-                      <Clock className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30 self-start sm:self-auto whitespace-nowrap">
+                      <Clock className="w-4 h-4 shrink-0" />
                       <span>
                         Batas Waktu Pelayanan: {format(new Date(activeTicket.sla_deadline), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
                       </span>
                     </div>
                   )}
+                </div>
+
+                {/* Row 2: Title & Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border-light/40 dark:border-border-dark/40 sm:border-0 sm:pt-0">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-text-light dark:text-text-dark">{activeTicket.title}</h2>
+                    <p className="text-xs text-muted">
+                      Dibuat pada: {format(new Date(activeTicket.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
+                    </p>
+                  </div>
                   {!['completed', 'closed', 'expired', 'approved', 'rejected'].includes(activeTicket.status) && (
                     <button
                       disabled={['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at}
@@ -710,7 +726,7 @@ export default function CustomerSupportPage() {
                         setCancelReason('');
                         setShowCancelModal(true);
                       }}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-sm self-start sm:self-auto whitespace-nowrap"
                       title={(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at) ? "Tiket sedang diproses oleh admin dan tidak dapat dibatalkan" : "Batalkan Tiket"}
                     >
                       {(['processing', 'waiting_info'].includes(activeTicket.status) || !!activeTicket.chat_started_at)

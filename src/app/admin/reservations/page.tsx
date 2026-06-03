@@ -117,8 +117,8 @@ export default function AdminReservationsPage() {
           const tableIds = parsedNotes?.meja_ids || [res.table_id];
 
           const updatedNotes = parsedNotes
-            ? JSON.stringify({ ...parsedNotes, catatan_tolak: reason })
-            : `${res.notes || ""} (Ditolak: ${reason})`;
+            ? JSON.stringify({ ...parsedNotes, catatan_tolak: reason, dibatalkan_oleh: "admin" })
+            : JSON.stringify({ catatan_tolak: reason, dibatalkan_oleh: "admin" });
 
           // Update reservation status
           const { error: resError } = await supabase.from("reservations").update({ status: "cancelled", notes: updatedNotes }).eq("id", res.id);

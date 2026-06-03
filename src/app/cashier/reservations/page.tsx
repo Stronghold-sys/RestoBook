@@ -109,8 +109,8 @@ export default function CashierReservationsPage() {
 
       // Update reservation status and notes with reject reason
       const updatedNotes = parsedNotes 
-        ? JSON.stringify({ ...parsedNotes, catatan_tolak: rejectReason })
-        : `${res.notes || ""} (Ditolak: ${rejectReason})`;
+        ? JSON.stringify({ ...parsedNotes, catatan_tolak: rejectReason, dibatalkan_oleh: "kasir" })
+        : JSON.stringify({ catatan_tolak: rejectReason, dibatalkan_oleh: "kasir" });
 
       const { error: resError } = await supabase.from("reservations").update({ status: "cancelled", notes: updatedNotes }).eq("id", rejectingId);
       if (resError) throw resError;

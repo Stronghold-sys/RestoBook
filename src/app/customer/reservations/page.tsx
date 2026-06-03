@@ -231,13 +231,22 @@ export default function CustomerReservationsPage() {
   };
 
   const getCancelledByLabel = (parsedNotes: any) => {
-    if (!parsedNotes?.dibatalkan_oleh) return null;
+    let dibatalkanOleh = parsedNotes?.dibatalkan_oleh;
+    if (!dibatalkanOleh) {
+      if (parsedNotes?.catatan_tolak) {
+        dibatalkanOleh = "kasir";
+      } else if (parsedNotes?.catatan_batal) {
+        dibatalkanOleh = "pelanggan";
+      } else {
+        return null;
+      }
+    }
     const byMap: Record<string, { label: string; color: string }> = {
       pelanggan: { label: "Dibatalkan oleh Anda", color: "text-orange-600 dark:text-orange-400" },
       kasir: { label: "Dibatalkan oleh Kasir", color: "text-red-600 dark:text-red-400" },
       admin: { label: "Dibatalkan oleh Admin", color: "text-red-700 dark:text-red-500" },
     };
-    return byMap[parsedNotes.dibatalkan_oleh] || { label: `Dibatalkan oleh ${parsedNotes.dibatalkan_oleh}`, color: "text-red-600 dark:text-red-400" };
+    return byMap[dibatalkanOleh] || { label: `Dibatalkan oleh ${dibatalkanOleh}`, color: "text-red-600 dark:text-red-400" };
   };
 
   const activeReservations = reservations.filter(r => ACTIVE_STATUSES.includes(r.status));

@@ -8,7 +8,7 @@ import {
   Search, Send, X, Loader2, MessageSquare, Package,
   CheckCheck, Check, Shield, AlertCircle, RefreshCw,
   Printer, FileText, Utensils, Truck, Coffee,
-  ArrowLeft, Ban, Camera, RotateCcw
+  ArrowLeft, Ban, Camera, RotateCcw, Paperclip
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -373,27 +373,54 @@ export default function CashierChatPage() {
     }
   };
 
-  // --- Upload gambar ---
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- Upload file/dokumen/kamera ---
+  const handleChatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Ukuran gambar maksimal 5MB"); return; }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
 
     setUploadingFile(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("bucket", "profiles");
+    const toastId = toast.loading(isCamera ? "Mengunggah foto..." : "Mengunggah file...");
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setAttachmentUrl(data.url);
-      toast.success("Gambar berhasil diunggah");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "profiles");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah file");
+
+      const publicUrl = result.url;
+
+      const resMsg = await fetch("/api/cashier/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: selectedChat!.id,
+          message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) {
+        throw new Error(dataMsg.error || "Gagal mengirim pesan");
+      }
+
+      toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
     } catch (err: any) {
-      toast.error(err.message || "Gagal mengunggah gambar");
+      toast.error(err.message || "Gagal mengunggah file", { id: toastId });
     } finally {
       setUploadingFile(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      e.target.value = "";
     }
   };
 
@@ -786,9 +813,27 @@ export default function CashierChatPage() {
                               : "bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-bl-sm"
                           }`}>
                             {msg.attachment_url && (
-                              <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
-                                <img src={msg.attachment_url} alt="Lampiran" className="max-w-[200px] rounded-xl mb-2 hover:opacity-90 transition-opacity cursor-pointer" />
-                              </a>
+                              <div className="mb-2">
+                                {(() => {
+                                  const url = msg.attachment_url;
+                                  const ext = url.split('.').pop()?.toLowerCase();
+                                  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                  if (isImg) {
+                                    return (
+                                      <a href={url} target="_blank" rel="noopener noreferrer">
+                                        <img src={url} alt="Lampiran" className="max-w-[200px] rounded-xl hover:opacity-90 transition-opacity cursor-pointer border border-border-light dark:border-border-dark" />
+                                      </a>
+                                    );
+                                  } else {
+                                    return (
+                                      <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isCashier ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-800 border-border-light dark:border-border-dark text-primary'}`}>
+                                        <FileText className="w-4 h-4 shrink-0" />
+                                        <span className="truncate max-w-[150px]">Lihat Dokumen</span>
+                                      </a>
+                                    );
+                                  }
+                                })()}
+                              </div>
                             )}
                             {msg.message && <p className="whitespace-pre-wrap break-words">{msg.message}</p>}
                           </div>
@@ -913,25 +958,31 @@ export default function CashierChatPage() {
                 </div>
               ) : (
                 <form onSubmit={sendMessage} className="p-3 border-t border-border-light dark:border-border-dark flex items-end gap-2">
-                  {/* Tombol upload gambar */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    aria-label="Upload gambar"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFile}
-                    title="Lampirkan gambar"
-                    aria-label="Lampirkan gambar"
-                    className="p-2.5 rounded-xl text-muted hover:bg-primary/10 hover:text-primary transition-all flex-shrink-0"
-                  >
-                    {uploadingFile ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <label htmlFor="cashier-chat-file-input" className={`p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Pilih File dari Perangkat">
+                      <Paperclip className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="cashier-chat-file-input"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, false)}
+                      />
+                    </label>
+
+                    <label htmlFor="cashier-chat-camera-input" className={`p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Ambil Foto dari Kamera">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="cashier-chat-camera-input"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, true)}
+                      />
+                    </label>
+                  </div>
 
                   {/* Tombol quick reply */}
                   <button

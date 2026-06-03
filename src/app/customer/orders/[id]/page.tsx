@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send, Paperclip, FileText } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -302,33 +302,52 @@ export default function OrderTrackingPage() {
     }, 2000);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran gambar maksimal adalah 5MB");
+      toast.error("Ukuran file maksimal 5MB");
       return;
     }
 
     setUploadingFile(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('bucket', 'profiles');
-    
+    const toastId = toast.loading(isCamera ? "Mengunggah foto..." : "Mengunggah file...");
     try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'profiles');
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengunggah file");
-      setChatAttachmentUrl(data.url);
-      toast.success("Gambar berhasil diunggah!");
+
+      const publicUrl = data.url;
+
+      const resMsg = await fetch(`/api/customer/orders/${id}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) throw new Error(dataMsg.error || "Gagal mengirim pesan");
+
+      toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
     } catch (err: any) {
-      toast.error(err.message || "Gagal mengunggah gambar");
+      toast.error(err.message || "Gagal mengunggah file", { id: toastId });
     } finally {
       setUploadingFile(false);
+      e.target.value = "";
     }
   };
 
@@ -1818,8 +1837,26 @@ export default function OrderTrackingPage() {
                             </div>
                             
                             {msg.attachment_url && (
-                              <div className="mb-2 rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px]">
-                                <img src={msg.attachment_url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in" onClick={() => window.open(msg.attachment_url)} />
+                              <div className="mb-2">
+                                {(() => {
+                                  const url = msg.attachment_url;
+                                  const ext = url.split('.').pop()?.toLowerCase();
+                                  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                  if (isImg) {
+                                    return (
+                                      <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px]">
+                                        <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-800 border-border-light dark:border-border-dark text-primary'}`}>
+                                        <FileText className="w-4 h-4 shrink-0" />
+                                        <span className="truncate max-w-[150px]">Lihat Dokumen</span>
+                                      </a>
+                                    );
+                                  }
+                                })()}
                               </div>
                             )}
                             
@@ -1886,10 +1923,31 @@ export default function OrderTrackingPage() {
                 </div>
               ) : (
                 <form onSubmit={sendChatMessage} className="p-4 border-t border-border-light dark:border-border-dark flex items-center gap-3">
-                  <label className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer shrink-0" title="Lampirkan Gambar">
-                    <Camera className="w-5 h-5" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} aria-label="Lampirkan gambar ke pesan" />
-                  </label>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <label htmlFor="order-chat-file-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Pilih File dari Perangkat">
+                      <Paperclip className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="order-chat-file-input"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, false)}
+                      />
+                    </label>
+
+                    <label htmlFor="order-chat-camera-input" className={`p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer flex items-center justify-center border border-border-light dark:border-border-dark ${uploadingFile ? "opacity-50 cursor-not-allowed" : ""}`} title="Ambil Foto dari Kamera">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="order-chat-camera-input"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, true)}
+                      />
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={chatInput}

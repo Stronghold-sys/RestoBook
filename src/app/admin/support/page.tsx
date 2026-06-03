@@ -9,7 +9,8 @@ import toast from "react-hot-toast";
 import {
   LifeBuoy, Search, Filter, Play, CheckCircle, XCircle, Info, Send,
   FileText, Clock, Volume2, VolumeX, ShieldAlert, Sparkles, User,
-  Mail, Calendar, Download, RefreshCw, Settings, ChevronRight
+  Mail, Calendar, Download, RefreshCw, Settings, ChevronRight,
+  Paperclip, Camera
 } from "lucide-react";
 
 interface Ticket {
@@ -86,6 +87,7 @@ export default function AdminSupportPage() {
   const [approvalType, setApprovalType] = useState<'approved' | 'rejected'>('approved');
   const [decisionReason, setDecisionReason] = useState('');
   const [decisionLoading, setDecisionLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
@@ -450,6 +452,64 @@ export default function AdminSupportPage() {
       toast.error("Terjadi kesalahan koneksi");
     } finally {
       setDecisionLoading(false);
+    }
+  };
+
+  const handleChatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingFile(true);
+    const toastId = toast.loading(isCamera ? "Mengunggah foto..." : "Mengunggah file...");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) throw new Error("Sesi tidak ditemukan");
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', session.session.user.id);
+      formData.append('isProfile', 'false');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah file");
+
+      const publicUrl = result.url;
+
+      const resMsg = await fetch(`/api/support/ticket/${activeTicket!.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) {
+        throw new Error(dataMsg.error || "Gagal mengirim pesan");
+      }
+
+      toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
+      
+      setMessages(prev => {
+        if (prev.some(m => m.id === dataMsg.message.id)) return prev;
+        return [...prev, dataMsg.message];
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah file", { id: toastId });
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
     }
   };
 
@@ -922,7 +982,7 @@ export default function AdminSupportPage() {
                         ) : (
                           <span className="bg-blue-500/10 text-blue-500 px-1 py-0.5 rounded font-black text-[8px] uppercase tracking-wide">Manual</span>
                         )}
-                        <span>{format(new Date(t.created_at), "dd MMM HH:mm", { locale: localeId })}</span>
+                        <span>{format(new Date(t.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })}</span>
                       </span>
                     </div>
                   </div>
@@ -1020,7 +1080,7 @@ export default function AdminSupportPage() {
                   <div>
                     <span className="text-muted">SLA Deadline</span>
                     <p className="font-bold text-red-500 mt-0.5">
-                      {activeTicket.sla_deadline ? format(new Date(activeTicket.sla_deadline), "dd MMM yyyy, HH:mm", { locale: localeId }) : '-'}
+                      {activeTicket.sla_deadline ? format(new Date(activeTicket.sla_deadline), "dd MMMM yyyy, HH:mm", { locale: localeId }) : '-'}
                     </p>
                   </div>
                   <div>
@@ -1035,6 +1095,12 @@ export default function AdminSupportPage() {
                     <span className="text-[10px] font-bold text-muted uppercase">Deskripsi Keluhan</span>
                     <p className="text-xs text-text-light dark:text-text-dark leading-relaxed whitespace-pre-wrap mt-0.5">{activeTicket.description}</p>
                   </div>
+                  {activeTicket.contact_info && (
+                    <div className="pt-1.5 flex items-center gap-2">
+                      <span className="text-xs text-muted font-bold">Kontak yang Dapat Dihubungi:</span>
+                      <span className="text-xs font-semibold text-text-light dark:text-text-dark">{activeTicket.contact_info}</span>
+                    </div>
+                  )}
                   {activeTicket.attachment_url && (
                     <div className="pt-1.5 flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-primary" />
@@ -1079,6 +1145,28 @@ export default function AdminSupportPage() {
                               ? 'bg-primary text-white border-primary rounded-tr-none shadow-sm'
                               : 'bg-white dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark rounded-tl-none'
                           }`}>
+                            {msg.attachment_url && (
+                              <div className="mb-2">
+                                {(() => {
+                                  const url = msg.attachment_url;
+                                  const ext = url.split('.').pop()?.toLowerCase();
+                                  const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                  if (isImg) {
+                                    return (
+                                      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-w-[200px] mb-1">
+                                        <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <a href={url} target="_blank" rel="noopener noreferrer" className={`text-xs font-bold underline flex items-center gap-1.5 p-2 rounded-xl border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 dark:bg-gray-850 border-border-light dark:border-border-dark text-primary'}`}>
+                                        <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
+                                      </a>
+                                    );
+                                  }
+                                })()}
+                              </div>
+                            )}
                             <p className="whitespace-pre-wrap">{msg.message}</p>
                           </div>
                           <span className="text-[9px] text-muted mt-1 self-end px-1">
@@ -1127,6 +1215,32 @@ export default function AdminSupportPage() {
                 {/* Message Input Box */}
                 {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && activeTicket.status !== 'rejected' && (
                   <form onSubmit={handleSendMessage} className="p-3 border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <label htmlFor="admin-chat-file-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Pilih File dari Perangkat">
+                        <Paperclip className="w-4 h-4" />
+                        <input
+                          type="file"
+                          id="admin-chat-file-input"
+                          className="hidden"
+                          disabled={uploadingFile}
+                          onChange={(e) => handleChatFileUpload(e, false)}
+                        />
+                      </label>
+
+                      <label htmlFor="admin-chat-camera-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Ambil Foto dari Kamera">
+                        <Camera className="w-4 h-4" />
+                        <input
+                          type="file"
+                          id="admin-chat-camera-input"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          disabled={uploadingFile}
+                          onChange={(e) => handleChatFileUpload(e, true)}
+                        />
+                      </label>
+                    </div>
+
                     <input
                       type="text"
                       value={newMessage}

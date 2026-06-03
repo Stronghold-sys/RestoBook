@@ -9,7 +9,8 @@ import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   LifeBuoy, Plus, ClipboardList, Send, FileText,
-  User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2
+  User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2,
+  Paperclip, Camera
 } from "lucide-react";
 
 interface Ticket {
@@ -68,6 +69,7 @@ export default function CustomerSupportPage() {
 
   // Audio settings
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -385,6 +387,64 @@ export default function CustomerSupportPage() {
     }
   };
 
+  const handleChatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingFile(true);
+    const toastId = toast.loading(isCamera ? "Mengunggah foto..." : "Mengunggah file...");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) throw new Error("Sesi tidak ditemukan");
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', session.session.user.id);
+      formData.append('isProfile', 'false');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengunggah file");
+
+      const publicUrl = result.url;
+
+      const resMsg = await fetch(`/api/support/ticket/${activeTicket!.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
+          attachment_url: publicUrl
+        })
+      });
+
+      const dataMsg = await resMsg.json();
+      if (!resMsg.ok) {
+        throw new Error(dataMsg.error || "Gagal mengirim pesan");
+      }
+
+      toast.success("File berhasil diunggah dan dikirim!", { id: toastId });
+      
+      setMessages(prev => {
+        if (prev.some(m => m.id === dataMsg.message.id)) return prev;
+        return [...prev, dataMsg.message];
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengunggah file", { id: toastId });
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
+    }
+  };
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending': return 'Menunggu Tanggapan Admin';
@@ -530,7 +590,7 @@ export default function CustomerSupportPage() {
                   </div>
                   <h3 className="font-bold text-sm text-text-light dark:text-text-dark mt-2 truncate">{t.title}</h3>
                   <div className="flex justify-between items-center text-[10px] text-muted mt-3">
-                    <span>{format(new Date(t.created_at), "dd MMM yyyy", { locale: localeId })}</span>
+                    <span>{format(new Date(t.created_at), "dd MMMM yyyy", { locale: localeId })}</span>
                     <span className="capitalize">{t.category}</span>
                   </div>
                 </div>
@@ -563,7 +623,7 @@ export default function CustomerSupportPage() {
                     <div className="flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-900/30">
                       <Clock className="w-4 h-4" />
                       <span>
-                        SLA: {format(new Date(activeTicket.sla_deadline), "dd MMM, HH:mm", { locale: localeId })} WIB
+                        SLA: {format(new Date(activeTicket.sla_deadline), "dd MMMM yyyy, HH:mm", { locale: localeId })} WIB
                       </span>
                     </div>
                   )}
@@ -598,7 +658,7 @@ export default function CustomerSupportPage() {
                   </div>
                   {activeTicket.contact_info && (
                     <div>
-                      <span className="text-muted">Kontak Hubung: </span>
+                      <span className="text-muted">Kontak yang Dapat Dihubungi: </span>
                       <span className="font-semibold text-text-light dark:text-text-dark">{activeTicket.contact_info}</span>
                     </div>
                   )}
@@ -654,9 +714,24 @@ export default function CustomerSupportPage() {
                           <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                           {msg.attachment_url && (
                             <div className="mt-2 pt-2 border-t border-white/20">
-                              <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline flex items-center gap-1">
-                                <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
-                              </a>
+                              {(() => {
+                                const url = msg.attachment_url;
+                                const ext = url.split('.').pop()?.toLowerCase();
+                                const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+                                if (isImg) {
+                                  return (
+                                    <div className="rounded-xl overflow-hidden border border-border-light dark:border-border-dark max-w-[200px] mb-1">
+                                      <img src={url} alt="Attachment" className="w-full h-auto max-h-[150px] object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => window.open(url)} />
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline flex items-center gap-1">
+                                      <FileText className="w-3.5 h-3.5" /> Lihat Lampiran
+                                    </a>
+                                  );
+                                }
+                              })()}
                             </div>
                           )}
                         </div>
@@ -691,6 +766,32 @@ export default function CustomerSupportPage() {
               {/* Chat Input Area */}
               {activeTicket.chat_started_at && activeTicket.status !== 'completed' && activeTicket.status !== 'closed' && activeTicket.status !== 'expired' && (
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <label htmlFor="chat-file-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Pilih File dari Perangkat">
+                      <Paperclip className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="chat-file-input"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, false)}
+                      />
+                    </label>
+
+                    <label htmlFor="chat-camera-input" className="p-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800 text-muted hover:text-primary rounded-xl cursor-pointer transition-all flex items-center justify-center border border-border-light dark:border-border-dark" title="Ambil Foto dari Kamera">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="chat-camera-input"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        disabled={uploadingFile}
+                        onChange={(e) => handleChatFileUpload(e, true)}
+                      />
+                    </label>
+                  </div>
+
                   <input
                     type="text"
                     value={newMessage}

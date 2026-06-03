@@ -262,6 +262,19 @@ const playPingSound = () => {
 
 export default function RestoBot() {
   const pathname = usePathname();
+
+  // Sembunyikan RestoBot di halaman yang memiliki input chat sendiri
+  // agar tombol chatbot tidak mengganggu tombol kirim pesan
+  const HIDDEN_PATHS = [
+    '/cashier/chat',
+    '/customer/support',
+    '/admin/support',
+  ];
+  const isHiddenPage =
+    HIDDEN_PATHS.some((p) => pathname?.startsWith(p)) ||
+    // Halaman detail pesanan pelanggan juga punya drawer chat
+    /^\/customer\/orders\/[^/]+$/.test(pathname ?? '');
+
   const [isOpen, setIsOpen] = useState(false);
   const [role, setRole] = useState('home');
   const [messages, setMessages] = useState<{role: string, content: string, type?: string}[]>([]);
@@ -370,6 +383,9 @@ export default function RestoBot() {
   };
 
   useEffect(() => {
+    // Jika halaman disembunyikan, tidak perlu load apapun
+    if (isHiddenPage) return;
+
     let newRole = 'home';
     if (pathname?.includes('/admin')) newRole = 'admin';
     else if (pathname?.includes('/cashier') || pathname?.includes('/kasir')) newRole = 'cashier';
@@ -905,6 +921,9 @@ export default function RestoBot() {
   };
 
   const currentQuickReplies = QUICK_REPLIES[role as keyof typeof QUICK_REPLIES] || QUICK_REPLIES.home;
+
+  // Tidak tampilkan RestoBot sama sekali di halaman yang punya chat sendiri
+  if (isHiddenPage) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">

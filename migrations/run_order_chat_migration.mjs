@@ -1,8 +1,13 @@
 // Script untuk menjalankan migration order chats ke Supabase
-// Jalankan dengan: node migrations/run_order_chat_migration.js
+// Jalankan dengan: node migrations/run_order_chat_migration.mjs
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const envPath = path.join(__dirname, '..', '.env.local');
 const env = fs.readFileSync(envPath, 'utf8');
@@ -140,7 +145,6 @@ async function runMigration() {
   console.log(`Target: ${SUPABASE_URL}`);
   console.log('='.repeat(60));
 
-  const { createClient } = require('@supabase/supabase-js');
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
   });
@@ -163,14 +167,14 @@ async function runMigration() {
   }
 
   console.log('\nVerifikasi koneksi ke tabel order_chats...');
-  const { data: testChats, error: errChats } = await supabase.from('order_chats').select('id').limit(1);
+  const { error: errChats } = await supabase.from('order_chats').select('id').limit(1);
   if (errChats) {
     console.error('ERROR VERIFIKASI CHAT:', errChats.message);
   } else {
     console.log('Tabel order_chats OK!');
   }
 
-  const { data: testMsg, error: errMsg } = await supabase.from('order_chat_messages').select('id').limit(1);
+  const { error: errMsg } = await supabase.from('order_chat_messages').select('id').limit(1);
   if (errMsg) {
     console.error('ERROR VERIFIKASI MESSAGES:', errMsg.message);
   } else {

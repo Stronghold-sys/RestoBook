@@ -1766,7 +1766,7 @@ export default function OrderTrackingPage() {
                 <form onSubmit={sendChatMessage} className="p-4 border-t border-border-light dark:border-border-dark flex items-center gap-3">
                   <label className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-250 dark:hover:bg-gray-700 rounded-xl transition-all text-muted cursor-pointer shrink-0" title="Lampirkan Gambar">
                     <Camera className="w-5 h-5" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} aria-label="Lampirkan gambar ke pesan" />
                   </label>
                   <input
                     type="text"

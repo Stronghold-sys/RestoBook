@@ -1932,6 +1932,8 @@ export default function OrderTrackingPage() {
                         className="hidden"
                         disabled={uploadingFile}
                         onChange={(e) => handleChatFileUpload(e, false)}
+                        title="Pilih File dari Perangkat"
+                        aria-label="Pilih File dari Perangkat"
                       />
                     </label>
 
@@ -1945,6 +1947,8 @@ export default function OrderTrackingPage() {
                         className="hidden"
                         disabled={uploadingFile}
                         onChange={(e) => handleChatFileUpload(e, true)}
+                        title="Ambil Foto dari Kamera"
+                        aria-label="Ambil Foto dari Kamera"
                       />
                     </label>
                   </div>

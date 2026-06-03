@@ -1,218 +1,270 @@
-Buatkan fitur CHAT KASIR yang interaktif, realtime, modern, dan terhubung dengan AI assistant terlebih dahulu sebelum diarahkan ke kasir manusia. Saat pelanggan menekan menu “Chat Kasir”, sistem harus langsung membuka tampilan chat, lalu AI wajib menyapa otomatis tanpa menunggu pelanggan mengetik dulu.
+Tambahkan dan perbaiki fitur RESERVASI MEJA agar tidak terjadi bentrok jadwal dan nomor meja yang sama pada tanggal dan jam yang sama.
+
+MASALAH YANG HARUS DIPERBAIKI:
+Saat pelanggan melakukan reservasi, misalnya:
+
+- Tanggal: 4 Juni
+- Jam: 12:00
+- No meja: 1
+
+lalu data sudah diisi lengkap dan tombol “Ajukan” diklik, data harus tersimpan dengan benar. Namun saat ada pelanggan lain mencoba reservasi dengan:
+
+- tanggal yang sama
+- jam yang sama
+- no meja yang sama
+
+maka sistem tidak boleh membiarkan reservasi tersebut lolos begitu saja. Sistem harus mendeteksi bahwa meja itu sudah dibooking pada jadwal yang sama, lalu memblokir pilihan meja tersebut dan hanya menampilkan meja lain yang masih tersedia.
 
 TUJUAN FITUR:
 
-- Memberi sambutan otomatis saat chat dibuka.
-- Membantu pelanggan menjelaskan kebutuhan pesanan.
-- Menjawab pertanyaan dasar terkait pesanan.
-- Menawarkan opsi untuk langsung terhubung ke kasir manusia.
-- Jika pelanggan setuju, AI langsung meneruskan percakapan ke kasir.
-- Saat terhubung ke kasir, pelanggan diminta menunggu sampai kasir membalas.
-- Semua percakapan harus sopan, jelas, ramah, dan sesuai konteks order.
+1. Mencegah double booking meja pada tanggal dan jam yang sama.
+2. Menampilkan hanya meja yang masih tersedia sesuai slot waktu yang dipilih.
+3. Setelah reservasi selesai oleh kasir, meja yang sebelumnya dibooking otomatis kembali tersedia.
+4. Menyediakan validasi realtime di halaman pelanggan, kasir, dan admin.
+5. Semua proses harus sinkron dan realtime.
+6. Sistem harus aman dari reservasi bentrok walaupun ada banyak pelanggan mengisi form bersamaan.
 
-ALUR UTAMA:
+LOGIKA UTAMA RESERVASI:
 
-1. Saat pelanggan membuka menu Chat Kasir:
-   - Sistem langsung membuka room chat.
-   - AI mengirim pesan pertama secara otomatis.
-   - Status awal chat = AI_ACTIVE.
-   - AI menyapa, menjelaskan bantuan yang tersedia, lalu menampilkan quick reply.
+1. Saat pelanggan memilih tanggal, jam, dan jumlah orang:
+   - Sistem langsung mengecek ketersediaan meja.
+   - Meja yang sudah dibooking pada tanggal dan jam tersebut harus otomatis disembunyikan, dinonaktifkan, atau diberi status “sudah dibooking”.
+   - Pelanggan hanya bisa memilih meja yang tersedia.
 
-2. Saat pelanggan mengirim pesan:
-   - AI membalas sesuai konteks.
-   - AI harus bisa memahami maksud pesan, seperti:
-     - status pesanan
-     - estimasi selesai
-     - ubah pesanan
-     - komplain
-     - pembatalan
-     - refund
-     - pesanan salah
-     - ingin bicara ke kasir
-     - pertanyaan umum
+2. Saat pelanggan memilih meja:
+   - Sistem melakukan validasi ulang sebelum data disimpan.
+   - Jika meja masih tersedia, reservasi boleh diajukan.
+   - Jika ternyata meja sudah dibooking oleh pelanggan lain, sistem harus menolak dan meminta pelanggan memilih meja lain.
 
-3. Jika pelanggan ingin langsung menghubungi kasir:
-   - AI tidak langsung memindahkan chat.
-   - AI harus meminta konfirmasi dulu.
-   - Jika pelanggan setuju, barulah chat dialihkan ke kasir.
+3. Saat tombol “Ajukan” diklik:
+   - Sistem menyimpan data reservasi hanya jika tidak ada konflik jadwal.
+   - Jika konflik ditemukan, tampilkan pesan error yang jelas.
+   - Jangan izinkan penyimpanan data ganda untuk meja dan waktu yang sama.
 
-4. Saat chat sudah diteruskan ke kasir:
-   - AI berhenti menjadi penjawab utama.
-   - Semua pesan pelanggan diteruskan realtime ke dashboard kasir.
-   - Pelanggan diberi status menunggu yang sopan.
-   - Kasir menerima notifikasi realtime.
+4. Saat reservasi sedang menunggu konfirmasi:
+   - Status reservasi = MENUNGGU
+   - Meja dianggap sementara “terkunci” atau “reserved pending” agar pelanggan lain tidak bisa mengambil slot yang sama secara bersamaan.
+   - Jika reservasi dibatalkan atau ditolak, meja kembali tersedia.
+   - Jika kasir menyetujui, status berubah menjadi DIKONFIRMASI.
 
-LOGIKA STATUS CHAT:
-Gunakan state/status berikut:
+5. Saat reservasi selesai oleh kasir:
+   - Status reservasi = SELESAI
+   - Meja yang dibooking otomatis berubah menjadi tersedia kembali.
+   - Sistem membersihkan lock/hold pada meja tersebut.
+   - Meja dapat digunakan lagi untuk reservasi berikutnya.
 
-- AI_ACTIVE = AI sedang membalas otomatis
-- WAITING_CUSTOMER_CHOICE = AI menawarkan sambungan ke kasir
-- TRANSFER_REQUESTED = pelanggan setuju untuk dihubungkan
-- WAITING_CASHIER = chat sudah diteruskan ke kasir, menunggu balasan
-- CASHIER_ACTIVE = kasir sudah mengambil percakapan
-- CLOSED = chat selesai
+VALIDASI YANG WAJIB ADA:
 
-LOGIKA PEMBUKAAN CHAT:
-Saat chat dibuka, AI wajib mengirim pesan pembuka otomatis seperti:
+1. Validasi tanggal dan jam:
+   - Tanggal yang sama + jam yang sama + meja yang sama = tidak boleh double booking.
+   - Jika slot waktu overlap, sistem harus menolak.
 
-- “Halo! Saya RestoBot, asisten bantuan pesanan Anda. Ada yang bisa saya bantu?”
-- “Selamat datang di layanan chat kasir. Saya siap membantu pesanan Anda.”
-- “Silakan jelaskan kebutuhan Anda, saya akan bantu secepat mungkin.”
-- “Jika Anda ingin berbicara langsung dengan kasir, saya juga bisa menghubungkan Anda.”
-
-AI juga harus menampilkan quick reply seperti:
-
-- Status pesanan
-- Estimasi selesai
-- Ubah pesanan
-- Batalkan pesanan
-- Hubungi kasir
-- Komplain
-- Lainnya
-
-KATA-KATA SAAT MENAWARKAN HUBUNGAN KE KASIR:
-
-- “Baik, saya bisa hubungkan Anda ke kasir. Apakah Anda ingin melanjutkan?”
-- “Saya akan meneruskan chat ini ke kasir agar dibantu langsung. Lanjutkan?”
-- “Jika Anda ingin bantuan lebih lanjut, saya bisa menghubungkan Anda ke kasir.”
-- “Silakan pilih ‘Hubungkan ke kasir’ bila ingin dibantu langsung oleh petugas.”
-
-TOMBOL KONFIRMASI:
-
-- Ya, hubungkan
-- Batal
-
-JIKA PELANGGAN MEMILIH “YA, HUBUNGKAN”:
-
-- Status chat berubah menjadi TRANSFER_REQUESTED.
-- Sistem mengirim notifikasi ke kasir.
-- AI mengirim pesan transisi:
-  - “Baik, Anda akan dihubungkan ke kasir. Mohon tunggu sebentar.”
-  - “Pesan Anda sudah diteruskan. Silakan menunggu balasan kasir.”
-- Setelah itu AI berhenti menjadi responder utama.
-
-SAAT MENUNGGU BALASAN KASIR:
-
-- Status chat = WAITING_CASHIER.
-- Tampilkan pesan:
-  - “Mohon tunggu sebentar, kasir sedang memproses pesan Anda.”
-  - “Pesan Anda sudah diterima, silakan menunggu balasan kasir.”
-  - “Kami sedang menghubungkan Anda ke kasir, harap bersabar.”
-  - “Kasir akan membalas secepatnya, terima kasih atas pengertiannya.”
-- Tampilkan indikator loading atau status menunggu.
-- Jika kasir belum membalas dalam beberapa waktu, tampilkan reminder sopan:
-  - “Terima kasih sudah menunggu, pesan Anda masih dalam antrean kasir.”
-  - “Kasir masih belum membalas, mohon tunggu sebentar.”
-
-SAAT KASIR MULAI MEMBALAS:
-
-- Status berubah menjadi CASHIER_ACTIVE.
-- Label pengirim berubah menjadi “Kasir”.
-- Semua pesan berikutnya dikirim sebagai pesan kasir, bukan AI.
-- AI berhenti mengirim respons otomatis.
-
-SAAT CHAT SELESAI:
-
-- Status berubah menjadi CLOSED.
-- Pelanggan tidak bisa mengirim pesan baru di sesi yang sama.
-- Tampilkan pesan:
-  - “Chat telah selesai.”
-  - “Terima kasih telah menghubungi kasir.”
-
-FITUR TAMBAHAN YANG WAJIB ADA:
-
-1. Status percakapan:
-   - AI aktif
+2. Validasi status meja:
+   - Tersedia
+   - Sedang dibooking
    - Menunggu konfirmasi
-   - Terhubung ke kasir
-   - Menunggu balasan kasir
+   - Dikonfirmasi
+   - Digunakan
    - Selesai
+   - Dibatalkan
 
-2. Quick reply / pesan cepat:
-   - Status pesanan
-   - Estimasi selesai
-   - Hubungi kasir
-   - Ubah pesanan
-   - Batalkan pesanan
-   - Komplain
-   - Selesai
+3. Validasi kapasitas:
+   - Pelanggan hanya boleh memilih meja yang sesuai jumlah tamu.
+   - Jika jumlah orang lebih banyak dari kapasitas meja, meja tersebut tidak boleh dipilih.
 
-3. Notifikasi realtime ke kasir:
-   - Saat pelanggan meminta sambungan, kasir menerima notifikasi realtime.
-   - Notifikasi harus berisi:
-     - nama pelanggan
-     - nomor pesanan
-     - jenis order
-     - isi pesan terakhir
-     - waktu pesan
-     - tingkat urgensi jika ada
+4. Validasi realtime:
+   - Saat pelanggan lain berhasil booking, meja langsung hilang dari daftar tersedia pada user lain.
+   - Jika halaman pelanggan terbuka lama, data ketersediaan harus diperbarui otomatis.
 
-4. Riwayat chat:
-   - Simpan percakapan AI, pelanggan, dan kasir.
-   - Tandai pengirim dengan jelas.
-   - Simpan timestamp pada setiap pesan.
+LOGIKA PENCEGAHAN BENTROK:
 
-5. Penanganan pesan penting:
-   - Jika pesan mengandung kata seperti:
-     - komplain
-     - marah
-     - pesanan salah
-     - belum diterima
-     - refund
-     - batal
-     maka AI harus lebih cepat menawarkan koneksi ke kasir.
+1. Saat pelanggan memilih tanggal dan jam:
+   - Sistem memeriksa database reservasi aktif.
+   - Cari apakah ada reservasi dengan:
+     - tanggal sama
+     - jam yang bertabrakan
+     - nomor meja sama
+     - status belum selesai/dibatalkan
 
-6. Pesan sopan dan profesional:
-   - Gunakan bahasa yang ramah, singkat, jelas, dan mudah dipahami pelanggan Indonesia.
-   - Hindari bahasa yang kaku.
-   - Hindari balasan yang terlalu panjang.
+2. Jika ada bentrok:
+   - Meja harus diblokir.
+   - Tampilkan keterangan:
+     - “Meja ini sudah dibooking pada waktu yang Anda pilih.”
+     - “Silakan pilih meja lain yang masih tersedia.”
+     - “Jadwal ini sudah penuh untuk meja tersebut.”
 
-7. Anti-spam dan pengendalian chat:
-   - Jika pelanggan mengirim pesan berulang sama, AI harus menenangkan dengan sopan.
-   - Jika kasir belum membalas, sistem hanya mengirim pengingat berkala, bukan spam.
+3. Jika tidak ada bentrok:
+   - Meja dapat dipilih dan reservasi dapat diajukan.
 
-LOGIKA SISTEM LENGKAP:
+4. Jika dua pelanggan mengajukan bersamaan:
+   - Gunakan penguncian transaksi atau mekanisme atomic check-and-save agar hanya satu yang berhasil.
+   - Hindari kondisi race condition.
 
-- Jika chat dibuka -> AI menyapa otomatis.
-- Jika pelanggan bertanya status -> AI menjawab berdasarkan data order.
-- Jika pelanggan ingin bicara ke manusia -> AI meminta konfirmasi.
-- Jika dikonfirmasi -> chat dialihkan ke kasir.
-- Jika kasir sudah mengambil chat -> AI berhenti membalas.
-- Jika kasir selesai -> status chat menjadi selesai.
-- Jika koneksi realtime terputus -> pesan disimpan sementara lalu disinkronkan kembali.
-- Jika order sudah selesai -> AI tidak boleh menawarkan transfer lagi kecuali admin mengaktifkan ulang chat.
+LOGIKA SETELAH RESERVASI DIKONFIRMASI:
 
-LOGIKA BACKEND:
+1. Saat kasir menyetujui:
+   - Status menjadi DIKONFIRMASI.
+   - Meja tetap dianggap terpesan pada slot waktu yang sesuai.
 
-- Simpan status chat.
-- Simpan riwayat pesan.
-- Kirim update realtime via websocket/socket.
-- Tangani transfer dari AI ke kasir.
-- Tangani notifikasi masuk ke kasir.
-- Simpan waktu balasan dan status pesan.
-- Pisahkan pesan AI, pelanggan, dan kasir.
-- Validasi agar pesan tidak double terkirim.
-- Pastikan chat tetap aman dan stabil.
+2. Saat waktu reservasi tiba:
+   - Status bisa berubah menjadi DIGUNAKAN atau CHECK-IN jika sistem memakai status tersebut.
 
-LOGIKA FRONTEND:
+3. Saat kasir menyelesaikan reservasi:
+   - Status berubah menjadi SELESAI.
+   - Meja otomatis tersedia kembali.
+   - Sistem menghapus penguncian jadwal.
+   - Meja muncul lagi sebagai pilihan reservasi untuk jadwal berikutnya.
 
-- Saat halaman chat dibuka, AI langsung menyapa otomatis.
-- Tampilkan bubble pesan yang berbeda untuk AI, pelanggan, dan kasir.
-- Tampilkan status chat dan indikator menunggu.
-- Tampilkan quick reply.
-- Tampilkan tombol hubungi kasir.
-- Tampilkan pesan transisi saat dialihkan ke kasir.
-- UI tetap rapi di desktop dan mobile.
-- Desain modern, bersih, dan nyaman dibaca.
+4. Jika pelanggan tidak datang:
+   - Kasir dapat menandai NO SHOW / BATAL / KADALUARSA.
+   - Meja kembali tersedia sesuai aturan sistem.
+
+FITUR TAMBAHAN YANG HARUS ADA:
+
+1. Kalender reservasi:
+   - Tampilkan kalender untuk memilih tanggal.
+   - Tampilkan slot waktu yang tersedia dan yang penuh.
+
+2. Peta meja:
+   - Tampilkan layout meja restoran.
+   - Meja tersedia diberi warna normal.
+   - Meja dibooking diberi warna berbeda.
+   - Meja yang sedang menunggu konfirmasi diberi label khusus.
+
+3. Filter otomatis:
+   - Filter berdasarkan tanggal
+   - Filter berdasarkan jam
+   - Filter berdasarkan jumlah orang
+   - Filter berdasarkan area/meja tertentu jika ada
+
+4. Notifikasi realtime:
+   - Saat meja dibooking
+   - Saat reservasi dikonfirmasi
+   - Saat reservasi ditolak
+   - Saat reservasi selesai
+   - Saat meja kembali tersedia
+
+5. Riwayat reservasi:
+   - Simpan semua histori booking
+   - Simpan status setiap perubahan
+   - Simpan siapa yang membuat, mengubah, menyetujui, atau membatalkan reservasi
+
+6. Anti duplikasi:
+   - Cegah user menekan tombol ajukan berulang kali
+   - Cegah data masuk dua kali
+   - Gunakan debounce/loading state saat submit
+
+7. Mode admin:
+   - Admin dapat mengatur jumlah meja
+   - Admin dapat mengatur kapasitas tiap meja
+   - Admin dapat mengatur durasi reservasi
+   - Admin dapat mengatur toleransi keterlambatan
+   - Admin dapat mengatur jam buka/tutup reservasi
+   - Admin dapat mengatur apakah meja otomatis dilepas jika pelanggan tidak check-in
+
+FITUR UNTUK PELANGGAN:
+
+1. Saat memilih tanggal dan jam:
+   - Sistem menampilkan meja yang masih tersedia saja.
+   - Meja yang penuh tidak bisa diklik.
+   - Tampilkan pesan yang informatif jika slot sudah penuh.
+
+2. Saat reservasi berhasil:
+   - Tampilkan pesan sukses.
+   - Tampilkan detail reservasi.
+   - Tampilkan nomor reservasi.
+   - Tampilkan status reservasi terkini.
+
+3. Saat reservasi gagal karena bentrok:
+   - Tampilkan pesan sopan:
+     - “Maaf, meja yang Anda pilih sudah dibooking pada jadwal tersebut.”
+     - “Silakan pilih meja lain yang masih tersedia.”
+     - “Jadwal pilihan Anda sudah penuh, mohon sesuaikan kembali.”
+
+FITUR UNTUK KASIR:
+
+1. Kasir melihat daftar reservasi realtime.
+2. Kasir melihat status meja secara langsung.
+3. Kasir dapat mengonfirmasi, menolak, atau menyelesaikan reservasi.
+4. Kasir dapat melihat meja mana yang sedang terpakai, menunggu, atau tersedia.
+5. Saat reservasi selesai, kasir menandai meja selesai agar otomatis tersedia kembali.
+
+FITUR UNTUK ADMIN:
+
+1. Dashboard reservasi:
+   - jumlah reservasi hari ini
+   - meja tersedia
+   - meja dibooking
+   - meja menunggu konfirmasi
+   - meja selesai
+   - reservasi dibatalkan
+
+2. Pengaturan meja:
+   - tambah meja
+   - hapus meja
+   - ubah kapasitas meja
+   - ubah nama/nomor meja
+   - atur lokasi/area meja
+
+3. Pengaturan jadwal:
+   - jam buka reservasi
+   - jam tutup reservasi
+   - durasi slot
+   - buffer waktu antar reservasi
+   - aturan toleransi check-in
+
+4. Pengaturan anti bentrok:
+   - aktifkan validasi otomatis
+   - aktifkan blokir meja realtime
+   - aktifkan notifikasi konflik
+   - aktifkan pelepasan meja otomatis setelah selesai
+
+KATA-KATA OTOMATIS YANG SESUAI:
+Saat reservasi berhasil:
+
+- “Reservasi Anda berhasil diajukan.”
+- “Data reservasi telah tersimpan.”
+- “Silakan menunggu konfirmasi dari kasir.”
+
+Saat meja sudah dibooking:
+
+- “Maaf, meja ini sudah dibooking pada tanggal dan jam tersebut.”
+- “Silakan pilih meja lain yang masih tersedia.”
+- “Jadwal ini sudah penuh untuk meja yang Anda pilih.”
+
+Saat reservasi dikonfirmasi:
+
+- “Reservasi Anda telah dikonfirmasi.”
+- “Silakan datang sesuai jadwal yang dipilih.”
+
+Saat reservasi selesai:
+
+- “Reservasi telah selesai.”
+- “Meja sudah tersedia kembali.”
+
+Saat reservasi dibatalkan atau ditolak:
+
+- “Reservasi Anda dibatalkan.”
+- “Silakan pilih jadwal atau meja lain.”
+
+LOGIKA REALTIME DAN SINKRONISASI:
+
+- Semua status meja dan reservasi harus realtime.
+- Jika satu pelanggan booking meja, pelanggan lain langsung melihat update.
+- Jika kasir mengubah status, pelanggan dan admin langsung menerima perubahan.
+- Jika halaman direfresh, data harus tetap akurat dari server.
+- Gunakan server time sebagai acuan utama, bukan hanya waktu browser.
+- Pastikan mekanisme transaksi aman agar tidak ada double booking walaupun banyak request masuk bersamaan.
 
 OUTPUT YANG DIHARAPKAN:
-Implementasikan seluruh alur ini agar:
+Buat implementasi lengkap untuk sistem reservasi meja yang:
 
-- AI menyapa otomatis saat chat dibuka
-- AI bisa menjawab pertanyaan dasar
-- pelanggan bisa memilih untuk terhubung ke kasir
-- saat dikonfirmasi, chat langsung dialihkan ke kasir
-- pelanggan diminta menunggu sampai kasir membalas
-- ada status realtime yang jelas
-- ada pesan sopan saat menunggu
-- sistem stabil, rapi, dan profesional
+- mencegah double booking
+- memblokir meja yang sudah dipilih pada tanggal dan jam yang sama
+- menampilkan meja yang tersedia saja
+- otomatis mengembalikan meja menjadi tersedia setelah reservasi selesai
+- realtime untuk pelanggan, kasir, dan admin
+- memiliki validasi yang kuat
+- punya pesan yang sopan dan jelas
+- memiliki dashboard admin yang lengkap
+- stabil, aman, dan sinkron penuh

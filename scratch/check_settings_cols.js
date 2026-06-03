@@ -1,4 +1,3 @@
-/* eslint-disable */
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
@@ -11,7 +10,7 @@ async function run() {
   const sql = `
     SELECT column_name, data_type, is_nullable 
     FROM information_schema.columns 
-    WHERE table_schema = 'public' AND table_name = 'vouchers';
+    WHERE table_schema = 'public' AND table_name = 'restaurant_settings';
   `;
   const { data, error } = await supabase.rpc('exec_sql', { sql_string: sql });
   if (error) {

@@ -54,6 +54,9 @@ export default function CustomerReservationsPage() {
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const supabase = createClient();
 
+  const [durationMinutes, setDurationMinutes] = useState<number>(120);
+  const [bookedTablesInfo, setBookedTablesInfo] = useState<Record<string, "pending" | "confirmed">>({});
+
   useEffect(() => { 
     fetchData(); 
 
@@ -65,6 +68,18 @@ export default function CustomerReservationsPage() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const isTimeOverlapping = (t1: string, t2: string, duration: number) => {
+    const parseToMinutes = (timeStr: string) => {
+      const parts = timeStr.split(":");
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      return hours * 60 + minutes;
+    };
+    const m1 = parseToMinutes(t1);
+    const m2 = parseToMinutes(t2);
+    return m1 < m2 + duration && m2 < m1 + duration;
+  };
 
   const fetchData = async () => {
     try {
@@ -78,10 +93,79 @@ export default function CustomerReservationsPage() {
       const { data } = await supabase.from("reservations").select("*, tables(table_number, capacity)").eq("customer_id", profile.id).order("reservation_date", { ascending: false });
       setReservations(data || []);
 
-      const { data: tbl } = await supabase.from("tables").select("*").eq("status", "available").order("table_number");
+      // Fetch all tables so that tables occupied right now can still be reserved for tomorrow/future dates
+      const { data: tbl } = await supabase.from("tables").select("*").order("table_number");
       setTables(tbl || []);
+
+      // Fetch reservation settings
+      const { data: settingsData } = await supabase.from("restaurant_settings").select("reservation_settings").single();
+      if (settingsData?.reservation_settings) {
+        const resSettings = typeof settingsData.reservation_settings === "string"
+          ? JSON.parse(settingsData.reservation_settings)
+          : settingsData.reservation_settings;
+        if (resSettings?.duration_minutes) {
+          setDurationMinutes(Number(resSettings.duration_minutes));
+        }
+      }
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   };
+
+  // Real-time table availability check based on selected date & time
+  useEffect(() => {
+    if (!showModal || !form.date || !form.time) return;
+
+    const fetchBookedTables = async () => {
+      try {
+        const { data: resList, error } = await supabase
+          .from("reservations")
+          .select("id, table_id, notes, status, reservation_time")
+          .eq("reservation_date", form.date)
+          .in("status", ["pending", "confirmed"]);
+
+        if (error) throw error;
+
+        const bookedInfo: Record<string, "pending" | "confirmed"> = {};
+        resList?.forEach(res => {
+          if (res.reservation_time && isTimeOverlapping(res.reservation_time, form.time, durationMinutes)) {
+            const status = res.status as "pending" | "confirmed";
+            if (res.table_id) {
+              bookedInfo[res.table_id] = status;
+            }
+            try {
+              const parsedNotes = JSON.parse(res.notes);
+              if (parsedNotes && Array.isArray(parsedNotes.meja_ids)) {
+                parsedNotes.meja_ids.forEach((id: string) => {
+                  bookedInfo[id] = status;
+                });
+              }
+            } catch (e) {}
+          }
+        });
+        setBookedTablesInfo(bookedInfo);
+      } catch (err: any) {
+        console.error("Gagal memeriksa ketersediaan meja:", err.message);
+      }
+    };
+
+    fetchBookedTables();
+
+    const channel = supabase.channel("modal-reservations-realtime-check")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => {
+        fetchBookedTables();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [form.date, form.time, showModal, durationMinutes]);
+
+  // Clear selected tables if they become booked/conflicting due to date/time changes
+  useEffect(() => {
+    if (selectedTableIds.length > 0 && Object.keys(bookedTablesInfo).length > 0) {
+      setSelectedTableIds(prev => prev.filter(id => !bookedTablesInfo[id]));
+    }
+  }, [bookedTablesInfo]);
 
   const handleTableToggle = (id: string) => {
     setSelectedTableIds(prev =>
@@ -96,9 +180,47 @@ export default function CustomerReservationsPage() {
     if (!form.atasNama) return toast.error("Masukkan nama lengkap atas nama");
     if (!form.telepon) return toast.error("Masukkan nomor telepon");
 
+    const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
+    const totalCapacity = selectedTables.reduce((sum, t) => sum + t.capacity, 0);
+    if (totalCapacity < form.guests) {
+      return toast.error(`Kapasitas meja terpilih (${totalCapacity} orang) tidak mencukupi untuk jumlah tamu (${form.guests} orang). Silakan pilih meja tambahan.`);
+    }
+
     setSubmitting(true);
     try {
-      const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
+      // Atomic double-check to avoid race condition/double-booking
+      const { data: resList, error: checkError } = await supabase
+        .from("reservations")
+        .select("id, table_id, notes, status, reservation_time")
+        .eq("reservation_date", form.date)
+        .in("status", ["pending", "confirmed"]);
+
+      if (checkError) throw checkError;
+
+      const currentlyBookedIds: string[] = [];
+      resList?.forEach(res => {
+        if (res.reservation_time && isTimeOverlapping(res.reservation_time, form.time, durationMinutes)) {
+          if (res.table_id) currentlyBookedIds.push(res.table_id);
+          try {
+            const parsedNotes = JSON.parse(res.notes);
+            if (parsedNotes && Array.isArray(parsedNotes.meja_ids)) {
+              parsedNotes.meja_ids.forEach((id: string) => {
+                if (!currentlyBookedIds.includes(id)) {
+                  currentlyBookedIds.push(id);
+                }
+              });
+            }
+          } catch (err) {}
+        }
+      });
+
+      const hasConflict = selectedTableIds.some(id => currentlyBookedIds.includes(id));
+      if (hasConflict) {
+        const conflictTables = tables.filter(t => selectedTableIds.includes(t.id) && currentlyBookedIds.includes(t.id));
+        const conflictNumbers = conflictTables.map(t => `Meja ${t.table_number}`).join(", ");
+        throw new Error(`Maaf, ${conflictNumbers} sudah dibooking pada tanggal dan jam tersebut. Silakan pilih meja lain yang masih tersedia.`);
+      }
+
       const structuredNotes = JSON.stringify({
         atas_nama: form.atasNama,
         telepon: form.telepon,
@@ -498,28 +620,66 @@ export default function CustomerReservationsPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Pilih Meja (Bisa pilih lebih dari satu)</label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Pilih Meja (Bisa pilih lebih dari satu)</label>
+                    {form.date && form.time && (
+                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                        tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0) >= form.guests
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      }`}>
+                        Kapasitas Terpilih: {tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)} / {form.guests} Orang
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {tables.map(t => {
+                      const bookedStatus = bookedTablesInfo[t.id];
+                      const isBooked = !!bookedStatus;
                       const isSelected = selectedTableIds.includes(t.id);
+                      
+                      let borderClass = "border-border-light dark:border-border-dark text-muted hover:border-gray-300";
+                      let bgClass = "bg-background-light dark:bg-background-dark";
+                      let statusText = `Cap: ${t.capacity} org`;
+                      let textClass = "";
+
+                      if (isSelected) {
+                        borderClass = "border-primary text-primary";
+                        bgClass = "bg-primary/10";
+                        textClass = "text-primary font-bold";
+                      } else if (isBooked) {
+                        if (bookedStatus === "confirmed") {
+                          borderClass = "border-red-500/50 text-red-500 opacity-60 cursor-not-allowed";
+                          bgClass = "bg-red-500/5";
+                          statusText = "Dibooking";
+                          textClass = "text-red-500 font-bold";
+                        } else {
+                          borderClass = "border-amber-500/50 text-amber-500 opacity-60 cursor-not-allowed";
+                          bgClass = "bg-amber-500/5";
+                          statusText = "Menunggu";
+                          textClass = "text-amber-550 font-bold";
+                        }
+                      }
+
                       return (
                         <button
                           type="button"
                           key={t.id}
-                          onClick={() => handleTableToggle(t.id)}
-                          className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${
-                            isSelected
-                              ? "bg-primary/10 border-primary text-primary"
-                              : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-muted hover:border-gray-300"
-                          }`}
+                          onClick={() => {
+                            if (!isBooked) {
+                              handleTableToggle(t.id);
+                            }
+                          }}
+                          disabled={isBooked}
+                          className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${bgClass} ${borderClass}`}
                         >
-                          <span className="font-black text-lg">Meja {t.table_number}</span>
-                          <span className="text-[10px] font-bold mt-1">Cap: {t.capacity} org</span>
+                          <span className={`font-black text-lg ${textClass || "text-text-light dark:text-text-dark"}`}>Meja {t.table_number}</span>
+                          <span className={`text-[10px] font-bold mt-1 ${textClass || "text-muted"}`}>{statusText}</span>
                         </button>
                       );
                     })}
                   </div>
-                  {tables.length === 0 && <p className="text-sm text-red-500">Tidak ada meja kosong tersedia saat ini.</p>}
+                  {tables.length === 0 && <p className="text-sm text-red-500">Tidak ada meja tersedia saat ini.</p>}
                 </div>
 
                 <div>

@@ -85,6 +85,12 @@ export default function AdminSettingsPage() {
     is_item_addition_active: true
   });
 
+  const [reservationSettings, setReservationSettings] = useState<any>({
+    duration_minutes: 120,
+    auto_release_enabled: true,
+    late_tolerance_minutes: 15
+  });
+
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
   const [expiryHoursInput, setExpiryHoursInput] = useState<string>("1");
   const [expiryMinutesInput, setExpiryMinutesInput] = useState<string>("0");
@@ -168,6 +174,17 @@ export default function AdminSettingsPage() {
         setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
         setExpiryMinutesInput(Math.floor((totalSec % 3600) / 60).toString());
         setExpirySecondsInput((totalSec % 60).toString());
+
+        if (data.reservation_settings) {
+          const resSettings = typeof data.reservation_settings === "string"
+            ? JSON.parse(data.reservation_settings)
+            : data.reservation_settings;
+          setReservationSettings({
+            duration_minutes: resSettings?.duration_minutes !== undefined ? Number(resSettings.duration_minutes) : 120,
+            auto_release_enabled: resSettings?.auto_release_enabled !== undefined ? !!resSettings.auto_release_enabled : true,
+            late_tolerance_minutes: resSettings?.late_tolerance_minutes !== undefined ? Number(resSettings.late_tolerance_minutes) : 15
+          });
+        }
       }
 
       const { data: estData } = await supabase
@@ -322,6 +339,7 @@ export default function AdminSettingsPage() {
         additional_zone_charge: Number(settings.additional_zone_charge || 0),
         min_order_for_free_shipping: Number(settings.min_order_for_free_shipping || 0),
         is_shipping_enabled: settings.is_shipping_enabled,
+        reservation_settings: reservationSettings,
       }).eq("id", settings.id);
       if (error) throw error;
 
@@ -1143,6 +1161,67 @@ export default function AdminSettingsPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* SECTION: Pengaturan Reservasi Meja */}
+      {/* ═══════════════════════════════════════ */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-5 flex items-center gap-3 text-white">
+          <CalendarDays className="w-6 h-6 shrink-0" />
+          <div>
+            <h2 className="text-lg font-bold">Pengaturan Reservasi Meja</h2>
+            <p className="text-white/75 text-xs">Kelola durasi reservasi default dan pelepasan meja otomatis</p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-6">
+          <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-text-light dark:text-text-dark">Pelepasan Meja Otomatis</p>
+              <p className="text-[11px] text-muted">Secara otomatis mengembalikan meja ke status tersedia setelah reservasi selesai atau melewati toleransi waktu keterlambatan</p>
+            </div>
+            <Toggle 
+              checked={reservationSettings.auto_release_enabled} 
+              onChange={v => setReservationSettings({ ...reservationSettings, auto_release_enabled: v })} 
+              title="Pelepasan Meja Otomatis" 
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border-light dark:border-border-dark pt-4">
+            <div>
+              <label htmlFor="resDuration" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Durasi Reservasi Default (Menit)</label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-3 h-4 w-4 text-muted" />
+                <input 
+                  id="resDuration" 
+                  type="number" 
+                  min="1" 
+                  value={reservationSettings.duration_minutes}
+                  onChange={e => setReservationSettings({ ...reservationSettings, duration_minutes: cleanLeadingZero(e.target.value) === "" ? 0 : Number(cleanLeadingZero(e.target.value)) })}
+                  className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
+                />
+              </div>
+              <p className="text-[10px] text-muted mt-1">Estimasi durasi meja terpakai per sesi reservasi.</p>
+            </div>
+
+            <div>
+              <label htmlFor="resLateTolerance" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Toleransi Keterlambatan Check-In (Menit)</label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-3 h-4 w-4 text-muted" />
+                <input 
+                  id="resLateTolerance" 
+                  type="number" 
+                  min="0" 
+                  value={reservationSettings.late_tolerance_minutes}
+                  onChange={e => setReservationSettings({ ...reservationSettings, late_tolerance_minutes: cleanLeadingZero(e.target.value) === "" ? 0 : Number(cleanLeadingZero(e.target.value)) })}
+                  className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
+                />
+              </div>
+              <p className="text-[10px] text-muted mt-1">Batas waktu keterlambatan pelanggan sebelum status meja diatur ulang.</p>
             </div>
           </div>
         </div>

@@ -133,20 +133,77 @@ async function executeTool(name: string, args: any) {
   if (name === 'create_reservation') {
     const { customer_id, atas_nama, telepon, reservation_date, reservation_time, guest_count, notes, target_email } = args;
 
-    // 1. Cari meja yang tersedia dengan kapasitas mencukupi
-    const { data: tables, error: tableErr } = await supabase
+    // Fetch reservation settings to get duration
+    const { data: settingsData } = await supabase.from("restaurant_settings").select("reservation_settings").single();
+    let durationMinutes = 120;
+    if (settingsData?.reservation_settings) {
+      const resSettings = typeof settingsData.reservation_settings === 'string'
+        ? JSON.parse(settingsData.reservation_settings)
+        : settingsData.reservation_settings;
+      if (resSettings?.duration_minutes) {
+        durationMinutes = Number(resSettings.duration_minutes);
+      }
+    }
+
+    const isTimeOverlapping = (t1: string, t2: string, duration: number) => {
+      const parseToMinutes = (timeStr: string) => {
+        const parts = timeStr.split(":");
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        return hours * 60 + minutes;
+      };
+      const m1 = parseToMinutes(t1);
+      const m2 = parseToMinutes(t2);
+      return m1 < m2 + duration && m2 < m1 + duration;
+    };
+
+    // Get all active reservations on target date to check overlap
+    const { data: resList, error: checkError } = await supabase
+      .from("reservations")
+      .select("id, table_id, notes, status, reservation_time")
+      .eq("reservation_date", reservation_date)
+      .in("status", ["pending", "confirmed"]);
+
+    if (checkError) {
+      return { success: false, error: 'Gagal mengecek ketersediaan meja: ' + checkError.message };
+    }
+
+    const bookedTableIds: string[] = [];
+    resList?.forEach(res => {
+      if (res.reservation_time && isTimeOverlapping(res.reservation_time, reservation_time, durationMinutes)) {
+        if (res.table_id) bookedTableIds.push(res.table_id);
+        try {
+          const parsedNotes = JSON.parse(res.notes);
+          if (parsedNotes && Array.isArray(parsedNotes.meja_ids)) {
+            parsedNotes.meja_ids.forEach((id: string) => {
+              if (!bookedTableIds.includes(id)) {
+                bookedTableIds.push(id);
+              }
+            });
+          }
+        } catch (err) {}
+      }
+    });
+
+    // Fetch all tables from DB
+    const { data: allTables, error: tableErr } = await supabase
       .from('tables')
       .select('*')
-      .eq('status', 'available')
-      .gte('capacity', guest_count)
       .order('capacity', { ascending: true })
       .order('table_number', { ascending: true });
 
-    if (tableErr || !tables || tables.length === 0) {
-      return { success: false, error: `Tidak ada meja kosong dengan kapasitas yang cukup untuk ${guest_count} orang.` };
+    if (tableErr || !allTables || allTables.length === 0) {
+      return { success: false, error: 'Gagal mengambil data meja: ' + (tableErr?.message || 'Tidak ada meja terdaftar.') };
     }
 
-    const selectedTable = tables[0];
+    const availableTables = allTables.filter(t => !bookedTableIds.includes(t.id));
+    const matchingTables = availableTables.filter(t => t.capacity >= guest_count);
+
+    if (matchingTables.length === 0) {
+      return { success: false, error: `Tidak ada meja kosong dengan kapasitas yang cukup (${guest_count} orang) pada tanggal dan jam tersebut.` };
+    }
+
+    const selectedTable = matchingTables[0];
 
     // 2. Buat structured notes JSON
     const structuredNotes = JSON.stringify({

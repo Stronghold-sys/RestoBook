@@ -67,6 +67,24 @@ export default function AdminSettingsPage() {
     is_shipping_enabled: true
   });
 
+  const [estimationSettings, setEstimationSettings] = useState<any>({
+    dine_in_default_minutes: 15,
+    takeaway_default_minutes: 20,
+    delivery_default_minutes: 30,
+    pickup_default_minutes: 20,
+    min_minutes: 5,
+    max_minutes: 120,
+    busy_multiplier_minutes: 10,
+    per_item_addition_minutes: 2,
+    delivery_per_km_minutes: 5,
+    is_busy_active: false,
+    is_auto_estimation_active: true,
+    is_warning_active: true,
+    is_auto_late_active: true,
+    is_distance_estimation_active: true,
+    is_item_addition_active: true
+  });
+
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
   const [expiryHoursInput, setExpiryHoursInput] = useState<string>("1");
   const [expiryMinutesInput, setExpiryMinutesInput] = useState<string>("0");
@@ -150,6 +168,31 @@ export default function AdminSettingsPage() {
         setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
         setExpiryMinutesInput(Math.floor((totalSec % 3600) / 60).toString());
         setExpirySecondsInput((totalSec % 60).toString());
+      }
+
+      const { data: estData } = await supabase
+        .from("order_estimation_settings")
+        .select("*")
+        .eq("id", "88888888-8888-8888-8888-888888888888")
+        .single();
+      if (estData) {
+        setEstimationSettings({
+          dine_in_default_minutes: Number(estData.dine_in_default_minutes),
+          takeaway_default_minutes: Number(estData.takeaway_default_minutes),
+          delivery_default_minutes: Number(estData.delivery_default_minutes),
+          pickup_default_minutes: Number(estData.pickup_default_minutes),
+          min_minutes: Number(estData.min_minutes),
+          max_minutes: Number(estData.max_minutes),
+          busy_multiplier_minutes: Number(estData.busy_multiplier_minutes),
+          per_item_addition_minutes: Number(estData.per_item_addition_minutes),
+          delivery_per_km_minutes: Number(estData.delivery_per_km_minutes),
+          is_busy_active: !!estData.is_busy_active,
+          is_auto_estimation_active: !!estData.is_auto_estimation_active,
+          is_warning_active: !!estData.is_warning_active,
+          is_auto_late_active: !!estData.is_auto_late_active,
+          is_distance_estimation_active: !!estData.is_distance_estimation_active,
+          is_item_addition_active: !!estData.is_item_addition_active
+        });
       }
     } catch (e: any) { console.error(e); } finally { setLoading(false); }
   };
@@ -281,6 +324,29 @@ export default function AdminSettingsPage() {
         is_shipping_enabled: settings.is_shipping_enabled,
       }).eq("id", settings.id);
       if (error) throw error;
+
+      const { error: estError } = await supabase
+        .from("order_estimation_settings")
+        .update({
+          dine_in_default_minutes: Number(estimationSettings.dine_in_default_minutes),
+          takeaway_default_minutes: Number(estimationSettings.takeaway_default_minutes),
+          delivery_default_minutes: Number(estimationSettings.delivery_default_minutes),
+          pickup_default_minutes: Number(estimationSettings.pickup_default_minutes),
+          min_minutes: Number(estimationSettings.min_minutes),
+          max_minutes: Number(estimationSettings.max_minutes),
+          busy_multiplier_minutes: Number(estimationSettings.busy_multiplier_minutes),
+          per_item_addition_minutes: Number(estimationSettings.per_item_addition_minutes),
+          delivery_per_km_minutes: Number(estimationSettings.delivery_per_km_minutes),
+          is_busy_active: !!estimationSettings.is_busy_active,
+          is_auto_estimation_active: !!estimationSettings.is_auto_estimation_active,
+          is_warning_active: !!estimationSettings.is_warning_active,
+          is_auto_late_active: !!estimationSettings.is_auto_late_active,
+          is_distance_estimation_active: !!estimationSettings.is_distance_estimation_active,
+          is_item_addition_active: !!estimationSettings.is_item_addition_active,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", "88888888-8888-8888-8888-888888888888");
+      if (estError) throw estError;
 
       if (wasActive !== isNowActive) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -937,6 +1003,148 @@ export default function AdminSettingsPage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* SECTION: Pengaturan Estimasi Waktu Pesanan */}
+      {/* ═══════════════════════════════════════ */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card-light dark:bg-card-dark rounded-2xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-5 flex items-center gap-3 text-white">
+          <Clock className="w-6 h-6 shrink-0" />
+          <div>
+            <h2 className="text-lg font-bold">Pengaturan Estimasi Waktu Pesanan</h2>
+            <p className="text-white/75 text-xs">Kelola estimasi durasi persiapan hidangan & waktu pengiriman secara otomatis</p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-6">
+          {/* Toggles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-text-light dark:text-text-dark">Estimasi Waktu Otomatis</p>
+                <p className="text-[11px] text-muted">Aktifkan perhitungan waktu otomatis untuk setiap pesanan baru</p>
+              </div>
+              <Toggle checked={estimationSettings.is_auto_estimation_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_auto_estimation_active: v })} title="Estimasi Otomatis" />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-text-light dark:text-text-dark">Peringatan Hampir Habis</p>
+                <p className="text-[11px] text-muted">Aktifkan peringatan visual saat sisa waktu kurang dari 5 menit</p>
+              </div>
+              <Toggle checked={estimationSettings.is_warning_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_warning_active: v })} title="Peringatan Hampir Habis" />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-text-light dark:text-text-dark">Keterlambatan Otomatis</p>
+                <p className="text-[11px] text-muted">Ubah countdown menjadi counter keterlambatan saat melewati estimasi</p>
+              </div>
+              <Toggle checked={estimationSettings.is_auto_late_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_auto_late_active: v })} title="Keterlambatan Otomatis" />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark">
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-text-light dark:text-text-dark">Tambahan Waktu Jika Ramai</p>
+                <p className="text-[11px] text-muted">Aktifkan tambahan waktu tetap apabila restoran dalam status ramai</p>
+              </div>
+              <Toggle checked={estimationSettings.is_busy_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_busy_active: v })} title="Tambahan Ramai" />
+            </div>
+          </div>
+
+          <div className="border-t border-border-light dark:border-border-dark pt-4">
+            <h3 className="text-sm font-bold text-text-light dark:text-text-dark mb-4">Estimasi Default Per Tipe Pesanan (Menit)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Dine In (Makan di Tempat)</label>
+                <input type="number" min="1" value={estimationSettings.dine_in_default_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, dine_in_default_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Takeaway (Bawa Pulang)</label>
+                <input type="number" min="1" value={estimationSettings.takeaway_default_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, takeaway_default_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Delivery (Pengiriman)</label>
+                <input type="number" min="1" value={estimationSettings.delivery_default_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, delivery_default_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Pickup (Ambil Sendiri)</label>
+                <input type="number" min="1" value={estimationSettings.pickup_default_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, pickup_default_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border-light dark:border-border-dark pt-4">
+            <h3 className="text-sm font-bold text-text-light dark:text-text-dark mb-4">Tambahan Waktu Kustom & Batasan</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Minimum (Menit)</label>
+                <input type="number" min="1" value={estimationSettings.min_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, min_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batasan Waktu Maksimum (Menit)</label>
+                <input type="number" min="1" value={estimationSettings.max_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, max_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Jika Ramai (Menit)</label>
+                <input type="number" min="0" value={estimationSettings.busy_multiplier_minutes}
+                  onChange={e => setEstimationSettings({ ...estimationSettings, busy_multiplier_minutes: cleanLeadingZero(e.target.value) })}
+                  className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Tambahan Per Item Menu</p>
+                    <p className="text-[11px] text-muted">Tambahkan waktu ekstra berdasarkan jumlah item yang dipesan</p>
+                  </div>
+                  <Toggle checked={estimationSettings.is_item_addition_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_item_addition_active: v })} title="Tambahan Per Item" />
+                </div>
+                {estimationSettings.is_item_addition_active && (
+                  <div>
+                    <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per Item (Menit)</label>
+                    <input type="number" min="0" value={estimationSettings.per_item_addition_minutes}
+                      onChange={e => setEstimationSettings({ ...estimationSettings, per_item_addition_minutes: cleanLeadingZero(e.target.value) })}
+                      className="w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-bold" />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-sm text-text-light dark:text-text-dark">Tambahan Jarak Pengiriman (Delivery)</p>
+                    <p className="text-[11px] text-muted">Tambahkan waktu ekstra berdasarkan jarak km alamat tujuan</p>
+                  </div>
+                  <Toggle checked={estimationSettings.is_distance_estimation_active} onChange={v => setEstimationSettings({ ...estimationSettings, is_distance_estimation_active: v })} title="Tambahan Jarak" />
+                </div>
+                {estimationSettings.is_distance_estimation_active && (
+                  <div>
+                    <label className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Tambahan Waktu Per KM (Menit)</label>
+                    <input type="number" min="0" value={estimationSettings.delivery_per_km_minutes}
+                      onChange={e => setEstimationSettings({ ...estimationSettings, delivery_per_km_minutes: cleanLeadingZero(e.target.value) })}
+                      className="w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-bold" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
 

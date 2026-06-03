@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 import { getPaidNotification } from '@/utils/notificationHelper';
+import { updateOrderEstimation } from '@/lib/order-estimation';
 
 function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // km
@@ -97,7 +98,10 @@ export async function POST(req: NextRequest) {
         
       if (itemsError) throw itemsError;
       
-      return NextResponse.json({ success: true, order: newOrder });
+      await updateOrderEstimation(newOrder.id, 'pending', supabaseAdmin);
+      const { data: updatedOrder } = await supabaseAdmin.from('orders').select('*').eq('id', newOrder.id).single();
+      
+      return NextResponse.json({ success: true, order: updatedOrder || newOrder });
     }
 
     if (action === 'create_customer_order') {
@@ -408,7 +412,10 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return NextResponse.json({ success: true, order: newOrder });
+      await updateOrderEstimation(newOrder.id, 'pending', supabaseAdmin);
+      const { data: updatedOrder } = await supabaseAdmin.from('orders').select('*').eq('id', newOrder.id).single();
+
+      return NextResponse.json({ success: true, order: updatedOrder || newOrder });
     }
 
     if (action === 'create_wallet_order') {
@@ -546,7 +553,10 @@ export async function POST(req: NextRequest) {
         status_badge: paidNotif.status_badge
       });
 
-      return NextResponse.json({ success: true, order: newOrder });
+      await updateOrderEstimation(newOrder.id, 'pending', supabaseAdmin);
+      const { data: updatedOrder } = await supabaseAdmin.from('orders').select('*').eq('id', newOrder.id).single();
+
+      return NextResponse.json({ success: true, order: updatedOrder || newOrder });
     }
 
     if (action === 'pay_order_via_wallet') {
@@ -676,6 +686,7 @@ export async function POST(req: NextRequest) {
         status_badge: paidNotif.status_badge
       });
 
+      await updateOrderEstimation(orderId, order.status, supabaseAdmin);
       return NextResponse.json({ success: true, message: 'Pembayaran berhasil menggunakan Saldo Dompet' });
     }
 
@@ -728,6 +739,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('tables').update({ status: 'available', occupied_at: null }).eq('id', order.table_id);
       }
 
+      await updateOrderEstimation(orderId, 'cancelled', supabaseAdmin);
       return NextResponse.json({ success: true, message: 'Pesanan berhasil dibatalkan' });
     }
 
@@ -767,6 +779,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('tables').update({ status: 'available', occupied_at: null }).eq('id', order.table_id);
       }
 
+      await updateOrderEstimation(orderId, status, supabaseAdmin);
       return NextResponse.json({ success: true, message: `Status pesanan diperbarui ke ${status}` });
     }
 
@@ -832,6 +845,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      await updateOrderEstimation(orderId, oStatus, supabaseAdmin);
       return NextResponse.json({ success: true, message: 'Payment processed' });
     }
 

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import OrderCountdown from "@/components/OrderCountdown";
+import OrderEstimationBadge from "@/components/OrderEstimationBadge";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -90,10 +92,11 @@ export default function AdminOrdersPage() {
           <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 hover:border-primary/30 transition-colors">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <span className="font-mono text-sm font-bold text-text-light dark:text-text-dark">#{order.id.split("-")[0]}</span>
                   <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${statusColors[order.status]}`}>{statusTexts[order.status]}</span>
                   <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted">{order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
+                  <OrderEstimationBadge order={order} />
                 </div>
                 <p className="text-sm text-muted">{order.profiles?.full_name || "Guest"} - {new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
               </div>
@@ -120,6 +123,9 @@ export default function AdminOrdersPage() {
                 <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Detail No. Pesanan {selectedOrder.id.split("-")[0]}</h2>
               </div>
               <div className="p-6 space-y-4">
+                {selectedOrder.estimated_duration_minutes && (
+                  <OrderCountdown order={selectedOrder} />
+                )}
                 {orderItems.map(item => (
                   <div key={item.id} className="flex items-center gap-3 p-3 bg-background-light dark:bg-background-dark rounded-xl">
                     <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">

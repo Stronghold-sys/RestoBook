@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
+import OrderCountdown from "@/components/OrderCountdown";
+import OrderEstimationBadge from "@/components/OrderEstimationBadge";
 
 export default function CashierOrders() {
   const [loading, setLoading] = useState(true);
@@ -378,6 +380,7 @@ export default function CashierOrders() {
                     <th className="p-6 font-bold">Total</th>
                     <th className="p-6 font-bold">Metode</th>
                     <th className="p-6 font-bold">Pembayaran</th>
+                    <th className="p-6 font-bold">Estimasi</th>
                     <th className="p-6 font-bold">Status</th>
                     <th className="p-6 font-bold text-center">Aksi</th>
                   </tr>
@@ -427,6 +430,7 @@ export default function CashierOrders() {
                         })()}
                       </td>
                       <td className="p-6">{getPaymentBadge(order)}</td>
+                      <td className="p-6"><OrderEstimationBadge order={order} /></td>
                       <td className="p-6">
                         <select disabled={order.status === "cancelled" || (order.status === "completed" && order.payment_status === "paid")} title="Status" value={order.status} onChange={e => updateOrderStatus(order.id, e.target.value)} className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase outline-none border cursor-pointer transition-all ${order.status === "pending" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : order.status === "completed" ? "bg-green-50 text-green-700 border-green-200" : order.status === "cancelled" ? "bg-red-50 text-red-700 border-red-200 opacity-50" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
                           <option value="pending">Pending</option>
@@ -480,6 +484,10 @@ export default function CashierOrders() {
                   </p></div>
                   <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Status Bayar</p><span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${selectedOrder.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{selectedOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span></div>
                 </div>
+
+                {selectedOrder.estimated_duration_minutes && (
+                  <OrderCountdown order={selectedOrder} />
+                )}
 
                 {selectedOrder.order_type === "delivery" && (
                   <div className="p-6 bg-primary/5 border border-primary/20 rounded-3xl space-y-3 text-xs">

@@ -15,6 +15,7 @@ import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 import CameraCaptureModal from "@/components/CameraCaptureModal";
+import OrderCountdown from "@/components/OrderCountdown";
 
 declare const google: any;
 
@@ -1278,20 +1279,25 @@ export default function OrderTrackingPage() {
             )}
           </div>
         ) : (
-          <div className="py-8">
-            <div className="relative flex justify-between items-center w-full max-w-2xl mx-auto before:absolute before:inset-0 before:top-1/2 before:-translate-y-1/2 before:h-1 before:bg-gray-200 dark:before:bg-gray-700 before:z-0">
-              <motion.div className="absolute top-1/2 -translate-y-1/2 h-1 bg-primary z-0" initial={{ width: "0%" }} animate={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100)}%` }} transition={{ duration: 0.5 }} />
-              {steps.map((step, i) => {
-                const done = i <= currentIdx; const current = i === currentIdx; const Icon = step.icon;
-                return (
-                  <div key={step.id} className="relative z-[2] flex flex-col items-center gap-3">
-                    <motion.div animate={{ scale: current ? 1.2 : 1, backgroundColor: done ? "#f97316" : "var(--card-color)" }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${done ? "border-primary text-white" : "border-gray-300 dark:border-gray-600 text-gray-400 bg-card-light dark:bg-card-dark"}`}>
-                      <Icon className="w-6 h-6" />
-                    </motion.div>
-                    <span className={`text-xs font-black absolute top-14 w-24 text-center uppercase tracking-tighter ${current ? "text-primary" : done ? "text-text-light dark:text-text-dark" : "text-muted"}`}>{step.label}</span>
-                  </div>
-                );
-              })}
+          <div className="space-y-6">
+            {order.estimated_duration_minutes && (
+              <OrderCountdown order={order} />
+            )}
+            <div className="py-8">
+              <div className="relative flex justify-between items-center w-full max-w-2xl mx-auto before:absolute before:inset-0 before:top-1/2 before:-translate-y-1/2 before:h-1 before:bg-gray-200 dark:before:bg-gray-700 before:z-0">
+                <motion.div className="absolute top-1/2 -translate-y-1/2 h-1 bg-primary z-0" initial={{ width: "0%" }} animate={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100)}%` }} transition={{ duration: 0.5 }} />
+                {steps.map((step, i) => {
+                  const done = i <= currentIdx; const current = i === currentIdx; const Icon = step.icon;
+                  return (
+                    <div key={step.id} className="relative z-[2] flex flex-col items-center gap-3">
+                      <motion.div animate={{ scale: current ? 1.2 : 1, backgroundColor: done ? "#f97316" : "var(--card-color)" }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${done ? "border-primary text-white" : "border-gray-300 dark:border-gray-600 text-gray-400 bg-card-light dark:bg-card-dark"}`}>
+                        <Icon className="w-6 h-6" />
+                      </motion.div>
+                      <span className={`text-xs font-black absolute top-14 w-24 text-center uppercase tracking-tighter ${current ? "text-primary" : done ? "text-text-light dark:text-text-dark" : "text-muted"}`}>{step.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

@@ -94,9 +94,9 @@ export default function CustomerRewardsPage() {
     const limitValue = reward.redeem_limit_value || 1;
     const period = reward.redeem_limit_period || "all";
 
-    // Filter redemptions for this reward that are not cancelled
+    // Filter redemptions for this reward that are not cancelled and not freed from quota
     const rewardRedemptions = redemptions.filter(
-      (r) => r.reward_id === reward.id && r.status !== "cancelled"
+      (r) => r.reward_id === reward.id && r.status !== "cancelled" && !r.is_quota_freed
     );
 
     const now = new Date();
@@ -160,7 +160,7 @@ export default function CustomerRewardsPage() {
     if (period === "all") return null;
 
     const rewardRedemptions = redemptions.filter(
-      (r) => r.reward_id === reward.id && r.status !== "cancelled"
+      (r) => r.reward_id === reward.id && r.status !== "cancelled" && !r.is_quota_freed
     );
 
     const now = new Date();
@@ -347,6 +347,7 @@ export default function CustomerRewardsPage() {
       return false;
     }
     if (red.status === 'expired') return false;
+    if (red.status === 'cancelled') return false;
     if (red.expires_at && new Date(red.expires_at).getTime() <= Date.now()) {
       return false;
     }

@@ -89,6 +89,8 @@ export default function CustomerNotificationsPage() {
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50 uppercase">Berhasil</span>;
       case "dibatalkan":
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-red-50 text-red-600 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50 uppercase">Batal</span>;
+      case "dikembalikan":
+        return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50 uppercase">Dikembalikan</span>;
       case "gagal":
       case "gagal redeem":
         return <span className="px-2 py-0.5 text-[9px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50 uppercase">Gagal</span>;

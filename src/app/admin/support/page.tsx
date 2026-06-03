@@ -152,16 +152,16 @@ export default function AdminSupportPage() {
   // Support settings states
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsId, setSettingsId] = useState('77777777-7777-7777-7777-777777777777');
-  const [chatExpiryHours, setChatExpiryHours] = useState(0);
-  const [chatExpiryMinutes, setChatExpiryMinutes] = useState(30);
-  const [chatExpirySeconds, setChatExpirySeconds] = useState(0);
-  const [orderChatExpiryHours, setOrderChatExpiryHours] = useState(0);
-  const [orderChatExpiryMinutes, setOrderChatExpiryMinutes] = useState(30);
-  const [orderChatExpirySeconds, setOrderChatExpirySeconds] = useState(0);
-  const [slaHoursLow, setSlaHoursLow] = useState(48);
-  const [slaHoursMedium, setSlaHoursMedium] = useState(24);
-  const [slaHoursHigh, setSlaHoursHigh] = useState(12);
-  const [slaHoursUrgent, setSlaHoursUrgent] = useState(4);
+  const [chatExpiryHours, setChatExpiryHours] = useState<string>('0');
+  const [chatExpiryMinutes, setChatExpiryMinutes] = useState<string>('30');
+  const [chatExpirySeconds, setChatExpirySeconds] = useState<string>('0');
+  const [orderChatExpiryHours, setOrderChatExpiryHours] = useState<string>('0');
+  const [orderChatExpiryMinutes, setOrderChatExpiryMinutes] = useState<string>('30');
+  const [orderChatExpirySeconds, setOrderChatExpirySeconds] = useState<string>('0');
+  const [slaHoursLow, setSlaHoursLow] = useState<string>('48');
+  const [slaHoursMedium, setSlaHoursMedium] = useState<string>('24');
+  const [slaHoursHigh, setSlaHoursHigh] = useState<string>('12');
+  const [slaHoursUrgent, setSlaHoursUrgent] = useState<string>('4');
 
   // Countdown timer for completed/closed tickets
   const [countdownText, setCountdownText] = useState('');
@@ -568,18 +568,25 @@ export default function AdminSupportPage() {
       if (res.ok) {
         const data = await res.json();
         setSettingsId(data.id);
-        setChatExpiryHours(data.chat_expiry_hours ?? 0);
-        setChatExpiryMinutes(data.chat_expiry_minutes ?? 30);
-        setChatExpirySeconds(data.chat_expiry_seconds ?? 0);
-        setOrderChatExpiryHours(data.order_chat_expiry_hours ?? 0);
-        setOrderChatExpiryMinutes(data.order_chat_expiry_minutes ?? 30);
-        setOrderChatExpirySeconds(data.order_chat_expiry_seconds ?? 0);
-        setSlaHoursLow(data.sla_hours_low ?? 48);
-        setSlaHoursMedium(data.sla_hours_medium ?? 24);
-        setSlaHoursHigh(data.sla_hours_high ?? 12);
-        setSlaHoursUrgent(data.sla_hours_urgent ?? 4);
+        setChatExpiryHours(String(data.chat_expiry_hours ?? 0));
+        setChatExpiryMinutes(String(data.chat_expiry_minutes ?? 30));
+        setChatExpirySeconds(String(data.chat_expiry_seconds ?? 0));
+        setOrderChatExpiryHours(String(data.order_chat_expiry_hours ?? 0));
+        setOrderChatExpiryMinutes(String(data.order_chat_expiry_minutes ?? 30));
+        setOrderChatExpirySeconds(String(data.order_chat_expiry_seconds ?? 0));
+        setSlaHoursLow(String(data.sla_hours_low ?? 48));
+        setSlaHoursMedium(String(data.sla_hours_medium ?? 24));
+        setSlaHoursHigh(String(data.sla_hours_high ?? 12));
+        setSlaHoursUrgent(String(data.sla_hours_urgent ?? 4));
       }
     } catch (e) {}
+  };
+
+  const cleanLeadingZero = (val: string) => {
+    if (val === "") return "";
+    const num = parseInt(val, 10);
+    if (isNaN(num)) return val;
+    return String(num);
   };
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
@@ -590,16 +597,16 @@ export default function AdminSupportPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_expiry_hours: chatExpiryHours,
-          chat_expiry_minutes: chatExpiryMinutes,
-          chat_expiry_seconds: chatExpirySeconds,
-          order_chat_expiry_hours: orderChatExpiryHours,
-          order_chat_expiry_minutes: orderChatExpiryMinutes,
-          order_chat_expiry_seconds: orderChatExpirySeconds,
-          sla_hours_low: slaHoursLow,
-          sla_hours_medium: slaHoursMedium,
-          sla_hours_high: slaHoursHigh,
-          sla_hours_urgent: slaHoursUrgent
+          chat_expiry_hours: Number(chatExpiryHours) || 0,
+          chat_expiry_minutes: Number(chatExpiryMinutes) || 0,
+          chat_expiry_seconds: Number(chatExpirySeconds) || 0,
+          order_chat_expiry_hours: Number(orderChatExpiryHours) || 0,
+          order_chat_expiry_minutes: Number(orderChatExpiryMinutes) || 0,
+          order_chat_expiry_seconds: Number(orderChatExpirySeconds) || 0,
+          sla_hours_low: Number(slaHoursLow) || 48,
+          sla_hours_medium: Number(slaHoursMedium) || 24,
+          sla_hours_high: Number(slaHoursHigh) || 12,
+          sla_hours_urgent: Number(slaHoursUrgent) || 4
         })
       });
 
@@ -1075,7 +1082,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="23"
                     value={chatExpiryHours}
-                    onChange={(e) => setChatExpiryHours(Number(e.target.value))}
+                    onChange={(e) => setChatExpiryHours(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setChatExpiryHours("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1089,7 +1097,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="59"
                     value={chatExpiryMinutes}
-                    onChange={(e) => setChatExpiryMinutes(Number(e.target.value))}
+                    onChange={(e) => setChatExpiryMinutes(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setChatExpiryMinutes("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1103,7 +1112,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="59"
                     value={chatExpirySeconds}
-                    onChange={(e) => setChatExpirySeconds(Number(e.target.value))}
+                    onChange={(e) => setChatExpirySeconds(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setChatExpirySeconds("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1123,7 +1133,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="23"
                     value={orderChatExpiryHours}
-                    onChange={(e) => setOrderChatExpiryHours(Number(e.target.value))}
+                    onChange={(e) => setOrderChatExpiryHours(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setOrderChatExpiryHours("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1137,7 +1148,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="59"
                     value={orderChatExpiryMinutes}
-                    onChange={(e) => setOrderChatExpiryMinutes(Number(e.target.value))}
+                    onChange={(e) => setOrderChatExpiryMinutes(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setOrderChatExpiryMinutes("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1151,7 +1163,8 @@ export default function AdminSupportPage() {
                     min="0"
                     max="59"
                     value={orderChatExpirySeconds}
-                    onChange={(e) => setOrderChatExpirySeconds(Number(e.target.value))}
+                    onChange={(e) => setOrderChatExpirySeconds(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setOrderChatExpirySeconds("0"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1171,7 +1184,8 @@ export default function AdminSupportPage() {
                     type="number"
                     min="1"
                     value={slaHoursUrgent}
-                    onChange={(e) => setSlaHoursUrgent(Number(e.target.value))}
+                    onChange={(e) => setSlaHoursUrgent(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setSlaHoursUrgent("4"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1184,7 +1198,8 @@ export default function AdminSupportPage() {
                     type="number"
                     min="1"
                     value={slaHoursHigh}
-                    onChange={(e) => setSlaHoursHigh(Number(e.target.value))}
+                    onChange={(e) => setSlaHoursHigh(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setSlaHoursHigh("12"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1197,7 +1212,8 @@ export default function AdminSupportPage() {
                     type="number"
                     min="1"
                     value={slaHoursMedium}
-                    onChange={(e) => setSlaHoursMedium(Number(e.target.value))}
+                    onChange={(e) => setSlaHoursMedium(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setSlaHoursMedium("24"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1210,7 +1226,8 @@ export default function AdminSupportPage() {
                     type="number"
                     min="1"
                     value={slaHoursLow}
-                    onChange={(e) => setSlaHoursLow(Number(e.target.value))}
+                    onChange={(e) => setSlaHoursLow(cleanLeadingZero(e.target.value))}
+                    onBlur={(e) => { if (e.target.value === "") setSlaHoursLow("48"); }}
                     className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>

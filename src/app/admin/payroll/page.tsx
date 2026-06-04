@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BaseModal from "@/components/BaseModal";
 import { 
   CreditCard, DollarSign, User, Users, CalendarDays, 
   Receipt, Download, CheckCircle2, AlertCircle, ChevronDown,
@@ -1583,543 +1584,515 @@ export default function AdvancedPayrollPage() {
       {/* ------------------------------------------------------------- */}
       {/* MODAL: DETAIL PENGGAJIAN TERINTEGRASI (NEW PRD FORMULA)      */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showDetailModal && selectedProfile && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowDetailModal(false)} className="fixed inset-0 bg-slate-950/60 backdrop-blur-md" />
-               <motion.div initial={{scale:0.95, y:30}} animate={{scale:1, y:0}} className="relative bg-[#fafafa] dark:bg-gray-950 w-full max-w-5xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col max-h-[90vh]">
-                  {/* Header Modal */}
-                  <div className="bg-white dark:bg-gray-900 p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center sticky top-0 z-10">
-                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-orange-500/20">
-                           {selectedProfile.full_name.charAt(0)}
+      <BaseModal isOpen={showDetailModal && !!selectedProfile} onClose={() => setShowDetailModal(false)} size="4xl" showCloseButton={true} noPadding={true}>
+         {selectedProfile && (
+            <div className="bg-[#fafafa] dark:bg-gray-950 flex flex-col">
+               {/* Header Modal */}
+               <div className="bg-white dark:bg-gray-900 p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center sticky top-0 z-10">
+                  <div className="flex items-center gap-4">
+                     <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-orange-500/20">
+                        {selectedProfile.full_name.charAt(0)}
+                     </div>
+                     <div>
+                        <div className="flex items-center gap-2">
+                           <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-tight">{selectedProfile.full_name}</h3>
+                           <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 text-[9px] font-black uppercase rounded-md border border-blue-100 dark:border-blue-900/30">
+                              Divisi: {getDivision(selectedProfile.role)}
+                           </span>
+                        </div>
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-0.5">Detail Gaji Periode {format(new Date(selectedYear, selectedMonth-1, 1), "MMMM yyyy", {locale: id})}</p>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Content Grid */}
+               <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Future Payroll Warning Banner Spanning Columns */}
+                  {(selectedYear > new Date().getFullYear() || (selectedYear === new Date().getFullYear() && (selectedMonth - 1) > new Date().getMonth())) && (
+                     <div className="lg:col-span-3 p-4 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-[2rem] flex items-start gap-4 shadow-sm mb-2">
+                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 flex-shrink-0 animate-pulse">
+                           <AlertCircle className="w-6 h-6" />
                         </div>
                         <div>
-                           <div className="flex items-center gap-2">
-                              <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-tight">{selectedProfile.full_name}</h3>
-                              <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 text-[9px] font-black uppercase rounded-md border border-blue-100 dark:border-blue-900/30">
-                                 Divisi: {getDivision(selectedProfile.role)}
-                              </span>
-                           </div>
-                           <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-0.5">Detail Gaji Periode {format(new Date(selectedYear, selectedMonth-1, 1), "MMMM yyyy", {locale: id})}</p>
+                           <h5 className="text-sm font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">Mode Panjar Gaji Aktif (Pengambilan Dini)</h5>
+                           <p className="text-[10px] font-bold text-orange-600/80 mt-1 leading-relaxed">PERHATIAN ADMIN: Anda sedang memproses gaji untuk periode BULAN DEPAN yang belum jatuh tempo secara alamiah. Jika Anda melakukan transfer sekarang, sistem akan secara permanen mengunci ini sebagai &apos;Gaji Diambil Lebih Awal&apos;.</p>
                         </div>
                      </div>
-                     <button aria-label="Tutup Modal" onClick={()=>setShowDetailModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-muted hover:bg-gray-200"><XCircle className="w-5 h-5" /></button>
-                  </div>
-
-                  {/* Content Grid Scrollable */}
-                  <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-y-auto">
-                     {/* Future Payroll Warning Banner Spanning Columns */}
-                     {(selectedYear > new Date().getFullYear() || (selectedYear === new Date().getFullYear() && (selectedMonth - 1) > new Date().getMonth())) && (
-                        <div className="lg:col-span-3 p-4 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-[2rem] flex items-start gap-4 shadow-sm mb-2">
-                           <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 flex-shrink-0 animate-pulse">
-                              <AlertCircle className="w-6 h-6" />
+                  )}
+                  
+                  {/* COLUMN 1: ATTENDANCE & INFO */}
+                  <div className="space-y-6">
+                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
+                        <h4 className="text-[10px] font-black uppercase text-orange-600 mb-4 flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Riwayat Kehadiran</h4>
+                        <div className="grid grid-cols-4 gap-2">
+                           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-1 py-3 text-center border border-border-light dark:border-border-dark relative overflow-hidden">
+                              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate" title={String(selectedProfile.daysPresent)}>{selectedProfile.daysPresent}</p>
+                              <p className="text-[7px] xs:text-[8px] font-black uppercase text-muted tracking-wider mt-1 break-words">Hadir</p>
                            </div>
-                           <div>
-                              <h5 className="text-sm font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">Mode Panjar Gaji Aktif (Pengambilan Dini)</h5>
-                              <p className="text-[10px] font-bold text-orange-600/80 mt-1 leading-relaxed">PERHATIAN ADMIN: Anda sedang memproses gaji untuk periode BULAN DEPAN yang belum jatuh tempo secara alamiah. Jika Anda melakukan transfer sekarang, sistem akan secara permanen mengunci ini sebagai &apos;Gaji Diambil Lebih Awal&apos;.</p>
+                           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-1 py-3 text-center border border-border-light dark:border-border-dark relative overflow-hidden">
+                              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate" title={String(selectedProfile.daysIzin)}>{selectedProfile.daysIzin}</p>
+                              <p className="text-[7px] xs:text-[8px] font-black uppercase text-muted tracking-wider mt-1 break-words">Izin / Sakit</p>
                            </div>
-                        </div>
-                     )}
-                     
-                     {/* COLUMN 1: ATTENDANCE & INFO */}
-                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
-                           <h4 className="text-[10px] font-black uppercase text-orange-600 mb-4 flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Riwayat Kehadiran</h4>
-                           <div className="grid grid-cols-4 gap-2">
-                              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-1 py-3 text-center border border-border-light dark:border-border-dark relative overflow-hidden">
-                                 <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate" title={String(selectedProfile.daysPresent)}>{selectedProfile.daysPresent}</p>
-                                 <p className="text-[7px] xs:text-[8px] font-black uppercase text-muted tracking-wider mt-1 break-words">Hadir</p>
-                              </div>
-                              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-1 py-3 text-center border border-border-light dark:border-border-dark relative overflow-hidden">
-                                 <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate" title={String(selectedProfile.daysIzin)}>{selectedProfile.daysIzin}</p>
-                                 <p className="text-[7px] xs:text-[8px] font-black uppercase text-muted tracking-wider mt-1 break-words">Izin / Sakit</p>
-                              </div>
-                              <div className="bg-red-50 dark:bg-red-950/20 rounded-xl px-1 py-3 text-center border border-red-100 dark:border-red-900/20 relative overflow-hidden">
-                                 <p className="text-xl sm:text-2xl font-black text-red-600 tracking-tight truncate" title={String(selectedProfile.daysAlpha)}>{selectedProfile.daysAlpha}</p>
-                                 <p className="text-[7px] xs:text-[8px] font-black uppercase text-red-600/70 tracking-wider mt-1 break-words">Alpa</p>
-                              </div>
-                              <div className="bg-rose-50 dark:bg-rose-950/30 rounded-xl px-1 py-3 text-center border border-rose-100 dark:border-rose-900/20 relative overflow-hidden">
-                                 <p className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight truncate" title={String(selectedProfile.totalLateMins || 0)}>{selectedProfile.totalLateMins || 0}</p>
-                                 <p className="text-[7px] xs:text-[8px] font-black uppercase text-rose-600/70 tracking-wider mt-1 break-words leading-none">Menit Terlambat</p>
-                                 
-                                 {/* Small pill tracker for COUNT inside UI */}
-                                 <div className="absolute top-0.5 right-0.5 bg-rose-600 text-white font-black text-[6px] px-1 rounded-full scale-75">
-                                    {selectedProfile.lateCount || 0}x
-                                 </div>
-                              </div>
+                           <div className="bg-red-50 dark:bg-red-950/20 rounded-xl px-1 py-3 text-center border border-red-100 dark:border-red-900/20 relative overflow-hidden">
+                              <p className="text-xl sm:text-2xl font-black text-red-600 tracking-tight truncate" title={String(selectedProfile.daysAlpha)}>{selectedProfile.daysAlpha}</p>
+                              <p className="text-[7px] xs:text-[8px] font-black uppercase text-red-600/70 tracking-wider mt-1 break-words">Alpa</p>
                            </div>
-                           <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl flex justify-between items-center">
-                                 <p className="text-[9px] font-bold text-muted uppercase">Total Jam Lembur</p>
-                                 <p className="text-base font-black text-slate-900 dark:text-white">{selectedProfile.finalOtHours} Jam</p>
-                           </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
-                           <div className="flex justify-between items-center mb-4">
-                              <h4 className="text-[10px] font-black uppercase text-orange-600 flex items-center gap-2"><Wallet className="w-3.5 h-3.5" /> Metode Transfer</h4>
-                              <button onClick={() => openPaymentSettings(selectedProfile)} className="p-1.5 bg-gray-50 hover:bg-gray-100 text-muted rounded-lg text-[9px] font-bold uppercase flex items-center gap-1 border border-border-light transition-all active:scale-95">
-                                 <Edit3 className="w-2.5 h-2.5"/> Edit
-                              </button>
-                           </div>
-                           <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                 {selectedProfile.payment_method_preference === 'tunai' ? <DollarSign className="w-5 h-5"/> : <Banknote className="w-5 h-5"/>}
-                              </div>
-                              <div>
-                                 <p className="text-xs font-black text-slate-900 dark:text-white uppercase leading-tight">
-                                    {selectedProfile.payment_method_preference === 'bank' ? (selectedProfile.bank_name || 'Transfer Bank') : 
-                                     selectedProfile.payment_method_preference === 'wallet' ? (selectedProfile.e_wallet_name || 'E-Wallet') : 
-                                     selectedProfile.payment_method_preference === 'lain' ? (selectedProfile.bank_name || 'Lainnya') : 
-                                     'Tunai / Cash'}
-                                 </p>
-                                 <p className="text-[10px] font-bold text-muted mt-0.5">
-                                    {selectedProfile.payment_method_preference === 'tunai' ? 'Pembayaran Langsung' : 
-                                     (selectedProfile.bank_account_number || selectedProfile.e_wallet_number || '-')}
-                                 </p>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-
-                     {/* COLUMN 2: PENDAPATAN (INCOME) */}
-                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
-                           <h4 className="text-[10px] font-black uppercase text-green-600 mb-4 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5" /> Komponen Pendapatan</h4>
-                           
-                           <div className="space-y-3">
-                              <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
-                                 <span className="text-muted font-bold flex-1">Gaji Pokok ({selectedProfile.daysPresent} H)</span>
-                                 <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32 group-hover:border-green-200 transition-colors">
-                                    <span className="text-[9px] font-black opacity-40">Rp</span>
-                                    <input type="number" aria-label="Gaji Pokok" placeholder="0" value={adjBasic} onChange={e=>setAdjBasic(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                 </div>
-                              </div>
-                              <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
-                                 <span className="text-muted font-bold flex-1">Upah Lembur ({selectedProfile.finalOtHours} J)</span>
-                                 <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
-                                    <span className="text-[9px] font-black opacity-40">Rp</span>
-                                    <input type="number" aria-label="Upah Lembur" placeholder="0" value={adjOvertime} onChange={e=>setAdjOvertime(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                 </div>
-                              </div>
-                              <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
-                                 <span className="text-muted font-bold flex-1">Tunj. Makan ({selectedProfile.daysPresent} H)</span>
-                                 <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
-                                    <span className="text-[9px] font-black opacity-40">Rp</span>
-                                    <input type="number" aria-label="Tunjangan Makan" placeholder="0" value={adjMeal} onChange={e=>setAdjMeal(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                 </div>
-                              </div>
-                              <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
-                                 <span className="text-muted font-bold flex-1">Tunj. Transport ({selectedProfile.daysPresent} H)</span>
-                                 <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
-                                    <span className="text-[9px] font-black opacity-40">Rp</span>
-                                    <input type="number" aria-label="Tunjangan Transport" placeholder="0" value={adjTransport} onChange={e=>setAdjTransport(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                 </div>
-                              </div>
-                              <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
-                                 <span className="text-muted font-bold flex-1">Tunj. Tetap Bulanan</span>
-                                 <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
-                                    <span className="text-[9px] font-black opacity-40">Rp</span>
-                                    <input type="number" aria-label="Tunjangan Tetap" placeholder="0" value={adjFixed} onChange={e=>setAdjFixed(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                 </div>
-                              </div>
+                           <div className="bg-rose-50 dark:bg-rose-950/30 rounded-xl px-1 py-3 text-center border border-rose-100 dark:border-rose-900/20 relative overflow-hidden">
+                              <p className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight truncate" title={String(selectedProfile.totalLateMins || 0)}>{selectedProfile.totalLateMins || 0}</p>
+                              <p className="text-[7px] xs:text-[8px] font-black uppercase text-rose-600/70 tracking-wider mt-1 break-words leading-none">Menit Terlambat</p>
                               
-                              <div className="pt-2 space-y-3">
-                                 <div>
-                                    <label className="text-[9px] font-black uppercase text-muted">Bonus Kinerja (Input)</label>
-                                    <input placeholder="0" aria-label="Bonus" type="number" value={adjBonus} onChange={e=>setAdjBonus(e.target.value)} className="w-full mt-1 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-black text-xs text-green-600 outline-none"/>
-                                 </div>
-                                 <div>
-                                    <label className="text-[9px] font-black uppercase text-muted">Insentif Khusus (Input)</label>
-                                    <div className="flex flex-col gap-2 mt-1">
-                                       <input type="number" value={adjIncentive} onChange={e=>setAdjIncentive(e.target.value)} placeholder="Nominal" className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-black text-xs text-green-600 outline-none"/>
-                                       <input type="text" value={adjIncentiveNotes} onChange={e=>setAdjIncentiveNotes(e.target.value)} placeholder="Keterangan insentif..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-bold text-xs outline-none"/>
-                                    </div>
+                              <div className="absolute top-0.5 right-0.5 bg-rose-600 text-white font-black text-[6px] px-1 rounded-full scale-75">
+                                 {selectedProfile.lateCount || 0}x
+                              </div>
+                           </div>
+                        </div>
+                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl flex justify-between items-center">
+                              <p className="text-[9px] font-bold text-muted uppercase">Total Jam Lembur</p>
+                              <p className="text-base font-black text-slate-900 dark:text-white">{selectedProfile.finalOtHours} Jam</p>
+                        </div>
+                     </div>
+
+                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                           <h4 className="text-[10px] font-black uppercase text-orange-600 flex items-center gap-2"><Wallet className="w-3.5 h-3.5" /> Metode Transfer</h4>
+                           <button onClick={() => openPaymentSettings(selectedProfile)} className="p-1.5 bg-gray-50 hover:bg-gray-100 text-muted rounded-lg text-[9px] font-bold uppercase flex items-center gap-1 border border-border-light transition-all active:scale-95">
+                              <Edit3 className="w-2.5 h-2.5"/> Edit
+                           </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                              {selectedProfile.payment_method_preference === 'tunai' ? <DollarSign className="w-5 h-5"/> : <Banknote className="w-5 h-5"/>}
+                           </div>
+                           <div>
+                              <p className="text-xs font-black text-slate-900 dark:text-white uppercase leading-tight">
+                                 {selectedProfile.payment_method_preference === 'bank' ? (selectedProfile.bank_name || 'Transfer Bank') : 
+                                  selectedProfile.payment_method_preference === 'wallet' ? (selectedProfile.e_wallet_name || 'E-Wallet') : 
+                                  selectedProfile.payment_method_preference === 'lain' ? (selectedProfile.bank_name || 'Lainnya') : 
+                                  'Tunai / Cash'}
+                              </p>
+                              <p className="text-[10px] font-bold text-muted mt-0.5">
+                                 {selectedProfile.payment_method_preference === 'tunai' ? 'Pembayaran Langsung' : 
+                                  (selectedProfile.bank_account_number || selectedProfile.e_wallet_number || '-')}
+                              </p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* COLUMN 2: PENDAPATAN (INCOME) */}
+                  <div className="space-y-6">
+                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
+                        <h4 className="text-[10px] font-black uppercase text-green-600 mb-4 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5" /> Komponen Pendapatan</h4>
+                        
+                        <div className="space-y-3">
+                           <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
+                              <span className="text-muted font-bold flex-1">Gaji Pokok ({selectedProfile.daysPresent} H)</span>
+                              <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32 group-hover:border-green-200 transition-colors">
+                                 <span className="text-[9px] font-black opacity-40">Rp</span>
+                                 <input type="number" aria-label="Gaji Pokok" placeholder="0" value={adjBasic} onChange={e=>setAdjBasic(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                              </div>
+                           </div>
+                           <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
+                              <span className="text-muted font-bold flex-1">Upah Lembur ({selectedProfile.finalOtHours} J)</span>
+                              <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
+                                 <span className="text-[9px] font-black opacity-40">Rp</span>
+                                 <input type="number" aria-label="Upah Lembur" placeholder="0" value={adjOvertime} onChange={e=>setAdjOvertime(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                              </div>
+                           </div>
+                           <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
+                              <span className="text-muted font-bold flex-1">Tunj. Makan ({selectedProfile.daysPresent} H)</span>
+                              <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
+                                 <span className="text-[9px] font-black opacity-40">Rp</span>
+                                 <input type="number" aria-label="Tunjangan Makan" placeholder="0" value={adjMeal} onChange={e=>setAdjMeal(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                              </div>
+                           </div>
+                           <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
+                              <span className="text-muted font-bold flex-1">Tunj. Transport ({selectedProfile.daysPresent} H)</span>
+                              <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
+                                 <span className="text-[9px] font-black opacity-40">Rp</span>
+                                 <input type="number" aria-label="Tunjangan Transport" placeholder="0" value={adjTransport} onChange={e=>setAdjTransport(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                              </div>
+                           </div>
+                           <div className="flex justify-between text-xs items-center py-1 border-b border-dashed border-gray-100 dark:border-gray-800 gap-3">
+                              <span className="text-muted font-bold flex-1">Tunj. Tetap Bulanan</span>
+                              <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border-light dark:border-border-dark px-2 w-32">
+                                 <span className="text-[9px] font-black opacity-40">Rp</span>
+                                 <input type="number" aria-label="Tunjangan Tetap" placeholder="0" value={adjFixed} onChange={e=>setAdjFixed(e.target.value)} className="w-full bg-transparent outline-none font-black text-right text-xs p-1.5 text-slate-900 dark:text-white [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                              </div>
+                           </div>
+                           
+                           <div className="pt-2 space-y-3">
+                              <div>
+                                 <label className="text-[9px] font-black uppercase text-muted">Bonus Kinerja (Input)</label>
+                                 <input placeholder="0" aria-label="Bonus" type="number" value={adjBonus} onChange={e=>setAdjBonus(e.target.value)} className="w-full mt-1 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-black text-xs text-green-600 outline-none"/>
+                              </div>
+                              <div>
+                                 <label className="text-[9px] font-black uppercase text-muted">Insentif Khusus (Input)</label>
+                                 <div className="flex flex-col gap-2 mt-1">
+                                    <input type="number" value={adjIncentive} onChange={e=>setAdjIncentive(e.target.value)} placeholder="Nominal" className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-black text-xs text-green-600 outline-none"/>
+                                    <input type="text" value={adjIncentiveNotes} onChange={e=>setAdjIncentiveNotes(e.target.value)} placeholder="Keterangan insentif..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-bold text-xs outline-none"/>
                                  </div>
                               </div>
                            </div>
                         </div>
                      </div>
+                  </div>
 
-                     {/* COLUMN 3: POTONGAN (DEDUCTIONS) */}
-                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
-                           <h4 className="text-[10px] font-black uppercase text-red-600 mb-4 flex items-center gap-2"><XCircle className="w-3.5 h-3.5" /> Komponen Potongan</h4>
-                           <div className="space-y-4 mb-4">
-                              {/* Real-time Lateness Deduction Visual Row */}
-                              {selectedProfile.lateDeduct > 0 && (
-                                 <div className="flex justify-between text-xs items-center py-2.5 bg-rose-50 dark:bg-rose-950/30 px-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                                    <span className="text-rose-700 dark:text-rose-400 font-black uppercase tracking-wider text-[9px] flex items-center gap-1.5"><Clock className="w-3 h-3"/> Potongan Telat ({selectedProfile.totalLateMins}m)</span>
-                                    <span className="font-black text-rose-600">- Rp {selectedProfile.lateDeduct.toLocaleString('id-ID')}</span>
-                                 </div>
-                              )}
-                              <div>
-                                 <div className="flex justify-between text-xs items-center py-2 border-b border-dashed border-gray-100 dark:border-gray-800">
-                                    <span className="text-muted font-black uppercase tracking-wider text-[9px]">Total Bon / Kasbon</span>
-                                    <span className="font-black text-red-600">- Rp {selectedProfile.sumKasbon.toLocaleString('id-ID')}</span>
-                                 </div>
-                                 {/* Interactive Ledger for Kasbon */}
-                                 <div className="space-y-1.5 mt-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {selectedProfile.activeKasbons?.map((k:any) => (
-                                       <div key={k.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg text-[10px] group hover:bg-red-50/50 dark:hover:bg-red-950/10 transition-all">
-                                          <div className="truncate flex-1 pr-2">
-                                             <p className="font-black text-slate-800 dark:text-slate-200">Rp {Number(k.remaining_amount).toLocaleString('id-ID')}</p>
-                                             <p className="text-muted truncate">{k.notes || 'Tanpa Catatan'}</p>
-                                          </div>
-                                          <button onClick={()=>handleDeleteKasbon(k.id)} title="Hapus Kasbon" aria-label="Hapus Kasbon" className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-100 hover:bg-red-500 text-red-600 hover:text-white rounded-md transition-all">
-                                             <X className="w-3 h-3"/>
-                                          </button>
-                                       </div>
-                                    ))}
-                                    {(!selectedProfile.activeKasbons || selectedProfile.activeKasbons.length === 0) && <p className="text-[8px] font-bold text-muted italic text-center mt-1">Tidak ada kasbon aktif</p>}
-                                 </div>
+                  {/* COLUMN 3: POTONGAN (DEDUCTIONS) */}
+                  <div className="space-y-6">
+                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm">
+                        <h4 className="text-[10px] font-black uppercase text-red-600 mb-4 flex items-center gap-2"><XCircle className="w-3.5 h-3.5" /> Komponen Potongan</h4>
+                        <div className="space-y-4 mb-4">
+                           {selectedProfile.lateDeduct > 0 && (
+                              <div className="flex justify-between text-xs items-center py-2.5 bg-rose-50 dark:bg-rose-950/30 px-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                                 <span className="text-rose-700 dark:text-rose-400 font-black uppercase tracking-wider text-[9px] flex items-center gap-1.5"><Clock className="w-3 h-3"/> Potongan Telat ({selectedProfile.totalLateMins}m)</span>
+                                 <span className="font-black text-rose-600">- Rp {selectedProfile.lateDeduct.toLocaleString('id-ID')}</span>
                               </div>
-
-                              <div>
-                                 <div className="flex justify-between text-xs items-center py-2 border-b border-dashed border-gray-100 dark:border-gray-800">
-                                    <span className="text-muted font-black uppercase tracking-wider text-[9px]">Akumulasi Denda</span>
-                                    <span className="font-black text-red-600">- Rp {selectedProfile.sumFines.toLocaleString('id-ID')}</span>
-                                 </div>
-                                 {/* Interactive Ledger for Denda */}
-                                 <div className="space-y-1.5 mt-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {selectedProfile.activeFines?.map((f:any) => (
-                                       <div key={f.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg text-[10px] group hover:bg-orange-50/50 dark:hover:bg-orange-950/10 transition-all">
-                                          <div className="truncate flex-1 pr-2">
-                                             <p className="font-black text-slate-800 dark:text-slate-200">Rp {Number(f.amount).toLocaleString('id-ID')}</p>
-                                             <p className="text-muted truncate">{f.reason}: {f.notes}</p>
-                                          </div>
-                                          <button onClick={()=>handleDeleteFine(f.id)} title="Hapus Denda" aria-label="Hapus Denda" className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-100 hover:bg-red-500 text-red-600 hover:text-white rounded-md transition-all">
-                                             <X className="w-3 h-3"/>
-                                          </button>
-                                       </div>
-                                    ))}
-                                    {(!selectedProfile.activeFines || selectedProfile.activeFines.length === 0) && <p className="text-[8px] font-bold text-muted italic text-center mt-1">Tidak ada denda aktif</p>}
-                                 </div>
+                           )}
+                           <div>
+                              <div className="flex justify-between text-xs items-center py-2 border-b border-dashed border-gray-100 dark:border-gray-800">
+                                 <span className="text-muted font-black uppercase tracking-wider text-[9px]">Total Bon / Kasbon</span>
+                                 <span className="font-black text-red-600">- Rp {selectedProfile.sumKasbon.toLocaleString('id-ID')}</span>
                               </div>
-                           </div>
-
-                           {/* Quick Actions Row */}
-                           <div className="grid grid-cols-2 gap-2 mb-5">
-                              <button onClick={() => { setShowKasbonModal(true); }} className="px-3 py-2 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-red-100 dark:border-red-900/30">
-                                 <DollarSign className="w-3 h-3" /> Tambah Kasbon
-                              </button>
-                              <button onClick={() => { setShowFineModal(true); }} className="px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 text-orange-600 dark:text-orange-400 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-orange-100 dark:border-orange-900/30">
-                                 <AlertCircle className="w-3 h-3" /> Terbitkan Denda
-                              </button>
+                              <div className="space-y-1.5 mt-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                                 {selectedProfile.activeKasbons?.map((k:any) => (
+                                    <div key={k.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg text-[10px] group hover:bg-red-50/50 dark:hover:bg-red-950/10 transition-all">
+                                       <div className="truncate flex-1 pr-2">
+                                          <p className="font-black text-slate-800 dark:text-slate-200">Rp {Number(k.remaining_amount).toLocaleString('id-ID')}</p>
+                                          <p className="text-muted truncate">{k.notes || 'Tanpa Catatan'}</p>
+                                       </div>
+                                       <button onClick={()=>handleDeleteKasbon(k.id)} title="Hapus Kasbon" aria-label="Hapus Kasbon" className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-100 hover:bg-red-500 text-red-600 hover:text-white rounded-md transition-all">
+                                          <X className="w-3 h-3"/>
+                                       </button>
+                                    </div>
+                                 ))}
+                                 {(!selectedProfile.activeKasbons || selectedProfile.activeKasbons.length === 0) && <p className="text-[8px] font-bold text-muted italic text-center mt-1">Tidak ada kasbon aktif</p>}
+                              </div>
                            </div>
 
                            <div>
-                              <label className="text-[9px] font-black uppercase text-muted">Potongan Lainnya</label>
-                              <div className="flex flex-col gap-2 mt-1">
-                                 <input type="number" value={adjOtherDeduct} onChange={e=>setAdjOtherDeduct(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-black text-xs text-red-600 outline-none" placeholder="Nominal"/>
-                                 <input type="text" value={adjOtherDeductNotes} onChange={e=>setAdjOtherDeductNotes(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl p-2.5 font-bold text-xs outline-none" placeholder="Keterangan potongan..."/>
+                              <div className="flex justify-between text-xs items-center py-2 border-b border-dashed border-gray-100 dark:border-gray-800">
+                                 <span className="text-muted font-black uppercase tracking-wider text-[9px]">Akumulasi Denda</span>
+                                 <span className="font-black text-red-600">- Rp {selectedProfile.sumFines.toLocaleString('id-ID')}</span>
+                              </div>
+                              <div className="space-y-1.5 mt-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                                 {selectedProfile.activeFines?.map((f:any) => (
+                                    <div key={f.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg text-[10px] group hover:bg-orange-50/50 dark:hover:bg-orange-950/10 transition-all">
+                                       <div className="truncate flex-1 pr-2">
+                                          <p className="font-black text-slate-800 dark:text-slate-200">Rp {Number(f.amount).toLocaleString('id-ID')}</p>
+                                          <p className="text-muted truncate">{f.reason}: {f.notes}</p>
+                                       </div>
+                                       <button onClick={()=>handleDeleteFine(f.id)} title="Hapus Denda" aria-label="Hapus Denda" className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-100 hover:bg-red-500 text-red-600 hover:text-white rounded-md transition-all">
+                                          <X className="w-3 h-3"/>
+                                       </button>
+                                    </div>
+                                 ))}
+                                 {(!selectedProfile.activeFines || selectedProfile.activeFines.length === 0) && <p className="text-[8px] font-bold text-muted italic text-center mt-1">Tidak ada denda aktif</p>}
                               </div>
                            </div>
                         </div>
-                     </div>
 
-                  </div>
-
-                  {/* Footer Controls With Persistent Total */}
-                  <div className="bg-white dark:bg-gray-900 p-6 border-t border-border-light dark:border-border-dark sticky bottom-0 z-10 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
-                     <div className="flex items-center gap-4 w-full md:w-auto">
-                        <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-lg flex flex-col min-w-[200px]">
-                           <span className="text-[8px] font-black uppercase tracking-widest opacity-70">Gaji Bersih Akhir</span>
-                           <span className="text-xl font-black">Rp {getComputedNetLive().toLocaleString('id-ID')}</span>
+                        <div className="grid grid-cols-2 gap-2 mb-5">
+                           <button onClick={() => { setShowKasbonModal(true); }} className="px-3 py-2 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-red-100 dark:border-red-900/30">
+                              <DollarSign className="w-3 h-3" /> Tambah Kasbon
+                           </button>
+                           <button onClick={() => { setShowFineModal(true); }} className="px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 text-orange-600 dark:text-orange-400 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-orange-100 dark:border-orange-900/30">
+                              <AlertCircle className="w-3 h-3" /> Terbitkan Denda
+                           </button>
                         </div>
-                        <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                           <span className="text-[9px] font-bold text-emerald-600">Siap Ditransfer</span>
-                        </div>
-                     </div>
 
-                     <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
-                        <button onClick={()=>setShowDetailModal(false)} className="px-5 py-3 text-muted hover:text-slate-900 font-black text-xs uppercase tracking-widest">Batal</button>
-                        <button onClick={() => saveSalaryRecord(false)} disabled={processing} className="px-5 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-slate-900 dark:text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
-                           {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4"/>} Draf
-                        </button>
-                        <button onClick={() => {
-                           triggerConfirm(
-                              "Kunci & Transfer Gaji?", 
-                              "Sistem akan menandai pembayaran ini sebagai LUNAS, mengunci data periode berjalan agar tidak bisa diubah lagi, dan mengirimkan notifikasi WhatsApp otomatis.", 
-                              "primary", 
-                              () => saveSalaryRecord(true)
-                           );
-                        }} disabled={processing} className="px-6 py-3.5 bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md transition-all active:scale-95">
-                           {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4"/>} Kunci & Transfer
-                        </button>
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-muted">Potongan Lainnya</label>
+                           <div className="flex flex-col gap-2 mt-1">
+                              <input type="number" value={adjOtherDeduct} onChange={e=>setAdjOtherDeduct(e.target.value)} placeholder="Nominal" className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-2.5 font-black text-xs text-red-600 outline-none"/>
+                              <input type="text" value={adjOtherDeductNotes} onChange={e=>setAdjOtherDeductNotes(e.target.value)} placeholder="Catatan potongan..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-2.5 font-bold text-xs outline-none"/>
+                           </div>
+                        </div>
                      </div>
                   </div>
-               </motion.div>
+               </div>
+
+               {/* Footer Controls With Persistent Total */}
+               <div className="bg-white dark:bg-gray-900 p-6 border-t border-border-light dark:border-border-dark flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-4 w-full md:w-auto">
+                     <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-lg flex flex-col min-w-[200px]">
+                        <span className="text-[8px] font-black uppercase tracking-widest opacity-70">Gaji Bersih Akhir</span>
+                        <span className="text-xl font-black">Rp {getComputedNetLive().toLocaleString('id-ID')}</span>
+                     </div>
+                     <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-bold text-emerald-600">Siap Ditransfer</span>
+                     </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
+                     <button onClick={()=>setShowDetailModal(false)} className="px-5 py-3 text-muted hover:text-slate-900 font-black text-xs uppercase tracking-widest">Batal</button>
+                     <button onClick={() => saveSalaryRecord(false)} disabled={processing} className="px-5 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-slate-900 dark:text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4"/>} Draf
+                     </button>
+                     <button onClick={() => {
+                        triggerConfirm(
+                           "Kunci & Transfer Gaji?", 
+                           "Sistem akan menandai pembayaran ini sebagai LUNAS, mengunci data periode berjalan agar tidak bisa diubah lagi, dan mengirimkan notifikasi WhatsApp otomatis.", 
+                           "primary", 
+                           () => saveSalaryRecord(true)
+                        );
+                     }} disabled={processing} className="px-6 py-3.5 bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md transition-all active:scale-95">
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4"/>} Kunci & Transfer
+                     </button>
+                  </div>
+               </div>
             </div>
          )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* ------------------------------------------------------------- */}
       {/* MODAL: PENGATURAN TARIF DASAR (RATES)                         */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showRateModal && selectedProfile && (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowRateModal(false)} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
-               <motion.div initial={{scale:0.95}} animate={{scale:1}} className="relative bg-white dark:bg-gray-900 w-full max-w-md rounded-[2rem] p-8 border border-border-light shadow-2xl">
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 mb-1 uppercase"><Calculator className="w-5 h-5 text-orange-600" /> Atur Tarif Dasar</h3>
-                  <p className="text-xs font-bold text-muted mb-6">Tentukan standar pendapatan per hari untuk <b>{selectedProfile.full_name}</b>.</p>
-                  
-                  <div className="space-y-4">
+      <BaseModal isOpen={showRateModal && !!selectedProfile} onClose={() => setShowRateModal(false)} size="md">
+         {selectedProfile && (
+            <div>
+               <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 mb-1 uppercase"><Calculator className="w-5 h-5 text-orange-600" /> Atur Tarif Dasar</h3>
+               <p className="text-xs font-bold text-muted mb-6">Tentukan standar pendapatan per hari untuk <b>{selectedProfile.full_name}</b>.</p>
+               
+               <div className="space-y-4">
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted ml-1">Gaji Pokok Per Hari Kerja</label>
+                     <input placeholder="Masukkan nominal..." aria-label="Gaji Pokok" type="number" value={editDailyWage} onChange={e=>setEditDailyWage(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none focus:ring-2 focus:ring-orange-500 text-slate-900 dark:text-white"/>
+                  </div>
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted ml-1">Upah Lembur Per Jam</label>
+                     <input placeholder="Masukkan nominal..." aria-label="Lembur" type="number" value={editOvertimeRate} onChange={e=>setEditOvertimeRate(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none focus:ring-2 focus:ring-orange-500 text-slate-900 dark:text-white"/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                      <div>
-                        <label className="text-[9px] font-black uppercase text-muted ml-1">Gaji Pokok Per Hari Kerja</label>
-                        <input placeholder="Masukkan nominal..." aria-label="Gaji Pokok" type="number" value={editDailyWage} onChange={e=>setEditDailyWage(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none focus:ring-2 focus:ring-orange-500"/>
-                     </div>
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted ml-1">Upah Lembur Per Jam</label>
-                        <input placeholder="Masukkan nominal..." aria-label="Lembur" type="number" value={editOvertimeRate} onChange={e=>setEditOvertimeRate(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none focus:ring-2 focus:ring-orange-500"/>
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <label className="text-[9px] font-black uppercase text-muted ml-1">Tunj. Makan / Hari</label>
-                           <input placeholder="0" aria-label="Makan" type="number" value={editMealAllow} onChange={e=>setEditMealAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none"/>
-                        </div>
-                        <div>
-                           <label className="text-[9px] font-black uppercase text-muted ml-1">Tunj. Transport / Hari</label>
-                           <input placeholder="0" aria-label="Transport" type="number" value={editTransAllow} onChange={e=>setEditTransAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none"/>
-                        </div>
+                        <label className="text-[9px] font-black uppercase text-muted ml-1">Tunj. Makan / Hari</label>
+                        <input placeholder="0" aria-label="Makan" type="number" value={editMealAllow} onChange={e=>setEditMealAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none text-slate-900 dark:text-white"/>
                      </div>
                      <div>
-                        <label className="text-[9px] font-black uppercase text-muted ml-1">Tunjangan Tetap Jabatan (Bulanan)</label>
-                        <input placeholder="0" aria-label="Tunjangan" type="number" value={editFixedAllow} onChange={e=>setEditFixedAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none"/>
-                     </div>
-
-                     <div className="flex gap-3 pt-4">
-                        <button onClick={()=>setShowRateModal(false)} className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 text-muted rounded-xl font-black text-xs uppercase">Batal</button>
-                        <button onClick={handleSaveRates} disabled={processing} className="flex-1 py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2">
-                           {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Simpan"}
-                        </button>
+                        <label className="text-[9px] font-black uppercase text-muted ml-1">Tunj. Transport / Hari</label>
+                        <input placeholder="0" aria-label="Transport" type="number" value={editTransAllow} onChange={e=>setEditTransAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none text-slate-900 dark:text-white"/>
                      </div>
                   </div>
-               </motion.div>
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted ml-1">Tunjangan Tetap Jabatan (Bulanan)</label>
+                     <input placeholder="0" aria-label="Tunjangan" type="number" value={editFixedAllow} onChange={e=>setEditFixedAllow(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm outline-none text-slate-900 dark:text-white"/>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                     <button onClick={()=>setShowRateModal(false)} className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-black text-xs uppercase">Batal</button>
+                     <button onClick={handleSaveRates} disabled={processing} className="flex-1 py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2">
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Simpan"}
+                     </button>
+                  </div>
+               </div>
             </div>
          )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* ------------------------------------------------------------- */}
       {/* MODAL: TAMBAH KASBON                                         */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showKasbonModal && selectedProfile && (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowKasbonModal(false)} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
-               <motion.div initial={{scale:0.95}} animate={{scale:1}} className="relative bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] p-8 border border-border-light shadow-2xl">
-                  <h3 className="text-lg font-black text-red-600 flex items-center gap-2 mb-1 uppercase"><DollarSign className="w-5 h-5" /> Catat Kasbon Baru</h3>
-                  <p className="text-[10px] font-bold text-muted mb-6 uppercase tracking-wider">Karyawan: {selectedProfile.full_name}</p>
-                  
-                  <div className="space-y-4">
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted">Nominal Rupiah</label>
-                        <input type="number" value={kasbonAmount} onChange={e=>setKasbonAmount(e.target.value)} placeholder="0" className="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-3.5 font-black text-base text-red-600 outline-none"/>
-                     </div>
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted">Keterangan Alasan</label>
-                        <textarea value={kasbonNotes} onChange={e=>setKasbonNotes(e.target.value)} placeholder="Tulis keterangan..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-bold outline-none min-h-[80px]"/>
-                     </div>
-                     <button onClick={handleAddStandaloneKasbon} disabled={processing} className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2 shadow-lg shadow-red-600/20">
-                        {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Terbitkan Kasbon"}
-                     </button>
+      <BaseModal isOpen={showKasbonModal && !!selectedProfile} onClose={() => setShowKasbonModal(false)} size="sm">
+         {selectedProfile && (
+            <div>
+               <h3 className="text-lg font-black text-red-600 flex items-center gap-2 mb-1 uppercase"><DollarSign className="w-5 h-5" /> Catat Kasbon Baru</h3>
+               <p className="text-[10px] font-bold text-muted mb-6 uppercase tracking-wider">Karyawan: {selectedProfile.full_name}</p>
+               
+               <div className="space-y-4">
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted">Nominal Rupiah</label>
+                     <input type="number" value={kasbonAmount} onChange={e=>setKasbonAmount(e.target.value)} placeholder="0" className="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-3.5 font-black text-base text-red-600 outline-none"/>
                   </div>
-               </motion.div>
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted">Keterangan Alasan</label>
+                     <textarea value={kasbonNotes} onChange={e=>setKasbonNotes(e.target.value)} placeholder="Tulis keterangan..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-bold outline-none min-h-[80px] text-slate-900 dark:text-white"/>
+                  </div>
+                  <button onClick={handleAddStandaloneKasbon} disabled={processing} className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2 shadow-lg shadow-red-600/20">
+                     {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Terbitkan Kasbon"}
+                  </button>
+               </div>
             </div>
          )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* ------------------------------------------------------------- */}
       {/* MODAL: TAMBAH DENDA                                          */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showFineModal && selectedProfile && (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowFineModal(false)} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
-               <motion.div initial={{scale:0.95}} animate={{scale:1}} className="relative bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] p-8 border border-border-light shadow-2xl">
-                  <h3 className="text-lg font-black text-orange-600 flex items-center gap-2 mb-1 uppercase"><AlertCircle className="w-5 h-5" /> Terbitkan Denda</h3>
-                  <p className="text-[10px] font-bold text-muted mb-6 uppercase tracking-wider">Karyawan: {selectedProfile.full_name}</p>
-                  
-                  <div className="space-y-4">
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted">Nominal Denda</label>
-                        <input type="number" value={fineAmount} onChange={e=>setFineAmount(e.target.value)} placeholder="0" className="w-full bg-orange-50 dark:bg-orange-950/20 border border-orange-200 rounded-xl p-3.5 font-black text-base text-orange-600 outline-none"/>
-                     </div>
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted">Kategori Pelanggaran</label>
-                        <select aria-label="Kategori Denda" value={fineReason} onChange={e=>setFineReason(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-black uppercase outline-none">
-                           <option>Keterlambatan</option>
-                           <option>Pelanggaran SOP</option>
-                           <option>Kerusakan Aset</option>
-                           <option>Absen Tanpa Keterangan</option>
-                           <option>Lainnya</option>
-                        </select>
-                     </div>
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted">Catatan Detail</label>
-                        <textarea value={fineNotes} onChange={e=>setFineNotes(e.target.value)} placeholder="Keterangan detail denda..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-bold outline-none min-h-[80px]"/>
-                     </div>
-                     <button onClick={handleAddStandaloneFine} disabled={processing} className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2 shadow-lg shadow-orange-600/20">
-                        {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Simpan Denda"}
-                     </button>
+      <BaseModal isOpen={showFineModal && !!selectedProfile} onClose={() => setShowFineModal(false)} size="sm">
+         {selectedProfile && (
+            <div>
+               <h3 className="text-lg font-black text-orange-600 flex items-center gap-2 mb-1 uppercase"><AlertCircle className="w-5 h-5" /> Terbitkan Denda</h3>
+               <p className="text-[10px] font-bold text-muted mb-6 uppercase tracking-wider">Karyawan: {selectedProfile.full_name}</p>
+               
+               <div className="space-y-4">
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted">Nominal Denda</label>
+                     <input type="number" value={fineAmount} onChange={e=>setFineAmount(e.target.value)} placeholder="0" className="w-full bg-orange-50 dark:bg-orange-950/20 border border-orange-200 rounded-xl p-3.5 font-black text-base text-orange-600 outline-none"/>
                   </div>
-               </motion.div>
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted">Kategori Pelanggaran</label>
+                     <select aria-label="Kategori Denda" value={fineReason} onChange={e=>setFineReason(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-black uppercase outline-none text-slate-900 dark:text-white">
+                        <option>Keterlambatan</option>
+                        <option>Pelanggaran SOP</option>
+                        <option>Kerusakan Aset</option>
+                        <option>Absen Tanpa Keterangan</option>
+                        <option>Lainnya</option>
+                     </select>
+                  </div>
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted">Catatan Detail</label>
+                     <textarea value={fineNotes} onChange={e=>setFineNotes(e.target.value)} placeholder="Keterangan detail denda..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 text-xs font-bold outline-none min-h-[80px] text-slate-900 dark:text-white"/>
+                  </div>
+                  <button onClick={handleAddStandaloneFine} disabled={processing} className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black text-xs uppercase flex justify-center items-center gap-2 shadow-lg shadow-orange-600/20">
+                     {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : "Simpan Denda"}
+                  </button>
+               </div>
             </div>
          )}
+      </BaseModal>
+
       {/* ------------------------------------------------------------- */}
       {/* MODAL: PENGATURAN DATA PEMBAYARAN / REKENING                  */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showPaymentModal && selectedProfile && (
-            <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 overflow-y-auto">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowPaymentModal(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
-               <motion.div initial={{scale:0.95, y: 20}} animate={{scale:1, y: 0}} className="relative bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] p-8 border border-border-light shadow-2xl my-auto max-h-[90vh] overflow-y-auto no-scrollbar">
-                  
-                  <div className="flex justify-between items-start mb-6">
-                     <div>
-                        <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-tight"><CreditCard className="w-6 h-6 text-blue-600" /> Rekening Karyawan</h3>
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-wider mt-1">Data Pembayaran: {selectedProfile.full_name}</p>
-                     </div>
-                     <button onClick={()=>setShowPaymentModal(false)} title="Tutup Modal" aria-label="Tutup" className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-muted hover:text-red-500 transition-colors"><X className="w-5 h-5"/></button>
+      <BaseModal isOpen={showPaymentModal && !!selectedProfile} onClose={() => setShowPaymentModal(false)} size="md" showCloseButton={false}>
+         {selectedProfile && (
+            <div>
+               <div className="flex justify-between items-start mb-6">
+                  <div>
+                     <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-tight"><CreditCard className="w-6 h-6 text-blue-600" /> Rekening Karyawan</h3>
+                     <p className="text-[10px] font-bold text-muted uppercase tracking-wider mt-1">Data Pembayaran: {selectedProfile.full_name}</p>
+                  </div>
+                  <button onClick={()=>setShowPaymentModal(false)} title="Tutup Modal" aria-label="Tutup" className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-muted hover:text-red-500 transition-colors"><X className="w-5 h-5"/></button>
+               </div>
+
+               <div className="space-y-5">
+                  {/* Dropdown Jenis */}
+                  <div>
+                     <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Metode Utama Pembayaran</label>
+                     <select value={payPref} onChange={e=>setPayPref(e.target.value)} title="Pilih Metode Pembayaran Utama" className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+                        <option value="tunai">Tunai Langsung (Cash)</option>
+                        <option value="bank">Transfer Bank Indonesia</option>
+                        <option value="wallet">E-Wallet / Dompet Digital</option>
+                        <option value="lain">Metode Lainnya</option>
+                     </select>
                   </div>
 
-                  <div className="space-y-5">
-                     {/* Dropdown Jenis */}
-                     <div>
-                        <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Metode Utama Pembayaran</label>
-                        <select value={payPref} onChange={e=>setPayPref(e.target.value)} title="Pilih Metode Pembayaran Utama" className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3.5 font-black text-sm uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500">
-                           <option value="tunai">Tunai Langsung (Cash)</option>
-                           <option value="bank">Transfer Bank Indonesia</option>
-                           <option value="wallet">E-Wallet / Dompet Digital</option>
-                           <option value="lain">Metode Lainnya</option>
-                        </select>
-                     </div>
-
-                     {/* DYNAMIC SECTION: BANK */}
-                     {payPref === "bank" && (
-                        <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Pilih Nama Bank</label>
-                              <select value={payBank} onChange={e=>setPayBank(e.target.value)} title="Daftar Nama Bank Indonesia" className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-black text-xs outline-none">
-                                 <option value="">-- Pilih Bank --</option>
-                                 <optgroup label="BANK BUMN">
-                                    {BANK_BUMN.map(b => <option key={b} value={b}>{b}</option>)}
-                                 </optgroup>
-                                 <optgroup label="BANK SWASTA NASIONAL">
-                                    {BANK_SWASTA.map(b => <option key={b} value={b}>{b}</option>)}
-                                 </optgroup>
-                                 <optgroup label="BANK DAERAH (BPD)">
-                                    {BANK_DAERAH.map(b => <option key={b} value={b}>{b}</option>)}
-                                 </optgroup>
-                                 <optgroup label="BANK DIGITAL">
-                                    {BANK_DIGITAL.map(b => <option key={b} value={b}>{b}</option>)}
-                                 </optgroup>
-                              </select>
-                           </div>
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Nomor Rekening</label>
-                              <input value={payAccNum} onChange={e=>setPayAccNum(e.target.value)} placeholder="Masukkan No Rek..." className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-black text-base tracking-widest outline-none"/>
-                           </div>
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Cabang (Opsional)</label>
-                              <input value={payBranch} onChange={e=>setPayBranch(e.target.value)} placeholder="Cabang Bank..." className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-bold text-xs outline-none"/>
-                           </div>
-                        </motion.div>
-                     )}
-
-                     {/* DYNAMIC SECTION: WALLET */}
-                     {payPref === "wallet" && (
-                        <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 mb-1 block ml-1">Platform E-Wallet</label>
-                              <select value={payWallet} onChange={e=>setPayWallet(e.target.value)} title="Pilih Platform E-Wallet" className="w-full bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/50 rounded-xl p-3 font-black text-xs uppercase outline-none">
-                                 <option value="">-- Pilih Wallet --</option>
-                                 {E_WALLETS.map(w => <option key={w} value={w}>{w}</option>)}
-                              </select>
-                           </div>
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 mb-1 block ml-1">Nomor HP / ID Akun</label>
-                              <input value={payWalletNum} onChange={e=>setPayWalletNum(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/50 rounded-xl p-3 font-black text-base tracking-widest outline-none"/>
-                           </div>
-                        </motion.div>
-                     )}
-
-                     {/* DYNAMIC SECTION: LAINNYA */}
-                     {payPref === "lain" && (
-                        <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Keterangan Metode (Isi Manual)</label>
-                              <input value={payOtherText} onChange={e=>setPayOtherText(e.target.value)} placeholder="Contoh: Kantor Pos, Transfer Antar Cabang..." className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl p-3 font-black text-xs outline-none"/>
-                           </div>
-                           <div>
-                              <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">ID Referensi / No Rek</label>
-                              <input value={payAccNum} onChange={e=>setPayAccNum(e.target.value)} placeholder="Nomor referensi jika ada..." className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl p-3 font-bold text-xs outline-none"/>
-                           </div>
-                        </motion.div>
-                     )}
-
-                     {/* Common Field: ATAS NAMA (Not needed for Tunai but good for others) */}
-                     {payPref !== "tunai" && (
-                        <motion.div initial={{opacity:0}} animate={{opacity:1}} className="pt-1">
-                           <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Atas Nama Pemilik Rekening</label>
-                           <input value={payAccHolder} onChange={e=>setPayAccHolder(e.target.value)} placeholder="Nama Sesuai Identitas..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 font-black text-sm outline-none focus:border-slate-400"/>
-                        </motion.div>
-                     )}
-
-                     {/* TUNAI INFO */}
-                     {payPref === "tunai" && (
-                        <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl text-center border border-amber-100 dark:border-amber-900/20">
-                           <p className="text-xs font-bold text-amber-700 dark:text-amber-500">Sistem akan menandai pembayaran gajian ini dibayarkan secara langsung dalam bentuk Tunai / Cash.</p>
+                  {/* DYNAMIC SECTION: BANK */}
+                  {payPref === "bank" && (
+                     <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Pilih Nama Bank</label>
+                           <select value={payBank} onChange={e=>setPayBank(e.target.value)} title="Daftar Nama Bank Indonesia" className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-black text-xs outline-none text-slate-900 dark:text-white">
+                              <option value="">-- Pilih Bank --</option>
+                              <optgroup label="BANK BUMN">
+                                 {BANK_BUMN.map(b => <option key={b} value={b}>{b}</option>)}
+                              </optgroup>
+                              <optgroup label="BANK SWASTA NASIONAL">
+                                 {BANK_SWASTA.map(b => <option key={b} value={b}>{b}</option>)}
+                              </optgroup>
+                              <optgroup label="BANK DAERAH (BPD)">
+                                 {BANK_DAERAH.map(b => <option key={b} value={b}>{b}</option>)}
+                              </optgroup>
+                              <optgroup label="BANK DIGITAL">
+                                 {BANK_DIGITAL.map(b => <option key={b} value={b}>{b}</option>)}
+                              </optgroup>
+                           </select>
                         </div>
-                     )}
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Nomor Rekening</label>
+                           <input value={payAccNum} onChange={e=>setPayAccNum(e.target.value)} placeholder="Masukkan No Rek..." className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-black text-base tracking-widest outline-none text-slate-900 dark:text-white"/>
+                        </div>
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 mb-1 block ml-1">Cabang (Opsional)</label>
+                           <input value={payBranch} onChange={e=>setPayBranch(e.target.value)} placeholder="Cabang Bank..." className="w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 font-bold text-xs outline-none text-slate-900 dark:text-white"/>
+                        </div>
+                     </motion.div>
+                  )}
 
-                     <div className="pt-4">
-                        <button onClick={handleSavePaymentMethod} disabled={processing} className="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all active:scale-95 disabled:opacity-70">
-                           {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Simpan Data Rekening
-                        </button>
+                  {/* DYNAMIC SECTION: WALLET */}
+                  {payPref === "wallet" && (
+                     <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-emerald-700 dark:emerald-400 mb-1 block ml-1">Platform E-Wallet</label>
+                           <select value={payWallet} onChange={e=>setPayWallet(e.target.value)} title="Pilih Platform E-Wallet" className="w-full bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/50 rounded-xl p-3 font-black text-xs uppercase outline-none text-slate-900 dark:text-white">
+                              <option value="">-- Pilih Wallet --</option>
+                              {E_WALLETS.map(w => <option key={w} value={w}>{w}</option>)}
+                           </select>
+                        </div>
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 mb-1 block ml-1">Nomor HP / ID Akun</label>
+                           <input value={payWalletNum} onChange={e=>setPayWalletNum(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/50 rounded-xl p-3 font-black text-base tracking-widest outline-none text-slate-900 dark:text-white"/>
+                        </div>
+                     </motion.div>
+                  )}
+
+                  {/* DYNAMIC SECTION: LAINNYA */}
+                  {payPref === "lain" && (
+                     <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Keterangan Metode (Isi Manual)</label>
+                           <input value={payOtherText} onChange={e=>setPayOtherText(e.target.value)} placeholder="Contoh: Kantor Pos, Transfer Antar Cabang..." className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl p-3 font-black text-xs outline-none text-slate-900 dark:text-white"/>
+                        </div>
+                        <div>
+                           <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">ID Referensi / No Rek</label>
+                           <input value={payAccNum} onChange={e=>setPayAccNum(e.target.value)} placeholder="Nomor referensi jika ada..." className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl p-3 font-bold text-xs outline-none text-slate-900 dark:text-white"/>
+                        </div>
+                     </motion.div>
+                  )}
+
+                  {/* Common Field: ATAS NAMA */}
+                  {payPref !== "tunai" && (
+                     <motion.div initial={{opacity:0}} animate={{opacity:1}} className="pt-1">
+                        <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Atas Nama Pemilik Rekening</label>
+                        <input value={payAccHolder} onChange={e=>setPayAccHolder(e.target.value)} placeholder="Nama Sesuai Identitas..." className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light rounded-xl p-3 font-black text-sm outline-none focus:border-slate-400 text-slate-900 dark:text-white"/>
+                     </motion.div>
+                  )}
+
+                  {/* TUNAI INFO */}
+                  {payPref === "tunai" && (
+                     <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl text-center border border-amber-100 dark:border-amber-900/20">
+                        <p className="text-xs font-bold text-amber-700 dark:text-amber-500">Sistem akan menandai pembayaran gajian ini dibayarkan secara langsung dalam bentuk Tunai / Cash.</p>
                      </div>
+                  )}
+
+                  <div className="pt-4">
+                     <button onClick={handleSavePaymentMethod} disabled={processing} className="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all active:scale-95 disabled:opacity-70">
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Simpan Data Rekening
+                     </button>
                   </div>
-               </motion.div>
+               </div>
             </div>
          )}
-      </AnimatePresence>
-      
-      </AnimatePresence>
+      </BaseModal>
 
       {/* ------------------------------------------------------------- */}
       {/* MODAL: UNIVERSAL PREMIUM CONFIRMATION SYSTEM                  */}
       {/* ------------------------------------------------------------- */}
-      <AnimatePresence>
-         {showUniversalConfirm && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-               <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowUniversalConfirm(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
-               <motion.div initial={{scale:0.95, y:10}} animate={{scale:1, y:0}} exit={{scale:0.95, opacity:0}} className="relative bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] p-8 border border-border-light shadow-2xl text-center">
-                  <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${confirmConfig.type === 'danger' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/30'}`}>
-                     {confirmConfig.type === 'danger' ? <XCircle className="w-8 h-8"/> : <Shield className="w-8 h-8"/>}
-                  </div>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 uppercase">{confirmConfig.title}</h3>
-                  <p className="text-xs font-medium text-muted leading-relaxed mb-8 px-2">{confirmConfig.msg}</p>
-                  
-                  <div className="flex gap-3">
-                     <button onClick={()=>setShowUniversalConfirm(false)} className="flex-1 py-3.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-muted dark:text-gray-300 rounded-xl font-black text-xs uppercase transition-all">
-                        Batal
-                     </button>
-                     <button 
-                        onClick={() => {
-                           confirmConfig.onConfirm();
-                           setShowUniversalConfirm(false);
-                        }} 
-                        className={`flex-1 py-3.5 text-white rounded-xl font-black text-xs uppercase shadow-lg transition-all active:scale-95 ${confirmConfig.type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-slate-900 hover:bg-black shadow-slate-900/20'}`}
-                     >
-                        Lanjutkan
-                     </button>
-                  </div>
-               </motion.div>
+      <BaseModal isOpen={showUniversalConfirm} onClose={() => setShowUniversalConfirm(false)} size="sm" showCloseButton={false}>
+         <div className="text-center">
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${confirmConfig.type === 'danger' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/30'}`}>
+               {confirmConfig.type === 'danger' ? <XCircle className="w-8 h-8"/> : <Shield className="w-8 h-8"/>}
             </div>
-         )}
-      </AnimatePresence>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 uppercase">{confirmConfig.title}</h3>
+            <p className="text-xs font-medium text-muted leading-relaxed mb-8 px-2">{confirmConfig.msg}</p>
+            
+            <div className="flex gap-3">
+               <button onClick={()=>setShowUniversalConfirm(false)} className="flex-1 py-3.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-muted dark:text-gray-300 rounded-xl font-black text-xs uppercase transition-all">
+                  Batal
+               </button>
+               <button 
+                  onClick={() => {
+                     confirmConfig.onConfirm();
+                     setShowUniversalConfirm(false);
+                  }} 
+                  className={`flex-1 py-3.5 text-white rounded-xl font-black text-xs uppercase shadow-lg transition-all active:scale-95 ${confirmConfig.type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-slate-900 hover:bg-black shadow-slate-900/20'}`}
+               >
+                  Lanjutkan
+               </button>
+            </div>
+         </div>
+      </BaseModal>
 
     </div>
   );

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import BaseModal from "@/components/BaseModal";
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<any[]>([]);
@@ -244,7 +245,7 @@ export default function AdminReservationsPage() {
       </div>
 
       {/* Detail Modal */}
-      <AnimatePresence>
+      <BaseModal isOpen={!!selectedRes} onClose={() => setSelectedRes(null)} size="md" title="Data Diri Pemesan (Admin View)">
         {selectedRes && (() => {
           const parsed = getParsedNotes(selectedRes.notes);
           const clientName = parsed ? parsed.atas_nama : (selectedRes.profiles?.full_name || "Guest");
@@ -253,124 +254,116 @@ export default function AdminReservationsPage() {
           const notesText = parsed ? parsed.catatan : selectedRes.notes;
 
           return (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedRes(null)}>
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark">
-                <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800">
-                  <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Data Diri Pemesan (Admin View)</h3>
-                  <button onClick={() => setSelectedRes(null)} title="Tutup" aria-label="Tutup" className="text-muted hover:text-text-light"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Atas Nama</span>
-                    <p className="font-black text-lg text-text-light dark:text-text-dark">{clientName}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Nomor Telepon</span>
-                    <p className="font-bold text-text-light dark:text-text-dark">{clientPhone}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Tanggal</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{format(new Date(selectedRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Waktu</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.reservation_time?.substring(0, 5)} WIB</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Meja</span>
-                      <p className="font-bold text-primary text-base">Meja {mejaNumbers}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Tamu</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.guest_count} Orang</p>
-                    </div>
-                  </div>
-                  {notesText && (
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                      <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
-                    </div>
-                  )}
-                  {parsed?.catatan_tolak && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                      <span className="text-xs font-bold uppercase block mb-1">Alasan Penolakan</span>
-                      <p className="text-sm">{parsed.catatan_tolak}</p>
-                    </div>
-                  )}
-                  {parsed?.catatan_batal && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                      <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
-                      <p className="text-sm">{parsed.catatan_batal}</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          );
-        })()}
-      </AnimatePresence>
-
-      {/* GENERIC MODERN CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
-            >
-              <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
-                <AlertTriangle className="w-8 h-8" />
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs text-muted uppercase font-bold tracking-wider">Atas Nama</span>
+                <p className="font-black text-lg text-text-light dark:text-text-dark">{clientName}</p>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+              <div>
+                <span className="text-xs text-muted uppercase font-bold tracking-wider">Nomor Telepon</span>
+                <p className="font-bold text-text-light dark:text-text-dark">{clientPhone}</p>
               </div>
-
-              {confirmModal.hasInput && (
-                <div className="mt-4">
-                  <textarea
-                    value={confirmInput}
-                    onChange={(e) => setConfirmInput(e.target.value)}
-                    placeholder={confirmModal.inputPlaceholder || "Masukkan catatan..."}
-                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none h-24"
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Tanggal</span>
+                  <p className="font-medium text-text-light dark:text-text-dark">{format(new Date(selectedRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Waktu</span>
+                  <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.reservation_time?.substring(0, 5)} WIB</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Meja</span>
+                  <p className="font-bold text-primary text-base">Meja {mejaNumbers}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Tamu</span>
+                  <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.guest_count} Orang</p>
+                </div>
+              </div>
+              {notesText && (
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
+                  <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
                 </div>
               )}
+              {parsed?.catatan_tolak && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
+                  <span className="text-xs font-bold uppercase block mb-1">Alasan Penolakan</span>
+                  <p className="text-sm">{parsed.catatan_tolak}</p>
+                </div>
+              )}
+              {parsed?.catatan_batal && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
+                  <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
+                  <p className="text-sm">{parsed.catatan_batal}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </BaseModal>
 
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => {
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                    setConfirmInput("");
-                  }}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={async () => {
-                    if (confirmModal.hasInput && !confirmInput.trim()) {
-                      toast.error("Alasan penolakan wajib diisi.");
-                      return;
-                    }
-                    await confirmModal.onConfirm(confirmInput);
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                    setConfirmInput("");
-                  }}
-                  className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
-                >
-                  {confirmModal.confirmText}
-                </button>
-              </div>
-            </motion.div>
+      {/* GENERIC MODERN CONFIRMATION MODAL */}
+      <BaseModal 
+        isOpen={confirmModal.isOpen} 
+        onClose={() => { 
+          setConfirmModal(prev => ({...prev, isOpen: false})); 
+          setConfirmInput(""); 
+        }} 
+        size="sm"
+      >
+        <div className="text-center space-y-6">
+          <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
+            <AlertTriangle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+            <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+          </div>
+
+          {confirmModal.hasInput && (
+            <div className="mt-4">
+              <textarea
+                value={confirmInput}
+                onChange={(e) => setConfirmInput(e.target.value)}
+                placeholder={confirmModal.inputPlaceholder || "Masukkan catatan..."}
+                className="w-full p-4 bg-gray-50 dark:bg-gray-800 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none h-24"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={() => {
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+                setConfirmInput("");
+              }}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button 
+              type="button"
+              onClick={async () => {
+                if (confirmModal.hasInput && !confirmInput.trim()) {
+                  toast.error("Alasan penolakan wajib diisi.");
+                  return;
+                }
+                await confirmModal.onConfirm(confirmInput);
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+                setConfirmInput("");
+              }}
+              className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+            >
+              {confirmModal.confirmText}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

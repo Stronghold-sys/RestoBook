@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BaseModal from "@/components/BaseModal";
 import { 
   Users, UserCheck, UserMinus, Clock, Search, Filter, 
   Trash2, Check, X, AlertTriangle, Send, FileText, Loader2, 
@@ -719,366 +720,333 @@ export default function AdminResignPage() {
       </div>
 
       {/* DETAIL MODAL FOR RESIGN REQUEST */}
-      <AnimatePresence>
+      <BaseModal isOpen={!!selectedReq} onClose={() => setSelectedReq(null)} size="2xl" title="Detail Pengajuan Resign">
         {selectedReq && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedReq(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl p-8 border border-border-light dark:border-border-dark max-h-[90vh] overflow-y-auto">
-              <button onClick={() => setSelectedReq(null)} title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="flex flex-col md:flex-row gap-6 items-center md:items-start border-b border-border-light dark:border-border-dark pb-6 mb-6">
-                <div className="w-24 h-24 rounded-3xl overflow-hidden bg-gray-100 flex-shrink-0 border border-border-light dark:border-border-dark shadow-md flex items-center justify-center">
-                  {selectedReq.profiles?.avatar_url ? (
-                    <img src={selectedReq.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-10 h-10 text-muted" />
-                  )}
-                </div>
-                <div className="text-center md:text-left space-y-2 flex-1">
-                  <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">{selectedReq.full_name}</h3>
-                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                    <span className="px-3 py-1 bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono text-xs font-black uppercase rounded-lg">ID: {selectedReq.employee_id}</span>
-                    <span className="px-3 py-1 bg-primary/10 text-primary font-black text-xs uppercase rounded-lg">{selectedReq.role}</span>
-                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-muted font-black text-xs uppercase rounded-lg">{selectedReq.division}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-sm">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted">Tanggal Pengajuan</p>
-                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{new Date(selectedReq.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted">Tanggal Efektif Keluar</p>
-                    <p className="font-black text-teal-600 dark:text-teal-400 mt-0.5">{new Date(selectedReq.effective_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted">Telepon Karyawan</p>
-                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedReq.profiles?.phone || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted">Email Karyawan</p>
-                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedReq.profiles?.email || "-"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 border-t border-border-light dark:border-border-dark pt-6 mb-8">
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-5 rounded-2xl">
-                  <p className="text-[10px] font-black uppercase text-muted mb-2">Alasan Pengunduran Diri</p>
-                  <p className="text-xs text-text-light dark:text-text-dark leading-relaxed italic">&ldquo;{selectedReq.reason}&rdquo;</p>
-                </div>
-                {selectedReq.additional_notes && (
-                  <div className="p-5 border border-dashed border-border-light dark:border-border-dark rounded-2xl">
-                    <p className="text-[10px] font-black uppercase text-muted mb-2">Keterangan Tambahan</p>
-                    <p className="text-xs text-muted leading-relaxed">{selectedReq.additional_notes}</p>
-                  </div>
-                )}
-                {selectedReq.admin_notes && (
-                  <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/10 p-5 rounded-2xl">
-                    <p className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 mb-1">Catatan Tanggapan Admin</p>
-                    <p className="text-xs text-text-light dark:text-text-dark font-medium leading-relaxed">{selectedReq.admin_notes}</p>
-                  </div>
+          <div>
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start border-b border-border-light dark:border-border-dark pb-6 mb-6">
+              <div className="w-24 h-24 rounded-3xl overflow-hidden bg-gray-100 flex-shrink-0 border border-border-light dark:border-border-dark shadow-md flex items-center justify-center">
+                {selectedReq.profiles?.avatar_url ? (
+                  <img src={selectedReq.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-muted" />
                 )}
               </div>
+              <div className="text-center md:text-left space-y-2 flex-1">
+                <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">{selectedReq.full_name}</h3>
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  <span className="px-3 py-1 bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono text-xs font-black uppercase rounded-lg">ID: {selectedReq.employee_id}</span>
+                  <span className="px-3 py-1 bg-primary/10 text-primary font-black text-xs uppercase rounded-lg">{selectedReq.role}</span>
+                  <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-muted font-black text-xs uppercase rounded-lg">{selectedReq.division}</span>
+                </div>
+              </div>
+            </div>
 
-              {(selectedReq.status === "Menunggu Konfirmasi" || selectedReq.status === "Dibatalkan") && (
-                <div className="mb-6 p-5 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-3">
-                  <p className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" /> Tentukan Waktu Akhir Akun Aktif (Suspension Deadline)
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-muted uppercase ml-1">Tanggal</label>
-                      <input 
-                        type="date"
-                        title="Tentukan tanggal penangguhan"
-                        value={spDate}
-                        onChange={(e) => setSpDate(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm text-text-light dark:text-text-dark outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-muted uppercase ml-1">Waktu / Jam</label>
-                      <input 
-                        type="time"
-                        title="Tentukan jam penangguhan"
-                        value={spTime}
-                        onChange={(e) => setSpTime(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm text-text-light dark:text-text-dark outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-muted font-medium italic">* Akun akan otomatis dinonaktifkan pada waktu tersebut.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-sm">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted">Tanggal Pengajuan</p>
+                  <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{new Date(selectedReq.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted">Tanggal Efektif Keluar</p>
+                  <p className="font-black text-teal-600 dark:text-teal-400 mt-0.5">{new Date(selectedReq.effective_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted">Telepon Karyawan</p>
+                  <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedReq.profiles?.phone || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted">Email Karyawan</p>
+                  <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedReq.profiles?.email || "-"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t border-border-light dark:border-border-dark pt-6 mb-8">
+              <div className="bg-gray-50 dark:bg-gray-800/40 p-5 rounded-2xl">
+                <p className="text-[10px] font-black uppercase text-muted mb-2">Alasan Pengunduran Diri</p>
+                <p className="text-xs text-text-light dark:text-text-dark leading-relaxed italic">&ldquo;{selectedReq.reason}&rdquo;</p>
+              </div>
+              {selectedReq.additional_notes && (
+                <div className="p-5 border border-dashed border-border-light dark:border-border-dark rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-muted mb-2">Keterangan Tambahan</p>
+                  <p className="text-xs text-muted leading-relaxed">{selectedReq.additional_notes}</p>
                 </div>
               )}
+              {selectedReq.admin_notes && (
+                <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/10 p-5 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 mb-1">Catatan Tanggapan Admin</p>
+                  <p className="text-xs text-text-light dark:text-text-dark font-medium leading-relaxed">{selectedReq.admin_notes}</p>
+                </div>
+              )}
+            </div>
 
-              {/* ACTION BUTTONS */}
-              <div className="flex flex-wrap gap-4 justify-end">
-                {selectedReq.status === "Menunggu Konfirmasi" ? (
-                  <>
-                    <button 
-                      onClick={() => setShowRejectModal(true)}
-                      className="px-5 py-3 bg-red-100 hover:bg-red-600 hover:text-white text-red-600 rounded-2xl font-black text-xs uppercase tracking-wider transition-all"
-                    >
-                      Tolak Pengajuan
-                    </button>
-                    <button 
-                      onClick={() => handleApprove(selectedReq.id)}
-                      disabled={actioning}
-                      className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-green-600/10"
-                    >
-                      {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Setujui Resign
-                    </button>
-                  </>
-                ) : selectedReq.status === "Disetujui" && selectedReq.profiles?.status_karyawan === "aktif" ? (
-                  <>
-                    <button 
-                      onClick={() => setGenericConfirm({
-                        isOpen: true,
-                        title: "Batalkan Resign Paksa?",
-                        message: "Apakah Anda yakin ingin membatalkan proses resign ini secara paksa? Status akun akan kembali aktif penuh.",
-                        confirmText: "Ya, Batalkan Resign",
-                        type: 'warning',
-                        onConfirm: () => handleCancelResign(selectedReq.id)
-                      })}
-                      className="px-5 py-3 bg-amber-100 hover:bg-amber-500 hover:text-white text-amber-600 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
-                    >
-                      <X className="w-4 h-4" /> Batalkan Resign
-                    </button>
-                    <button 
-                      onClick={() => setGenericConfirm({
-                        isOpen: true,
-                        title: "Suspend Akun Sekarang?",
-                        message: "Suspend akun karyawan ini secara manual sekarang tanpa menunggu sisa waktu timer?",
-                        confirmText: "Ya, Suspend Sekarang",
-                        type: 'danger',
-                        onConfirm: () => handleMarkOut(selectedReq.profile_id)
-                      })}
-                      className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-red-600/10"
-                    >
-                      {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />} Suspend Akun Sekarang
-                    </button>
-                  </>
-                ) : selectedReq.profiles?.status_karyawan !== "aktif" ? (
-                  <>
-                    <button 
-                      onClick={() => handleReactivate(selectedReq.profile_id)}
-                      disabled={actioning}
-                      className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-green-600/10"
-                    >
-                      <UserCheck className="w-4 h-4" /> Aktifkan Kembali
-                    </button>
-                    <button 
-                      onClick={() => { 
-                        setDeleteProfileId(selectedReq.profile_id); 
-                        setDeleteType("resign"); 
-                        setDeleteConfirmStep(1); 
-                        setShowDeleteModal(true); 
-                      }}
-                      className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-red-600/10"
-                    >
-                      <Trash2 className="w-4 h-4" /> Hapus Akun Permanen (Farewell WA)
-                    </button>
-                  </>
-                ) : selectedReq.status === "Dibatalkan" ? (
-                  <div className="w-full flex flex-col gap-4 mt-4">
-                    <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl">
-                      <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-relaxed">
-                         <strong className="uppercase font-black tracking-wider">Pengajuan Dibatalkan</strong><br/>
-                        Seluruh tombol aksi standar telah dinonaktifkan karena pengajuan ini tercatat batal. Namun, jika Anda ingin mengaktifkan/melanjutkan kembali proses keluar untuk karyawan ini, isi form waktu di atas dan klik tombol di bawah.
-                      </p>
-                    </div>
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => handleResumeResign(selectedReq.id)}
-                        disabled={actioning}
-                        className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20"
-                      >
-                        {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Lanjutkan Proses Keluar yang Sempat Dibatalkan
-                      </button>
-                    </div>
+            {(selectedReq.status === "Menunggu Konfirmasi" || selectedReq.status === "Dibatalkan") && (
+              <div className="mb-6 p-5 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-3">
+                <p className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> Tentukan Waktu Akhir Akun Aktif (Suspension Deadline)
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-muted uppercase ml-1">Tanggal</label>
+                    <input 
+                      type="date"
+                      title="Tentukan tanggal penangguhan"
+                      value={spDate}
+                      onChange={(e) => setSpDate(e.target.value)}
+                      className="w-full bg-white dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm text-text-light dark:text-text-dark outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
-                ) : (
-                  <span className="text-xs text-muted font-bold uppercase py-2">Proses Pengajuan Selesai</span>
-                )}
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-muted uppercase ml-1">Waktu / Jam</label>
+                    <input 
+                      type="time"
+                      title="Tentukan jam penangguhan"
+                      value={spTime}
+                      onChange={(e) => setSpTime(e.target.value)}
+                      className="w-full bg-white dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm text-text-light dark:text-text-dark outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-[9px] text-muted font-medium italic">* Akun akan otomatis dinonaktifkan pada waktu tersebut.</p>
               </div>
-            </motion.div>
+            )}
+
+            {/* ACTION BUTTONS */}
+            <div className="flex flex-wrap gap-4 justify-end">
+              {selectedReq.status === "Menunggu Konfirmasi" ? (
+                <>
+                  <button 
+                    onClick={() => setShowRejectModal(true)}
+                    className="px-5 py-3 bg-red-100 hover:bg-red-600 hover:text-white text-red-600 rounded-2xl font-black text-xs uppercase tracking-wider transition-all"
+                  >
+                    Tolak Pengajuan
+                  </button>
+                  <button 
+                    onClick={() => handleApprove(selectedReq.id)}
+                    disabled={actioning}
+                    className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-green-600/10"
+                  >
+                    {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Setujui Resign
+                  </button>
+                </>
+              ) : selectedReq.status === "Disetujui" && selectedReq.profiles?.status_karyawan === "aktif" ? (
+                <>
+                  <button 
+                    onClick={() => setGenericConfirm({
+                      isOpen: true,
+                      title: "Batalkan Resign Paksa?",
+                      message: "Apakah Anda yakin ingin membatalkan proses resign ini secara paksa? Status akun akan kembali aktif penuh.",
+                      confirmText: "Ya, Batalkan Resign",
+                      type: 'warning',
+                      onConfirm: () => handleCancelResign(selectedReq.id)
+                    })}
+                    className="px-5 py-3 bg-amber-100 hover:bg-amber-500 hover:text-white text-amber-600 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
+                  >
+                    <X className="w-4 h-4" /> Batalkan Resign
+                  </button>
+                  <button 
+                    onClick={() => setGenericConfirm({
+                      isOpen: true,
+                      title: "Suspend Akun Sekarang?",
+                      message: "Suspend akun karyawan ini secara manual sekarang tanpa menunggu sisa waktu timer?",
+                      confirmText: "Ya, Suspend Sekarang",
+                      type: 'danger',
+                      onConfirm: () => handleMarkOut(selectedReq.profile_id)
+                    })}
+                    className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-red-600/10"
+                  >
+                    {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />} Suspend Akun Sekarang
+                  </button>
+                </>
+              ) : selectedReq.profiles?.status_karyawan !== "aktif" ? (
+                <>
+                  <button 
+                    onClick={() => handleReactivate(selectedReq.profile_id)}
+                    disabled={actioning}
+                    className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-green-600/10"
+                  >
+                    <UserCheck className="w-4 h-4" /> Aktifkan Kembali
+                  </button>
+                  <button 
+                    onClick={() => { 
+                      setDeleteProfileId(selectedReq.profile_id); 
+                      setDeleteType("resign"); 
+                      setDeleteConfirmStep(1); 
+                      setShowDeleteModal(true); 
+                    }}
+                    className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-red-600/10"
+                  >
+                    <Trash2 className="w-4 h-4" /> Hapus Akun Permanen (Farewell WA)
+                  </button>
+                </>
+              ) : selectedReq.status === "Dibatalkan" ? (
+                <div className="w-full flex flex-col gap-4 mt-4">
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl">
+                    <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-relaxed">
+                       <strong className="uppercase font-black tracking-wider">Pengajuan Dibatalkan</strong><br/>
+                      Seluruh tombol aksi standar telah dinonaktifkan karena pengajuan ini tercatat batal. Namun, jika Anda ingin mengaktifkan/melanjutkan kembali proses keluar untuk karyawan ini, isi form waktu di atas dan klik tombol di bawah.
+                    </p>
+                  </div>
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={() => handleResumeResign(selectedReq.id)}
+                      disabled={actioning}
+                      className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20"
+                    >
+                      {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Lanjutkan Proses Keluar yang Sempat Dibatalkan
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <span className="text-xs text-muted font-bold uppercase py-2">Proses Pengajuan Selesai</span>
+              )}
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* REJECT EXPLANATION MODAL */}
-      <AnimatePresence>
-        {showRejectModal && (
-          <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRejectModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 border border-red-500/20">
-              <button onClick={() => setShowRejectModal(false)} title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">Tolak Pengajuan?</h3>
-                <p className="text-sm text-muted mt-2">Masukkan catatan atau alasan mengapa pengunduran diri ditolak oleh pihak manajemen.</p>
-              </div>
-
-              <div className="space-y-4">
-                <textarea 
-                  rows={3} 
-                  value={rejectReason}
-                  onChange={e => setRejectReason(e.target.value)}
-                  placeholder="Contoh: Tanggal efektif keluar terlalu dekat, silakan ajukan ulang minimal H-30..."
-                  className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                />
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setShowRejectModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-                  <button 
-                    type="button"
-                    onClick={handleRejectSubmit} 
-                    disabled={actioning} 
-                    className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
-                  >
-                    {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Tolak Pengajuan"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+      <BaseModal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)} size="md" title="Tolak Pengajuan Resign">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <p className="text-sm text-muted">Masukkan catatan atau alasan mengapa pengunduran diri ditolak oleh pihak manajemen.</p>
+        </div>
+
+        <div className="space-y-4">
+          <textarea 
+            rows={3} 
+            value={rejectReason}
+            onChange={e => setRejectReason(e.target.value)}
+            placeholder="Contoh: Tanggal efektif keluar terlalu dekat, silakan ajukan ulang minimal H-30..."
+            className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-red-500 text-sm text-text-light dark:text-text-dark"
+          />
+          <div className="flex gap-4">
+            <button type="button" onClick={() => setShowRejectModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
+            <button 
+              type="button"
+              onClick={handleRejectSubmit} 
+              disabled={actioning} 
+              className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+            >
+              {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Tolak Pengajuan"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* PECAT CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {showPecatModal && selectedEmp && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPecatModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 border border-red-500/20">
-              <button onClick={() => setShowPecatModal(false)} title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><ShieldAlert className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">Pecat Karyawan?</h3>
-                <p className="text-sm text-muted mt-2">Anda akan memberhentikan secara sepihak akun kasir/karyawan <strong className="font-bold text-text-light dark:text-text-dark">{selectedEmp.full_name}</strong> dan menangguhkan aktivitasnya.</p>
+      <BaseModal isOpen={showPecatModal && !!selectedEmp} onClose={() => setShowPecatModal(false)} size="md" title="Pecat Karyawan">
+        {selectedEmp && (
+          <div>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="w-8 h-8" />
               </div>
+              <p className="text-sm text-muted">Anda akan memberhentikan secara sepihak akun kasir/karyawan <strong className="font-bold text-text-light dark:text-text-dark">{selectedEmp.full_name}</strong> dan menangguhkan aktivitasnya.</p>
+            </div>
 
-              <div className="space-y-4">
-                <textarea 
-                  rows={3} 
-                  value={pecatReason}
-                  onChange={e => setPecatReason(e.target.value)}
-                  placeholder="Sebutkan alasan penonaktifan karyawan (Opsional)..."
-                  className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                />
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setShowPecatModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-                  <button 
-                    type="button"
-                    onClick={handlePecatSubmit} 
-                    disabled={actioning} 
-                    className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
-                  >
-                    {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Suspend Akun"}
-                  </button>
-                </div>
+            <div className="space-y-4">
+              <textarea 
+                rows={3} 
+                value={pecatReason}
+                onChange={e => setPecatReason(e.target.value)}
+                placeholder="Sebutkan alasan penonaktifan karyawan (Opsional)..."
+                className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-red-500 text-sm text-text-light dark:text-text-dark"
+              />
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setShowPecatModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
+                <button 
+                  type="button"
+                  onClick={handlePecatSubmit} 
+                  disabled={actioning} 
+                  className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+                >
+                  {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Suspend Akun"}
+                </button>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* DELETE PERMANENTLY 2-STEP CONFIRMATION */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-[170] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 border border-red-500/20">
-              <button onClick={() => setShowDeleteModal(false)} title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">
-                  {deleteConfirmStep === 1 ? "Konfirmasi Langkah 1" : "Konfirmasi Langkah Terakhir!"}
-                </h3>
-                <p className="text-sm text-muted mt-2">
-                  {deleteConfirmStep === 1 
-                    ? "Tindakan ini akan menghapus akun login dan seluruh profil karyawan secara permanen dari database." 
-                    : "PERINGATAN KERAS! Akun yang dihapus tidak dapat dipulihkan dengan cara apa pun. Pesan WhatsApp perpisahan otomatis akan langsung terkirim."}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {deleteConfirmStep === 1 ? (
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setShowDeleteModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-                    <button 
-                      type="button"
-                      onClick={() => setDeleteConfirmStep(2)} 
-                      className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-500/20"
-                    >
-                      Lanjut Langkah 2
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setDeleteConfirmStep(1)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Kembali</button>
-                    <button 
-                      type="button"
-                      onClick={handleDeletePermanently} 
-                      disabled={actioning} 
-                      className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
-                    >
-                      {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Hapus Akun & Kirim WA"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+      <BaseModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} size="md" title="Hapus Akun Permanen">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <h4 className="text-lg font-bold text-text-light dark:text-text-dark uppercase mb-2">
+            {deleteConfirmStep === 1 ? "Konfirmasi Langkah 1" : "Konfirmasi Langkah Terakhir!"}
+          </h4>
+          <p className="text-sm text-muted leading-relaxed">
+            {deleteConfirmStep === 1 
+              ? "Tindakan ini akan menghapus akun login dan seluruh profil karyawan secara permanen dari database." 
+              : "PERINGATAN KERAS! Akun yang dihapus tidak dapat dipulihkan dengan cara apa pun. Pesan WhatsApp perpisahan otomatis akan langsung terkirim."}
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {deleteConfirmStep === 1 ? (
+            <div className="flex gap-4">
+              <button type="button" onClick={() => setShowDeleteModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
+              <button 
+                type="button"
+                onClick={() => setDeleteConfirmStep(2)} 
+                className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-500/20"
+              >
+                Lanjut Langkah 2
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <button type="button" onClick={() => setDeleteConfirmStep(1)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Kembali</button>
+              <button 
+                type="button"
+                onClick={handleDeletePermanently} 
+                disabled={actioning} 
+                className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+              >
+                {actioning ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Hapus Akun & Kirim WA"}
+              </button>
+            </div>
+          )}
+        </div>
+      </BaseModal>
 
       {/* GENERIC MODERN CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {genericConfirm.isOpen && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
-            >
-              <div className={`w-16 h-16 ${genericConfirm.type === 'danger' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'} rounded-2xl flex items-center justify-center mx-auto`}>
-                <AlertTriangle className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{genericConfirm.title}</h3>
-                <p className="text-sm text-muted leading-relaxed mt-2">{genericConfirm.message}</p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => setGenericConfirm(prev => ({...prev, isOpen: false}))}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={() => {
-                    genericConfirm.onConfirm();
-                    setGenericConfirm(prev => ({...prev, isOpen: false}));
-                  }}
-                  className={`flex-1 py-3.5 ${genericConfirm.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
-                >
-                  {genericConfirm.confirmText}
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal isOpen={genericConfirm.isOpen} onClose={() => setGenericConfirm(prev => ({...prev, isOpen: false}))} size="sm" showCloseButton={false}>
+        <div className="text-center space-y-6">
+          <div className={`w-16 h-16 ${genericConfirm.type === 'danger' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'} rounded-2xl flex items-center justify-center mx-auto`}>
+            <AlertTriangle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div>
+            <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{genericConfirm.title}</h3>
+            <p className="text-sm text-muted leading-relaxed mt-2">{genericConfirm.message}</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => setGenericConfirm(prev => ({...prev, isOpen: false}))}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={() => {
+                genericConfirm.onConfirm();
+                setGenericConfirm(prev => ({...prev, isOpen: false}));
+              }}
+              className={`flex-1 py-3.5 ${genericConfirm.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+            >
+              {genericConfirm.confirmText}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* PRINT STYLING */}
       <style jsx global>{`

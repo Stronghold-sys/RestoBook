@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import BaseModal from "@/components/BaseModal";
 
 export default function AdminRefundsPage() {
   const [loading, setLoading] = useState(true);
@@ -339,105 +340,90 @@ export default function AdminRefundsPage() {
       )}
 
       {/* Process Action Modal */}
-      <AnimatePresence>
+      <BaseModal isOpen={!!(selectedRefund && actionType)} onClose={() => { setSelectedRefund(null); setActionType(null); }} size="md" title={actionType === "approve" ? "Setujui Refund" : "Tolak Refund"}>
         {selectedRefund && actionType && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setSelectedRefund(null); setActionType(null); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8 border border-border-light dark:border-border-dark">
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${actionType === "approve" ? "bg-green-100 text-green-500" : "bg-red-100 text-red-500"}`}>
-                  {actionType === "approve" ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
-                </div>
-                <div>
-                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">{actionType === "approve" ? "Setujui Refund" : "Tolak Refund"}</h3>
-                  <p className="text-sm text-muted">Konfirmasi pemrosesan refund dana</p>
+          <div className="space-y-4">
+            <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
+              <p><span className="text-muted">ID Pesanan:</span> #{selectedRefund.id.split("-")[0]}</p>
+              <p><span className="text-muted">Pelanggan:</span> {selectedRefund.profiles?.full_name}</p>
+              <p><span className="text-muted">Dana Cash Dibayar:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
+              {selectedRefund.voucher_id && (
+                <p><span className="text-muted">Potongan Voucher:</span> <span className="text-rose-500 font-extrabold">Rp {Number(selectedRefund.discount).toLocaleString("id-ID")}</span></p>
+              )}
+              <p>
+                <span className="text-muted">Jenis Pembayaran:</span>{' '}
+                {Number(selectedRefund.total_amount) === 0 && selectedRefund.voucher_id ? (
+                  <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 uppercase text-[9px] font-black inline-block">Full Voucher (Gratis)</span>
+                ) : selectedRefund.voucher_id && Number(selectedRefund.total_amount) > 0 ? (
+                  <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black inline-block">Kombo (Online + Voucher)</span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black inline-block">
+                    {selectedRefund.payment_method === 'wallet' ? 'Saldo Dompet' : 'Pembayaran Online'}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {actionType === "approve" && selectedRefund.refundDetails.refundMethod !== "wallet" && (
+              <div>
+                <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Unggah Bukti Transfer Refund</label>
+                <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 text-center hover:border-primary transition-all bg-background-light dark:bg-background-dark">
+                  {uploadingProof ? (
+                    <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <span className="text-xs text-muted font-bold">Sedang mengunggah bukti...</span>
+                    </div>
+                  ) : proofUrl ? (
+                    <div className="relative rounded-xl overflow-hidden max-h-40 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex justify-center items-center p-2">
+                      <img src={proofUrl} alt="Bukti Transfer" className="object-contain max-h-36 rounded-lg" />
+                      <button title="Hapus Bukti Transfer" type="button" onClick={() => setProofUrl("")} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center py-4 space-y-1.5">
+                      <Upload className="w-8 h-8 text-muted" />
+                      <span className="text-xs font-bold text-text-light dark:text-text-dark">Pilih berkas bukti transfer</span>
+                      <span className="text-[10px] text-muted font-semibold">PNG, JPG, JPEG atau PDF</span>
+                      <input type="file" accept="image/*,application/pdf" onChange={handleUploadProof} className="hidden" />
+                    </label>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="space-y-4">
-                <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
-                  <p><span className="text-muted">ID Pesanan:</span> #{selectedRefund.id.split("-")[0]}</p>
-                  <p><span className="text-muted">Pelanggan:</span> {selectedRefund.profiles?.full_name}</p>
-                  <p><span className="text-muted">Dana Cash Dibayar:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
-                  {selectedRefund.voucher_id && (
-                    <p><span className="text-muted">Potongan Voucher:</span> <span className="text-rose-500 font-extrabold">Rp {Number(selectedRefund.discount).toLocaleString("id-ID")}</span></p>
-                  )}
-                  <p>
-                    <span className="text-muted">Jenis Pembayaran:</span>{' '}
-                    {Number(selectedRefund.total_amount) === 0 && selectedRefund.voucher_id ? (
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 uppercase text-[9px] font-black inline-block">Full Voucher (Gratis)</span>
-                    ) : selectedRefund.voucher_id && Number(selectedRefund.total_amount) > 0 ? (
-                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 uppercase text-[9px] font-black inline-block">Kombo (Online + Voucher)</span>
+            {actionType === "approve" && (selectedRefund.refundDetails.refundMethod === "wallet" || selectedRefund.payment_method === "duitku" || selectedRefund.payment_method === "non_cash" || selectedRefund.payment_method === "wallet") && (
+              <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 rounded-2xl text-green-800 dark:text-green-400 flex items-start gap-3">
+                <Wallet className="w-5 h-5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider">Pencairan Dana Refund</p>
+                  <p className="text-[11px] font-semibold leading-relaxed mt-0.5">
+                    {Number(selectedRefund.total_amount) === 0 ? (
+                      <span>Pesanan ini gratis (full voucher). Menyetujui pengajuan akan mengembalikan voucher belanja ke pelanggan agar dapat digunakan kembali.</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 uppercase text-[9px] font-black inline-block">
-                        {selectedRefund.payment_method === 'wallet' ? 'Saldo Dompet' : 'Pembayaran Online'}
-                      </span>
+                      <span>Dana refund cash sebesar <span className="font-extrabold">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span> akan langsung dikreditkan ke Saldo Dompet pelanggan secara otomatis. Tidak diperlukan bukti transfer fisik. {selectedRefund.voucher_id && "Voucher belanja yang digunakan juga otomatis dikembalikan ke akun pelanggan."}</span>
                     )}
                   </p>
                 </div>
-
-                {actionType === "approve" && selectedRefund.refundDetails.refundMethod !== "wallet" && (
-                  <div>
-                    <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Unggah Bukti Transfer Refund</label>
-                    <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 text-center hover:border-primary transition-all bg-background-light dark:bg-background-dark">
-                      {uploadingProof ? (
-                        <div className="flex flex-col items-center justify-center py-4 space-y-2">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                          <span className="text-xs text-muted font-bold">Sedang mengunggah bukti...</span>
-                        </div>
-                      ) : proofUrl ? (
-                        <div className="relative rounded-xl overflow-hidden max-h-40 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex justify-center items-center p-2">
-                          <img src={proofUrl} alt="Bukti Transfer" className="object-contain max-h-36 rounded-lg" />
-                          <button title="Hapus Bukti Transfer" type="button" onClick={() => setProofUrl("")} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow">
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="cursor-pointer flex flex-col items-center justify-center py-4 space-y-1.5">
-                          <Upload className="w-8 h-8 text-muted" />
-                          <span className="text-xs font-bold text-text-light dark:text-text-dark">Pilih berkas bukti transfer</span>
-                          <span className="text-[10px] text-muted font-semibold">PNG, JPG, JPEG atau PDF</span>
-                          <input type="file" accept="image/*,application/pdf" onChange={handleUploadProof} className="hidden" />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {actionType === "approve" && (selectedRefund.refundDetails.refundMethod === "wallet" || selectedRefund.payment_method === "duitku" || selectedRefund.payment_method === "non_cash" || selectedRefund.payment_method === "wallet") && (
-                  <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 rounded-2xl text-green-800 dark:text-green-400 flex items-start gap-3">
-                    <Wallet className="w-5 h-5 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-wider">Pencairan Dana Refund</p>
-                      <p className="text-[11px] font-semibold leading-relaxed mt-0.5">
-                        {Number(selectedRefund.total_amount) === 0 ? (
-                          <span>Pesanan ini gratis (full voucher). Menyetujui pengajuan akan mengembalikan voucher belanja ke pelanggan agar dapat digunakan kembali.</span>
-                        ) : (
-                          <span>Dana refund cash sebesar <span className="font-extrabold">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span> akan langsung dikreditkan ke Saldo Dompet pelanggan secara otomatis. Tidak diperlukan bukti transfer fisik. {selectedRefund.voucher_id && "Voucher belanja yang digunakan juga otomatis dikembalikan ke akun pelanggan."}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Catatan {actionType === "approve" ? "Pencairan" : "Penolakan"}</label>
-                  <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} placeholder={actionType === "approve" ? "Contoh: Dana telah ditransfer balik ke rekening Anda." : "Contoh: Mohon maaf, data nomor rekening Anda tidak valid."} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark font-medium text-sm" />
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button onClick={() => { setSelectedRefund(null); setActionType(null); }} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
-                  <button onClick={handleProcessRefund} disabled={processing} className={`flex-[2] py-3.5 text-white font-black rounded-xl transition-all shadow-lg uppercase text-xs flex items-center justify-center gap-2 ${
-                    actionType === "approve" ? "bg-green-500 hover:bg-green-600 shadow-green-500/10" : "bg-red-500 hover:bg-red-600 shadow-red-500/10"
-                  }`}>
-                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : actionType === "approve" ? "Ya, Setujui" : "Ya, Tolak"}
-                  </button>
-                </div>
               </div>
-            </motion.div>
+            )}
+
+            <div>
+              <label className="block text-xs font-black uppercase text-muted mb-2 ml-1">Catatan {actionType === "approve" ? "Pencairan" : "Penolakan"}</label>
+              <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} placeholder={actionType === "approve" ? "Contoh: Dana telah ditransfer balik ke rekening Anda." : "Contoh: Mohon maaf, data nomor rekening Anda tidak valid."} className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark font-medium text-sm" />
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+              <button type="button" onClick={() => { setSelectedRefund(null); setActionType(null); }} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
+              <button type="button" onClick={handleProcessRefund} disabled={processing} className={`flex-[2] py-3.5 text-white font-black rounded-xl transition-all shadow-lg uppercase text-xs flex items-center justify-center gap-2 ${
+                actionType === "approve" ? "bg-green-500 hover:bg-green-600 shadow-green-500/10" : "bg-red-500 hover:bg-red-600 shadow-red-500/10"
+              }`}>
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : actionType === "approve" ? "Ya, Setujui" : "Ya, Tolak"}
+              </button>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </div>
   );
 }

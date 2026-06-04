@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 // Helper component for live countdown timer in table row
 function CountdownTimer({ suspendUntil, onExpired }: { suspendUntil: string; onExpired: () => void }) {
@@ -1490,644 +1491,587 @@ export default function AdminCustomersPage() {
       </AnimatePresence>
 
       {/* Edit Customer Profile Info Modal */}
-      <AnimatePresence>
-        {isEditing && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsEditing(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark"
-            >
-              <h3 className="text-2xl font-black text-text-light dark:text-text-dark mb-6">Edit Data Pelanggan</h3>
-              <form onSubmit={submitEdit} className="space-y-5">
-                <div>
-                  <label htmlFor="customerFullName" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">Nama Lengkap</label>
-                  <input
-                    id="customerFullName"
-                    type="text"
-                    required
-                    placeholder="Nama lengkap"
-                    value={editForm.full_name}
-                    onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="customerPhone" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">No. WhatsApp / Telepon</label>
-                  <input
-                    id="customerPhone"
-                    type="text"
-                    placeholder="Contoh: 08123456789"
-                    value={editForm.phone}
-                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
-                  />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setIsEditing(null)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    Batal
-                  </button>
-                  <button type="submit" disabled={savingEdit} className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
-                    {savingEdit ? <Loader2 className="w-5 h-5 animate-spin" /> : "Simpan"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BaseModal isOpen={!!isEditing} onClose={() => setIsEditing(null)} size="md" title="Edit Data Pelanggan">
+        <form onSubmit={submitEdit} className="space-y-5">
+          <div>
+            <label htmlFor="customerFullName" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">Nama Lengkap</label>
+            <input
+              id="customerFullName"
+              type="text"
+              required
+              placeholder="Nama lengkap"
+              value={editForm.full_name}
+              onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
+            />
+          </div>
+          <div>
+            <label htmlFor="customerPhone" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">No. WhatsApp / Telepon</label>
+            <input
+              id="customerPhone"
+              type="text"
+              placeholder="Contoh: 08123456789"
+              value={editForm.phone}
+              onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark focus:border-primary rounded-xl outline-none font-medium text-text-light dark:text-text-dark transition-colors"
+            />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={() => setIsEditing(null)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              Batal
+            </button>
+            <button type="submit" disabled={savingEdit} className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
+              {savingEdit ? <Loader2 className="w-5 h-5 animate-spin" /> : "Simpan"}
+            </button>
+          </div>
+        </form>
+      </BaseModal>
 
       {/* Main Action Modals (Suspend / Ban / Restore / Warning / Bulk Actions) */}
-      <AnimatePresence>
+      <BaseModal
+        isOpen={!!activeModal}
+        onClose={() => {
+          setActiveModal(null);
+          resetForms();
+        }}
+        size="lg"
+        title={activeModal ? (
+          activeModal.type === "suspend" ? "Suspen Pelanggan" :
+          activeModal.type === "ban" ? "Ban Permanen Pelanggan" :
+          activeModal.type === "restore" ? "Pulihkan Akun Pelanggan" :
+          activeModal.type === "warning" ? "Kirim Surat Peringatan" :
+          activeModal.type === "bulk_suspend" ? `Suspen Massal (${selectedIds.length} Pelanggan)` :
+          activeModal.type === "bulk_ban" ? `Ban Massal (${selectedIds.length} Pelanggan)` :
+          activeModal.type === "bulk_restore" ? `Pulihkan Massal (${selectedIds.length} Pelanggan)` : ""
+        ) : ""}
+      >
         {activeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setActiveModal(null);
-              resetForms();
-            }}
+          <form
+            onSubmit={
+              activeModal.type === "suspend" ? handleSuspendSubmit :
+              activeModal.type === "ban" ? handleBanSubmit :
+              activeModal.type === "restore" ? handleRestoreSubmit :
+              activeModal.type === "warning" ? handleWarningSubmit :
+              handleBulkActionSubmit
+            }
+            className="space-y-5"
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark relative max-h-[90vh] overflow-y-auto"
-            >
-              {/* Modal Head */}
-              <div className="mb-6">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">
-                  {activeModal.type === "suspend" && `Suspen Pelanggan`}
-                  {activeModal.type === "ban" && `Ban Permanen Pelanggan`}
-                  {activeModal.type === "restore" && `Pulihkan Akun Pelanggan`}
-                  {activeModal.type === "warning" && `Kirim Surat Peringatan`}
-                  {activeModal.type === "bulk_suspend" && `Suspen Massal (${selectedIds.length} Pelanggan)`}
-                  {activeModal.type === "bulk_ban" && `Ban Massal (${selectedIds.length} Pelanggan)`}
-                  {activeModal.type === "bulk_restore" && `Pulihkan Massal (${selectedIds.length} Pelanggan)`}
-                </h3>
-                {activeModal.customer && (
-                  <p className="text-xs text-muted font-bold mt-1">
-                    Target: {activeModal.customer.full_name || activeModal.customer.email}
-                  </p>
+            {activeModal.customer && (
+              <p className="text-xs text-muted font-bold -mt-2 mb-4 bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-border-light dark:border-border-dark">
+                Target: {activeModal.customer.full_name || activeModal.customer.email}
+              </p>
+            )}
+
+            {/* 1. Duration input for TEMPORARY Suspend or BULK Suspend */}
+            {(activeModal.type === "suspend" || activeModal.type === "bulk_suspend") && (
+              <div className="space-y-4">
+                {/* Schedule switch */}
+                {activeModal.type === "suspend" && (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
+                    <input
+                      id="is_scheduled"
+                      type="checkbox"
+                      checked={isScheduled}
+                      onChange={(e) => setIsScheduled(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="is_scheduled" className="text-xs font-bold text-text-light dark:text-text-dark uppercase cursor-pointer">
+                      Jadwalkan Aksi Ini (Penangguhan Terjadwal)
+                    </label>
+                  </div>
+                )}
+
+                {/* Schedule datetime input */}
+                {isScheduled && (
+                  <div className="space-y-2">
+                    <label htmlFor="scheduled_at" className="block text-xs font-black uppercase text-muted tracking-wider">Tanggal & Waktu Mulai</label>
+                    <input
+                      id="scheduled_at"
+                      type="datetime-local"
+                      required
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-black uppercase text-muted tracking-wider">Konfigurasi Durasi Penangguhan</label>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label htmlFor="dur_years" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Tahun</label>
+                      <input
+                        id="dur_years"
+                        type="text"
+                        placeholder="0"
+                        value={duration.years}
+                        onChange={(e) => setDuration({ ...duration, years: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dur_months" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Bulan</label>
+                      <input
+                        id="dur_months"
+                        type="text"
+                        placeholder="0"
+                        value={duration.months}
+                        onChange={(e) => setDuration({ ...duration, months: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dur_weeks" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Minggu</label>
+                      <input
+                        id="dur_weeks"
+                        type="text"
+                        placeholder="0"
+                        value={duration.weeks}
+                        onChange={(e) => setDuration({ ...duration, weeks: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dur_days" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Hari</label>
+                      <input
+                        id="dur_days"
+                        type="text"
+                        placeholder="0"
+                        value={duration.days}
+                        onChange={(e) => setDuration({ ...duration, days: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label htmlFor="dur_hours" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Jam</label>
+                      <input
+                        id="dur_hours"
+                        type="text"
+                        placeholder="0"
+                        value={duration.hours}
+                        onChange={(e) => setDuration({ ...duration, hours: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dur_minutes" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Menit</label>
+                      <input
+                        id="dur_minutes"
+                        type="text"
+                        placeholder="0"
+                        value={duration.minutes}
+                        onChange={(e) => setDuration({ ...duration, minutes: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dur_seconds" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Detik</label>
+                      <input
+                        id="dur_seconds"
+                        type="text"
+                        placeholder="0"
+                        value={duration.seconds}
+                        onChange={(e) => setDuration({ ...duration, seconds: e.target.value.replace(/\D/g, '') })}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Schedule settings for BANS */}
+            {activeModal.type === "ban" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
+                  <input
+                    id="is_scheduled_ban"
+                    type="checkbox"
+                    checked={isScheduled}
+                    onChange={(e) => setIsScheduled(e.target.checked)}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="is_scheduled_ban" className="text-xs font-bold text-text-light dark:text-text-dark uppercase cursor-pointer">
+                    Jadwalkan Aksi Ini (Ban Terjadwal)
+                  </label>
+                </div>
+
+                {isScheduled && (
+                  <div className="space-y-2">
+                    <label htmlFor="scheduled_at_ban" className="block text-xs font-black uppercase text-muted tracking-wider">Tanggal & Waktu Mulai</label>
+                    <input
+                      id="scheduled_at_ban"
+                      type="datetime-local"
+                      required
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
+                    />
+                  </div>
                 )}
               </div>
+            )}
 
-              {/* Form contents */}
-              <form
-                onSubmit={
-                  activeModal.type === "suspend" ? handleSuspendSubmit :
-                  activeModal.type === "ban" ? handleBanSubmit :
-                  activeModal.type === "restore" ? handleRestoreSubmit :
-                  activeModal.type === "warning" ? handleWarningSubmit :
-                  handleBulkActionSubmit
-                }
-                className="space-y-5"
+            {/* 3. Reason textarea */}
+            {activeModal.type !== "restore" && activeModal.type !== "bulk_restore" && activeModal.type !== "warning" && (
+              <div className="space-y-2">
+                <label htmlFor="modal_reason" className="block text-xs font-black uppercase text-muted tracking-wider">Alasan Tindakan</label>
+                <textarea
+                  id="modal_reason"
+                  placeholder="Masukkan alasan penindakan yang sah..."
+                  required
+                  rows={2}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs font-medium outline-none text-text-light dark:text-text-dark resize-none focus:border-primary transition-colors"
+                />
+              </div>
+            )}
+
+            {/* 4. Notification message textarea */}
+            {activeModal.type !== "bulk_ban" && activeModal.type !== "bulk_restore" && (
+              <div className="space-y-2">
+                <label htmlFor="modal_msg" className="block text-xs font-black uppercase text-muted tracking-wider">
+                  {activeModal.type === "restore" ? "Pesan Pemulihan Kustom" : "Pesan Notifikasi Untuk Pengguna"}
+                </label>
+                <textarea
+                  id="modal_msg"
+                  placeholder={
+                    activeModal.type === "restore"
+                      ? "Masukkan ucapan selamat atau catatan pemulihan..."
+                      : "Tuliskan rincian detail/instruksi penangguhan yang akan dikirim ke pengguna..."
+                  }
+                  required={activeModal.type !== "restore" && activeModal.type !== "warning"}
+                  rows={3}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs font-medium outline-none text-text-light dark:text-text-dark resize-none focus:border-primary transition-colors"
+                />
+              </div>
+            )}
+
+            {/* 5. Warning System Settings */}
+            {activeModal.type === "warning" && (
+              <div className="space-y-2">
+                <label htmlFor="warning_threshold" className="block text-xs font-black uppercase text-muted tracking-wider">Batas Tindakan Otomatis (Threshold)</label>
+                <select
+                  id="warning_threshold"
+                  value={warningThreshold}
+                  onChange={(e) => setWarningThreshold(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
+                >
+                  <option value="none">Hanya Kirim Peringatan</option>
+                  <option value="1">Suspen Otomatis Pada Peringatan Ke-1 (24 Jam)</option>
+                  <option value="3">Suspen Otomatis Pada Peringatan Ke-3 (24 Jam)</option>
+                </select>
+                <p className="text-[10px] text-muted font-medium mt-1">
+                  Akun akan otomatis ditangguhkan selama 24 jam jika total peringatan mencapai batas tersebut.
+                </p>
+              </div>
+            )}
+
+            {/* Submit / Cancel Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveModal(null);
+                  resetForms();
+                }}
+                className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
               >
-                {/* 1. Duration input for TEMPORARY Suspend or BULK Suspend */}
-                {(activeModal.type === "suspend" || activeModal.type === "bulk_suspend") && (
-                  <div className="space-y-4">
-                    {/* Schedule switch */}
-                    {activeModal.type === "suspend" && (
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
-                        <input
-                          id="is_scheduled"
-                          type="checkbox"
-                          checked={isScheduled}
-                          onChange={(e) => setIsScheduled(e.target.checked)}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="is_scheduled" className="text-xs font-bold text-text-light dark:text-text-dark uppercase cursor-pointer">
-                          Jadwalkan Aksi Ini (Penangguhan Terjadwal)
-                        </label>
-                      </div>
-                    )}
-
-                    {/* Schedule datetime input */}
-                    {isScheduled && (
-                      <div className="space-y-2">
-                        <label htmlFor="scheduled_at" className="block text-xs font-black uppercase text-muted tracking-wider">Tanggal & Waktu Mulai</label>
-                        <input
-                          id="scheduled_at"
-                          type="datetime-local"
-                          required
-                          value={scheduledAt}
-                          onChange={(e) => setScheduledAt(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <label className="block text-xs font-black uppercase text-muted tracking-wider">Konfigurasi Durasi Penangguhan</label>
-                      <div className="grid grid-cols-4 gap-3">
-                        <div>
-                          <label htmlFor="dur_years" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Tahun</label>
-                          <input
-                            id="dur_years"
-                            type="text"
-                            placeholder="0"
-                            value={duration.years}
-                            onChange={(e) => setDuration({ ...duration, years: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="dur_months" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Bulan</label>
-                          <input
-                            id="dur_months"
-                            type="text"
-                            placeholder="0"
-                            value={duration.months}
-                            onChange={(e) => setDuration({ ...duration, months: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="dur_weeks" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Minggu</label>
-                          <input
-                            id="dur_weeks"
-                            type="text"
-                            placeholder="0"
-                            value={duration.weeks}
-                            onChange={(e) => setDuration({ ...duration, weeks: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="dur_days" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Hari</label>
-                          <input
-                            id="dur_days"
-                            type="text"
-                            placeholder="0"
-                            value={duration.days}
-                            onChange={(e) => setDuration({ ...duration, days: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3 mt-3">
-                        <div>
-                          <label htmlFor="dur_hours" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Jam</label>
-                          <input
-                            id="dur_hours"
-                            type="text"
-                            placeholder="0"
-                            value={duration.hours}
-                            onChange={(e) => setDuration({ ...duration, hours: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="dur_minutes" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Menit</label>
-                          <input
-                            id="dur_minutes"
-                            type="text"
-                            placeholder="0"
-                            value={duration.minutes}
-                            onChange={(e) => setDuration({ ...duration, minutes: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="dur_seconds" className="block text-[10px] font-bold text-muted uppercase text-center mb-1">Detik</label>
-                          <input
-                            id="dur_seconds"
-                            type="text"
-                            placeholder="0"
-                            value={duration.seconds}
-                            onChange={(e) => setDuration({ ...duration, seconds: e.target.value.replace(/\D/g, '') })}
-                            className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl text-center text-sm font-bold text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Schedule settings for BANS */}
-                {activeModal.type === "ban" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
-                      <input
-                        id="is_scheduled_ban"
-                        type="checkbox"
-                        checked={isScheduled}
-                        onChange={(e) => setIsScheduled(e.target.checked)}
-                        className="w-4 h-4 rounded text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="is_scheduled_ban" className="text-xs font-bold text-text-light dark:text-text-dark uppercase cursor-pointer">
-                        Jadwalkan Aksi Ini (Ban Terjadwal)
-                      </label>
-                    </div>
-
-                    {isScheduled && (
-                      <div className="space-y-2">
-                        <label htmlFor="scheduled_at_ban" className="block text-xs font-black uppercase text-muted tracking-wider">Tanggal & Waktu Mulai</label>
-                        <input
-                          id="scheduled_at_ban"
-                          type="datetime-local"
-                          required
-                          value={scheduledAt}
-                          onChange={(e) => setScheduledAt(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 3. Reason textarea */}
-                {activeModal.type !== "restore" && activeModal.type !== "bulk_restore" && activeModal.type !== "warning" && (
-                  <div className="space-y-2">
-                    <label htmlFor="modal_reason" className="block text-xs font-black uppercase text-muted tracking-wider">Alasan Tindakan</label>
-                    <textarea
-                      id="modal_reason"
-                      placeholder="Masukkan alasan penindakan yang sah..."
-                      required
-                      rows={2}
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs font-medium outline-none text-text-light dark:text-text-dark resize-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                )}
-
-                {/* 4. Notification message textarea */}
-                {activeModal.type !== "bulk_ban" && activeModal.type !== "bulk_restore" && (
-                  <div className="space-y-2">
-                    <label htmlFor="modal_msg" className="block text-xs font-black uppercase text-muted tracking-wider">
-                      {activeModal.type === "restore" ? "Pesan Pemulihan Kustom" : "Pesan Notifikasi Untuk Pengguna"}
-                    </label>
-                    <textarea
-                      id="modal_msg"
-                      placeholder={
-                        activeModal.type === "restore"
-                          ? "Masukkan ucapan selamat atau catatan pemulihan..."
-                          : "Tuliskan rincian detail/instruksi penangguhan yang akan dikirim ke pengguna..."
-                      }
-                      required={activeModal.type !== "restore" && activeModal.type !== "warning"}
-                      rows={3}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs font-medium outline-none text-text-light dark:text-text-dark resize-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                )}
-
-                {/* 5. Warning System Settings */}
-                {activeModal.type === "warning" && (
-                  <div className="space-y-2">
-                    <label htmlFor="warning_threshold" className="block text-xs font-black uppercase text-muted tracking-wider">Batas Tindakan Otomatis (Threshold)</label>
-                    <select
-                      id="warning_threshold"
-                      value={warningThreshold}
-                      onChange={(e) => setWarningThreshold(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl outline-none text-xs font-bold text-text-light dark:text-text-dark"
-                    >
-                      <option value="none">Hanya Kirim Peringatan</option>
-                      <option value="1">Suspen Otomatis Pada Peringatan Ke-1 (24 Jam)</option>
-                      <option value="3">Suspen Otomatis Pada Peringatan Ke-3 (24 Jam)</option>
-                    </select>
-                    <p className="text-[10px] text-muted font-medium mt-1">
-                      Akun akan otomatis ditangguhkan selama 24 jam jika total peringatan mencapai batas tersebut.
-                    </p>
-                  </div>
-                )}
-
-                {/* Submit / Cancel Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveModal(null);
-                      resetForms();
-                    }}
-                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all text-xs uppercase tracking-wider"
-                  >
-                    Konfirmasi Aksi
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all text-xs uppercase tracking-wider"
+              >
+                Konfirmasi Aksi
+              </button>
+            </div>
+          </form>
         )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* Tinjau Banding Modal */}
-      <AnimatePresence>
+      <BaseModal
+        isOpen={!!reviewAppeal}
+        onClose={() => {
+          setReviewAppeal(null);
+          setReviewMessage("");
+        }}
+        size="lg"
+        title="Tinjau Pengajuan Banding"
+      >
         {reviewAppeal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setReviewAppeal(null);
-              setReviewMessage("");
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark relative max-h-[90vh] overflow-y-auto flex flex-col"
-            >
-              <button 
+          <div className="flex flex-col">
+            <p className="text-muted text-xs font-medium text-center -mt-2 mb-6">
+              Harap periksa detail akun di bawah sebelum mengambil keputusan.
+            </p>
+
+            {/* Account / Wallet Details Block */}
+            <div className="bg-gray-50 dark:bg-gray-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark mb-6 space-y-3 text-left">
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted font-bold">
+                {reviewAppeal.type === 'wallet_unblock' ? 'Detail E-Wallet (Dompetku)' : 'Detail Akun'}
+              </p>
+              <div className="grid grid-cols-2 gap-y-2 text-xs font-semibold">
+                <span className="text-muted font-medium">Nama Lengkap:</span>
+                <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.full_name || 'Pelanggan'}</span>
+
+                <span className="text-muted font-medium">Email:</span>
+                <span className="text-text-light dark:text-text-dark text-right truncate" title={reviewAppeal.profiles?.email}>{reviewAppeal.profiles?.email || '-'}</span>
+
+                <span className="text-muted font-medium">No. Telepon:</span>
+                <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.phone || '-'}</span>
+
+                {reviewAppeal.type === 'wallet_unblock' ? (
+                  <>
+                    <span className="text-muted font-medium">Status Dompetku:</span>
+                    <span className={`text-right font-black uppercase text-[10px] ${
+                      reviewAppeal.profiles?.is_wallet_blocked ? 'text-red-600 font-bold' : 'text-green-600 font-bold'
+                    }`}>
+                      {reviewAppeal.profiles?.is_wallet_blocked ? 'Terblokir' : 'Aktif'}
+                    </span>
+
+                    <span className="text-muted font-medium">Saldo Dompetku:</span>
+                    <span className="text-text-light dark:text-text-dark text-right font-mono font-bold">
+                      Rp {new Intl.NumberFormat('id-ID').format(reviewAppeal.profiles?.wallet_balance || 0)}
+                    </span>
+
+                    <span className="text-muted font-medium">Salah PIN Count:</span>
+                    <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.wrong_pin_count || 0} Kali</span>
+
+                    <span className="text-muted font-medium">Alasan Blokir Dompet:</span>
+                    <span className="text-text-light dark:text-text-dark text-right italic font-medium text-red-600" title={reviewAppeal.profiles?.wallet_block_reason}>
+                      &quot;{reviewAppeal.profiles?.wallet_block_reason || '-'}&quot;
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted font-medium">Status Akun Saat Ini:</span>
+                    <span className={`text-right font-black uppercase text-[10px] ${
+                      reviewAppeal.profiles?.status === 'banned' ? 'text-red-600 font-bold' : 
+                      reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600 font-bold' : 'text-green-600 font-bold'
+                    }`}>
+                      {reviewAppeal.profiles?.status || 'active'}
+                    </span>
+
+                    <span className="text-muted font-medium">Jumlah Peringatan:</span>
+                    <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.warning_count || 0} Kali</span>
+
+                    <span className="text-muted font-medium">Alasan Hukuman:</span>
+                    <span className="text-text-light dark:text-text-dark text-right italic font-medium">
+                      &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* User's Appeal Details Block */}
+            <div className="bg-amber-50/50 dark:bg-amber-950/10 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30 mb-6 space-y-2 text-left">
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500">Argumen Banding Pengguna</p>
+              <p className="text-xs text-text-light dark:text-text-dark font-medium leading-relaxed italic">
+                &quot;{reviewAppeal.reason}&quot;
+              </p>
+              <p className="text-[10px] text-muted text-right mt-1">
+                Dikirim pada: {format(new Date(reviewAppeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
+              </p>
+            </div>
+
+            {/* Form Input for Tanggapan Admin */}
+            <div className="space-y-3 mb-6 text-left">
+              <label className="block text-xs font-bold text-muted uppercase tracking-wider">
+                Tanggapan Admin / Catatan Manajemen
+              </label>
+              <textarea
+                placeholder="Masukkan pesan atau tanggapan manajemen. Pesan ini akan dikirimkan langsung ke email pengguna..."
+                value={reviewMessage}
+                onChange={(e) => setReviewMessage(e.target.value)}
+                rows={3}
+                disabled={reviewAppeal.status !== 'pending' || processingReview}
+                className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none disabled:opacity-75"
+              />
+            </div>
+
+            {/* Review Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
                 onClick={() => {
                   setReviewAppeal(null);
                   setReviewMessage("");
                 }}
-                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Tutup"
+                className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
               >
-                <X className="w-5 h-5 text-muted" />
+                Kembali
               </button>
+              {reviewAppeal.status === 'pending' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={processingReview}
+                    onClick={async () => {
+                      setProcessingReview(true);
+                      const toastId = toast.loading("Menyetujui banding & mengaktifkan akun...");
+                      try {
+                        const { data: adminUser } = await supabase.auth.getUser();
+                        const { data: adminProfile } = await supabase
+                          .from("profiles")
+                          .select("id")
+                          .eq("user_id", adminUser.user?.id || "")
+                          .single();
 
-              <div className="mb-6 text-center space-y-2">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">
-                  Tinjau Pengajuan Banding
-                </h3>
-                <p className="text-muted text-xs font-medium">
-                  Harap periksa detail akun di bawah sebelum mengambil keputusan.
-                </p>
-              </div>
+                        const res = await fetch("/api/admin/customers/appeal", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            appeal_id: reviewAppeal.id,
+                            status: "approved",
+                            admin_message: reviewMessage || "Banding Anda disetujui. Akun Anda telah diaktifkan kembali.",
+                            admin_id: adminProfile?.id
+                          })
+                        });
 
-              {/* Account / Wallet Details Block */}
-              <div className="bg-gray-50 dark:bg-gray-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark mb-6 space-y-3 text-left">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted font-bold">
-                  {reviewAppeal.type === 'wallet_unblock' ? 'Detail E-Wallet (Dompetku)' : 'Detail Akun'}
-                </p>
-                <div className="grid grid-cols-2 gap-y-2 text-xs font-semibold">
-                  <span className="text-muted font-medium">Nama Lengkap:</span>
-                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.full_name || 'Pelanggan'}</span>
+                        const resData = await res.json();
+                        if (!res.ok) throw new Error(resData.error || "Gagal menyetujui banding");
 
-                  <span className="text-muted font-medium">Email:</span>
-                  <span className="text-text-light dark:text-text-dark text-right truncate" title={reviewAppeal.profiles?.email}>{reviewAppeal.profiles?.email || '-'}</span>
+                        toast.success("Banding disetujui! Email pemberitahuan telah dikirim.", { id: toastId });
+                        setReviewAppeal(null);
+                        setReviewMessage("");
+                        fetchAppeals();
+                        fetchCustomers();
+                      } catch (err: any) {
+                        toast.error(err.message, { id: toastId });
+                      } finally {
+                        setProcessingReview(false);
+                      }
+                    }}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                  >
+                    Setujui (ACC)
+                  </button>
+                  <button
+                    type="button"
+                    disabled={processingReview}
+                    onClick={async () => {
+                      setProcessingReview(true);
+                      const toastId = toast.loading("Menolak pengajuan banding...");
+                      try {
+                        const { data: adminUser } = await supabase.auth.getUser();
+                        const { data: adminProfile } = await supabase
+                          .from("profiles")
+                          .select("id")
+                          .eq("user_id", adminUser.user?.id || "")
+                          .single();
 
-                  <span className="text-muted font-medium">No. Telepon:</span>
-                  <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.phone || '-'}</span>
+                        const res = await fetch("/api/admin/customers/appeal", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            appeal_id: reviewAppeal.id,
+                            status: "rejected",
+                            admin_message: reviewMessage || "Banding ditolak karena alasan keamanan atau pelanggaran berat.",
+                            admin_id: adminProfile?.id
+                          })
+                        });
 
-                  {reviewAppeal.type === 'wallet_unblock' ? (
-                    <>
-                      <span className="text-muted font-medium">Status Dompetku:</span>
-                      <span className={`text-right font-black uppercase text-[10px] ${
-                        reviewAppeal.profiles?.is_wallet_blocked ? 'text-red-600 font-bold' : 'text-green-600 font-bold'
-                      }`}>
-                        {reviewAppeal.profiles?.is_wallet_blocked ? 'Terblokir' : 'Aktif'}
-                      </span>
+                        const resData = await res.json();
+                        if (!res.ok) throw new Error(resData.error || "Gagal menolak banding");
 
-                      <span className="text-muted font-medium">Saldo Dompetku:</span>
-                      <span className="text-text-light dark:text-text-dark text-right font-mono font-bold">
-                        Rp {new Intl.NumberFormat('id-ID').format(reviewAppeal.profiles?.wallet_balance || 0)}
-                      </span>
-
-                      <span className="text-muted font-medium">Salah PIN Count:</span>
-                      <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.wrong_pin_count || 0} Kali</span>
-
-                      <span className="text-muted font-medium">Alasan Blokir Dompet:</span>
-                      <span className="text-text-light dark:text-text-dark text-right italic font-medium text-red-600" title={reviewAppeal.profiles?.wallet_block_reason}>
-                        &quot;{reviewAppeal.profiles?.wallet_block_reason || '-'}&quot;
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-muted font-medium">Status Akun Saat Ini:</span>
-                      <span className={`text-right font-black uppercase text-[10px] ${
-                        reviewAppeal.profiles?.status === 'banned' ? 'text-red-600 font-bold' : 
-                        reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600 font-bold' : 'text-green-600 font-bold'
-                      }`}>
-                        {reviewAppeal.profiles?.status || 'active'}
-                      </span>
-
-                      <span className="text-muted font-medium">Jumlah Peringatan:</span>
-                      <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.warning_count || 0} Kali</span>
-
-                      <span className="text-muted font-medium">Alasan Hukuman:</span>
-                      <span className="text-text-light dark:text-text-dark text-right italic font-medium">
-                        &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* User's Appeal Details Block */}
-              <div className="bg-amber-50/50 dark:bg-amber-950/10 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30 mb-6 space-y-2 text-left">
-                <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500">Argumen Banding Pengguna</p>
-                <p className="text-xs text-text-light dark:text-text-dark font-medium leading-relaxed italic">
-                  &quot;{reviewAppeal.reason}&quot;
-                </p>
-                <p className="text-[10px] text-muted text-right mt-1">
-                  Dikirim pada: {format(new Date(reviewAppeal.created_at), "dd MMM yyyy HH:mm", { locale: id })}
-                </p>
-              </div>
-
-              {/* Form Input for Tanggapan Admin */}
-              <div className="space-y-3 mb-6 text-left">
-                <label className="block text-xs font-bold text-muted uppercase tracking-wider">
-                  Tanggapan Admin / Catatan Manajemen
-                </label>
-                <textarea
-                  placeholder="Masukkan pesan atau tanggapan manajemen. Pesan ini akan dikirimkan langsung ke email pengguna..."
-                  value={reviewMessage}
-                  onChange={(e) => setReviewMessage(e.target.value)}
-                  rows={3}
-                  disabled={reviewAppeal.status !== 'pending' || processingReview}
-                  className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none disabled:opacity-75"
-                />
-              </div>
-
-              {/* Review Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReviewAppeal(null);
-                    setReviewMessage("");
-                  }}
-                  className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs uppercase tracking-wider"
-                >
-                  Kembali
-                </button>
-                {reviewAppeal.status === 'pending' && (
-                  <>
-                    <button
-                      type="button"
-                      disabled={processingReview}
-                      onClick={async () => {
-                        setProcessingReview(true);
-                        const toastId = toast.loading("Menyetujui banding & mengaktifkan akun...");
-                        try {
-                          const { data: adminUser } = await supabase.auth.getUser();
-                          const { data: adminProfile } = await supabase
-                            .from("profiles")
-                            .select("id")
-                            .eq("user_id", adminUser.user?.id || "")
-                            .single();
-
-                          const res = await fetch("/api/admin/customers/appeal", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              appeal_id: reviewAppeal.id,
-                              status: "approved",
-                              admin_message: reviewMessage || "Banding Anda disetujui. Akun Anda telah diaktifkan kembali.",
-                              admin_id: adminProfile?.id
-                            })
-                          });
-
-                          const resData = await res.json();
-                          if (!res.ok) throw new Error(resData.error || "Gagal menyetujui banding");
-
-                          toast.success("Banding disetujui! Email pemberitahuan telah dikirim.", { id: toastId });
-                          setReviewAppeal(null);
-                          setReviewMessage("");
-                          fetchAppeals();
-                          fetchCustomers();
-                        } catch (err: any) {
-                          toast.error(err.message, { id: toastId });
-                        } finally {
-                          setProcessingReview(false);
-                        }
-                      }}
-                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
-                    >
-                      Setujui (ACC)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={processingReview}
-                      onClick={async () => {
-                        setProcessingReview(true);
-                        const toastId = toast.loading("Menolak pengajuan banding...");
-                        try {
-                          const { data: adminUser } = await supabase.auth.getUser();
-                          const { data: adminProfile } = await supabase
-                            .from("profiles")
-                            .select("id")
-                            .eq("user_id", adminUser.user?.id || "")
-                            .single();
-
-                          const res = await fetch("/api/admin/customers/appeal", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              appeal_id: reviewAppeal.id,
-                              status: "rejected",
-                              admin_message: reviewMessage || "Banding ditolak karena alasan keamanan atau pelanggaran berat.",
-                              admin_id: adminProfile?.id
-                            })
-                          });
-
-                          const resData = await res.json();
-                          if (!res.ok) throw new Error(resData.error || "Gagal menolak banding");
-
-                          toast.success("Banding ditolak! Email pemberitahuan telah dikirim.", { id: toastId });
-                          setReviewAppeal(null);
-                          setReviewMessage("");
-                          fetchAppeals();
-                          fetchCustomers();
-                        } catch (err: any) {
-                          toast.error(err.message, { id: toastId });
-                        } finally {
-                          setProcessingReview(false);
-                        }
-                      }}
-                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
-                    >
-                      Tolak
-                    </button>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* GENERIC MODERN CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
-            >
-              <div className={`w-16 h-16 ${
-                confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : 
-                confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 
-                confirmModal.type === 'success' ? 'bg-green-500/10 text-green-500' :
-                'bg-primary/10 text-primary'
-              } rounded-2xl flex items-center justify-center mx-auto`}>
-                <AlertTriangle className="w-8 h-8" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
-              </div>
-
-              {confirmModal.hasInput && (
-                <div className="mt-4">
-                  <textarea
-                    value={confirmInput}
-                    onChange={(e) => setConfirmInput(e.target.value)}
-                    placeholder={confirmModal.inputPlaceholder || "Masukkan catatan..."}
-                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none h-24"
-                  />
-                </div>
+                        toast.success("Banding ditolak! Email pemberitahuan telah dikirim.", { id: toastId });
+                        setReviewAppeal(null);
+                        setReviewMessage("");
+                        fetchAppeals();
+                        fetchCustomers();
+                      } catch (err: any) {
+                        toast.error(err.message, { id: toastId });
+                      } finally {
+                        setProcessingReview(false);
+                      }
+                    }}
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                  >
+                    Tolak
+                  </button>
+                </>
               )}
-
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => {
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                    setConfirmInput("");
-                  }}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={async () => {
-                    if (confirmModal.hasInput && confirmModal.inputRequired && !confirmInput.trim()) {
-                      toast.error("Input wajib diisi.");
-                      return;
-                    }
-                    await confirmModal.onConfirm(confirmInput);
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                    setConfirmInput("");
-                  }}
-                  className={`flex-1 py-3.5 ${
-                    confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 
-                    confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 
-                    confirmModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 
-                    'bg-primary hover:bg-primary/90'
-                  } text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
-                >
-                  {confirmModal.confirmText}
-                </button>
-              </div>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
+
+      {/* GENERIC MODERN CONFIRMATION MODAL */}
+      <BaseModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => {
+          setConfirmModal(prev => ({...prev, isOpen: false}));
+          setConfirmInput("");
+        }}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="text-center space-y-6">
+          <div className={`w-16 h-16 ${
+            confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : 
+            confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 
+            confirmModal.type === 'success' ? 'bg-green-500/10 text-green-500' :
+            'bg-primary/10 text-primary'
+          } rounded-2xl flex items-center justify-center mx-auto`}>
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+            <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+          </div>
+
+          {confirmModal.hasInput && (
+            <div className="mt-4">
+              <textarea
+                value={confirmInput}
+                onChange={(e) => setConfirmInput(e.target.value)}
+                placeholder={confirmModal.inputPlaceholder || "Masukkan catatan..."}
+                className="w-full p-4 bg-gray-50 dark:bg-gray-800 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none h-24"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => {
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+                setConfirmInput("");
+              }}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={async () => {
+                if (confirmModal.hasInput && confirmModal.inputRequired && !confirmInput.trim()) {
+                  toast.error("Input wajib diisi.");
+                  return;
+                }
+                await confirmModal.onConfirm(confirmInput);
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+                setConfirmInput("");
+              }}
+              className={`flex-1 py-3.5 ${
+                confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 
+                confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 
+                confirmModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 
+                'bg-primary hover:bg-primary/90'
+              } text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+            >
+              {confirmModal.confirmText}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

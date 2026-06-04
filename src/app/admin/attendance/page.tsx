@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BaseModal from "@/components/BaseModal";
 import { 
   Clock, Camera, DollarSign, AlertTriangle, CheckCircle2, 
   Search, Calendar, Filter, User, Smartphone, MoreVertical,
@@ -260,34 +261,17 @@ export default function AdminAttendancePage() {
       {activeTab === "work_shifts" && <WorkShiftsManager />}
 
       {/* Modal Pratinjau Foto */}
-      <AnimatePresence>
+      <BaseModal isOpen={!!activePhotoUrl} onClose={() => setActivePhotoUrl(null)} size="lg" title="Pratinjau Bukti Foto">
         {activePhotoUrl && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative max-w-lg w-full bg-card-light dark:bg-card-dark rounded-3xl p-6 shadow-2xl border border-border-light dark:border-border-dark flex flex-col items-center gap-4"
-            >
-              <button 
-                onClick={() => setActivePhotoUrl(null)} 
-                className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-800 text-muted hover:text-red-500 rounded-full transition-colors z-10"
-                title="Tutup Pratinjau"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark">
-                <img 
-                  src={activePhotoUrl} 
-                  alt="Bukti Foto Absensi" 
-                  className="w-full h-auto max-h-[70vh] object-contain"
-                />
-              </div>
-            </motion.div>
+          <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark flex items-center justify-center">
+            <img 
+              src={activePhotoUrl} 
+              alt="Bukti Foto Absensi" 
+              className="w-full h-auto max-h-[70vh] object-contain"
+            />
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </div>
   );
 }
@@ -562,34 +546,17 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate, onV
           </div>
         </div>
       </div>
-      <AnimatePresence>
+      <BaseModal isOpen={!!activePhotoUrl} onClose={() => setActivePhotoUrl(null)} size="lg" title="Pratinjau Bukti Foto">
         {activePhotoUrl && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative max-w-lg w-full bg-card-light dark:bg-card-dark rounded-3xl p-6 shadow-2xl border border-border-light dark:border-border-dark flex flex-col items-center gap-4"
-            >
-              <button 
-                onClick={() => setActivePhotoUrl(null)} 
-                className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-800 text-muted hover:text-red-500 rounded-full transition-colors z-10"
-                title="Tutup Pratinjau"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark">
-                <img 
-                  src={activePhotoUrl} 
-                  alt="Bukti Foto Absensi" 
-                  className="w-full h-auto max-h-[70vh] object-contain"
-                />
-              </div>
-            </motion.div>
+          <div className="w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-border-light dark:border-border-dark flex items-center justify-center">
+            <img 
+              src={activePhotoUrl} 
+              alt="Bukti Foto Absensi" 
+              className="w-full h-auto max-h-[70vh] object-contain"
+            />
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </motion.div>
   );
 }
@@ -979,307 +946,273 @@ function WorkShiftsManager() {
       )}
 
       {/* MODAL CREATE / EDIT SHIFT */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-card-light dark:bg-card-dark w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col max-h-[90vh]"
-            >
-              <div className="p-6 bg-primary text-white flex justify-between items-center shrink-0">
-                <h3 className="text-lg font-black uppercase tracking-widest flex items-center gap-3">
-                   <Clock className="w-5 h-5" /> {editingShift ? 'Edit Shift Kerja' : 'Buat Shift Kerja Baru'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} title="Tutup Dialog" className="p-2 hover:bg-white/20 rounded-full transition-all"><X className="w-5 h-5" /></button>
+      <BaseModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="2xl" title={editingShift ? 'Edit Shift Kerja' : 'Buat Shift Kerja Baru'}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black uppercase text-muted flex items-center gap-2">
+                  <Clock className="w-3 h-3 text-muted" /> Nama Shift
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const isNowManual = !isManualName;
+                    setIsManualName(isNowManual);
+                    if (isNowManual) {
+                      setFormData(prev => ({ ...prev, name: "" }));
+                    } else {
+                      setFormData(prev => ({ ...prev, name: "Shift Pagi" }));
+                    }
+                  }}
+                  className="text-[9px] font-black tracking-wider uppercase text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 px-2 py-1 rounded-lg transition-all active:scale-95"
+                >
+                  {isManualName ? "← Opsi Cepat" : " Tulis Manual"}
+                </button>
               </div>
-
-              <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-1 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-black uppercase text-muted flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-muted" /> Nama Shift
-                      </label>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const isNowManual = !isManualName;
-                          setIsManualName(isNowManual);
-                          if (isNowManual) {
-                            setFormData(prev => ({ ...prev, name: "" }));
-                          } else {
-                            setFormData(prev => ({ ...prev, name: "Shift Pagi" }));
-                          }
-                        }}
-                        className="text-[9px] font-black tracking-wider uppercase text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 px-2 py-1 rounded-lg transition-all active:scale-95"
-                      >
-                        {isManualName ? "← Opsi Cepat" : " Tulis Manual"}
-                      </button>
-                    </div>
-                    
-                    {!isManualName ? (
-                      <div className="relative">
-                         <select
-                           value={formData.name}
-                           onChange={(e) => {
-                             if (e.target.value === "__CUSTOM__") {
-                               setIsManualName(true);
-                               setFormData(prev => ({ ...prev, name: "" }));
-                             } else {
-                               setFormData(prev => ({ ...prev, name: e.target.value }));
-                             }
-                           }}
-                           aria-label="Pilih Nama Shift"
-                           title="Pilih Nama Shift"
-                           className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner cursor-pointer appearance-none pr-10"
-                         >
-                           <option value="Shift Pagi">Shift Pagi</option>
-                           <option value="Shift Sore">Shift Sore</option>
-                           <option value="Shift Malam">Shift Malam</option>
-                           <option value="__CUSTOM__">+ Kustom / Nama Baru...</option>
-                         </select>
-                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted opacity-50">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                         </div>
-                      </div>
-                    ) : (
-                      <input 
-                        type="text" 
-                        autoFocus
-                        aria-label="Ketik Nama Shift Kustom"
-                        title="Ketik Nama Shift Kustom"
-                        value={formData.name} 
-                        onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Ketik nama shift baru..."
-                        className="w-full bg-white dark:bg-gray-800 border-2 border-primary/30 rounded-xl px-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-primary transition-all shadow-lg shadow-primary/5 ring-offset-2 placeholder:font-normal animate-in fade-in zoom-in-95 duration-200"
-                      />
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-muted">Jam Mulai</label>
-                    <input 
-                      type="time" 
-                      value={formData.start_time} 
-                      onChange={e => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                      title="Jam Mulai Tugas"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold font-mono outline-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-muted">Jam Selesai</label>
-                    <input 
-                      type="time" 
-                      value={formData.end_time} 
-                      onChange={e => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                      title="Jam Selesai Tugas"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold font-mono outline-none"
-                    />
-                  </div>
+              
+              {!isManualName ? (
+                <div className="relative">
+                   <select
+                     value={formData.name}
+                     onChange={(e) => {
+                       if (e.target.value === "__CUSTOM__") {
+                         setIsManualName(true);
+                         setFormData(prev => ({ ...prev, name: "" }));
+                       } else {
+                         setFormData(prev => ({ ...prev, name: e.target.value }));
+                       }
+                     }}
+                     aria-label="Pilih Nama Shift"
+                     title="Pilih Nama Shift"
+                     className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner cursor-pointer appearance-none pr-10 text-slate-900 dark:text-white"
+                   >
+                     <option value="Shift Pagi">Shift Pagi</option>
+                     <option value="Shift Sore">Shift Sore</option>
+                     <option value="Shift Malam">Shift Malam</option>
+                     <option value="__CUSTOM__">+ Kustom / Nama Baru...</option>
+                   </select>
+                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted opacity-50">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                   </div>
                 </div>
+              ) : (
+                <input 
+                  type="text" 
+                  autoFocus
+                  aria-label="Ketik Nama Shift Kustom"
+                  title="Ketik Nama Shift Kustom"
+                  value={formData.name} 
+                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ketik nama shift baru..."
+                  className="w-full bg-white dark:bg-gray-850 border-2 border-primary/30 rounded-xl px-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-primary transition-all shadow-lg shadow-primary/5 ring-offset-2 placeholder:font-normal animate-in fade-in zoom-in-95 duration-200 text-slate-900 dark:text-white"
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-muted">Jam Mulai</label>
+              <input 
+                type="time" 
+                value={formData.start_time} 
+                onChange={e => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+                title="Jam Mulai Tugas"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold font-mono outline-none text-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-muted">Jam Selesai</label>
+              <input 
+                type="time" 
+                value={formData.end_time} 
+                onChange={e => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
+                title="Jam Selesai Tugas"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold font-mono outline-none text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
 
-                <div>
-                  <label className="text-xs font-black uppercase text-muted block mb-3">Hari Kerja Berlaku</label>
-                  <div className="flex flex-wrap gap-2">
-                    {daysOfWeek.map(day => {
-                      const isSel = formData.days.includes(day);
-                      return (
-                        <button 
-                          key={day}
-                          type="button"
-                          onClick={() => toggleDay(day)}
-                          className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${
-                            isSel ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 scale-105' : 'bg-gray-100 dark:bg-gray-800 text-muted border border-transparent hover:border-primary'
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>                {!editingShift && (
-                  <div>
-                    <label className="text-xs font-black uppercase text-muted block mb-3">Tugaskan Karyawan</label>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-border-light dark:border-border-dark grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto">
-                      {allEmployees.map(emp => {
-                        const isAssigned = formData.assignedProfileIds.includes(emp.id);
-                        return (
-                          <button 
-                            key={emp.id}
-                            type="button"
-                            onClick={() => toggleEmployee(emp.id)}
-                            className={`flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${
-                              isAssigned ? 'bg-white dark:bg-gray-700 border-primary shadow-md' : 'bg-transparent border-transparent hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                            }`}
-                          >
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${isAssigned ? 'bg-primary border-primary' : 'border-muted'}`}>
-                              {isAssigned && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <div className="min-w-0">
-                               <p className={`text-xs font-black truncate ${isAssigned ? 'text-primary' : ''}`}>{emp.full_name}</p>
-                               <p className="text-[9px] text-muted uppercase font-bold">{emp.employee_id}</p>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-
-                <div className="pt-4 border-t border-border-light dark:border-border-dark flex gap-4">
+          <div>
+            <label className="text-xs font-black uppercase text-muted block mb-3">Hari Kerja Berlaku</label>
+            <div className="flex flex-wrap gap-2">
+              {daysOfWeek.map(day => {
+                const isSel = formData.days.includes(day);
+                return (
                   <button 
+                    key={day}
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-sm flex-1"
+                    onClick={() => toggleDay(day)}
+                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${
+                      isSel ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 scale-105' : 'bg-gray-100 dark:bg-gray-800 text-muted border border-transparent hover:border-primary'
+                    }`}
                   >
-                    Batal
+                    {day}
                   </button>
-                  <button 
-                    type="submit"
-                    className="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-black text-sm uppercase tracking-widest flex-1 shadow-lg shadow-primary/20 transition-all"
-                  >
-                    Simpan Shift
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                )
+              })}
+            </div>
           </div>
-        )}
 
-        {isSubModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 40 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col relative"
+          {!editingShift && (
+            <div>
+              <label className="text-xs font-black uppercase text-muted block mb-3">Tugaskan Karyawan</label>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-border-light dark:border-border-dark grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto">
+                {allEmployees.map(emp => {
+                  const isAssigned = formData.assignedProfileIds.includes(emp.id);
+                  return (
+                    <button 
+                      key={emp.id}
+                      type="button"
+                      onClick={() => toggleEmployee(emp.id)}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${
+                        isAssigned ? 'bg-white dark:bg-gray-700 border-primary shadow-md' : 'bg-transparent border-transparent hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${isAssigned ? 'bg-primary border-primary' : 'border-muted'}`}>
+                        {isAssigned && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="min-w-0">
+                         <p className={`text-xs font-black truncate ${isAssigned ? 'text-primary' : ''}`}>{emp.full_name}</p>
+                         <p className="text-[9px] text-muted uppercase font-bold">{emp.employee_id}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-border-light dark:border-border-dark flex gap-4">
+            <button 
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-sm flex-1"
             >
-               <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20" />
-               
-               <div className="p-8 relative">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-6">
-                     <Shuffle className="w-8 h-8" />
-                  </div>
-
-                  <h3 className="text-xl font-black tracking-tight text-text-light dark:text-text-dark mb-1">Tunjuk Pahlawan Pengganti</h3>
-                  <p className="text-muted text-xs font-medium mb-8">
-                     Menugaskan pahlawan pengganti darurat untuk hari ini.
-                  </p>
-
-                  <div className="space-y-5">
-                     <div>
-                        <label htmlFor="masterShiftSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">0. Pilih Jadwal Shift</label>
-                        <select 
-                          id="masterShiftSelect"
-                          value={subSelectedShift?.id || ""} 
-                          onChange={e => {
-                             const sFound = workShifts.find(s => s.id === e.target.value);
-                             setSubSelectedShift(sFound || null);
-                             setSubForEmployee("");
-                          }}
-                          className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-dashed border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-black text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
-                        >
-                           <option value="">-- Pilih Shift --</option>
-                           {workShifts.map(s => (
-                              <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0,5)} - {s.end_time.slice(0,5)})</option>
-                           ))}
-                        </select>
-                     </div>
-                     <div>
-                        <label htmlFor="subForEmployeeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">1. Siapa yang digantikan? (Opsional)</label>
-                        <select 
-                          id="subForEmployeeSelect"
-                          value={subForEmployee} 
-                          onChange={e => setSubForEmployee(e.target.value)}
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                        >
-                          <option value="">-- Tidak Tahu / Umum --</option>
-                          {subSelectedShift?.work_shift_assignments?.map((a: any) => (
-                             <option key={a.id} value={a.profile_id}>{a.profiles?.full_name}</option>
-                          ))}
-                        </select>
-                     </div>
-
-                     <div>
-                        <label htmlFor="subSelectedEmployeeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">2. Siapa Penggantinya? (Pahlawan Hari Ini)</label>
-                        <select 
-                          id="subSelectedEmployeeSelect"
-                          value={subSelectedEmployee} 
-                          onChange={e => setSubSelectedEmployee(e.target.value)}
-                          className="w-full bg-white dark:bg-gray-700 border-2 border-emerald-500/30 rounded-xl px-4 py-3 font-black text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-lg shadow-emerald-500/5"
-                        >
-                          <option value="">-- Pilih Karyawan Pengganti --</option>
-                          {allEmployees.map(emp => (
-                             <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-                          ))}
-                        </select>
-                     </div>
-                  </div>
-
-                  <div className="mt-8 flex flex-col gap-3">
-                     <button 
-                       disabled={submittingSub}
-                       onClick={handleSaveSubstitute}
-                       className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-                     >
-                        {submittingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                        {submittingSub ? "Menyimpan..." : "Tugaskan Hari Ini"}
-                     </button>
-                     <button 
-                       disabled={submittingSub}
-                       onClick={() => setIsSubModalOpen(false)}
-                       className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase transition-all hover:bg-gray-200"
-                     >
-                        Batal
-                     </button>
-                  </div>
-               </div>
-            </motion.div>
-          </div>
-        )}
-
-        {confirmDeleteId && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white dark:bg-card-dark w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-border-light dark:border-border-dark overflow-hidden p-8 text-center"
+              Batal
+            </button>
+            <button 
+              type="submit"
+              className="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-black text-sm uppercase tracking-widest flex-1 shadow-lg shadow-primary/20 transition-all"
             >
-               <div className="w-20 h-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-3 shadow-inner">
-                 <Trash2 className="w-10 h-10" />
-               </div>
-               <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
-                 {confirmDeleteId === 'ALL' ? 'Musnahkan Semua?' : 'Yakin Hapus?'}
-               </h3>
-               <p className="text-muted text-xs font-medium mb-8 px-4">
-                 {confirmDeleteId === 'ALL' 
-                   ? 'PERINGATAN: Seluruh jadwal shift akan dihapus total dan permanen. Tindakan ini mustahil untuk dibatalkan!' 
-                   : 'Data ini akan dihapus permanen dari server. Tindakan ini tidak dapat dikembalikan.'
-                 }
-               </p>
-               <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={executeDelete}
-                    disabled={isDeleting}
-                    className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-95 disabled:opacity-50"
-                  >
-                    {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Hapus Sekarang"}
-                  </button>
-                  <button 
-                    onClick={() => setConfirmDeleteId(null)}
-                    disabled={isDeleting}
-                    className="w-full py-4 bg-gray-100 dark:bg-gray-800 text-muted hover:text-primary hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl font-black transition-all uppercase tracking-widest text-xs active:scale-95"
-                  >
-                    Batal
-                  </button>
-               </div>
-            </motion.div>
+              Simpan Shift
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </BaseModal>
+
+      {/* MODAL SUBSTITUTE / GANTI SHIFT */}
+      <BaseModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} size="md" title="Tunjuk Pahlawan Pengganti">
+         <div className="relative">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-6">
+               <Shuffle className="w-8 h-8" />
+            </div>
+
+            <p className="text-muted text-xs font-medium mb-8">
+               Menugaskan pahlawan pengganti darurat untuk hari ini.
+            </p>
+
+            <div className="space-y-5">
+               <div>
+                  <label htmlFor="masterShiftSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">0. Pilih Jadwal Shift</label>
+                  <select 
+                    id="masterShiftSelect"
+                    value={subSelectedShift?.id || ""} 
+                    onChange={e => {
+                       const sFound = workShifts.find(s => s.id === e.target.value);
+                       setSubSelectedShift(sFound || null);
+                       setSubForEmployee("");
+                    }}
+                    className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-dashed border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-black text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner text-slate-900 dark:text-white"
+                  >
+                     <option value="">-- Pilih Shift --</option>
+                     {workShifts.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0,5)} - {s.end_time.slice(0,5)})</option>
+                     ))}
+                  </select>
+               </div>
+               <div>
+                  <label htmlFor="subForEmployeeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">1. Siapa yang digantikan? (Opsional)</label>
+                  <select 
+                    id="subForEmployeeSelect"
+                    value={subForEmployee} 
+                    onChange={e => setSubForEmployee(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl px-4 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                  >
+                    <option value="">-- Tidak Tahu / Umum --</option>
+                    {subSelectedShift?.work_shift_assignments?.map((a: any) => (
+                       <option key={a.id} value={a.profile_id}>{a.profiles?.full_name}</option>
+                    ))}
+                  </select>
+               </div>
+
+               <div>
+                  <label htmlFor="subSelectedEmployeeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-2">2. Siapa Penggantinya? (Pahlawan Hari Ini)</label>
+                  <select 
+                    id="subSelectedEmployeeSelect"
+                    value={subSelectedEmployee} 
+                    onChange={e => setSubSelectedEmployee(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border-2 border-emerald-500/30 rounded-xl px-4 py-3 font-black text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-lg shadow-emerald-500/5 text-slate-900 dark:text-white"
+                  >
+                    <option value="">-- Pilih Karyawan Pengganti --</option>
+                    {allEmployees.map(emp => (
+                       <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                    ))}
+                  </select>
+               </div>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3">
+               <button 
+                 disabled={submittingSub}
+                 onClick={handleSaveSubstitute}
+                 className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+               >
+                  {submittingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-white" />}
+                  {submittingSub ? "Menyimpan..." : "Tugaskan Hari Ini"}
+               </button>
+               <button 
+                 disabled={submittingSub}
+                 onClick={() => setIsSubModalOpen(false)}
+                 className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase transition-all hover:bg-gray-200"
+               >
+                  Batal
+               </button>
+            </div>
+         </div>
+      </BaseModal>
+
+      {/* MODAL CONFIRM DELETE SHIFT */}
+      <BaseModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} size="sm" showCloseButton={false}>
+         <div className="text-center">
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-3 shadow-inner">
+              <Trash2 className="w-10 h-10" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
+              {confirmDeleteId === 'ALL' ? 'Musnahkan Semua?' : 'Yakin Hapus?'}
+            </h3>
+            <p className="text-muted text-xs font-medium mb-8 px-4">
+              {confirmDeleteId === 'ALL' 
+                ? 'PERINGATAN: Seluruh jadwal shift akan dihapus total dan permanen. Tindakan ini mustahil untuk dibatalkan!' 
+                : 'Data ini akan dihapus permanen dari server. Tindakan ini tidak dapat dikembalikan.'
+              }
+            </p>
+            <div className="flex flex-col gap-3">
+               <button 
+                 onClick={executeDelete}
+                 disabled={isDeleting}
+                 className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-95 disabled:opacity-50"
+               >
+                 {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Hapus Sekarang"}
+               </button>
+               <button 
+                 onClick={() => setConfirmDeleteId(null)}
+                 disabled={isDeleting}
+                 className="w-full py-4 bg-gray-100 dark:bg-gray-800 text-muted hover:text-primary hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl font-black transition-all uppercase tracking-widest text-xs active:scale-95"
+               >
+                 Batal
+               </button>
+            </div>
+         </div>
+      </BaseModal>
     </div>
   );
 }

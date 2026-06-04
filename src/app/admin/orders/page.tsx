@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import OrderCountdown from "@/components/OrderCountdown";
 import OrderEstimationBadge from "@/components/OrderEstimationBadge";
+import BaseModal from "@/components/BaseModal";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -115,38 +116,31 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Detail Modal */}
-      <AnimatePresence>
+      <BaseModal isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} size="lg" title={selectedOrder ? `Detail No. Pesanan ${selectedOrder.id.split("-")[0]}` : ""}>
         {selectedOrder && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
-              <div className="p-6 border-b border-border-light dark:border-border-dark">
-                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Detail No. Pesanan {selectedOrder.id.split("-")[0]}</h2>
-              </div>
-              <div className="p-6 space-y-4">
-                {selectedOrder.estimated_duration_minutes && (
-                  <OrderCountdown order={selectedOrder} />
-                )}
-                {orderItems.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-background-light dark:bg-background-dark rounded-xl">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
-                      {item.menu_items?.image_url && <img src={item.menu_items.image_url} alt="" className="w-full h-full object-cover" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm text-text-light dark:text-text-dark">{item.menu_items?.name}</p>
-                      <p className="text-xs text-muted">{item.quantity}x @ Rp {Number(item.price).toLocaleString("id-ID")}</p>
-                    </div>
-                    <span className="font-bold text-sm text-primary">Rp {Number(item.subtotal).toLocaleString("id-ID")}</span>
-                  </div>
-                ))}
-                <div className="border-t border-border-light dark:border-border-dark pt-4 flex justify-between">
-                  <span className="font-bold text-text-light dark:text-text-dark">Total</span>
-                  <span className="font-bold text-xl text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
+          <div className="space-y-4">
+            {selectedOrder.estimated_duration_minutes && (
+              <OrderCountdown order={selectedOrder} />
+            )}
+            {orderItems.map(item => (
+              <div key={item.id} className="flex items-center gap-3 p-3 bg-background-light dark:bg-background-dark rounded-xl">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
+                  {item.menu_items?.image_url && <img src={item.menu_items.image_url} alt="" className="w-full h-full object-cover" />}
                 </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-text-light dark:text-text-dark">{item.menu_items?.name}</p>
+                  <p className="text-xs text-muted">{item.quantity}x @ Rp {Number(item.price).toLocaleString("id-ID")}</p>
+                </div>
+                <span className="font-bold text-sm text-primary">Rp {Number(item.subtotal).toLocaleString("id-ID")}</span>
               </div>
-            </motion.div>
-          </motion.div>
+            ))}
+            <div className="border-t border-border-light dark:border-border-dark pt-4 flex justify-between">
+              <span className="font-bold text-text-light dark:text-text-dark">Total</span>
+              <span className="font-bold text-xl text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </div>
   );
 }

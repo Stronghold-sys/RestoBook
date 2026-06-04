@@ -35,24 +35,16 @@ export async function GET(req: NextRequest) {
 
       if (txErr) throw txErr;
 
-      // Get wallet transactions for specific customer
-      const { data: walletTransactions } = await supabaseAdmin
-        .from('wallet_transactions')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('created_at', { ascending: false });
-
       return NextResponse.json({ 
         success: true, 
-        transactions: transactions || [],
-        walletTransactions: walletTransactions || []
+        transactions: transactions || []
       });
     }
 
     // List all customer profiles with point summaries
     const { data: customers, error: custErr } = await supabaseAdmin
       .from('profiles')
-      .select('id, full_name, email, points, pending_points, points_used, is_redeem_blocked, wallet_balance, is_wallet_blocked, created_at')
+      .select('id, full_name, email, points, pending_points, points_used, is_redeem_blocked, created_at')
       .eq('role', 'customer')
       .order('full_name', { ascending: true });
 
@@ -83,7 +75,7 @@ export async function POST(req: NextRequest) {
     // Get customer profile
     const { data: profile, error: profileErr } = await supabaseAdmin
       .from('profiles')
-      .select('points, points_used, is_redeem_blocked, wallet_balance, is_wallet_blocked')
+      .select('points, points_used, is_redeem_blocked')
       .eq('id', customerId)
       .single();
 
@@ -180,102 +172,6 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ success: true, isRedeemBlocked: nextStatus });
-    }
-
-    if (action === 'adjust_wallet') {
-      const adjAmount = Number(amount);
-      if (isNaN(adjAmount) || adjAmount === 0) {
-        return NextResponse.json({ error: 'Jumlah saldo tidak valid' }, { status: 400 });
-      }
-
-      const description = reason || (adjAmount > 0 ? 'Penambahan saldo manual oleh admin' : 'Pengurangan saldo manual oleh admin');
-
-      // Update customer wallet balance
-      const newBalance = Math.max(0, Number(profile.wallet_balance || 0) + adjAmount);
-      const { error: updateErr } = await supabaseAdmin
-        .from('profiles')
-        .update({ wallet_balance: newBalance })
-        .eq('id', customerId);
-
-      if (updateErr) throw updateErr;
-
-      // Log transaction
-      await supabaseAdmin.from('wallet_transactions').insert({
-        customer_id: customerId,
-        amount: adjAmount,
-        type: 'adjust',
-        status: 'success',
-        description
-      });
-
-      // Notification
-      await supabaseAdmin.from('notifications').insert({
-        user_id: customerId,
-        title: adjAmount > 0 ? 'Saldo Dompet Ditambahkan' : 'Saldo Dompet Dikurangi',
-        message: `Saldo sebesar Rp ${Math.abs(adjAmount).toLocaleString('id-ID')} telah ${adjAmount > 0 ? 'ditambahkan' : 'dikurangi'} oleh admin. Alasan: ${description}`,
-        type: 'point'
-      });
-
-      return NextResponse.json({ success: true, newBalance });
-    }
-
-    if (action === 'reset_wallet') {
-      const balanceToDeduct = -Number(profile.wallet_balance || 0);
-
-      // Reset to 0
-      const { error: updateErr } = await supabaseAdmin
-        .from('profiles')
-        .update({ wallet_balance: 0 })
-        .eq('id', customerId);
-
-      if (updateErr) throw updateErr;
-
-      if (balanceToDeduct !== 0) {
-        // Log transaction
-        await supabaseAdmin.from('wallet_transactions').insert({
-          customer_id: customerId,
-          amount: balanceToDeduct,
-          type: 'adjust',
-          status: 'success',
-          description: reason || 'Reset saldo oleh admin'
-        });
-      }
-
-      // Notification
-      await supabaseAdmin.from('notifications').insert({
-        user_id: customerId,
-        title: 'Saldo Dompet Direset',
-        message: `Saldo Dompetku Anda telah direset menjadi Rp 0 oleh admin.`,
-        type: 'point'
-      });
-
-      return NextResponse.json({ success: true, newBalance: 0 });
-    }
-
-    if (action === 'toggle_wallet_block') {
-      const nextStatus = !profile.is_wallet_blocked;
-      const { error: updateErr } = await supabaseAdmin
-        .from('profiles')
-        .update({ 
-          is_wallet_blocked: nextStatus,
-          wallet_block_reason: nextStatus ? (reason || 'Diblokir oleh administrator') : null,
-          wrong_pin_count: nextStatus ? undefined : 0 // reset pin attempts on manual unblock
-        })
-        .eq('id', customerId);
-
-      if (updateErr) throw updateErr;
-
-      // Notification
-      await supabaseAdmin.from('notifications').insert({
-        user_id: customerId,
-        title: nextStatus ? 'Akses Dompet Diblokir' : 'Akses Dompet Dibuka',
-        message: nextStatus 
-          ? `Penggunaan e-wallet Dompetku Anda telah diblokir sementara oleh admin. Alasan: ${reason || 'Kebijakan Keamanan'}`
-          : 'Akses e-wallet Dompetku Anda telah dibuka kembali. Anda sekarang dapat bertransaksi kembali.',
-        type: 'point'
-      });
-
-      return NextResponse.json({ success: true, isWalletBlocked: nextStatus });
     }
 
     return NextResponse.json({ error: 'Aksi tidak valid' }, { status: 400 });

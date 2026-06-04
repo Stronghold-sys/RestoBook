@@ -652,7 +652,7 @@ export default function CustomerWalletPage() {
           )}
 
           {/* Recommendation & Block Banners */}
-          {['diterima', 'selesai'].includes(walletStatus) && !wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
+          {['diterima', 'selesai', 'aktif'].includes(walletStatus) && !wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -663,8 +663,8 @@ export default function CustomerWalletPage() {
                   <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Proteksi Akun Dompetku Anda!</h4>
-                  <p className="text-xs text-muted mt-0.5">Demi menjaga keamanan saldo Anda, silakan buat 6 digit PIN transaksi terlebih dahulu sebelum memulai pembayaran pertama.</p>
+                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Buat PIN Keamanan Dompetku</h4>
+                  <p className="text-xs text-muted mt-0.5">Akun Dompetku Anda telah aktif. Untuk menjamin keamanan saldo dan memproteksi setiap pembayaran dari akses tidak sah, harap buat 6 digit PIN transaksi terlebih dahulu sebelum melakukan pembayaran pertama.</p>
                 </div>
               </div>
               <button
@@ -808,14 +808,14 @@ export default function CustomerWalletPage() {
               <div className="border-t border-white/20 pt-4 mt-6 flex justify-between items-center z-10">
                 <button
                   onClick={() => {
-                    if (!['diterima', 'selesai'].includes(walletStatus)) {
+                    if (!['diterima', 'selesai', 'aktif'].includes(walletStatus)) {
                       toast.error("Aktivasi Dompetku diperlukan sebelum melakukan pengisian saldo (top up)");
                       return;
                     }
                     setShowTopUpModal(true);
                   }}
                   className={`px-5 py-2.5 font-black text-xs rounded-xl shadow-md transition-all uppercase tracking-wider ${
-                    ['diterima', 'selesai'].includes(walletStatus)
+                    ['diterima', 'selesai', 'aktif'].includes(walletStatus)
                       ? "bg-white text-primary hover:bg-orange-50"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
                   }`}
@@ -876,7 +876,7 @@ export default function CustomerWalletPage() {
 
           {/* Quick Menu Actions */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {['diterima', 'selesai'].includes(walletStatus) && (
+            {['diterima', 'selesai', 'aktif'].includes(walletStatus) && (
               <button
                 onClick={() => {
                   setPinType(wallet.hasPin ? "change" : "create");

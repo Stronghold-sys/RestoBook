@@ -1747,7 +1747,7 @@ export default function AdminRewardsPage() {
 
               <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
                 {/* Profile points card */}
-                <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
                   <div>
                     <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Aktif</span>
                     <span className="text-xl font-mono font-black text-primary">{selectedCustomer.points || 0}</span>
@@ -1755,10 +1755,6 @@ export default function AdminRewardsPage() {
                   <div>
                     <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Pending</span>
                     <span className="text-xl font-mono font-black text-amber-500">{selectedCustomer.pending_points || 0}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Saldo Dompet</span>
-                    <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400">Rp {Number(selectedCustomer.wallet_balance || 0).toLocaleString("id-ID")}</span>
                   </div>
                 </div>
 
@@ -1778,22 +1774,19 @@ export default function AdminRewardsPage() {
                       >
                         <option value="adjust">Tambah / Kurangi Poin</option>
                         <option value="reset">Reset Poin ke 0</option>
-                        <option value="adjust_wallet">Tambah / Kurangi Saldo Dompet (Rp)</option>
-                        <option value="reset_wallet">Reset Saldo Dompet ke Rp 0</option>
-                        <option value="toggle_wallet_block">Blokir / Buka Blokir Dompet</option>
                       </select>
                     </div>
 
-                    {["adjust", "adjust_wallet"].includes(adjustForm.action) && (
+                    {adjustForm.action === "adjust" && (
                       <div>
                         <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
-                          {adjustForm.action === "adjust" ? "Jumlah Poin (Negatif untuk kurangi)" : "Jumlah Saldo Rp (Negatif untuk kurangi)"}
+                          Jumlah Poin (Negatif untuk kurangi)
                         </label>
                         <input 
                           id="adjustAmount"
                           type="number" 
                           required 
-                          placeholder={adjustForm.action === "adjust" ? "Misal: 50 atau -25" : "Misal: 50000 atau -20000"}
+                          placeholder="Misal: 50 atau -25"
                           title="Jumlah"
                           value={adjustForm.amount} 
                           onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
@@ -1802,21 +1795,19 @@ export default function AdminRewardsPage() {
                       </div>
                     )}
 
-                    {adjustForm.action !== "toggle_wallet_block" && (
-                      <div>
-                        <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
-                        <textarea 
-                          id="adjustReason"
-                          rows={2} 
-                          required
-                          placeholder={adjustForm.action.includes("wallet") ? "Masukkan alasan manipulasi saldo..." : "Masukkan alasan manipulasi poin..."}
-                          title="Alasan Penyesuaian"
-                          value={adjustForm.reason} 
-                          onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
+                      <textarea 
+                        id="adjustReason"
+                        rows={2} 
+                        required
+                        placeholder="Masukkan alasan manipulasi poin..."
+                        title="Alasan Penyesuaian"
+                        value={adjustForm.reason} 
+                        onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                      />
+                    </div>
 
                     <button 
                       type="submit" 
@@ -1840,15 +1831,6 @@ export default function AdminRewardsPage() {
                           }`}
                         >
                           Poin ({customerTxLogs.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveLogsTab("wallet")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
-                            activeLogsTab === "wallet" ? "bg-primary text-white" : "text-muted"
-                          }`}
-                        >
-                          Dompet ({customerWalletTxLogs.length})
                         </button>
                         <button
                           type="button"
@@ -1889,32 +1871,6 @@ export default function AdminRewardsPage() {
                               </span>
                             </div>
                           ))}
-                        </div>
-                      )
-                    ) : activeLogsTab === "wallet" ? (
-                      customerWalletTxLogs.length === 0 ? (
-                        <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas dompet</div>
-                      ) : (
-                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                          {customerWalletTxLogs.map((tx) => {
-                            const isPositive = ["topup", "refund", "cashback", "adjust"].includes(tx.type) && tx.status === "success" ? tx.amount > 0 : false;
-                            return (
-                              <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
-                                <div>
-                                  <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[8px] px-1 py-0.2 bg-gray-200 dark:bg-gray-800 text-muted uppercase font-black tracking-wide rounded">
-                                      {tx.type}
-                                    </span>
-                                    <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
-                                  </div>
-                                </div>
-                                <span className={`font-mono font-black text-xs shrink-0 ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                                  {isPositive ? "+" : "-"}Rp {Math.abs(Number(tx.amount)).toLocaleString("id-ID")}
-                                </span>
-                              </div>
-                            );
-                          })}
                         </div>
                       )
                     ) : activeLogsTab === "rewards" ? (

@@ -24,7 +24,34 @@ export async function GET() {
       ADD CONSTRAINT resign_requests_status_check 
       CHECK (status IN ('Menunggu', 'Disetujui', 'Ditolak', 'Dibatalkan'));
 
-      -- 3. RELOAD CACHE
+      -- 3. CREATE WALLET AUDIT LOGS TABLE
+      CREATE TABLE IF NOT EXISTS wallet_audit_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+        action_type TEXT CHECK (action_type IN ('status_change', 'balance_change', 'internal_note')) NOT NULL,
+        before_value TEXT,
+        after_value TEXT,
+        reason TEXT NOT NULL,
+        acted_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+        internal_note TEXT,
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+
+      -- Enable RLS
+      ALTER TABLE wallet_audit_logs ENABLE ROW LEVEL SECURITY;
+
+      -- Enable Realtime (Idempotent: Drop first, then add)
+      ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS wallet_audit_logs;
+      ALTER PUBLICATION supabase_realtime ADD TABLE wallet_audit_logs;
+
+      -- Policies for RLS
+      DROP POLICY IF EXISTS "Users can select own wallet logs" ON wallet_audit_logs;
+      DROP POLICY IF EXISTS "Admin full access wallet logs" ON wallet_audit_logs;
+      
+      CREATE POLICY "Users can select own wallet logs" ON wallet_audit_logs FOR SELECT USING (customer_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
+      CREATE POLICY "Admin full access wallet logs" ON wallet_audit_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid() AND role = 'admin'));
+
+      -- 4. RELOAD CACHE
       NOTIFY pgrst, 'reload schema';
     `;
 

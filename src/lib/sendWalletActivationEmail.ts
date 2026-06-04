@@ -93,21 +93,21 @@ export async function sendWalletActivationEmail(
         break;
       case 'diterima':
       case 'selesai':
-        subject = `Dompetku Anda Telah Aktif - ${restoName}`;
+        subject = `Aktivasi Dompetku Berhasil - ${restoName}`;
         statusHeader = 'AKTIF';
         statusBgColor = '#e8f5e9';
         statusTextColor = '#1b5e20';
         statusBorderColor = '#c8e6c9';
-        messageBody = `<p style="margin:0 0 15px 0; font-size: 15px; font-weight: bold; color: #1b5e20;">Selamat, Dompetku Anda sudah aktif!</p>
-                      <p style="margin:0 0 10px 0;">Proses verifikasi data diri dan dokumen identitas Anda telah berhasil disetujui oleh tim kami. Layanan dompet digital internal Anda sekarang siap digunakan sepenuhnya.</p>
-                      <p style="margin:0 0 15px 0;">Kini Anda dapat melakukan:</p>
+        messageBody = `<p style="margin:0 0 15px 0; font-size: 15px; font-weight: bold; color: #1b5e20;">Selamat, akun Dompetku Anda telah berhasil diaktifkan!</p>
+                      <p style="margin:0 0 10px 0;">Proses verifikasi data identitas dan berkas pendukung Anda telah disetujui oleh tim verifikator kami. Mulai saat ini, layanan dompet digital internal Anda siap digunakan sepenuhnya.</p>
+                      <p style="margin:0 0 15px 0;">Dengan aktifnya Dompetku, Anda kini dapat menikmati layanan:</p>
                       <ul style="margin:0 0 15px 0; padding-left:20px; line-height:1.6;">
-                        <li>Pengisian saldo (Top Up) secara instan dan aman.</li>
-                        <li>Pembayaran pesanan makanan langsung melalui aplikasi (Dine-in, Takeaway, maupun Delivery).</li>
-                        <li>Pembayaran untuk reservasi tempat duduk secara praktis.</li>
+                        <li>Melakukan pengisian saldo (Top Up) secara instan dan aman melalui berbagai metode pembayaran.</li>
+                        <li>Melakukan pembayaran pesanan makanan secara nontunai langsung dari meja makan atau pengiriman (Delivery).</li>
+                        <li>Melakukan pembayaran reservasi meja dengan cepat dan praktis.</li>
                       </ul>
-                      <p style="margin:0 0 10px 0; font-weight: bold;">Demi Keamanan Akun Anda:</p>
-                      <p style="margin:0;">Silakan atur PIN transaksi Dompetku Anda terlebih dahulu melalui menu Dompetku di dalam aplikasi untuk memproteksi setiap transaksi pembayaran Anda.</p>`;
+                      <p style="margin:0 0 10px 0; font-weight: bold; color: #b91c1c;">PENTING - Keamanan Akun:</p>
+                      <p style="margin:0;">Untuk melindungi saldo dan memproteksi setiap transaksi pembayaran Anda, harap segera membuat 6 digit PIN transaksi baru melalui menu Dompetku di halaman profil aplikasi Anda sebelum melakukan pembayaran pertama.</p>`;
         break;
       case 'ditolak':
         subject = `Aktivasi Dompetku Belum Disetujui - ${restoName}`;

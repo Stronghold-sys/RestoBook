@@ -622,75 +622,63 @@ export default function AdminWalletActivationsPage() {
                     <ShieldAlert className="w-4 h-4 text-amber-500" /> Panel Keputusan Admin
                   </h4>
 
-                  {selectedActivation.status !== "diproses" ? (
-                    /* Step 1: Start review to change status to "diproses" */
-                    <button
-                      onClick={() => handleAction(selectedActivation.id, "start_review")}
-                      disabled={submittingAction}
-                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-                    >
-                      {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Clock className="w-4 h-4" /> Mulai Peninjauan Dokumen</>}
-                    </button>
-                  ) : (
-                    /* Step 2: Approve or Reject */
-                    <div className="space-y-4">
-                      {/* Invalid fields checklist */}
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Tandai Data/Dokumen Salah (Revisian)</label>
-                        <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
-                          {checklistOptions.map(opt => (
-                            <label
-                              key={opt.key}
-                              className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer text-xs font-semibold select-none transition-all ${
-                                invalidFields.includes(opt.key)
-                                  ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400"
-                                  : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:border-primary/50"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={invalidFields.includes(opt.key)}
-                                onChange={() => handleFieldCheck(opt.key)}
-                                className="rounded border-border-light dark:border-border-dark text-red-600 focus:ring-red-600"
-                              />
-                              <span>{opt.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Rejection / Note Input */}
-                      <div className="space-y-1.5">
-                        <label htmlFor="rejectionReasonInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Penolakan / Catatan Revisi</label>
-                        <textarea
-                          id="rejectionReasonInput"
-                          rows={3}
-                          value={rejectionReason}
-                          onChange={(e) => setRejectionReason(e.target.value)}
-                          placeholder="Contoh: Foto KTP depan buram dan tidak terbaca. Harap unggah ulang."
-                          className="w-full text-xs p-3.5 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 outline-none"
-                        />
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAction(selectedActivation.id, "reject")}
-                          disabled={submittingAction}
-                          className="flex-1 py-3 bg-danger hover:bg-danger-hover text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
-                        >
-                          {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><X className="w-4 h-4" /> Tolak Pengajuan</>}
-                        </button>
-                        <button
-                          onClick={() => handleAction(selectedActivation.id, "approve")}
-                          disabled={submittingAction}
-                          className="flex-1 py-3 bg-success hover:bg-success-hover text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-success/15 disabled:opacity-50"
-                        >
-                          {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Setujui Aktivasi</>}
-                        </button>
+                  <div className="space-y-4">
+                    {/* Invalid fields checklist */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Tandai Data/Dokumen Salah (Revisian)</label>
+                      <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                        {checklistOptions.map(opt => (
+                          <label
+                            key={opt.key}
+                            className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer text-xs font-semibold select-none transition-all ${
+                              invalidFields.includes(opt.key)
+                                ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400"
+                                : "bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:border-primary/50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={invalidFields.includes(opt.key)}
+                              onChange={() => handleFieldCheck(opt.key)}
+                              className="rounded border-border-light dark:border-border-dark text-red-600 focus:ring-red-600"
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
-                  )}
+
+                    {/* Rejection / Note Input */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="rejectionReasonInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Penolakan / Catatan Revisi</label>
+                      <textarea
+                        id="rejectionReasonInput"
+                        rows={3}
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Contoh: Foto KTP depan buram dan tidak terbaca. Harap unggah ulang."
+                        className="w-full text-xs p-3.5 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 outline-none"
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAction(selectedActivation.id, "reject")}
+                        disabled={submittingAction}
+                        className="flex-1 py-3 bg-danger hover:bg-danger-hover text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
+                      >
+                        {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><X className="w-4 h-4" /> Tolak Pengajuan</>}
+                      </button>
+                      <button
+                        onClick={() => handleAction(selectedActivation.id, "approve")}
+                        disabled={submittingAction}
+                        className="flex-1 py-3 bg-success hover:bg-success-hover text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-success/15 disabled:opacity-50"
+                      >
+                        {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Setujui Aktivasi</>}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

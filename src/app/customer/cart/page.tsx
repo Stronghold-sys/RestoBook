@@ -1605,12 +1605,17 @@ export default function CartPage() {
 
             {totalAmount > 0 && paymentMethod === "wallet" && profileData && (
               <div className="space-y-3">
-                {!['diterima', 'selesai'].includes(profileData.wallet_status) ? (
+                {!['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked ? (
                   <div className="p-4 rounded-2xl border bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 space-y-3">
                     <div className="flex items-start gap-2.5">
                       <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
                       <div>
-                        {['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
+                        {profileData.is_wallet_blocked ? (
+                          <>
+                            <p className="text-xs font-bold uppercase tracking-wider">Akses Dompetku Diblokir</p>
+                            <p className="text-xs mt-1 leading-relaxed text-muted font-medium">Akses transaksi Dompetku Anda telah ditangguhkan sementara oleh administrator. Alasan: {profileData.wallet_block_reason || "Kebijakan Keamanan Restoran"}. Silakan hubungi admin untuk informasi lebih lanjut.</p>
+                          </>
+                        ) : ['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
                           <>
                             <p className="text-xs font-bold uppercase tracking-wider">Aktivasi Sedang Ditinjau</p>
                             <p className="text-xs mt-1 leading-relaxed text-muted">Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.</p>
@@ -1624,7 +1629,7 @@ export default function CartPage() {
                       </div>
                     </div>
                     {/* Tombol Aktivasi */}
-                    {!['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) && (
+                    {!profileData.is_wallet_blocked && !['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) && (
                       <button
                         type="button"
                         onClick={() => router.push("/customer/wallet/activation")}
@@ -1682,14 +1687,14 @@ export default function CartPage() {
             </div>
 
             <motion.button 
-              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 1.02 } : {}} 
-              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 0.98 } : {}} 
+              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked)) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 1.02 } : {}} 
+              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked)) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 0.98 } : {}} 
               onClick={() => totalAmount > 0 && paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
-              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) || (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)}
+              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked)) || (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)}
               className={`w-full py-4 rounded-2xl font-black text-sm lg:text-xs xl:text-sm flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 !isOpen 
                   ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
-                  : (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status)))
+                  : (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked))
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
                   : (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
@@ -1697,8 +1702,10 @@ export default function CartPage() {
               }`}
             >
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
-              {totalAmount > 0 && paymentMethod === "wallet" && profileData && !['diterima', 'selesai'].includes(profileData.wallet_status) ? (
-                ['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
+              {totalAmount > 0 && paymentMethod === "wallet" && profileData && (!['diterima', 'selesai', 'aktif'].includes(profileData.wallet_status) || profileData.is_wallet_blocked) ? (
+                profileData.is_wallet_blocked ? (
+                  <><AlertTriangle className="w-4 h-4 shrink-0" /> Akses Dompet Diblokir</>
+                ) : ['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
                   <><Clock className="w-4 h-4 shrink-0" /> Menunggu Verifikasi Admin</>
                 ) : (
                   <><AlertTriangle className="w-4 h-4 shrink-0" /> Aktivasi Dompetku Diperlukan</>

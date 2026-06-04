@@ -1,287 +1,293 @@
-Tambahkan dan implementasikan logika fitur “Dompetku” di sisi pelanggan dan admin dengan alur aktivasi akun yang lengkap, aman, dan terstruktur. Jangan merusak fitur yang sudah ada. Integrasikan dengan notifikasi aplikasi, email otomatis, validasi form, dan manajemen status pengajuan.
+Tambahkan dan pindahkan seluruh fitur pengelolaan “Dompetku” yang sebelumnya berada di halaman “Detail & Kelola Poin” ke halaman menu admin “Fitur Dompetku”. Hapus/kurangi ketergantungan pengelolaan dompet dari halaman poin, lalu pusatkan seluruh kontrol Dompetku di satu halaman admin yang khusus, lengkap, rapi, aman, dan terstruktur.
 
-1) GAGASAN UTAMA FITUR DOMPETKU
+Tujuan utama:
 
-- Dompetku tidak boleh langsung aktif untuk akun baru.
-- Akun baru wajib melakukan aktivasi terlebih dahulu sebelum bisa menggunakan Dompetku untuk pembayaran.
-- Aktivasi harus melalui formulir data diri yang lengkap, unggah dokumen, dan verifikasi admin.
-- Sistem harus mendukung:
-  - pengajuan aktivasi
-  - proses verifikasi admin
-  - persetujuan atau penolakan
-  - pengajuan ulang jika ditolak
-  - notifikasi status otomatis di aplikasi dan email
+- Admin memiliki halaman khusus untuk mengelola status Dompetku pelanggan.
+- Fitur pengelolaan Dompetku tidak lagi bercampur dengan pengelolaan poin.
+- Semua perubahan status Dompetku harus tersinkron otomatis ke halaman pelanggan, checkout/pembayaran, riwayat, dan notifikasi.
+- Tambahkan fitur-fitur lanjutan yang lengkap untuk admin, beserta logika masing-masing.
 
-1) ALUR PELANGGAN
-A. Saat akun baru dibuat:
+1) PINDAHKAN FITUR DARI HALAMAN POIN KE MENU DOMPETKU
 
-- Status Dompetku default = “belum aktif”.
-- Tombol/opsi Dompetku tetap terlihat, tetapi belum bisa digunakan untuk transaksi.
-- Jika pelanggan membuka halaman Dompetku, tampilkan pesan bahwa Dompetku belum aktif dan perlu aktivasi terlebih dahulu.
+- Semua fitur yang berkaitan dengan saldo dompet, status dompet, blokir dompet, aktivasi dompet, nonaktifkan dompet, reset saldo, penyesuaian saldo, riwayat transaksi dompet, dan log aktivitas harus dipindahkan ke menu “Dompetku” di admin.
+- Halaman “Detail & Kelola Poin” hanya fokus pada poin.
+- Jangan duplikasi fitur dompet di dua tempat.
+- Di halaman Dompetku admin, tampilkan ringkasan:
+  - Status dompet pelanggan
+  - Saldo dompet
+  - Riwayat transaksi dompet
+  - Log perubahan status
+  - Aksi admin terhadap dompet
 
-B. Saat pelanggan klik “Aktivasi Dompetku”:
+1) TAMPILAN HALAMAN ADMIN DOMPETKU
+Buat halaman admin “Fitur Dompetku” yang lengkap dengan komponen berikut:
 
-- Arahkan ke halaman formulir aktivasi.
-- Form harus divalidasi lengkap sebelum bisa diajukan.
-- Sediakan upload dokumen dari:
-  - device / galeri
-  - kamera langsung
-- Sediakan preview file sebelum submit.
-- Jika file rusak, format tidak sesuai, atau ukuran terlalu besar, tampilkan pesan error yang jelas.
+- Ringkasan status pelanggan:
+  - Aktif
+  - Nonaktif
+  - Diblokir
+  - Pending verifikasi
+  - Dalam proses
+- Saldo saat ini
+- Total transaksi masuk
+- Total transaksi keluar
+- Total top up
+- Total refund
+- Total penyesuaian manual
+- Total saldo terblokir jika ada
+- Status verifikasi akun bila Dompetku membutuhkan aktivasi
 
-C. Setelah formulir lengkap lalu klik “Ajukan”:
+1) FITUR ADMIN YANG HARUS ADA DI DOMPETKU
+Tambahkan fitur berikut pada halaman admin Dompetku:
 
-- Simpan data pengajuan ke database.
-- Status awal pengajuan = “diajukan”.
-- Tampilkan notifikasi bahwa pengajuan sedang diproses admin.
-- Kirim email otomatis ke pelanggan bahwa pengajuan telah diterima sistem dan sedang menunggu verifikasi.
+A. Ubah status dompet:
 
-D. Jika pelanggan membuka metode pembayaran Dompetku sementara belum aktif:
+- Aktifkan dompet
+- Nonaktifkan dompet
+- Blokir dompet
+- Buka blokir dompet
+- Tandai pending / proses verifikasi
+- Reset status ke default jika diperlukan
 
-- Tampilkan peringatan:
-  “Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.”
-- Sediakan tombol “Aktivasi Sekarang”.
-- Jika tombol diklik, langsung masuk ke halaman formulir aktivasi.
+B. Kelola saldo:
 
-E. Jika status masih diproses:
+- Tambah saldo
+- Kurangi saldo
+- Reset saldo ke 0
+- Koreksi saldo manual
+- Tambahkan catatan alasan untuk setiap perubahan saldo
 
-- Tampilkan informasi bahwa pelanggan harus menunggu hasil verifikasi admin.
-- Blokir penggunaan Dompetku sampai status aktif.
+C. Kelola transaksi:
 
-1) FORMULIR AKTIVASI DOMPETKU UNTUK PELANGGAN
-Buat formulir aktivasi paling lengkap dengan field berikut:
+- Lihat semua transaksi dompet
+- Filter berdasarkan tanggal, jenis transaksi, status, nominal
+- Cari berdasarkan nama pelanggan, email, ID transaksi
+- Lihat detail transaksi
+- Tandai transaksi valid / dibatalkan / direvisi jika diperlukan
 
-A. Data pribadi:
+D. Kelola akses:
 
-- Nama lengkap sesuai identitas
-- Nomor induk kependudukan (NIK)
-- Tempat lahir
-- Tanggal lahir
-- Jenis kelamin
-- Status perkawinan
-- Kewarganegaraan
-- Agama
-- Pekerjaan
-- Nama ibu kandung
+- Izinkan atau larang penggunaan Dompetku untuk pembayaran
+- Aktifkan atau nonaktifkan Dompetku secara manual
+- Blokir penggunaan sementara jika ada pelanggaran
+- Buka blokir jika masalah sudah selesai
 
-B. Kontak:
+E. Audit dan riwayat:
 
-- Nomor HP aktif
-- Email aktif
-- Alamat lengkap
-- RT/RW
-- Kelurahan/Desa
-- Kecamatan
-- Kota/Kabupaten
-- Provinsi
-- Kode pos
+- Catat siapa admin yang melakukan perubahan
+- Catat waktu perubahan
+- Catat alasan perubahan
+- Simpan histori lengkap semua aksi admin
+- Buat log audit yang tidak bisa dihapus sembarangan
 
-C. Data identitas tambahan:
+1) LOGIKA STATUS DOMPETKU
+Buat status Dompetku berikut:
 
-- Nama sesuai KTP
-- Nomor KTP
-- Foto KTP depan
-- Foto KTP belakang jika diperlukan
+- Aktif
+  Artinya pelanggan dapat menggunakan Dompetku untuk pembayaran, top up, dan transaksi lain.
 
-D. Data dompet / verifikasi:
+- Nonaktif
+  Artinya Dompetku belum bisa digunakan, tetapi bukan karena pelanggaran. Bisa karena belum aktivasi, dinonaktifkan manual, atau menunggu proses tertentu.
 
-- Tujuan penggunaan Dompetku
-- Sumber dana utama
-- Pernyataan bahwa data yang diisi benar
-- Checkbox persetujuan syarat dan ketentuan
-- Checkbox persetujuan kebijakan privasi
-- Checkbox persetujuan verifikasi data
+- Diblokir
+  Artinya Dompetku tidak dapat dipakai sama sekali karena alasan keamanan, pelanggaran, atau kebijakan admin.
 
-E. Dokumen upload:
-
-- Upload KTP
-- Upload dokumen pendukung lain bila diperlukan
-- Upload harus bisa dari file device dan kamera langsung
-- Tampilkan status setiap file: belum dipilih, berhasil diunggah, gagal, perlu diulang
-
-F. Validasi form:
-
-- Semua field wajib diisi kecuali yang ditandai opsional
-- NIK dan nomor KTP harus numerik dan panjang sesuai aturan
-- Email harus valid
-- Nomor HP harus valid
-- Tanggal lahir harus masuk akal
-- Foto/dokumen harus berformat yang didukung
-- Maksimal ukuran file harus dibatasi
-- Form tidak bisa diajukan jika ada field kosong atau dokumen kurang
-
-1) KETERANGAN KEAMANAN DATA
-
-- Tambahkan keterangan bahwa seluruh data pelanggan dijamin aman, terlindungi, dan hanya digunakan untuk keperluan verifikasi aktivasi Dompetku.
-- Tampilkan teks yang meyakinkan namun tetap profesional, misalnya:
-
-“Seluruh data dan dokumen yang Anda kirimkan dijamin aman, terlindungi, dan hanya digunakan untuk proses verifikasi aktivasi Dompetku. Kami menjaga kerahasiaan data Anda sesuai kebijakan privasi yang berlaku.”
-
-- Tambahkan juga keterangan:
-  “Data Anda tidak dibagikan kepada pihak yang tidak berwenang dan hanya dapat diakses oleh tim terkait untuk keperluan verifikasi.”
-
-1) LOGIKA STATUS PENGAJUAN DOMPETKU
-Buat status pengajuan berikut:
-
-- Diajukan
-  Artinya pelanggan baru mengirim formulir dan dokumen.
-  Notifikasi:
-  “Pengajuan aktivasi Dompetku berhasil dikirim. Tim kami akan meninjau data Anda.”
+- Pending
+  Artinya Dompetku sedang menunggu verifikasi atau sedang diproses.
 
 - Diproses
-  Artinya admin sedang memeriksa data dan dokumen.
-  Notifikasi:
-  “Pengajuan aktivasi Dompetku sedang diproses. Mohon tunggu hasil verifikasi.”
+  Artinya admin sedang memeriksa data, dokumen, atau kondisi akun.
 
-- Diterima
-  Artinya admin menyetujui pengajuan.
-  Dampak:
-  - Dompetku menjadi aktif
-  - pelanggan bisa memakai Dompetku saat pembayaran
-  - kirim email dan notifikasi aplikasi
-  Teks notifikasi:
-  “Selamat, aktivasi Dompetku Anda telah disetujui dan sekarang aktif.”
+1) LOGIKA PERUBAHAN STATUS OLEH ADMIN
+A. Jika admin memilih “Blokir Dompet”:
 
-- Ditolak
-  Artinya admin menolak pengajuan karena data/dokumen belum lengkap atau tidak sesuai.
-  Dampak:
-  - Dompetku tetap nonaktif
-  - tampilkan daftar alasan penolakan
-  - tandai dokumen/field yang harus diperbaiki
-  - pelanggan wajib memperbaiki dan mengunggah ulang
-  Teks notifikasi:
-  “Pengajuan aktivasi Dompetku Anda ditolak. Silakan perbaiki data atau unggah ulang dokumen yang diminta.”
+- Label status Dompetku di halaman pelanggan harus berubah menjadi “Diblokir”.
+- Dompetku tidak dapat digunakan untuk pembayaran, top up, ataupun transaksi lain.
+- Tampilkan pesan ke pelanggan:
+  “Dompetku Anda sedang diblokir sementara dan tidak dapat digunakan saat ini. Silakan hubungi admin untuk informasi lebih lanjut.”
+- Simpan alasan blokir wajib diisi admin.
+- Kirim notifikasi aplikasi dan email ke pelanggan.
 
-- Selesai
-  Artinya proses aktivasi telah rampung, akun aktif dan siap digunakan.
-  Teks notifikasi:
-  “Proses aktivasi Dompetku telah selesai. Fitur siap digunakan.”
+B. Jika admin memilih “Aktivasi Dompet”:
 
-1) LOGIKA DI HALAMAN PEMBAYARAN
+- Label status di pelanggan berubah menjadi “Aktif”.
+- Dompetku langsung bisa digunakan untuk pembayaran.
+- Kirim notifikasi dan email otomatis:
+  “Dompetku Anda telah diaktifkan dan siap digunakan.”
 
-- Jika pelanggan memilih metode pembayaran Dompetku:
-  - cek status Dompetku
-  - jika status belum aktif, blokir proses pembayaran dengan pesan peringatan
-  - tampilkan tombol “Aktivasi Dompetku”
-  - tombol tersebut mengarah langsung ke halaman formulir aktivasi
-- Jika status aktif, lanjutkan pembayaran normal.
-- Jika status dalam proses, tampilkan informasi bahwa pelanggan harus menunggu hasil verifikasi.
+C. Jika admin memilih “Nonaktifkan Dompet”:
 
-1) FITUR ADMIN UNTUK MANAJEMEN AKTIVASI
-Buat menu khusus di admin, misalnya:
+- Label status di pelanggan berubah menjadi “Nonaktif”.
+- Dompetku tidak dapat digunakan untuk transaksi sampai diaktifkan kembali.
+- Kirim notifikasi dan email:
+  “Dompetku Anda telah dinonaktifkan sementara.”
 
-- Manajemen Aktivasi Dompetku
-- Daftar pengajuan baru
-- Pengajuan diproses
-- Pengajuan disetujui
-- Pengajuan ditolak
-- Riwayat aktivasi
+D. Jika admin memilih “Buka Blokir”:
 
-Fitur admin harus bisa:
+- Status berubah sesuai kondisi sebelumnya, misalnya kembali menjadi “Aktif” atau “Nonaktif”.
+- Jangan langsung aktif otomatis jika sebelumnya memang perlu verifikasi ulang.
+- Admin harus memilih status lanjutan setelah membuka blokir.
 
-- melihat daftar seluruh pengajuan
-- membuka detail data pelanggan
-- melihat preview semua dokumen
-- menandai field/dokumen yang tidak valid
-- memberikan catatan revisi
-- menyetujui pengajuan
-- menolak pengajuan
-- mengubah status pengajuan
-- melihat riwayat perubahan status
-- mencatat siapa admin yang memproses dan waktu proses
-- menambahkan log aktivitas audit
+E. Jika admin memilih “Pending” atau “Diproses”:
 
-1) LOGIKA ADMIN SAAT VERIFIKASI
-A. Saat pengajuan masuk:
+- Label di pelanggan berubah sesuai status terbaru.
+- Tampilkan pesan bahwa akun sedang dalam proses pemeriksaan.
 
-- status otomatis = “diajukan”
-- admin bisa ubah ke “diproses” ketika mulai memeriksa
+1) LOGIKA PENYESUAIAN SALDO
+Tambahkan fitur penyesuaian saldo Dompetku dengan logika berikut:
 
-B. Saat data lengkap dan valid:
+A. Tambah saldo:
 
-- admin klik “setujui”
-- status menjadi “diterima”
-- akun Dompetku langsung aktif
-- sistem kirim notifikasi dan email otomatis
+- Admin memasukkan nominal.
+- Wajib ada alasan.
+- Saldo bertambah setelah konfirmasi.
+- Simpan log transaksi.
 
-C. Saat data tidak sesuai:
+B. Kurangi saldo:
 
-- admin klik “tolak”
-- isi alasan penolakan
-- tandai dokumen/field yang harus diperbaiki
-- sistem kirim notifikasi dan email otomatis
-- status menjadi “ditolak”
+- Admin memasukkan nominal.
+- Wajib ada alasan.
+- Jangan izinkan saldo menjadi minus kecuali fitur saldo minus memang diaktifkan.
+- Jika saldo tidak cukup, tampilkan peringatan.
 
-D. Saat pelanggan mengajukan ulang:
+C. Reset saldo ke 0:
 
-- pelanggan hanya bisa mengirim ulang field/dokumen yang diminta perbaikan
-- status pengajuan kembali ke “diajukan” atau “diproses” sesuai alur
-- simpan histori revisi
-- kirim notifikasi saat submit ulang
+- Wajib konfirmasi dua langkah.
+- Wajib alasan admin.
+- Simpan histori bahwa saldo direset.
 
-1) LOGIKA PENGAJUAN ULANG
+D. Koreksi manual:
 
-- Jika pengajuan ditolak, tampilkan tombol “Perbaiki dan Ajukan Ulang”.
-- Tampilkan daftar alasan penolakan dengan jelas.
-- Dokumen yang ditandai admin harus bisa diunggah ulang.
-- Sistem harus menyimpan versi revisi dokumen.
-- Setelah pengajuan ulang dikirim:
-  - status = “diajukan ulang”
-  - admin menerima daftar revisi baru
-  - proses verifikasi dimulai lagi
+- Admin bisa menyesuaikan saldo ke nilai tertentu.
+- Sistem menghitung selisih otomatis.
+- Catat sebelum dan sesudah koreksi.
 
-1) NOTIFIKASI APLIKASI DAN EMAIL OTOMATIS
-Setiap perubahan status harus:
+E. Refund / pengembalian:
 
-- muncul di fitur notifikasi pelanggan
-- dikirim ke email pelanggan secara otomatis
-- menyimpan histori notifikasi di database
+- Sediakan fitur refund ke dompet pelanggan.
+- Admin bisa memilih transaksi sumber refund.
+- Simpan nomor referensi refund.
 
-Teks notifikasi/email yang disarankan:
+1) LOGIKA PADA HALAMAN PELANGGAN
+Di halaman pelanggan:
 
-A. Diajukan
-“Pengajuan aktivasi Dompetku Anda telah berhasil dikirim dan sedang menunggu verifikasi.”
+- Tampilkan label status Dompetku secara real-time:
+  - Aktif
+  - Nonaktif
+  - Diblokir
+  - Pending
+  - Diproses
+- Tampilkan pesan yang sesuai dengan status.
+- Jika status diblokir, blokir semua fitur transaksi Dompetku.
+- Jika status nonaktif, tampilkan tombol aktivasi.
+- Jika status aktif, tampilkan saldo dan riwayat transaksi normal.
+- Jika status pending/diproses, tampilkan pemberitahuan proses berlangsung.
 
-B. Diproses
-“Tim kami sedang memeriksa pengajuan aktivasi Dompetku Anda. Mohon menunggu hasil verifikasi.”
+1) LOGIKA PADA HALAMAN PEMBAYARAN
 
-C. Diterima
-“Selamat, pengajuan aktivasi Dompetku Anda telah disetujui. Fitur Dompetku sekarang aktif dan dapat digunakan.”
+- Saat pelanggan memilih metode pembayaran Dompetku, sistem harus memeriksa status akun.
+- Jika status aktif, lanjutkan pembayaran.
+- Jika status nonaktif, tampilkan peringatan dan tombol aktivasi.
+- Jika status diblokir, tampilkan pesan blokir dan larang penggunaan.
+- Jika status pending/diproses, tampilkan pesan menunggu verifikasi.
+- Jangan izinkan transaksi jika status tidak aktif.
 
-D. Ditolak
-“Maaf, pengajuan aktivasi Dompetku Anda belum dapat disetujui. Silakan perbaiki data atau unggah ulang dokumen sesuai catatan admin.”
+1) FITUR TAMBAHAN YANG HARUS DITAMBAHKAN
+Tambahkan fitur lain yang lebih lengkap untuk admin Dompetku:
 
-E. Selesai
-“Proses aktivasi Dompetku Anda telah selesai. Terima kasih telah melengkapi data dengan benar.”
+A. Pencarian dan filter:
 
-1) ATURAN KEAMANAN DAN VALIDASI
+- Cari pelanggan berdasarkan nama, email, nomor HP, ID akun, atau nomor transaksi
+- Filter per status dompet
+- Filter per tanggal
+- Filter per nominal saldo
+- Filter per jenis transaksi
 
-- Enkripsi data sensitif.
-- Batasi akses dokumen hanya untuk admin yang berwenang.
-- Simpan log siapa yang melihat, menyetujui, menolak, atau mengubah status.
-- Gunakan validasi server-side dan client-side.
-- Tolak file berbahaya atau format yang tidak didukung.
-- Kompres file foto bila perlu tanpa menurunkan kualitas terlalu jauh.
-- Buat pengecekan duplikasi pengajuan jika NIK atau akun sudah pernah mengajukan.
+B. Bulk action:
 
-1) UX / UI YANG HARUS ADA
+- Blokir massal
+- Aktifkan massal
+- Nonaktifkan massal
+- Export data pelanggan Dompetku
 
-- Status Dompetku terlihat jelas di halaman pelanggan.
-- Ada badge status: belum aktif, diajukan, diproses, diterima, ditolak, selesai.
-- Tombol aktivasi harus mudah ditemukan.
-- Tampilkan pesan informatif dan ramah.
-- Tampilkan progress pengajuan jika memungkinkan.
-- Tampilkan area upload yang modern dengan drag and drop, pilih file, dan kamera langsung.
-- Tampilkan catatan admin secara detail saat ditolak.
+C. Export dan laporan:
 
-1) KETENTUAN AKHIR IMPLEMENTASI
+- Export PDF / Excel laporan transaksi Dompetku
+- Laporan harian, mingguan, bulanan
+- Rekap perubahan saldo
+- Rekap status dompet
+- Rekap admin yang paling sering melakukan perubahan
 
-- Pastikan semua alur berjalan end-to-end.
-- Pastikan pembayaran dengan Dompetku hanya bisa dipakai jika status aktif.
-- Pastikan notifikasi dan email terkirim otomatis pada setiap perubahan status.
-- Pastikan admin memiliki kontrol penuh terhadap proses pengajuan.
-- Pastikan pelanggan bisa memperbaiki dan mengajukan ulang jika ditolak.
-- Pastikan semua status dan log tersimpan rapi di database.
-- Pastikan data pelanggan dijamin aman dan hanya digunakan untuk proses verifikasi aktivasi.
+D. Notifikasi admin:
 
-Buat implementasi ini lengkap, rapi, aman, dan siap dipakai pada sistem produksi.
+- Notifikasi saat saldo diubah
+- Notifikasi saat status berubah
+- Notifikasi saat ada transaksi mencurigakan
+- Notifikasi saat ada saldo negatif atau anomali
+
+E. Keamanan:
+
+- Wajib konfirmasi sebelum aksi kritis
+- Simpan jejak audit
+- Batasi akses hanya admin tertentu
+- Log IP atau identitas admin jika diperlukan
+- Validasi server-side dan client-side
+- Cegah manipulasi saldo tanpa izin
+
+F. Catatan internal:
+
+- Admin dapat menambahkan catatan internal pada akun Dompetku pelanggan
+- Catatan hanya terlihat oleh admin
+- Catatan bisa dipakai untuk alasan blokir, nonaktif, atau koreksi saldo
+
+1) RINCIAN LOGIKA EKSEKUSI ADMIN
+Setiap aksi admin harus mengikuti pola ini:
+
+- Pilih pelanggan
+- Pilih aksi
+- Isi nominal / alasan / catatan jika diperlukan
+- Sistem tampilkan ringkasan perubahan
+- Admin konfirmasi
+- Sistem simpan perubahan ke database
+- Sistem update status pelanggan
+- Sistem kirim notifikasi dan email bila diperlukan
+- Sistem simpan log aktivitas
+
+1) LABEL STATUS DI PELANGGAN
+Pastikan label di halaman pelanggan berubah otomatis sesuai aksi admin:
+
+- Jika admin aktivasi -> label menjadi “Aktif”
+- Jika admin nonaktifkan -> label menjadi “Nonaktif”
+- Jika admin blokir -> label menjadi “Diblokir”
+- Jika admin buka blokir -> label kembali sesuai status akhir
+- Jika admin pending -> label menjadi “Pending”
+- Jika admin diproses -> label menjadi “Diproses”
+
+1) TEKS NOTIFIKASI YANG DIPAKAI
+
+- Aktif:
+  “Dompetku Anda telah diaktifkan dan kini dapat digunakan.”
+- Nonaktif:
+  “Dompetku Anda saat ini dinonaktifkan sementara.”
+- Diblokir:
+  “Dompetku Anda diblokir dan tidak dapat digunakan untuk saat ini.”
+- Pending:
+  “Dompetku Anda sedang dalam proses verifikasi.”
+- Diproses:
+  “Dompetku Anda sedang diperiksa oleh tim admin.”
+- Saldo berubah:
+  “Saldo Dompetku Anda telah diperbarui.”
+- Refund:
+  “Refund berhasil ditambahkan ke Dompetku Anda.”
+
+1) KETENTUAN IMPLEMENTASI
+
+- Jangan ganggu fitur poin yang sudah ada.
+- Pindahkan hanya fitur yang memang terkait Dompetku.
+- Buat semua perubahan tersinkron otomatis.
+- Pastikan riwayat, status, saldo, dan log selalu konsisten.
+- Buat UI admin modern, rapi, dan mudah digunakan.
+- Buat setiap tindakan admin memiliki validasi, konfirmasi, dan audit trail.
+- Pastikan sistem aman dari manipulasi data.
+
+Buat implementasi ini lengkap, detail, dan siap dipakai di lingkungan produksi.

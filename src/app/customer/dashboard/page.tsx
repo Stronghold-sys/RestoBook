@@ -10,6 +10,7 @@ import { id } from "date-fns/locale";
 import { SkeletonDashboard } from "@/components/Skeleton";
 import toast from "react-hot-toast";
 import Portal from "@/components/Portal";
+import { useTutorialStore } from "@/store/useTutorialStore";
 
 export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
@@ -21,8 +22,20 @@ export default function CustomerDashboard() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [welcomePoints, setWelcomePoints] = useState(1000);
   const [claiming, setClaiming] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [welcomeGiftEnabled, setWelcomeGiftEnabled] = useState(false);
 
   const supabase = createClient();
+  const { status } = useTutorialStore();
+
+  // Show welcome gift modal only when profile is fetched, welcome gift is enabled, not claimed yet, AND the tutorial is completed
+  useEffect(() => {
+    if (profile && welcomeGiftEnabled && !profile.welcome_gift_claimed && status?.tour_completed) {
+      setShowWelcomeModal(true);
+    } else {
+      setShowWelcomeModal(false);
+    }
+  }, [profile, welcomeGiftEnabled, status?.tour_completed]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -57,18 +70,20 @@ export default function CustomerDashboard() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) return;
 
-      const { data: profile } = await supabase.from('profiles').select('id, full_name, welcome_gift_claimed').eq('user_id', session.session.user.id).single();
-      if (!profile) return;
+      const { data: profileData } = await supabase.from('profiles').select('id, full_name, welcome_gift_claimed').eq('user_id', session.session.user.id).single();
+      if (!profileData) return;
+      setProfile(profileData);
 
       // Clean up expired unpaid non-cash orders
       const { data: settings } = await supabase.from("restaurant_settings").select("payment_expiry_minutes, welcome_gift_enabled, welcome_gift_points").single();
+      
+      if (settings) {
+        setWelcomeGiftEnabled(settings.welcome_gift_enabled || false);
+        setWelcomePoints(settings.welcome_gift_points || 1000);
+      }
+
       const expiryMinutes = settings?.payment_expiry_minutes ? Number(settings.payment_expiry_minutes) : 60;
       const expiryThreshold = new Date(Date.now() - expiryMinutes * 60 * 1000).toISOString();
-
-      if (settings && settings.welcome_gift_enabled && !profile.welcome_gift_claimed) {
-        setWelcomePoints(settings.welcome_gift_points || 1000);
-        setShowWelcomeModal(true);
-      }
 
       const { data: expiredOrders } = await supabase.from("orders")
         .select("id, table_id")

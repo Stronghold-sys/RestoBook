@@ -51,7 +51,8 @@ export async function GET(request: Request) {
 
     if (fetchError) throw fetchError;
 
-    // 4. Ambil daftar check_out milik user ini HARI INI untuk mem-filter shift yang sudah rampung
+    // 4. Ambil daftar absensi milik user ini HARI INI yang membuat shift dianggap selesai/tidak bisa check-in:
+    // Yaitu check_out, alpha, izin, sakit
     // Menggunakan timezone Asia/Jakarta (WIB)
     const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
     const todayISOStr = nowWIB.getFullYear() + '-' +
@@ -59,14 +60,14 @@ export async function GET(request: Request) {
       String(nowWIB.getDate()).padStart(2, '0');
     const todayStartWIB = `${todayISOStr}T00:00:00+07:00`;
     
-    const { data: todayCheckOuts } = await supabase
+    const { data: completedAttendances } = await supabase
       .from('attendance')
       .select('work_shift_id')
       .eq('user_id', userId)
-      .eq('type', 'check_out')
+      .in('type', ['check_out', 'alpha', 'izin', 'sakit'])
       .gte('created_at', todayStartWIB);
       
-    const completedShiftIds = (todayCheckOuts || []).map((c: any) => c.work_shift_id).filter(Boolean);
+    const completedShiftIds = (completedAttendances || []).map((c: any) => c.work_shift_id).filter(Boolean);
 
     // 5. Hitung deteksi hari INI secara akurat untuk shift reguler (berbasis WIB)
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -85,31 +86,141 @@ export async function GET(request: Request) {
        return false;
     });
 
-    // ELIMINASI: Dari kandidat hari ini, buang shift yang SUDAH DI CHECK-OUT!
-    const nextActiveCandidate = activeCandidates.find((a: any) => 
+    // ELIMINASI: Dari kandidat hari ini, buang shift yang SUDAH SELESAI!
+    let nextActiveCandidate = activeCandidates.find((a: any) => 
        !completedShiftIds.includes(a.work_shift_id)
     );
 
+    // REAL-TIME AUTO-ALPHA DETECTOR:
+    // Jika ada jadwal hari ini, tapi jam selesai shift telah terlampaui dan belum absen masuk,
+    // maka sistem secara otomatis memasukkan status ALPHA ke tabel attendance.
+    if (nextActiveCandidate?.work_shifts) {
+      const [endH, endM] = nextActiveCandidate.work_shifts.end_time.split(':').map(Number);
+      const endTimeWIB = new Date(nowWIB);
+      endTimeWIB.setHours(endH, endM, 0, 0);
+
+      // Jika sekarang sudah lewat jam selesai shift hari ini
+      if (nowWIB.getTime() > endTimeWIB.getTime()) {
+        const { data: attendanceRecs } = await supabase
+          .from('attendance')
+          .select('id, type')
+          .eq('profile_id', profile.id)
+          .eq('work_shift_id', nextActiveCandidate.work_shift_id)
+          .gte('created_at', todayStartWIB);
+
+        if (!attendanceRecs || attendanceRecs.length === 0) {
+          // Masukkan status ALPHA otomatis
+          const alphaCreatedAt = `${todayISOStr}T23:59:59+07:00`; // WIB
+          
+          await supabase.from('attendance').insert({
+            user_id: userId,
+            profile_id: profile.id,
+            type: 'alpha',
+            status: 'approved',
+            notes: 'Sistem otomatis: Shift berakhir tanpa absensi masuk (Pemicu Real-Time)',
+            location: 'Restoran (Cabang Utama)',
+            created_at: alphaCreatedAt,
+            late_minutes: 0,
+            work_shift_id: nextActiveCandidate.work_shift_id
+          });
+
+          // Masukkan log ke audit_logs
+          const auditLogData = {
+            employee_id: profile.employee_id || '-',
+            employee_name: profile.full_name,
+            work_date: todayISOStr,
+            start_time: nextActiveCandidate.work_shifts.start_time,
+            end_time: nextActiveCandidate.work_shifts.end_time,
+            system_updated_at: new Date().toISOString(),
+            old_status: 'BELUM DIPROSES',
+            new_status: 'ALPHA',
+            reason: 'Shift berakhir tanpa absensi masuk (Pemicu Real-Time Kasir)'
+          };
+
+          await supabase.from('audit_logs').insert({
+            action: 'auto_alpha',
+            operator_id: null,
+            operator_name: 'System Automated Scheduler',
+            target_id: profile.id,
+            target_name: profile.full_name,
+            data_before: null,
+            data_after: auditLogData,
+            ip_address: '127.0.0.1',
+            browser: 'System Real-Time trigger',
+            device: 'Server'
+          });
+
+          // Tambahkan ke completedShiftIds agar shift ini dilewati
+          completedShiftIds.push(nextActiveCandidate.work_shift_id);
+          
+          // Re-evaluasi nextActiveCandidate
+          nextActiveCandidate = activeCandidates.find((a: any) => 
+             !completedShiftIds.includes(a.work_shift_id)
+          );
+        }
+      }
+    }
+
+    let chosenCandidate = nextActiveCandidate;
+    let shiftDate = todayISOStr;
+    // isHolidayToday: true jika hari ini tidak ada jadwal shift aktif
+    const isHolidayToday = !chosenCandidate;
+
+    // Jika hari ini tidak ada shift aktif lagi, cari shift di hari-hari berikutnya (maksimal 7 hari ke depan)
+    if (!chosenCandidate) {
+      for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
+         const nextDate = new Date(nowWIB);
+         nextDate.setDate(nextDate.getDate() + dayOffset);
+         
+         const nextISOStr = nextDate.getFullYear() + '-' +
+           String(nextDate.getMonth() + 1).padStart(2, '0') + '-' +
+           String(nextDate.getDate()).padStart(2, '0');
+         const nextDayIndoName = dayNames[nextDate.getDay()];
+         
+         const match = (assignments || []).find((a: any) => {
+            // Kasus A: Jadwal pengganti pada tanggal ini
+            if (a.substitute_date === nextISOStr) {
+               return true;
+            }
+            // Kasus B: Jadwal reguler
+            if (!a.substitute_date && a.work_shifts?.days) {
+               return a.work_shifts.days.includes(nextDayIndoName) || a.work_shifts.days.includes(nextDayIndoName.slice(0,3));
+            }
+            return false;
+         });
+         
+         if (match) {
+            chosenCandidate = match;
+            shiftDate = nextISOStr;
+            break; // Temukan shift terdekat lalu hentikan loop
+         }
+      }
+    }
+
     let assignedEmployees: any[] = [];
-    if (nextActiveCandidate?.work_shifts?.id) {
+    if (chosenCandidate?.work_shift_id) {
       // Tarik semua kolega di shift yang sama
       const { data: colleagues } = await supabase
         .from('work_shift_assignments')
         .select('id, profiles!work_shift_assignments_profile_id_fkey(full_name, avatar_url)')
-        .eq('work_shift_id', nextActiveCandidate.work_shift_id);
+        .eq('work_shift_id', chosenCandidate.work_shift_id);
       
       assignedEmployees = colleagues || [];
     }
 
     return NextResponse.json({
       success: true,
-      todayShift: nextActiveCandidate?.work_shifts || null,
+      isHolidayToday: isHolidayToday,
+      todayShift: chosenCandidate?.work_shifts ? {
+        ...chosenCandidate.work_shifts,
+        shiftDate: shiftDate
+      } : null,
       assignmentDetails: {
-         isSubstitute: !!nextActiveCandidate?.is_substitute,
-         substituteFor: nextActiveCandidate?.substitute_for?.full_name || null
+         isSubstitute: !!chosenCandidate?.is_substitute,
+         substituteFor: chosenCandidate?.substitute_for?.full_name || null
       },
       today: todayIndoName,
-      assignedEmployees: assignedEmployees.map((c: any) => c.profiles)
+      assignedEmployees: assignedEmployees.map((c: any) => c.profiles).filter(Boolean)
     });
 
   } catch (err: any) {

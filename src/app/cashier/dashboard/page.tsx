@@ -66,6 +66,8 @@ export default function CashierDashboard() {
   const [assignedTeam, setAssignedTeam] = useState<any[]>([]);
   const [isCompletedToday, setIsCompletedToday] = useState(false);
   const [subDetails, setSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
+  // isHolidayToday: true jika tidak ada jadwal shift untuk hari ini (tapi mungkin ada hari berikutnya)
+  const [isHolidayToday, setIsHolidayToday] = useState(false);
   
   const supabase = createClient();
 
@@ -304,10 +306,13 @@ export default function CashierDashboard() {
         });
         // SIMPAN DETAIL PENUGASAN (NORMAL / PENGGANTI)
         setSubDetails(shiftData.assignmentDetails || null);
+        // Simpan status libur hari ini
+        setIsHolidayToday(!!shiftData.isHolidayToday);
       } else {
-        // Reset jika tidak ada shift
+        // Reset jika tidak ada shift sama sekali
         setTodayShift(null);
         setSubDetails(null);
+        setIsHolidayToday(false);
       }
 
       // 3. Cek Shift Kasir Aktif (Fisik mesin kasir sedang terbuka?)
@@ -390,17 +395,27 @@ export default function CashierDashboard() {
       setShiftStatus('none');
       return;
     }
+    
+    // KUNCI UTAMA: Jika hari ini LIBUR (tidak ada shift hari ini), tampilkan 'none' bukan countdown
+    // todayShift di sini adalah shift hari berikutnya yang ditampilkan sebagai info saja
+    if (isHolidayToday) {
+      setShiftStatus('none');
+      return;
+    }
 
-    // Buat objek Date target (Hari ini jam X)
-    const [targetH, targetM] = todayShift.start_time.split(':').map(Number);
-    const targetTime = new Date(curTime);
-    targetTime.setHours(targetH, targetM, 0, 0);
+    // Buat objek Date target
+    let targetTime: Date;
+    if (todayShift.shiftDate) {
+      targetTime = new Date(`${todayShift.shiftDate}T${todayShift.start_time}:00+07:00`);
+    } else {
+      const [targetH, targetM] = todayShift.start_time.split(':').map(Number);
+      targetTime = new Date(curTime);
+      targetTime.setHours(targetH, targetM, 0, 0);
 
-    //  PENYEMBUH BUG SHIFT MALAM (Midnight Cross Fix):
-    // Jika selisih waktu jatuh > 12 jam yang lalu, berarti target merujuk ke Dini Hari ESOK PAGI/NANTI.
-    // Kita tambahkan 1 hari ke target agar kalkulasi valid (Masa Depan/Hitung Mundur).
-    if (curTime.getTime() - targetTime.getTime() > 12 * 60 * 60 * 1000) {
-       targetTime.setDate(targetTime.getDate() + 1);
+      //  PENYEMBUH BUG SHIFT MALAM (Midnight Cross Fix):
+      if (curTime.getTime() - targetTime.getTime() > 12 * 60 * 60 * 1000) {
+         targetTime.setDate(targetTime.getDate() + 1);
+      }
     }
 
     const diffMs = targetTime.getTime() - curTime.getTime();
@@ -428,7 +443,7 @@ export default function CashierDashboard() {
       }
     }
 
-  }, [curTime, todayShift, lateTolerance, hasOpenShift]);
+  }, [curTime, todayShift, lateTolerance, hasOpenShift, isHolidayToday]);
 
   const handleCloseShift = async () => {
     if (!actualCash) return toast.error("Masukkan uang fisik akhir");
@@ -1055,11 +1070,33 @@ export default function CashierDashboard() {
            {shiftStatus === 'loading' ? (
               <div className="p-20 flex flex-col items-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="mt-4 text-muted font-bold tracking-widest text-xs animate-pulse">MENYINKRONKAN JADWAL...</p></div>
            ) : shiftStatus === 'none' ? (
-              <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-dashed border-border-light dark:border-border-dark shadow-xl">
-                 <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6"><ShieldX className="w-10 h-10 text-muted" /></div>
-                 <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Tidak Ada Jadwal Aktif</h2>
-                 <p className="text-muted text-sm mt-3 max-w-md mx-auto">Hari ini Anda tidak memiliki shift yang terdaftar di sistem. Silakan bersantai atau hubungi Admin jika merasa ini adalah kekeliruan.</p>
-              </div>
+               isHolidayToday && todayShift ? (
+                  // KASUS LIBUR: Ada shift berikutnya yang tersimpan, tapi hari ini libur
+                  <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-border-light dark:border-border-dark shadow-xl">
+                     <div className="w-24 h-24 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/40 dark:to-indigo-900/40 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
+                        <span className="text-5xl">🏖️</span>
+                     </div>
+                     <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Hari Libur</h2>
+                     <p className="text-muted text-sm mt-3 max-w-md mx-auto">Hari ini Anda tidak memiliki jadwal shift kerja. Nikmati waktu istirahat Anda!</p>
+                     <div className="mt-8 p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl max-w-sm mx-auto">
+                        <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest mb-2">📅 Shift Berikutnya</p>
+                        <p className="font-black text-lg text-blue-700 dark:text-blue-300">{todayShift.name}</p>
+                        <p className="text-sm font-bold text-blue-600/70 dark:text-blue-400/70 mt-1">
+                           {new Date(todayShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </p>
+                        <p className="text-xs text-blue-600/60 dark:text-blue-400/60 mt-1">
+                           🕐 {todayShift.start_time?.slice(0,5)} – {todayShift.end_time?.slice(0,5)} WIB
+                        </p>
+                     </div>
+                  </div>
+               ) : (
+                  // KASUS TIDAK ADA JADWAL SAMA SEKALI
+                  <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-dashed border-border-light dark:border-border-dark shadow-xl">
+                     <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6"><ShieldX className="w-10 h-10 text-muted" /></div>
+                     <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Tidak Ada Jadwal Aktif</h2>
+                     <p className="text-muted text-sm mt-3 max-w-md mx-auto">Hari ini Anda tidak memiliki shift yang terdaftar di sistem. Silakan bersantai atau hubungi Admin jika merasa ini adalah kekeliruan.</p>
+                  </div>
+               )
            ) : (
               <div className="space-y-8 w-full">
                   {/* SHIFT CARD HEADER */}
@@ -1270,7 +1307,8 @@ export default function CashierDashboard() {
                 setShowAttendanceModal(false);
                 checkShift();
                 fetchDashboardData();
-              }} 
+              }}
+              onClose={() => setShowAttendanceModal(false)}
             />
           )}
         </AnimatePresence>

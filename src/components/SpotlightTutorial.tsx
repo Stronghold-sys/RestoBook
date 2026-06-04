@@ -192,15 +192,13 @@ export default function SpotlightTutorial() {
 
       {/* Spotlight highlight outline */}
       {coords && (
-        <motion.div
-          initial={false}
-          animate={{
-            left: Math.max(2, coords.left - getPadding()),
-            top: Math.max(2, coords.top - getPadding()),
-            width: Math.min(windowSize.width - Math.max(2, coords.left - getPadding()) - 2, coords.width + getPadding() * 2),
-            height: Math.min(windowSize.height - Math.max(2, coords.top - getPadding()) - 2, coords.height + getPadding() * 2)
+        <div
+          style={{
+            left: `${Math.max(2, coords.left - getPadding())}px`,
+            top: `${Math.max(2, coords.top - getPadding())}px`,
+            width: `${Math.min(windowSize.width - Math.max(2, coords.left - getPadding()) - 2, coords.width + getPadding() * 2)}px`,
+            height: `${Math.min(windowSize.height - Math.max(2, coords.top - getPadding()) - 2, coords.height + getPadding() * 2)}px`
           }}
-          transition={{ type: 'spring', damping: 26, stiffness: 220 }}
           className="absolute border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.4)] pointer-events-none z-[99997]"
         />
       )}

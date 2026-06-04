@@ -1206,6 +1206,8 @@ export default function AdminRewardsPage() {
                         setCustStatusFilter(e.target.value);
                         setSelectedCustIds([]); // Reset selection
                       }}
+                      title="Filter Status Poin Pelanggan"
+                      aria-label="Filter Status Poin Pelanggan"
                       className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-muted"
                     >
                       <option value="all">Semua Status Poin</option>

@@ -682,23 +682,42 @@ export default function AdminRewardsPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data Pelanggan");
 
-    // Freeze header row
-    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1, activeCell: 'A2' }];
+    // Title Row on Row 1
+    worksheet.mergeCells('A1:I1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'LAPORAN DATA POIN PELANGGAN RESTOBOOK';
+    titleCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF000000' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(1).height = 30;
 
-    // Set columns
+    // Headers on Row 2
+    worksheet.getRow(2).values = [
+      'No',
+      'ID Pelanggan',
+      'Nama Pelanggan',
+      'Email',
+      'Nomor HP',
+      'Poin Aktif',
+      'Poin Pending',
+      'Status Poin',
+      'Blokir Redeem'
+    ];
+    worksheet.getRow(2).height = 24;
+
+    // Columns config
     worksheet.columns = [
-      { header: 'No', key: 'no', width: 6 },
-      { header: 'ID Pelanggan', key: 'id', width: 38 },
-      { header: 'Nama Pelanggan', key: 'full_name', width: 25 },
-      { header: 'Email', key: 'email', width: 30 },
-      { header: 'Nomor HP', key: 'phone', width: 18 },
-      { header: 'Poin Aktif', key: 'points', width: 14 },
-      { header: 'Poin Pending', key: 'pending_points', width: 14 },
-      { header: 'Status Poin', key: 'points_status', width: 18 },
-      { header: 'Blokir Redeem', key: 'is_redeem_blocked', width: 16 }
+      { key: 'no', width: 6 },
+      { key: 'id', width: 38 },
+      { key: 'full_name', width: 25 },
+      { key: 'email', width: 30 },
+      { key: 'phone', width: 18 },
+      { key: 'points', width: 14 },
+      { key: 'pending_points', width: 14 },
+      { key: 'points_status', width: 18 },
+      { key: 'is_redeem_blocked', width: 16 }
     ];
 
-    // Add rows
+    // Add Data rows starting at Row 3
     filtered.forEach((c, i) => {
       worksheet.addRow({
         no: i + 1,
@@ -713,51 +732,65 @@ export default function AdminRewardsPage() {
       });
     });
 
-    // Style Header Row
-    const headerRow = worksheet.getRow(1);
-    headerRow.height = 26;
-    headerRow.eachCell((cell) => {
-      cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+    // Add TOTAL row at the bottom
+    const totalPoints = filtered.reduce((sum, c) => sum + (c.points || 0), 0);
+    const totalPending = filtered.reduce((sum, c) => sum + (c.pending_points || 0), 0);
+    const totalRowIndex = filtered.length + 3; // Title = 1, Header = 2, Data = filtered.length
+    
+    const totalRow = worksheet.addRow({
+      no: '',
+      id: '',
+      full_name: 'TOTAL',
+      email: '',
+      phone: '',
+      points: totalPoints,
+      pending_points: totalPending,
+      points_status: '',
+      is_redeem_blocked: ''
+    });
+    totalRow.height = 22;
+
+    // Freeze header row (Row 2, so active cell is A3)
+    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 2, activeCell: 'A3' }];
+
+    // Style the sheet cells with thin black borders
+    const thinBorder = {
+      top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      bottom: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      right: { style: 'thin' as const, color: { argb: 'FF000000' } }
+    };
+
+    const doubleBottomBorder = {
+      top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      bottom: { style: 'double' as const, color: { argb: 'FF000000' } },
+      right: { style: 'thin' as const, color: { argb: 'FF000000' } }
+    };
+
+    // Row 2 is Header
+    worksheet.getRow(2).eachCell((cell) => {
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF000000' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = thinBorder;
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' } // Royal Blue
-      };
-      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF1E3A8A' } },
-        left: { style: 'thin', color: { argb: 'FF1E3A8A' } },
-        bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
-        right: { style: 'thin', color: { argb: 'FF1E3A8A' } }
+        fgColor: { argb: 'FFEFEFEF' } // Light gray fill for headers
       };
     });
 
-    // Style Data Rows
+    // Style data rows and total row
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
+      if (rowNumber <= 2) return; // Skip title and header
 
       row.height = 20;
-
-      // Zebra striping
-      const isEven = rowNumber % 2 === 0;
-      const fillBgColor = isEven ? 'FFF9FAFB' : 'FFFFFFFF';
+      const isTotal = rowNumber === totalRowIndex;
 
       row.eachCell((cell, colNumber) => {
-        cell.font = { name: 'Segoe UI', size: 9 };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: fillBgColor }
-        };
+        cell.font = { name: 'Calibri', size: 11, bold: isTotal };
+        cell.border = isTotal ? doubleBottomBorder : thinBorder;
         
-        // Borders
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-          left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-          bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-          right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
-        };
-
         // Alignments & formats
         if (colNumber === 1) {
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -812,27 +845,50 @@ export default function AdminRewardsPage() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Mutasi Poin");
 
-      // Freeze header row
-      worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1, activeCell: 'A2' }];
+      // Title Row on Row 1
+      worksheet.mergeCells('A1:M1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'LAPORAN MUTASI POIN LOYALITAS RESTOBOOK';
+      titleCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF000000' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 30;
 
-      // Set columns
+      // Headers on Row 2
+      worksheet.getRow(2).values = [
+        'No',
+        'ID Transaksi',
+        'Nama Pelanggan',
+        'Email Pelanggan',
+        'Nomor HP',
+        'Poin',
+        'Poin Sebelum',
+        'Poin Sesudah',
+        'Status',
+        'Jenis Sumber',
+        'Keterangan / Alasan',
+        'Operator Admin',
+        'Waktu'
+      ];
+      worksheet.getRow(2).height = 24;
+
+      // Columns config
       worksheet.columns = [
-        { header: 'No', key: 'no', width: 6 },
-        { header: 'ID Transaksi', key: 'id', width: 38 },
-        { header: 'Nama Pelanggan', key: 'customer_name', width: 25 },
-        { header: 'Email Pelanggan', key: 'customer_email', width: 30 },
-        { header: 'Nomor HP', key: 'customer_phone', width: 18 },
-        { header: 'Poin', key: 'points', width: 12 },
-        { header: 'Poin Sebelum', key: 'before_points', width: 14 },
-        { header: 'Poin Sesudah', key: 'after_points', width: 14 },
-        { header: 'Status', key: 'status', width: 14 },
-        { header: 'Jenis Sumber', key: 'source_type', width: 16 },
-        { header: 'Keterangan / Alasan', key: 'reason', width: 35 },
-        { header: 'Operator Admin', key: 'acted_by', width: 20 },
-        { header: 'Waktu', key: 'created_at', width: 22 }
+        { key: 'no', width: 6 },
+        { key: 'id', width: 38 },
+        { key: 'customer_name', width: 25 },
+        { key: 'customer_email', width: 30 },
+        { key: 'customer_phone', width: 18 },
+        { key: 'points', width: 12 },
+        { key: 'before_points', width: 14 },
+        { key: 'after_points', width: 14 },
+        { key: 'status', width: 14 },
+        { key: 'source_type', width: 16 },
+        { key: 'reason', width: 35 },
+        { key: 'acted_by', width: 20 },
+        { key: 'created_at', width: 22 }
       ];
 
-      // Add rows
+      // Add Data rows starting at Row 3
       txs.forEach((t: any, i: number) => {
         const timeStr = format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss");
         worksheet.addRow({
@@ -852,51 +908,68 @@ export default function AdminRewardsPage() {
         });
       });
 
-      // Style Header Row
-      const headerRow = worksheet.getRow(1);
-      headerRow.height = 26;
-      headerRow.eachCell((cell) => {
-        cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+      // Add TOTAL row at the bottom
+      const totalPoints = txs.reduce((sum: number, t: any) => sum + (t.points || 0), 0);
+      const totalRowIndex = txs.length + 3;
+
+      const totalRow = worksheet.addRow({
+        no: '',
+        id: '',
+        customer_name: 'TOTAL',
+        customer_email: '',
+        customer_phone: '',
+        points: totalPoints,
+        before_points: '',
+        after_points: '',
+        status: '',
+        source_type: '',
+        reason: '',
+        acted_by: '',
+        created_at: ''
+      });
+      totalRow.height = 22;
+
+      // Freeze header row (Row 2, so active cell is A3)
+      worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 2, activeCell: 'A3' }];
+
+      // Style borders
+      const thinBorder = {
+        top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+        left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+        bottom: { style: 'thin' as const, color: { argb: 'FF000000' } },
+        right: { style: 'thin' as const, color: { argb: 'FF000000' } }
+      };
+
+      const doubleBottomBorder = {
+        top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+        left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+        bottom: { style: 'double' as const, color: { argb: 'FF000000' } },
+        right: { style: 'thin' as const, color: { argb: 'FF000000' } }
+      };
+
+      // Row 2 is Header
+      worksheet.getRow(2).eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF000000' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = thinBorder;
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FF0F766E' } // Teal background
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FF115E59' } },
-          left: { style: 'thin', color: { argb: 'FF115E59' } },
-          bottom: { style: 'medium', color: { argb: 'FF115E59' } },
-          right: { style: 'thin', color: { argb: 'FF115E59' } }
+          fgColor: { argb: 'FFEFEFEF' }
         };
       });
 
-      // Style Data Rows
+      // Style data rows and total row
       worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        if (rowNumber === 1) return; // Skip header
+        if (rowNumber <= 2) return; // Skip title and header
 
         row.height = 20;
-
-        // Zebra striping
-        const isEven = rowNumber % 2 === 0;
-        const fillBgColor = isEven ? 'FFF9FAFB' : 'FFFFFFFF';
+        const isTotal = rowNumber === totalRowIndex;
 
         row.eachCell((cell, colNumber) => {
-          cell.font = { name: 'Segoe UI', size: 9 };
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: fillBgColor }
-          };
+          cell.font = { name: 'Calibri', size: 11, bold: isTotal };
+          cell.border = isTotal ? doubleBottomBorder : thinBorder;
           
-          // Borders
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
-          };
-
           // Alignments & formats
           if (colNumber === 1) {
             cell.alignment = { vertical: 'middle', horizontal: 'center' };

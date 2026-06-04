@@ -637,7 +637,7 @@ export default function AdminWalletActivationsPage() {
                                 type="checkbox"
                                 checked={invalidFields.includes(opt.key)}
                                 onChange={() => handleFieldCheck(opt.key)}
-                                className="rounded border-border-light dark:border-border-dark text-red-650 focus:ring-red-650"
+                                className="rounded border-border-light dark:border-border-dark text-red-600 focus:ring-red-600"
                               />
                               <span>{opt.label}</span>
                             </label>
@@ -663,14 +663,14 @@ export default function AdminWalletActivationsPage() {
                         <button
                           onClick={() => handleAction(selectedActivation.id, "reject")}
                           disabled={submittingAction}
-                          className="flex-1 py-3 bg-red-650 hover:bg-red-750 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
+                          className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
                         >
                           {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><X className="w-4 h-4" /> Tolak Pengajuan</>}
                         </button>
                         <button
                           onClick={() => handleAction(selectedActivation.id, "approve")}
                           disabled={submittingAction}
-                          className="flex-1 py-3 bg-green-650 hover:bg-green-700 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-green-600/10 disabled:opacity-50"
+                          className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-green-600/10 disabled:opacity-50"
                         >
                           {submittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Setujui Aktivasi</>}
                         </button>

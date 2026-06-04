@@ -782,7 +782,7 @@ export default function CustomerReservationsPage() {
                       setDeletingHistoryId(null);
                       await handleDeleteHistory(id);
                     }}
-                    className="flex-1 py-3 bg-red-600 hover:bg-red-750 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
                   >
                     Hapus
                   </motion.button>

@@ -622,7 +622,7 @@ export default function CustomerWalletPage() {
               className="bg-gradient-to-r from-red-500/10 to-rose-500/10 dark:from-red-500/5 dark:to-rose-500/5 border border-red-500/30 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-red-500/20 rounded-2xl text-red-650 shrink-0">
+                <div className="p-3 bg-red-500/20 rounded-2xl text-red-600 shrink-0">
                   <AlertTriangle className="w-8 h-8" />
                 </div>
                 <div className="space-y-2 flex-1 min-w-0">
@@ -644,7 +644,7 @@ export default function CustomerWalletPage() {
               </div>
               <button
                 onClick={() => router.push("/customer/wallet/activation")}
-                className="px-6 py-3 bg-red-500 hover:bg-red-650 text-white font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
               >
                 Perbaiki & Ajukan Ulang
               </button>
@@ -687,7 +687,7 @@ export default function CustomerWalletPage() {
               className="space-y-6"
             >
               {/* Premium Blocked Banner */}
-              <div className="bg-gradient-to-r from-rose-500/10 to-red-650/10 dark:from-rose-500/5 dark:to-red-650/5 border border-rose-500/30 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg shadow-rose-500/5">
+              <div className="bg-gradient-to-r from-rose-500/10 to-red-600/10 dark:from-rose-500/5 dark:to-red-600/5 border border-rose-500/30 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg shadow-rose-500/5">
                 <div className="flex items-start gap-4">
                   <div className="p-4 bg-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-400 shrink-0 mt-0.5">
                     <ShieldAlert className="w-8 h-8" />

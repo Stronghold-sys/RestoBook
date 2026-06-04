@@ -1153,7 +1153,7 @@ export default function AdminCustomersPage() {
 
                           <button
                             onClick={() => handleDelete(customer)}
-                            className="p-1.5 hover:bg-red-150 hover:text-red-650 rounded-lg text-muted transition-colors"
+                            className="p-1.5 hover:bg-red-100 hover:text-red-600 rounded-lg text-muted transition-colors"
                             title="Hapus Akun"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1886,7 +1886,7 @@ export default function AdminCustomersPage() {
                     <>
                       <span className="text-muted font-medium">Status Dompetku:</span>
                       <span className={`text-right font-black uppercase text-[10px] ${
-                        reviewAppeal.profiles?.is_wallet_blocked ? 'text-red-650 font-bold' : 'text-green-600 font-bold'
+                        reviewAppeal.profiles?.is_wallet_blocked ? 'text-red-600 font-bold' : 'text-green-600 font-bold'
                       }`}>
                         {reviewAppeal.profiles?.is_wallet_blocked ? 'Terblokir' : 'Aktif'}
                       </span>
@@ -1900,7 +1900,7 @@ export default function AdminCustomersPage() {
                       <span className="text-text-light dark:text-text-dark text-right">{reviewAppeal.profiles?.wrong_pin_count || 0} Kali</span>
 
                       <span className="text-muted font-medium">Alasan Blokir Dompet:</span>
-                      <span className="text-text-light dark:text-text-dark text-right italic font-medium text-red-650" title={reviewAppeal.profiles?.wallet_block_reason}>
+                      <span className="text-text-light dark:text-text-dark text-right italic font-medium text-red-600" title={reviewAppeal.profiles?.wallet_block_reason}>
                         &quot;{reviewAppeal.profiles?.wallet_block_reason || '-'}&quot;
                       </span>
                     </>
@@ -1908,7 +1908,7 @@ export default function AdminCustomersPage() {
                     <>
                       <span className="text-muted font-medium">Status Akun Saat Ini:</span>
                       <span className={`text-right font-black uppercase text-[10px] ${
-                        reviewAppeal.profiles?.status === 'banned' ? 'text-red-650 font-bold' : 
+                        reviewAppeal.profiles?.status === 'banned' ? 'text-red-600 font-bold' : 
                         reviewAppeal.profiles?.status === 'suspended' ? 'text-amber-600 font-bold' : 'text-green-600 font-bold'
                       }`}>
                         {reviewAppeal.profiles?.status || 'active'}

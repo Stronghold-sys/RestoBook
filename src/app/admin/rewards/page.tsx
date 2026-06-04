@@ -966,12 +966,12 @@ export default function AdminRewardsPage() {
                           <td className="px-6 py-4 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5 justify-center">
                               {cust.is_redeem_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-24 text-center whitespace-nowrap">Redeem Blok</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200 block w-24 text-center whitespace-nowrap">Redeem Blok</span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Redeem Aktif</span>
                               )}
                               {cust.is_wallet_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-650 border border-red-200 block w-24 text-center whitespace-nowrap">Dompet Blok</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200 block w-24 text-center whitespace-nowrap">Dompet Blok</span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Dompet Aktif</span>
                               )}
@@ -1992,7 +1992,7 @@ export default function AdminRewardsPage() {
                                       <p className="font-bold text-text-light dark:text-text-dark">{reward.title}</p>
                                       <p className="text-[9px] text-muted font-medium uppercase tracking-wide">Limit: {limit}x {periodLabel}</p>
                                     </div>
-                                    <span className={`font-mono font-black text-xs shrink-0 px-2 py-0.5 rounded ${count >= limit ? "bg-red-50 text-red-650 border border-red-250" : "bg-primary/10 text-primary"}`}>
+                                    <span className={`font-mono font-black text-xs shrink-0 px-2 py-0.5 rounded ${count >= limit ? "bg-red-50 text-red-600 border border-red-200" : "bg-primary/10 text-primary"}`}>
                                       {count}/{limit} Aktif
                                     </span>
                                   </div>
@@ -2019,7 +2019,7 @@ export default function AdminRewardsPage() {
                                         <button
                                           type="button"
                                           onClick={() => handleAdjustQuota('reset', reward, selectedCustomer.id)}
-                                          className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                          className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
                                         >
                                           Reset Kuota (0)
                                         </button>
@@ -2059,7 +2059,7 @@ export default function AdminRewardsPage() {
             >
               <div>
                 <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-red-200/50">
-                  <Ban className="w-8 h-8 text-red-650" />
+                  <Ban className="w-8 h-8 text-red-600" />
                 </div>
                 <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Blokir Reward Pelanggan?</h3>
                 <p className="text-xs text-muted mt-1 leading-relaxed">
@@ -2090,7 +2090,7 @@ export default function AdminRewardsPage() {
                 <button 
                   onClick={() => confirmToggleBlockRedemption(selectedRedemption, true, blockReason)} 
                   disabled={!blockReason.trim()}
-                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-750 transition-all disabled:opacity-50 text-xs uppercase"
+                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50 text-xs uppercase"
                 >
                   Ya, Blokir
                 </button>
@@ -2118,7 +2118,7 @@ export default function AdminRewardsPage() {
               className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800 z-10 space-y-4"
             >
               <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 mx-auto rounded-2xl flex items-center justify-center mb-2 border border-red-200">
-                <Trash2 className="w-8 h-8 text-red-650" />
+                <Trash2 className="w-8 h-8 text-red-600" />
               </div>
               <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Hapus Penukaran?</h3>
               <p className="text-xs text-muted leading-relaxed font-medium">
@@ -2136,7 +2136,7 @@ export default function AdminRewardsPage() {
                 </button>
                 <button 
                   onClick={confirmDeleteRedemption} 
-                  className="flex-1 py-3.5 bg-red-650 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-700 transition-all text-xs uppercase"
+                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-700 transition-all text-xs uppercase"
                 >
                   Ya, Hapus
                 </button>

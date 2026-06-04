@@ -1628,7 +1628,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => router.push("/customer/wallet/activation")}
-                        className="w-full py-2.5 bg-red-650 hover:bg-red-750 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"
+                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"
                       >
                         Aktivasi Sekarang
                       </button>
@@ -1665,7 +1665,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => setShowTopUpModal(true)}
-                          className="w-full py-2.5 bg-red-650 hover:bg-red-750 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
                         >
                           Isi Saldo Sekarang
                         </button>

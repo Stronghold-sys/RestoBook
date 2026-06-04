@@ -1199,7 +1199,7 @@ export default function CustomerSupportPage() {
                   <button
                     onClick={handleCancelTicket}
                     disabled={cancelLoading || !cancelReason.trim()}
-                    className="bg-red-650 hover:bg-red-750 disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all bg-red-600 hover:bg-red-700"
+                    className="disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all bg-red-600 hover:bg-red-700"
                   >
                     {cancelLoading ? "Memproses..." : "Ya, Batalkan Tiket"}
                   </button>

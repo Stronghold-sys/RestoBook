@@ -697,6 +697,20 @@ function WorkShiftsManager() {
   const handleSaveSubstitute = async () => {
      if (!subSelectedShift) return toast.error("Mohon pilih shift yang ingin diganti!");
      if (!subSelectedEmployee) return toast.error("Mohon pilih karyawan pengganti terlebih dahulu!");
+     
+     // Validasi 1: Pengganti tidak boleh sama dengan yang digantikan
+     if (subForEmployee && subSelectedEmployee === subForEmployee) {
+       return toast.error("Karyawan pengganti tidak boleh orang yang sama dengan yang digantikan!");
+     }
+
+     // Validasi 2: Pengganti tidak boleh karyawan yang memang sudah dijadwalkan secara reguler di shift tersebut
+     const isAlreadyAssignedReg = (subSelectedShift.work_shift_assignments || []).some(
+       (a: any) => a.profile_id === subSelectedEmployee
+     );
+     if (isAlreadyAssignedReg) {
+       return toast.error("Karyawan tersebut sudah dijadwalkan secara reguler pada shift ini!");
+     }
+
      setSubmittingSub(true);
      try {
        const todayISOStr = new Date().toLocaleDateString('sv-SE'); // Format YYYY-MM-DD aman

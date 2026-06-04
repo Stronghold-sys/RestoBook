@@ -15,6 +15,14 @@ const config: Config = {
           hover: '#dc4c04',
         },
         secondary: '#dc2626',
+        success: {
+          DEFAULT: '#16a34a',
+          hover: '#15803d',
+        },
+        danger: {
+          DEFAULT: '#dc2626',
+          hover: '#b91c1c',
+        },
         accent: '#f59e0b',
         background: {
           light: '#fff8f0',

@@ -39,3 +39,6 @@ h a p u s - a c c e s s . p s 1
 # OpenNext & Wrangler
 .open-next/
 .wrangler/
+
+# scratch directory
+/scratch

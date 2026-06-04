@@ -1,474 +1,384 @@
-KEMBANGKAN FITUR "TAMBAH KARYAWAN BARU" MENJADI SISTEM MANAJEMEN DATA KARYAWAN YANG LENGKAP, MODERN, REALTIME, SINKRON, DAN TERINTEGRASI TANPA MENGHAPUS ATAU MERUSAK FITUR YANG SUDAH ADA.
+PERBAIKI LOGIKA ABSENSI DAN STATUS KEHADIRAN KARYAWAN AGAR PENENTUAN ALPHA DILAKUKAN SECARA OTOMATIS, AKURAT, DAN BERDASARKAN WAKTU WIB.
 
-PENTING:
+MASALAH SAAT INI:
 
-- Jangan menghapus fitur lama.
-- Jangan mengubah alur yang sudah berjalan dengan baik.
-- Hanya tambahkan fitur baru, validasi, sinkronisasi, dan logika yang lebih lengkap.
-- Pertahankan seluruh fungsi yang sudah ada.
-- Pastikan seluruh perubahan realtime tanpa refresh browser.
-- Pastikan data admin dan akun karyawan selalu sinkron.
-- Pastikan foto karyawan hanya terhubung ke akun karyawan yang bersangkutan dan tidak memengaruhi karyawan lain.
+Saat karyawan memiliki jadwal kerja yang sudah ditentukan (tanggal kerja, jam masuk, dan jam pulang), tetapi karyawan tidak melakukan check-in sama sekali hingga melewati jam pulang bahkan sudah berganti hari dan tanggal, sistem belum otomatis mengubah status menjadi ALPHA.
+
+Akibatnya data kehadiran menjadi tidak akurat.
 
 ==================================================
-FITUR YANG HARUS TETAP DIPERTAHANKAN
+TUJUAN PERBAIKAN
 ==================================================
 
-- Nama Lengkap
-- Email
-- Jabatan
-- Nomor Telepon
-- ID Karyawan Otomatis
-- Password Sementara Otomatis
-- Download PDF Data Login
+Buat logika absensi otomatis yang dapat menentukan status:
+
+- Hadir
+- Terlambat
+- Izin
+- Sakit
+- Alpha
+
+secara otomatis berdasarkan jadwal kerja dan aktivitas absensi karyawan.
+
+Seluruh perhitungan wajib menggunakan:
+
+Timezone:
+Asia/Jakarta (WIB)
 
 ==================================================
-FORMULIR DATA KARYAWAN LENGKAP
+LOGIKA ABSENSI HARIAN
 ==================================================
 
-SECTION 1 - DATA PRIBADI
+Setiap karyawan memiliki:
 
-- Foto Karyawan
-- Nama Lengkap
-- Nama Panggilan
-- Jenis Kelamin
-- Tempat Lahir
-- Tanggal Lahir
-- Agama
-- Status Pernikahan
-- Nomor KTP / NIK
-- Nomor KK
-- Email
-- Nomor Telepon
-- Nomor WhatsApp
-- Alamat Lengkap
-- RT
-- RW
-- Kelurahan / Desa
-- Kecamatan
-- Kota / Kabupaten
-- Provinsi
-- Kode Pos
+- tanggal kerja
+- jam masuk
+- jam pulang
+- status absensi
 
-SECTION 2 - DATA PEKERJAAN
+Contoh:
 
-- Jabatan
-- Divisi
-- Departemen
-- Status Karyawan
-- Tanggal Masuk Kerja
-- Shift Kerja
-- Lokasi Penempatan
-- Atasan Langsung
-- Gaji Pokok
-- Tunjangan
-- Status Kerja
+Tanggal Kerja:
+05 Juni 2026
 
-SECTION 3 - DATA AKUN
+Jam Masuk:
+08:00 WIB
 
-- ID Karyawan Otomatis
-- Username
-- Password Sementara Otomatis
-- Role
-- Hak Akses
-- Status Akun
-
-SECTION 4 - KONTAK DARURAT
-
-- Nama Kontak Darurat
-- Hubungan
-- Nomor Telepon Darurat
-- Alamat Kontak Darurat
-
-SECTION 5 - PENDIDIKAN DAN KOMPETENSI
-
-- Pendidikan Terakhir
-- Nama Sekolah / Kampus
-- Jurusan
-- Tahun Lulus
-- Sertifikasi
-- Skill / Keahlian
-- Catatan Tambahan
+Jam Pulang:
+17:00 WIB
 
 ==================================================
-FITUR UPLOAD FOTO KARYAWAN
+LOGIKA STATUS HADIR
 ==================================================
 
-Tambahkan fitur upload foto profesional.
+Jika:
 
-Fitur:
-
-- Upload dari device
-- Drag & Drop
-- Preview foto sebelum simpan
-- Crop foto
-- Rotate foto
-- Zoom foto
-- Kompres otomatis
-- Rename file otomatis
-- Nama file unik
-- Validasi format
-- Validasi ukuran file
-
-Format:
-
-- JPG
-- JPEG
-- PNG
-- WEBP
-
-Jika foto belum ada:
-
-- gunakan avatar default
-
-Foto digunakan untuk:
-
-- Foto profil akun karyawan
-- Avatar navbar
-- Dashboard karyawan
-- Detail profil
-- Data karyawan
-- PDF login (opsional)
-
-==================================================
-LOGIKA PENAMBAHAN KARYAWAN
-==================================================
-
-Saat Admin klik tombol SIMPAN atau BUAT KARYAWAN:
-
-1. Validasi seluruh data.
-2. Validasi foto.
-3. Generate ID Karyawan.
-4. Generate Username.
-5. Generate Password Sementara.
-6. Upload foto.
-7. Simpan data karyawan.
-8. Simpan data akun.
-9. Hubungkan data akun dengan data karyawan.
-10. Simpan data kontak darurat.
-11. Simpan data pendidikan.
-12. Simpan data skill.
-13. Generate PDF Login.
-14. Simpan Activity Log.
-15. Kirim notifikasi realtime.
-16. Sinkronkan data ke akun karyawan.
-
-Jika ada proses gagal:
-
-- batalkan seluruh proses
-- tampilkan pesan error yang jelas
-- jangan menyimpan data setengah jadi
-
-==================================================
-LOGIKA ID KARYAWAN
-==================================================
-
-Format:
-
-KRY-000001
-KRY-000002
-KRY-000003
-
-Ketentuan:
-
-- unik
-- tidak boleh duplikat
-- aman jika banyak admin membuat akun bersamaan
-- tetap berurutan
-- tidak berubah walaupun ada data dihapus
-
-==================================================
-LOGIKA PASSWORD SEMENTARA
-==================================================
-
-Password otomatis harus:
-
-- memiliki huruf besar
-- huruf kecil
-- angka
-- simbol
-
-Password:
-
-- disimpan secara aman
-- ditampilkan sekali setelah akun dibuat
-- masuk ke PDF Login
-- wajib diganti saat login pertama
-
-==================================================
-LOGIKA FOTO KARYAWAN DAN AKUN
-==================================================
-
-SANGAT PENTING:
-
-Foto yang diupload admin harus langsung menjadi:
-
-- Foto Data Karyawan
-- Foto Profil Akun Karyawan
-- Avatar Dashboard
-- Avatar Navbar
-- Foto Profil Lengkap
-
-Tetapi hanya untuk karyawan yang bersangkutan.
-
-CONTOH:
-
-Admin membuat:
-
-Karyawan A
-employee_id = 101
-user_id = 201
-
-Upload:
-foto-a.jpg
+- karyawan melakukan check-in
+- sebelum atau pada jam masuk
 
 Maka:
 
-employee 101 menggunakan foto-a.jpg
-user 201 menggunakan foto-a.jpg
+Status = HADIR
+
+==================================================
+LOGIKA TERLAMBAT
+==================================================
+
+Jika:
+
+- karyawan melakukan check-in
+- batas toleransi yang di atur admin habis
+
+Maka:
+
+Status = TERLAMBAT
+
+Hitung:
+
+- jumlah menit keterlambatan
+- total akumulasi keterlambatan bulanan
+
+Contoh:
+
+Jam Masuk:
+08:00
+
+Check-in:
+08:15
+
+Status:
+TERLAMBAT
+
+Terlambat:
+15 Menit
+
+==================================================
+LOGIKA IZIN
+==================================================
+
+Jika:
+
+- karyawan mengajukan izin
+- disetujui oleh admin
+
+Maka:
+
+Status = IZIN
+
+Dan tidak dihitung sebagai alpha.
+
+==================================================
+LOGIKA SAKIT
+==================================================
+
+Jika:
+
+- karyawan mengajukan sakit
+- disetujui admin
+
+Maka:
+
+Status = SAKIT
+
+Dan tidak dihitung sebagai alpha.
+
+==================================================
+LOGIKA ALPHA OTOMATIS
+==================================================
+
+INI BAGIAN PALING PENTING.
+
+Jika:
+
+1. Karyawan memiliki jadwal kerja.
+2. Tidak melakukan check-in.
+3. Tidak mengajukan izin.
+4. Tidak mengajukan sakit.
+5. Tidak memiliki absensi masuk.
+6. Jam pulang telah terlewati.
+7. Hari kerja telah berakhir.
+8. Tanggal telah berganti ke hari berikutnya.
+
+Maka sistem harus otomatis mengubah status menjadi:
+
+ALPHA
+
+==================================================
+CONTOH KASUS 1
+==================================================
+
+Tanggal Kerja:
+05 Juni 2026
+
+Jam Masuk:
+08:00
+
+Jam Pulang:
+17:00
+
+Kondisi:
+
+- Tidak check-in
+- Tidak izin
+- Tidak sakit
+
+Waktu sekarang:
+
+06 Juni 2026
+00:01 WIB
 
 Hasil:
 
-✓ Foto muncul di data karyawan A
-✓ Foto muncul di akun karyawan A
-✓ Foto muncul di navbar akun A
-✓ Foto muncul di dashboard akun A
-
-TIDAK BOLEH:
-
-✗ Foto berubah di akun karyawan B
-✗ Foto berubah di akun karyawan C
-✗ Foto berubah di akun lain
+Status = ALPHA
 
 ==================================================
-LOGIKA UPDATE FOTO
+CONTOH KASUS 2
 ==================================================
 
-Saat Admin mengganti foto karyawan:
+Tanggal Kerja:
+05 Juni 2026
 
-1. Upload foto baru.
-2. Validasi file.
-3. Simpan file.
-4. Update foto pada data karyawan.
-5. Update avatar akun karyawan.
-6. Simpan log aktivitas.
-7. Kirim event realtime hanya ke akun terkait.
+Jam Masuk:
+08:00
 
-HASIL:
+Jam Pulang:
+17:00
 
-✓ Dashboard Admin langsung berubah
-✓ Detail Karyawan langsung berubah
-✓ Profil Karyawan langsung berubah
-✓ Navbar Karyawan langsung berubah
+Kondisi:
+
+- Tidak check-in
+- Tidak izin
+- Tidak sakit
+
+Waktu sekarang:
+
+05 Juni 2026
+23:59 WIB
+
+Hasil:
+
+Status = BELUM DIPROSES
+
+Karena hari belum berganti.
+
+==================================================
+CONTOH KASUS 3
+==================================================
+
+Tanggal Kerja:
+05 Juni 2026
+
+Jam Masuk:
+08:00
+
+Jam Pulang:
+17:00
+
+Kondisi:
+
+- Izin disetujui
+
+Waktu:
+
+06 Juni 2026
+
+Hasil:
+
+Status tetap IZIN
+
+Tidak boleh menjadi ALPHA.
+
+==================================================
+CONTOH KASUS 4
+==================================================
+
+Tanggal Kerja:
+05 Juni 2026
+
+Jam Masuk:
+08:00
+
+Jam Pulang:
+17:00
+
+Kondisi:
+
+- Sakit disetujui
+
+Waktu:
+
+06 Juni 2026
+
+Hasil:
+
+Status tetap SAKIT
+
+Tidak boleh menjadi ALPHA.
+
+==================================================
+PROSES OTOMATIS HARIAN
+==================================================
+
+Buat proses otomatis yang berjalan berkala.
+
+Setiap beberapa menit sistem harus memeriksa:
+
+1. Jadwal kerja yang sudah lewat.
+2. Data absensi.
+3. Data izin.
+4. Data sakit.
+
+Jika ditemukan:
+
+- tidak ada check-in
+- tidak ada izin
+- tidak ada sakit
+- tanggal kerja sudah lewat
+
+Maka:
+
+Status otomatis menjadi ALPHA.
+
+==================================================
+LOGIKA YANG HARUS DICEK
+==================================================
+
+IF
+
+tanggal_kerja < tanggal_sekarang_WIB
+
+AND
+
+status_absensi kosong
+
+AND
+
+tidak_ada_checkin
+
+AND
+
+tidak_ada_izin_disetujui
+
+AND
+
+tidak_ada_sakit_disetujui
+
+THEN
+
+status_absensi = ALPHA
+
+==================================================
+PERHITUNGAN DASHBOARD
+==================================================
+
+Pastikan kartu statistik:
+
+MASUK
+IZIN/SAKIT
+ALPHA
+TERLAMBAT
+
+menggunakan data terbaru.
+
+Saat status otomatis berubah menjadi ALPHA:
+
+- jumlah ALPHA bertambah otomatis
+- dashboard admin langsung diperbarui
+- dashboard karyawan langsung diperbarui
+- laporan absensi diperbarui
+- rekap bulanan diperbarui
+- grafik absensi diperbarui
 
 Tanpa refresh browser.
 
 ==================================================
-REALTIME DAN SINKRONISASI
+REALTIME
 ==================================================
 
-Semua perubahan harus realtime.
+Saat status berubah menjadi ALPHA:
 
-Saat Admin:
-
-- Menambah Karyawan
-- Mengubah Nama
-- Mengubah Email
-- Mengubah Nomor Telepon
-- Mengubah Jabatan
-- Mengubah Role
-- Mengubah Status Akun
-- Mengubah Foto
-
-Maka perubahan langsung terlihat pada:
-
-- Dashboard Admin
-- Daftar Karyawan
-- Detail Karyawan
-- Akun Karyawan yang bersangkutan
-- Profil Karyawan
-
-Tanpa refresh browser.
+- dashboard admin berubah realtime
+- dashboard karyawan berubah realtime
+- laporan absensi berubah realtime
+- statistik berubah realtime
 
 ==================================================
-LOGIKA SINKRONISASI DATA
+PENCEGAHAN KESALAHAN
 ==================================================
 
-Jika Admin mengubah:
+Jangan jadikan ALPHA jika:
 
-NAMA
-→ data akun ikut berubah
-
-EMAIL
-→ data akun ikut berubah
-
-NO TELEPON
-→ data akun ikut berubah
-
-FOTO
-→ avatar akun ikut berubah
-
-JABATAN
-→ role dan hak akses ikut diperbarui
-
-STATUS AKUN
-→ akses akun ikut diperbarui
-
-Perubahan harus langsung muncul pada akun terkait secara realtime.
-
-==================================================
-LOGIKA ROLE DAN HAK AKSES
-==================================================
-
-Jika jabatan berubah:
-
-Kasir
-→ Role Kasir
-
-Supervisor
-→ Role Supervisor
-
-Manager
-→ Role Manager
-
-Admin
-→ Role Admin
-
-Saat role berubah:
-
-- menu otomatis menyesuaikan
-- hak akses otomatis menyesuaikan
-- tidak perlu logout
-- tidak perlu refresh
-
-==================================================
-LOGIKA STATUS AKUN
-==================================================
-
-Jika akun dinonaktifkan:
-
-- status akun berubah
-- notifikasi realtime dikirim
-- akses dibatasi
-- sesi dapat diputus jika diperlukan
-
-Jika akun diaktifkan:
-
-- akses kembali normal
-- hak akses aktif kembali
-
-==================================================
-NOTIFIKASI REALTIME
-==================================================
-
-Admin menerima:
-
-- Karyawan berhasil dibuat
-- Data berhasil diperbarui
-- Foto berhasil diperbarui
-- Role berhasil diubah
-- Akun diaktifkan
-- Akun dinonaktifkan
-- Password direset
-
-Karyawan menerima:
-
-- Akun berhasil dibuat
-- Profil diperbarui
-- Foto diperbarui
-- Password diperbarui
-- Role diperbarui
-- Status akun diperbarui
-
-==================================================
-VALIDASI
-==================================================
-
-Email:
-
-- wajib
-- format valid
-- unik
-
-Nomor Telepon:
-
-- wajib
-- format valid
-
-NIK:
-
-- numerik
-- panjang sesuai standar
-
-Tanggal Lahir:
-
-- tidak boleh lebih besar dari hari ini
-
-Tanggal Masuk:
-
-- tidak boleh lebih kecil dari tanggal lahir
-
-Gaji:
-
-- hanya angka
-
-Foto:
-
-- format valid
-- ukuran valid
+- ada check-in valid
+- ada izin disetujui
+- ada sakit disetujui
+- hari kerja belum berakhir
+- tanggal kerja belum lewat
 
 ==================================================
 AUDIT LOG
 ==================================================
 
-Simpan:
+Simpan log otomatis:
 
-- siapa yang membuat
-- siapa yang mengubah
-- siapa yang menghapus
-- data sebelum perubahan
-- data sesudah perubahan
-- waktu perubahan
-- alamat IP
-- browser
-- perangkat
-
-==================================================
-PDF LOGIN
-==================================================
-
-PDF harus berisi:
-
-- Foto Karyawan
-- Nama Lengkap
 - ID Karyawan
-- Username
-- Password Sementara
-- Jabatan
-- Status Akun
-- Tanggal Pembuatan
-
-Tambahkan catatan:
-
-"Password wajib diganti saat login pertama demi keamanan akun."
+- Nama Karyawan
+- Tanggal Kerja
+- Jam Masuk
+- Jam Pulang
+- Waktu Sistem Mengubah Status
+- Status Lama
+- Status Baru (ALPHA)
+- Alasan:
+  "Tidak melakukan absensi hingga melewati akhir hari kerja"
 
 ==================================================
 HASIL AKHIR YANG DIHARAPKAN
 ==================================================
 
-✓ Form karyawan lebih lengkap
-✓ Data lebih profesional
-✓ Upload foto dari device
-✓ Foto otomatis menjadi foto akun karyawan
-✓ Foto hanya memengaruhi akun karyawan yang bersangkutan
-✓ Tidak memengaruhi karyawan lain
-✓ Sinkron realtime Admin ↔ Karyawan
-✓ Tanpa refresh browser
-✓ PDF login otomatis
-✓ Audit log lengkap
-✓ Validasi lengkap
-✓ Hak akses otomatis menyesuaikan
-✓ Aman dari konflik data
-✓ Aman digunakan banyak admin dan banyak karyawan secara bersamaan
-✓ Seluruh fitur lama tetap berjalan normal
-✓ UI tetap modern, rapi, responsif, dan mudah digunakan
+✓ Karyawan yang tidak masuk kerja akan otomatis menjadi ALPHA.
+✓ Menggunakan waktu WIB.
+✓ Tidak perlu input manual admin.
+✓ Tidak salah menghitung izin atau sakit.
+✓ Dashboard langsung sinkron.
+✓ Statistik ALPHA selalu akurat.
+✓ Rekap absensi harian dan bulanan selalu sesuai kondisi sebenarnya.

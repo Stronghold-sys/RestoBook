@@ -81,6 +81,14 @@ export default function SpotlightTutorial() {
 
   const activeStep = steps[currentStep];
 
+  // Dynamic padding based on selector (larger padding for notifications to keep the red badge fully visible)
+  const getPadding = () => {
+    if (activeStep?.targetSelector === '[data-tour="header-notifications"]') {
+      return 18;
+    }
+    return 8;
+  };
+
   // Generate inline SVG mask for backdrop cutout
   const getMaskStyle = () => {
     const w = windowSize.width;
@@ -93,7 +101,7 @@ export default function SpotlightTutorial() {
     }
 
     const { left, top, width, height } = coords;
-    const padding = 8;
+    const padding = getPadding();
     const x = left - padding;
     const y = top - padding;
     const rW = width + padding * 2;
@@ -114,7 +122,7 @@ export default function SpotlightTutorial() {
     };
   };
 
-  // Compute position of tooltip (relative to target coords or centered fallback)
+  // Compute position of tooltip (relative to target coords with viewport boundary checks)
   const getTooltipStyle = () => {
     if (!coords) {
       return {
@@ -126,57 +134,47 @@ export default function SpotlightTutorial() {
     }
 
     const { left, top, width, height } = coords;
+    const tooltipWidth = 320;
+    const tooltipHeight = 220; // estimated popup height
     const offset = 16;
-    const padding = 8;
+    const padding = getPadding();
 
-    let tLeft = left;
-    let tTop = top;
+    let tLeft = left + width / 2 - tooltipWidth / 2;
+    let tTop = top + height + offset + padding; // default bottom placement
 
-    switch (activeStep.position) {
-      case 'bottom':
-        tLeft = left + width / 2;
-        tTop = top + height + offset + padding;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translateX(-50%)',
-          position: 'absolute' as const
-        };
-      case 'top':
-        tLeft = left + width / 2;
-        tTop = top - offset - padding;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translate(-50%, -100%)',
-          position: 'absolute' as const
-        };
-      case 'left':
-        tLeft = left - offset - padding;
-        tTop = top + height / 2;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translate(-100%, -50%)',
-          position: 'absolute' as const
-        };
-      case 'right':
-        tLeft = left + width + offset + padding;
-        tTop = top + height / 2;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translateY(-50%)',
-          position: 'absolute' as const
-        };
-      default:
-        return {
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          position: 'fixed' as const
-        };
+    let pos = activeStep.position;
+
+    // Flip position if it overflows the screen horizontally
+    if (pos === 'right' && left + width + offset + padding + tooltipWidth > windowSize.width - 16) {
+      pos = left - offset - padding - tooltipWidth > 16 ? 'left' : 'bottom';
+    } else if (pos === 'left' && left - offset - padding - tooltipWidth < 16) {
+      pos = left + width + offset + padding + tooltipWidth < windowSize.width - 16 ? 'right' : 'bottom';
     }
+
+    // Set coordinates based on position
+    if (pos === 'bottom') {
+      tLeft = left + width / 2 - tooltipWidth / 2;
+      tTop = top + height + offset + padding;
+    } else if (pos === 'top') {
+      tLeft = left + width / 2 - tooltipWidth / 2;
+      tTop = top - tooltipHeight - offset - padding;
+    } else if (pos === 'left') {
+      tLeft = left - tooltipWidth - offset - padding;
+      tTop = top + height / 2 - tooltipHeight / 2;
+    } else if (pos === 'right') {
+      tLeft = left + width + offset + padding;
+      tTop = top + height / 2 - tooltipHeight / 2;
+    }
+
+    // Clamp coordinates to keep inside the viewport (16px safe margin)
+    tLeft = Math.max(16, Math.min(tLeft, windowSize.width - tooltipWidth - 16));
+    tTop = Math.max(16, Math.min(tTop, windowSize.height - tooltipHeight - 16));
+
+    return {
+      left: `${tLeft}px`,
+      top: `${tTop}px`,
+      position: 'absolute' as const
+    };
   };
 
   const handleSkip = () => {
@@ -199,10 +197,10 @@ export default function SpotlightTutorial() {
         <motion.div
           initial={false}
           animate={{
-            left: coords.left - 8,
-            top: coords.top - 8,
-            width: coords.width + 16,
-            height: coords.height + 16
+            left: coords.left - getPadding(),
+            top: coords.top - getPadding(),
+            width: coords.width + getPadding() * 2,
+            height: coords.height + getPadding() * 2
           }}
           transition={{ type: 'spring', damping: 26, stiffness: 220 }}
           className="absolute border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.4)] pointer-events-none z-[99997]"

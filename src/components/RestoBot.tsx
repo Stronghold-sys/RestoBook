@@ -922,8 +922,16 @@ export default function RestoBot() {
 
   const currentQuickReplies = QUICK_REPLIES[role as keyof typeof QUICK_REPLIES] || QUICK_REPLIES.home;
 
-  // Tidak tampilkan RestoBot sama sekali di halaman yang punya chat sendiri
-  if (isHiddenPage) return null;
+  const isDashboardPage =
+    pathname === '/admin/dashboard' ||
+    pathname === '/admin/dashboard/' ||
+    pathname === '/cashier/dashboard' ||
+    pathname === '/cashier/dashboard/' ||
+    pathname === '/customer/dashboard' ||
+    pathname === '/customer/dashboard/';
+
+  // Tidak tampilkan RestoBot sama sekali di halaman yang punya chat sendiri atau di luar halaman dashboard masing-masing role
+  if (isHiddenPage || !isDashboardPage) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">

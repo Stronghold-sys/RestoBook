@@ -1,17 +1,199 @@
 export const runtime = 'edge';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import jsPDF from "jspdf";
+
+const generateTempPassword = () => {
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const symbols = "!@#$%^&*";
+  
+  let password = "";
+  password += upper[Math.floor(Math.random() * upper.length)];
+  password += lower[Math.floor(Math.random() * lower.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  const allChars = upper + lower + numbers + symbols;
+  for (let i = 0; i < 6; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
+};
+
+async function generatePDFBase64(emp: any) {
+  const doc = new jsPDF();
+  
+  // Design header
+  doc.setFillColor(232, 93, 4);
+  doc.rect(0, 0, 210, 40, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("RestoBook - Akun Karyawan", 14, 25);
+  
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(12);
+  doc.text(`Selamat bergabung, ${emp.full_name}!`, 14, 55);
+  doc.text("Berikut adalah data akun Anda untuk mengakses sistem RestoBook:", 14, 62);
+  
+  // Grey background box
+  doc.setFillColor(245, 245, 245);
+  doc.rect(14, 70, 182, 110, 'F');
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("NO. ID KARYAWAN :", 20, 85);
+  doc.text(emp.employee_id, 80, 85);
+  
+  doc.text("USERNAME        :", 20, 95);
+  doc.text(emp.username, 80, 95);
+
+  doc.text("EMAIL LOGIN      :", 20, 105);
+  doc.text(emp.email, 80, 105);
+  
+  doc.text("PASSWORD AWAL    :", 20, 115);
+  doc.setTextColor(232, 93, 4);
+  doc.text(emp.password, 80, 115);
+  
+  doc.setTextColor(0, 0, 0);
+  doc.text("JABATAN          :", 20, 125);
+  doc.text(emp.job_title || emp.role, 80, 125);
+
+  doc.text("STATUS AKUN      :", 20, 135);
+  doc.text(emp.account_status || "Aktif", 80, 135);
+
+  doc.text("TGL PEMBUATAN    :", 20, 145);
+  doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 80, 145);
+
+  // Add Employee Photo to PDF if exists
+  if (emp.avatar_url) {
+    try {
+      const imgRes = await fetch(emp.avatar_url);
+      const imgBuffer = await imgRes.arrayBuffer();
+      const uint8Array = new Uint8Array(imgBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.byteLength; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const imgBase64 = btoa(binary);
+      let format = 'JPEG';
+      if (emp.avatar_url.endsWith('.png')) format = 'PNG';
+      else if (emp.avatar_url.endsWith('.webp')) format = 'WEBP';
+      
+      doc.addImage(`data:image/jpeg;base64,${imgBase64}`, format, 145, 80, 35, 45);
+    } catch (e) {
+      console.error("Failed to add image to PDF:", e);
+    }
+  }
+  
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("*Password wajib diganti saat login pertama demi keamanan akun.", 14, 195);
+  doc.text("*Gunakan No. ID Karyawan, Username atau Email Anda untuk masuk ke sistem.", 14, 202);
+
+  return doc.output('datauristring').split(',')[1];
+}
 
 export async function POST(req: Request) {
   try {
-    const { fullName, email, phone, role, employeeId, password, pdfBase64 } = await req.json();
+    const payload = await req.json();
+    const {
+      fullName,
+      email,
+      phone,
+      role,
+      nickname,
+      gender,
+      birthPlace,
+      birthDate,
+      religion,
+      maritalStatus,
+      nik,
+      noKk,
+      whatsapp,
+      address,
+      rt,
+      rw,
+      village,
+      district,
+      city,
+      province,
+      postalCode,
+      jobTitle,
+      division,
+      department,
+      workShift,
+      placementLocation,
+      directManager,
+      basicSalary,
+      allowances,
+      workStatus,
+      username,
+      accessRights,
+      accountStatus,
+      emergencyName,
+      emergencyRelation,
+      emergencyPhone,
+      emergencyAddress,
+      lastEducation,
+      schoolName,
+      major,
+      graduationYear,
+      certifications,
+      skills,
+      additionalNotes,
+      avatarUrl
+    } = payload;
 
     const resend = new Resend(process.env.RESEND_API_KEY);
+
+    // Get current admin user details (operator)
+    const clientSupabase = createServerSupabaseClient();
+    const { data: { user: operatorUser } } = await clientSupabase.auth.getUser();
+    
+    let operatorProfile = null;
+    if (operatorUser) {
+      const { data: opData } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('user_id', operatorUser.id)
+        .single();
+      operatorProfile = opData;
+    }
 
     // 1. Check if User already exists in Auth
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     const existingUser = existingUsers?.users.find((u: any) => u.email === email);
+
+    // 2. Generate unique Employee ID from PostgreSQL sequence
+    const { data: seqData, error: seqError } = await supabaseAdmin.rpc('exec_sql', {
+      sql_string: "SELECT nextval('public.employee_id_seq') as val;"
+    });
+    if (seqError) throw seqError;
+    const seqVal = seqData?.[0]?.val || Math.floor(100000 + Math.random() * 900000);
+    const employeeId = `KRY-${String(seqVal).padStart(6, '0')}`;
+
+    // 3. Generate Username and secure Temp Password
+    let finalUsername = username;
+    if (!finalUsername) {
+      finalUsername = fullName.toLowerCase().replace(/[^a-z0-9]/g, '.');
+      const { data: existingUserByUsername } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('username', finalUsername)
+        .maybeSingle();
+      if (existingUserByUsername) {
+        finalUsername += Math.floor(10 + Math.random() * 90);
+      }
+    }
+
+    const tempPassword = generateTempPassword();
 
     let userId: string;
     let isNewUser = false;
@@ -20,8 +202,8 @@ export async function POST(req: Request) {
       // UPGRADE EXISTING USER
       userId = existingUser.id;
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        password: password, // Reset to temp password as requested
-        user_metadata: { full_name: fullName, role: role, employee_id: employeeId, avatar_url: null }
+        password: tempPassword,
+        user_metadata: { full_name: fullName, role: role, employee_id: employeeId, avatar_url: avatarUrl || null }
       });
       if (updateError) throw updateError;
     } else {
@@ -29,16 +211,18 @@ export async function POST(req: Request) {
       isNewUser = true;
       const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
+        password: tempPassword,
         email_confirm: true,
-        user_metadata: { full_name: fullName, role: role, employee_id: employeeId, avatar_url: null }
+        user_metadata: { full_name: fullName, role: role, employee_id: employeeId, avatar_url: avatarUrl || null }
       });
       if (authError) throw authError;
       userId = authUser.user.id;
     }
 
-    // 2. Update Profile (Upsert)
-    const { error: profileError } = await supabaseAdmin
+    // 4. Update Profile (Upsert)
+    const isBlocked = accountStatus === 'nonaktif' || workStatus === 'dipecat';
+
+    const { data: newProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
         user_id: userId,
@@ -47,14 +231,72 @@ export async function POST(req: Request) {
         phone: phone,
         role: role,
         employee_id: employeeId,
-        temp_password: password, // Store for admin visibility
-        status_karyawan: 'aktif', // Explicitly set to ACTIVE status
-        avatar_url: null // Reset avatar to ensure a clean profile state
-      }, { onConflict: 'user_id' });
+        temp_password: tempPassword,
+        status_karyawan: workStatus || 'aktif',
+        avatar_url: avatarUrl || null,
+        nickname,
+        gender,
+        birth_place: birthPlace,
+        birth_date: birthDate ? new Date(birthDate) : null,
+        religion,
+        marital_status: maritalStatus,
+        nik,
+        no_kk: noKk,
+        whatsapp,
+        address,
+        rt,
+        rw,
+        village,
+        district,
+        city,
+        province,
+        postal_code: postalCode,
+        job_title: jobTitle,
+        division,
+        department,
+        work_shift: workShift,
+        placement_location: placementLocation,
+        direct_manager: directManager,
+        basic_salary: basicSalary ? Number(basicSalary) : 0,
+        allowances: allowances ? Number(allowances) : 0,
+        work_status: workStatus || 'aktif',
+        username: finalUsername,
+        access_rights: accessRights || [],
+        account_status: accountStatus || 'aktif',
+        is_blocked: isBlocked,
+        emergency_name: emergencyName,
+        emergency_relation: emergencyRelation,
+        emergency_phone: emergencyPhone,
+        emergency_address: emergencyAddress,
+        last_education: lastEducation,
+        school_name: schoolName,
+        major,
+        graduation_year: graduationYear,
+        certifications,
+        skills,
+        additional_notes: additionalNotes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' })
+      .select()
+      .single();
 
     if (profileError) throw profileError;
 
-    // 3. Send Email via Resend
+    // 5. Generate PDF on the server side
+    const pdfBase64 = await generatePDFBase64({
+      full_name: fullName,
+      email: email,
+      employee_id: employeeId,
+      username: finalUsername,
+      password: tempPassword,
+      role: role,
+      job_title: jobTitle,
+      account_status: accountStatus,
+      avatar_url: avatarUrl
+    });
+
+    // 6. Send Email via Resend
     if (process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
@@ -81,14 +323,14 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Kirim Notifikasi via WhatsApp (Otomatis kirim No. ID & Password)
+    // 7. Send WhatsApp Notification via Fonnte
     if (phone) {
       try {
         const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
         const cleanPhone = phone.replace(/[^0-9]/g, '');
         const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : (cleanPhone.startsWith('8') ? '62' + cleanPhone : cleanPhone);
 
-        const waMessage = `*SELAMAT BERGABUNG DI RESTOBOOK!*\n\nHalo *${fullName}*,\n\nSelamat bergabung di keluarga besar RestoBook! Akun karyawan Anda telah berhasil dibuat sebagai *${role.toUpperCase()}*.\n\nBerikut adalah data login Anda:\n\n*No. ID:* ${employeeId}\n*Email:* ${email}\n*Password Sementara:* ${password}\n\n*PENTING:* Password di atas bersifat sementara. Anda *WAJIB* segera mengubahnya melalui menu Profil setelah berhasil login demi keamanan akun Anda.\n\nSelamat bekerja!\n\n*Manajemen RestoBook*`;
+        const waMessage = `*SELAMAT BERGABUNG DI RESTOBOOK!*\n\nHalo *${fullName}*,\n\nSelamat bergabung di keluarga besar RestoBook! Akun karyawan Anda telah berhasil dibuat sebagai *${role.toUpperCase()}*.\n\nBerikut adalah data login Anda:\n\n*No. ID:* ${employeeId}\n*Username:* ${finalUsername}\n*Email:* ${email}\n*Password Sementara:* ${tempPassword}\n\n*PENTING:* Password di atas bersifat sementara. Anda *WAJIB* segera mengubahnya melalui menu Profil setelah berhasil login demi keamanan akun Anda.\n\nSelamat bekerja!\n\n*Manajemen RestoBook*`;
 
         await fetch('https://api.fonnte.com/send', {
           method: 'POST',
@@ -104,14 +346,37 @@ export async function POST(req: Request) {
       }
     }
 
+    // 8. Save Audit Log
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+    const userAgent = req.headers.get('user-agent') || 'Unknown Browser';
+    
+    let device = 'Desktop';
+    if (/mobile/i.test(userAgent)) device = 'Mobile';
+    else if (/tablet/i.test(userAgent)) device = 'Tablet';
+
+    await supabaseAdmin.from('audit_logs').insert({
+      action: 'create',
+      operator_id: operatorProfile?.id || null,
+      operator_name: operatorProfile?.full_name || 'Admin RestoBook',
+      target_id: newProfile.id,
+      target_name: fullName,
+      data_before: null,
+      data_after: newProfile,
+      ip_address: ip,
+      browser: userAgent,
+      device: device
+    });
+
     return NextResponse.json({ 
       success: true, 
       employee: { 
         id: userId, 
-        password, 
+        password: tempPassword, 
         employee_id: employeeId,
+        username: finalUsername,
         full_name: fullName,
-        email: email
+        email: email,
+        pdfBase64: pdfBase64 // Return generated PDF to let admin download
       } 
     });
 

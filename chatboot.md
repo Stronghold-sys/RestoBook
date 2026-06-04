@@ -1,353 +1,474 @@
-===========================================
-SPOTLIGHT TOUR WAJIB UNTUK SEMUA ROLE
-===========================================
+KEMBANGKAN FITUR "TAMBAH KARYAWAN BARU" MENJADI SISTEM MANAJEMEN DATA KARYAWAN YANG LENGKAP, MODERN, REALTIME, SINKRON, DAN TERINTEGRASI TANPA MENGHAPUS ATAU MERUSAK FITUR YANG SUDAH ADA.
 
 PENTING:
 
-Tutorial onboarding wajib dijalankan oleh seluruh pengguna baru sebelum dapat mengakses sistem.
+- Jangan menghapus fitur lama.
+- Jangan mengubah alur yang sudah berjalan dengan baik.
+- Hanya tambahkan fitur baru, validasi, sinkronisasi, dan logika yang lebih lengkap.
+- Pertahankan seluruh fungsi yang sudah ada.
+- Pastikan seluruh perubahan realtime tanpa refresh browser.
+- Pastikan data admin dan akun karyawan selalu sinkron.
+- Pastikan foto karyawan hanya terhubung ke akun karyawan yang bersangkutan dan tidak memengaruhi karyawan lain.
+
+==================================================
+FITUR YANG HARUS TETAP DIPERTAHANKAN
+==================================================
+
+- Nama Lengkap
+- Email
+- Jabatan
+- Nomor Telepon
+- ID Karyawan Otomatis
+- Password Sementara Otomatis
+- Download PDF Data Login
+
+==================================================
+FORMULIR DATA KARYAWAN LENGKAP
+==================================================
+
+SECTION 1 - DATA PRIBADI
+
+- Foto Karyawan
+- Nama Lengkap
+- Nama Panggilan
+- Jenis Kelamin
+- Tempat Lahir
+- Tanggal Lahir
+- Agama
+- Status Pernikahan
+- Nomor KTP / NIK
+- Nomor KK
+- Email
+- Nomor Telepon
+- Nomor WhatsApp
+- Alamat Lengkap
+- RT
+- RW
+- Kelurahan / Desa
+- Kecamatan
+- Kota / Kabupaten
+- Provinsi
+- Kode Pos
+
+SECTION 2 - DATA PEKERJAAN
+
+- Jabatan
+- Divisi
+- Departemen
+- Status Karyawan
+- Tanggal Masuk Kerja
+- Shift Kerja
+- Lokasi Penempatan
+- Atasan Langsung
+- Gaji Pokok
+- Tunjangan
+- Status Kerja
+
+SECTION 3 - DATA AKUN
+
+- ID Karyawan Otomatis
+- Username
+- Password Sementara Otomatis
+- Role
+- Hak Akses
+- Status Akun
+
+SECTION 4 - KONTAK DARURAT
+
+- Nama Kontak Darurat
+- Hubungan
+- Nomor Telepon Darurat
+- Alamat Kontak Darurat
+
+SECTION 5 - PENDIDIKAN DAN KOMPETENSI
+
+- Pendidikan Terakhir
+- Nama Sekolah / Kampus
+- Jurusan
+- Tahun Lulus
+- Sertifikasi
+- Skill / Keahlian
+- Catatan Tambahan
+
+==================================================
+FITUR UPLOAD FOTO KARYAWAN
+==================================================
+
+Tambahkan fitur upload foto profesional.
+
+Fitur:
+
+- Upload dari device
+- Drag & Drop
+- Preview foto sebelum simpan
+- Crop foto
+- Rotate foto
+- Zoom foto
+- Kompres otomatis
+- Rename file otomatis
+- Nama file unik
+- Validasi format
+- Validasi ukuran file
+
+Format:
+
+- JPG
+- JPEG
+- PNG
+- WEBP
 
-Role yang wajib memiliki tutorial masing-masing:
+Jika foto belum ada:
 
-- Pelanggan
-- Kasir
-- Admin
-- Owner / Super Admin
+- gunakan avatar default
 
-===========================================
-ATURAN WAJIB TUTORIAL
-===========================================
+Foto digunakan untuk:
 
-1. Tutorial hanya muncul pada:
-   - Akun baru
-   - Login pertama kali
+- Foto profil akun karyawan
+- Avatar navbar
+- Dashboard karyawan
+- Detail profil
+- Data karyawan
+- PDF login (opsional)
 
-2. Tutorial tidak muncul lagi apabila:
-   - Sudah selesai
-   - Sudah di-skip
+==================================================
+LOGIKA PENAMBAHAN KARYAWAN
+==================================================
 
-3. Saat tutorial berjalan:
-   - Semua menu dikunci
-   - Semua halaman dikunci
-   - Semua fitur dikunci
-   - Tidak dapat mengakses sistem sebelum tutorial selesai
+Saat Admin klik tombol SIMPAN atau BUAT KARYAWAN:
 
-4. Gunakan Parent Layout Tutorial khusus:
-   - Overlay fullscreen
-   - Background blur
-   - Background gelap
-   - Fokus spotlight pada menu yang dijelaskan
-   - Popup berada tepat di tengah layar
-   - Tidak bisa ditutup dengan klik luar popup
-   - Responsif desktop dan mobile
+1. Validasi seluruh data.
+2. Validasi foto.
+3. Generate ID Karyawan.
+4. Generate Username.
+5. Generate Password Sementara.
+6. Upload foto.
+7. Simpan data karyawan.
+8. Simpan data akun.
+9. Hubungkan data akun dengan data karyawan.
+10. Simpan data kontak darurat.
+11. Simpan data pendidikan.
+12. Simpan data skill.
+13. Generate PDF Login.
+14. Simpan Activity Log.
+15. Kirim notifikasi realtime.
+16. Sinkronkan data ke akun karyawan.
 
-5. Tampilkan:
-   - Judul langkah
-   - Deskripsi
-   - Progress langkah
-   - Tombol Previous
-   - Tombol Next
-   - Tombol Skip
-   - Tombol Finish
+Jika ada proses gagal:
 
-6. Progress contoh:
-   Langkah 3 dari 15
+- batalkan seluruh proses
+- tampilkan pesan error yang jelas
+- jangan menyimpan data setengah jadi
 
-7. Setelah tutorial selesai:
-   - tour_completed = true
-   - first_login = false
+==================================================
+LOGIKA ID KARYAWAN
+==================================================
 
-8. Setelah tutorial selesai:
-   - Semua menu terbuka
-   - Semua fitur dapat digunakan
+Format:
 
-===========================================
-TUTORIAL PELANGGAN
-===========================================
+KRY-000001
+KRY-000002
+KRY-000003
 
-LANGKAH 1
+Ketentuan:
 
-Judul:
-Selamat Datang di RestoBook
+- unik
+- tidak boleh duplikat
+- aman jika banyak admin membuat akun bersamaan
+- tetap berurutan
+- tidak berubah walaupun ada data dihapus
 
-Isi:
-Selamat datang di RestoBook. Kami akan memandu Anda mengenal seluruh fitur yang tersedia agar proses pemesanan makanan dan reservasi meja menjadi lebih mudah, cepat, dan nyaman.
+==================================================
+LOGIKA PASSWORD SEMENTARA
+==================================================
 
---------------------------------------------------
+Password otomatis harus:
 
-LANGKAH 2
+- memiliki huruf besar
+- huruf kecil
+- angka
+- simbol
 
-Judul:
-Dashboard
+Password:
 
-Isi:
-Ini adalah halaman utama akun Anda. Di sini Anda dapat melihat ringkasan aktivitas, pesanan hidangan terbaru, notifikasi, dan informasi penting lainnya.
+- disimpan secara aman
+- ditampilkan sekali setelah akun dibuat
+- masuk ke PDF Login
+- wajib diganti saat login pertama
 
---------------------------------------------------
+==================================================
+LOGIKA FOTO KARYAWAN DAN AKUN
+==================================================
 
-LANGKAH 3
+SANGAT PENTING:
 
-Judul:
-Menu Makanan
+Foto yang diupload admin harus langsung menjadi:
 
-Isi:
-Pada menu ini Anda dapat melihat seluruh daftar hidangan makanan dan minuman yang tersedia beserta informasi harga dan detail porsinya.
+- Foto Data Karyawan
+- Foto Profil Akun Karyawan
+- Avatar Dashboard
+- Avatar Navbar
+- Foto Profil Lengkap
 
---------------------------------------------------
+Tetapi hanya untuk karyawan yang bersangkutan.
 
-LANGKAH 4
+CONTOH:
 
-Judul:
-Reservasi Meja
+Admin membuat:
 
-Isi:
-Pilih jadwal kunjungan makan yang sesuai dengan waktu yang Anda inginkan sebelum melakukan pemesanan tempat di restoran kami.
+Karyawan A
+employee_id = 101
+user_id = 201
 
---------------------------------------------------
+Upload:
+foto-a.jpg
 
-LANGKAH 5
+Maka:
 
-Judul:
-Pilih Meja
+employee 101 menggunakan foto-a.jpg
+user 201 menggunakan foto-a.jpg
 
-Isi:
-Gunakan fitur ini untuk memilih posisi meja makan yang tersedia sesuai kenyamanan dan jumlah tamu Anda.
+Hasil:
 
---------------------------------------------------
+✓ Foto muncul di data karyawan A
+✓ Foto muncul di akun karyawan A
+✓ Foto muncul di navbar akun A
+✓ Foto muncul di dashboard akun A
 
-LANGKAH 6
+TIDAK BOLEH:
 
-Judul:
-Pesanan Saya
+✗ Foto berubah di akun karyawan B
+✗ Foto berubah di akun karyawan C
+✗ Foto berubah di akun lain
 
-Isi:
-Menu ini menampilkan seluruh pesanan makanan yang sedang berlangsung maupun yang telah selesai diproses oleh dapur.
+==================================================
+LOGIKA UPDATE FOTO
+==================================================
 
---------------------------------------------------
+Saat Admin mengganti foto karyawan:
 
-LANGKAH 7
+1. Upload foto baru.
+2. Validasi file.
+3. Simpan file.
+4. Update foto pada data karyawan.
+5. Update avatar akun karyawan.
+6. Simpan log aktivitas.
+7. Kirim event realtime hanya ke akun terkait.
 
-Judul:
-Pembayaran
+HASIL:
 
-Isi:
-Lakukan pembayaran dengan metode yang tersedia untuk menyelesaikan proses pemesanan makanan Anda secara instan.
+✓ Dashboard Admin langsung berubah
+✓ Detail Karyawan langsung berubah
+✓ Profil Karyawan langsung berubah
+✓ Navbar Karyawan langsung berubah
 
---------------------------------------------------
+Tanpa refresh browser.
 
-LANGKAH 8
+==================================================
+REALTIME DAN SINKRONISASI
+==================================================
 
-Judul:
-Detail Reservasi
+Semua perubahan harus realtime.
 
-Isi:
-Setelah pembayaran berhasil diverifikasi, detail reservasi meja Anda akan tersedia pada halaman ini dan siap ditunjukkan saat datang.
+Saat Admin:
 
---------------------------------------------------
+- Menambah Karyawan
+- Mengubah Nama
+- Mengubah Email
+- Mengubah Nomor Telepon
+- Mengubah Jabatan
+- Mengubah Role
+- Mengubah Status Akun
+- Mengubah Foto
 
-LANGKAH 9
+Maka perubahan langsung terlihat pada:
 
-Judul:
-Kode Reservasi
+- Dashboard Admin
+- Daftar Karyawan
+- Detail Karyawan
+- Akun Karyawan yang bersangkutan
+- Profil Karyawan
 
-Isi:
-Setiap pesanan memiliki kode reservasi unik yang digunakan sebagai identitas pemesanan saat melakukan verifikasi kedatangan di restoran.
+Tanpa refresh browser.
 
---------------------------------------------------
+==================================================
+LOGIKA SINKRONISASI DATA
+==================================================
 
-LANGKAH 10
+Jika Admin mengubah:
 
-Judul:
-Riwayat Transaksi
+NAMA
+→ data akun ikut berubah
 
-Isi:
-Semua transaksi saldo Dompetku dan pembayaran makanan yang pernah dilakukan akan tersimpan dan dapat dilihat kembali kapan saja.
+EMAIL
+→ data akun ikut berubah
 
---------------------------------------------------
+NO TELEPON
+→ data akun ikut berubah
 
-LANGKAH 11
+FOTO
+→ avatar akun ikut berubah
 
-Judul:
-Notifikasi
+JABATAN
+→ role dan hak akses ikut diperbarui
 
-Isi:
-Seluruh informasi penting seperti status pembayaran, pesanan siap disajikan, promo menu, dan pengumuman akan muncul di sini.
+STATUS AKUN
+→ akses akun ikut diperbarui
 
---------------------------------------------------
+Perubahan harus langsung muncul pada akun terkait secara realtime.
 
-LANGKAH 12
+==================================================
+LOGIKA ROLE DAN HAK AKSES
+==================================================
 
-Judul:
-Profil Akun
+Jika jabatan berubah:
 
-Isi:
-Kelola informasi akun Anda seperti nama, email, nomor telepon, foto profil, dan preferensi audio suara notifikasi.
+Kasir
+→ Role Kasir
 
---------------------------------------------------
+Supervisor
+→ Role Supervisor
 
-LANGKAH 13
+Manager
+→ Role Manager
 
-Judul:
-Pusat Bantuan
+Admin
+→ Role Admin
 
-Isi:
-Apabila mengalami kendala atau memiliki pertanyaan, Anda dapat menggunakan pusat bantuan untuk mendapatkan panduan, FAQ, dan mengajukan tiket bantuan.
+Saat role berubah:
 
---------------------------------------------------
+- menu otomatis menyesuaikan
+- hak akses otomatis menyesuaikan
+- tidak perlu logout
+- tidak perlu refresh
 
-LANGKAH 14
+==================================================
+LOGIKA STATUS AKUN
+==================================================
 
-Judul:
-Pengaturan Akun
+Jika akun dinonaktifkan:
 
-Isi:
-Atur keamanan akun, preferensi sistem, pengaturan notifikasi, dan kebutuhan personalisasi lainnya.
+- status akun berubah
+- notifikasi realtime dikirim
+- akses dibatasi
+- sesi dapat diputus jika diperlukan
 
---------------------------------------------------
+Jika akun diaktifkan:
 
-LANGKAH 15
+- akses kembali normal
+- hak akses aktif kembali
 
-Judul:
-Logout
+==================================================
+NOTIFIKASI REALTIME
+==================================================
 
-Isi:
-Gunakan menu ini untuk keluar dari akun dengan aman setelah selesai menggunakan aplikasi.
+Admin menerima:
 
---------------------------------------------------
+- Karyawan berhasil dibuat
+- Data berhasil diperbarui
+- Foto berhasil diperbarui
+- Role berhasil diubah
+- Akun diaktifkan
+- Akun dinonaktifkan
+- Password direset
 
-LANGKAH 16
+Karyawan menerima:
 
-Judul:
-Tutorial Selesai
+- Akun berhasil dibuat
+- Profil diperbarui
+- Foto diperbarui
+- Password diperbarui
+- Role diperbarui
+- Status akun diperbarui
 
-Isi:
-Selamat. Anda telah menyelesaikan tutorial penggunaan RestoBook dan sekarang dapat menggunakan seluruh fitur yang tersedia.
+==================================================
+VALIDASI
+==================================================
 
-===========================================
-TUTORIAL KASIR
-===========================================
+Email:
 
-1. Selamat Datang di Dashboard Kasir
-2. Dashboard Kasir
-3. Data Pelanggan
-4. Data Transaksi
-5. Input Pesanan Manual
-6. Validasi Pembayaran
-7. Verifikasi Reservasi
-8. Cetak Struk Pesanan
-9. Cetak Laporan Harian
-10. Riwayat Transaksi
-11. Laporan Shift
-12. Notifikasi
-13. Pengaturan Akun
-14. Logout
-15. Tutorial Selesai
+- wajib
+- format valid
+- unik
 
-Gunakan penjelasan profesional yang menjelaskan fungsi operasional masing-masing menu.
+Nomor Telepon:
 
-===========================================
-TUTORIAL ADMIN
-===========================================
+- wajib
+- format valid
 
-1. Selamat Datang di Panel Admin
-2. Dashboard Admin
-3. Kelola Menu Makanan
-4. Kelola Kategori
-5. Kelola Reservasi Meja
-6. Kelola Tata Letak Area
-7. Kelola Meja
-8. Kelola Pesanan Aktif
-9. Kelola Pembayaran
-10. Kelola Pelanggan
-11. Kelola Kasir
-12. Kelola Voucher Promo
-13. Kelola Banner Banner
-14. Kelola Notifikasi Massal
-15. Kelola Halaman FAQ/Bantuan
-16. Laporan Keuangan
-17. Analitik Penjualan
-18. Pengaturan Sistem
-19. Manajemen Tutorial Onboarding
-20. Logout
-21. Tutorial Selesai
+NIK:
 
-Setiap langkah wajib memiliki penjelasan yang jelas dan mudah dipahami.
+- numerik
+- panjang sesuai standar
 
-===========================================
-TUTORIAL OWNER / SUPER ADMIN
-===========================================
+Tanggal Lahir:
 
-1. Selamat Datang di Panel Owner
-2. Dashboard Eksekutif
-3. Statistik Pendapatan Restoran
-4. Statistik Penjualan Menu
-5. Monitoring Transaksi Keuangan
-6. Monitoring Akun Pelanggan
-7. Monitoring Kinerja Kasir
-8. Monitoring Aktivitas Admin
-9. Monitoring Keamanan Sistem
-10. Audit Log Aktivitas
-11. Rekap Laporan Bulanan
-12. Pembagian Hak Akses
-13. Backup Database
-14. Restore Database
-15. Pengaturan Tarif & Pajak
-16. Monitoring Tutorial User
-17. Reset Tutorial User
-18. Logout
-19. Tutorial Selesai
+- tidak boleh lebih besar dari hari ini
 
-===========================================
-FITUR TAMBAHAN WAJIB
-===========================================
+Tanggal Masuk:
 
-- Contextual Tooltip
-- Interactive Help Center
-- FAQ
-- Search Knowledge Base
-- Guided Empty State
-- Analytics Tutorial
-- Tutorial Progress Tracking
-- Tutorial Versioning
-- Reset Tutorial
-- Tutorial Management Panel
-- Role-Based Tutorial Engine
-- Future Feature Tutorial Detection
-- Multi Device Support
-- Accessibility Support
-- Dark Mode Support
-- Mobile Responsive
+- tidak boleh lebih kecil dari tanggal lahir
 
-===========================================
-DATABASE
-===========================================
+Gaji:
 
-users
+- hanya angka
 
-- first_login
-- tour_completed
-- tutorial_version
-- last_tutorial_step
+Foto:
 
-tutorial_steps
-tutorial_roles
-tutorial_progress
-tutorial_logs
-tutorial_versions
+- format valid
+- ukuran valid
 
-===========================================
-HASIL AKHIR
-===========================================
+==================================================
+AUDIT LOG
+==================================================
 
-Buat sistem onboarding enterprise-grade yang:
+Simpan:
 
-- Modern
-- Production Ready
-- Mudah digunakan
-- Responsif
-- Aman
-- Dapat dikembangkan
-- Mendukung semua role
-- Mengunci akses hingga tutorial selesai
-- Hanya muncul saat login pertama
-- Dikelola penuh oleh admin
-- Menjelaskan seluruh menu dan fitur utama sistem
+- siapa yang membuat
+- siapa yang mengubah
+- siapa yang menghapus
+- data sebelum perubahan
+- data sesudah perubahan
+- waktu perubahan
+- alamat IP
+- browser
+- perangkat
+
+==================================================
+PDF LOGIN
+==================================================
+
+PDF harus berisi:
+
+- Foto Karyawan
+- Nama Lengkap
+- ID Karyawan
+- Username
+- Password Sementara
+- Jabatan
+- Status Akun
+- Tanggal Pembuatan
+
+Tambahkan catatan:
+
+"Password wajib diganti saat login pertama demi keamanan akun."
+
+==================================================
+HASIL AKHIR YANG DIHARAPKAN
+==================================================
+
+✓ Form karyawan lebih lengkap
+✓ Data lebih profesional
+✓ Upload foto dari device
+✓ Foto otomatis menjadi foto akun karyawan
+✓ Foto hanya memengaruhi akun karyawan yang bersangkutan
+✓ Tidak memengaruhi karyawan lain
+✓ Sinkron realtime Admin ↔ Karyawan
+✓ Tanpa refresh browser
+✓ PDF login otomatis
+✓ Audit log lengkap
+✓ Validasi lengkap
+✓ Hak akses otomatis menyesuaikan
+✓ Aman dari konflik data
+✓ Aman digunakan banyak admin dan banyak karyawan secara bersamaan
+✓ Seluruh fitur lama tetap berjalan normal
+✓ UI tetap modern, rapi, responsif, dan mudah digunakan

@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { SkeletonOrderItem } from "@/components/Skeleton";
+import BaseModal from "@/components/BaseModal";
 
 interface Reservation {
   id: string;
@@ -574,224 +575,211 @@ export default function CustomerReservationsPage() {
       </div>
 
       {/* Modal Ajukan Reservasi */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowModal(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
-              <div className="bg-primary p-6 text-white flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold">Ajukan Reservasi Meja</h2>
-                  <p className="text-white/80 text-sm mt-1">Lengkapi informasi diri & pilih meja bebas</p>
-                </div>
-                <button onClick={() => setShowModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+      <BaseModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        showCloseButton={false}
+        size="lg"
+      >
+        <div className="bg-primary -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-bold">Ajukan Reservasi Meja</h2>
+            <p className="text-white/80 text-sm mt-1">Lengkapi informasi diri & pilih meja bebas</p>
+          </div>
+          <button onClick={() => setShowModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="atasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                <input id="atasNama" type="text" value={form.atasNama} onChange={e => setForm({ ...form, atasNama: e.target.value })} placeholder="Masukkan nama pemesan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-hide">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="atasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                      <input id="atasNama" type="text" value={form.atasNama} onChange={e => setForm({ ...form, atasNama: e.target.value })} placeholder="Masukkan nama pemesan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="telepon" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nomor Telepon</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                      <input id="telepon" type="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="Contoh: 08123456789" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
-                    </div>
-                  </div>
-                </div>
+            </div>
+            <div>
+              <label htmlFor="telepon" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nomor Telepon</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                <input id="telepon" type="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="Contoh: 08123456789" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+              </div>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="resDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
-                    <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
-                  </div>
-                  <div>
-                    <label htmlFor="resTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>
-                    <input id="resTime" title="Waktu Reservasi" type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
-                  </div>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="resDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
+              <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+            </div>
+            <div>
+              <label htmlFor="resTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>
+              <input id="resTime" title="Waktu Reservasi" type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+            </div>
+          </div>
 
-                <div>
-                  <label htmlFor="resGuests" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Jumlah Tamu</label>
-                  <input id="resGuests" title="Jumlah Tamu" type="number" value={form.guests} onChange={e => setForm({ ...form, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
-                </div>
+          <div>
+            <label htmlFor="resGuests" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Jumlah Tamu</label>
+            <input id="resGuests" title="Jumlah Tamu" type="number" value={form.guests} onChange={e => setForm({ ...form, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+          </div>
 
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Pilih Meja (Bisa pilih lebih dari satu)</label>
-                    {form.date && form.time && (
-                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-                        tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0) >= form.guests
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                      }`}>
-                        Kapasitas Terpilih: {tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)} / {form.guests} Orang
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {tables.map(t => {
-                      const bookedStatus = bookedTablesInfo[t.id];
-                      const isBooked = !!bookedStatus;
-                      const isSelected = selectedTableIds.includes(t.id);
-                      
-                      let borderClass = "border-border-light dark:border-border-dark text-muted hover:border-gray-300";
-                      let bgClass = "bg-background-light dark:bg-background-dark";
-                      let statusText = `Cap: ${t.capacity} org`;
-                      let textClass = "";
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-medium text-text-light dark:text-text-dark">Pilih Meja (Bisa pilih lebih dari satu)</label>
+              {form.date && form.time && (
+                <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                  tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0) >= form.guests
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                }`}>
+                  Kapasitas Terpilih: {tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)} / {form.guests} Orang
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {tables.map(t => {
+                const bookedStatus = bookedTablesInfo[t.id];
+                const isBooked = !!bookedStatus;
+                const isSelected = selectedTableIds.includes(t.id);
+                
+                let borderClass = "border-border-light dark:border-border-dark text-muted hover:border-gray-300";
+                let bgClass = "bg-background-light dark:bg-background-dark";
+                let statusText = `Cap: ${t.capacity} org`;
+                let textClass = "";
 
-                      if (isSelected) {
-                        borderClass = "border-primary text-primary";
-                        bgClass = "bg-primary/10";
-                        textClass = "text-primary font-bold";
-                      } else if (isBooked) {
-                        if (bookedStatus === "confirmed") {
-                          borderClass = "border-red-500/50 text-red-500 opacity-60 cursor-not-allowed";
-                          bgClass = "bg-red-500/5";
-                          statusText = "Dibooking";
-                          textClass = "text-red-500 font-bold";
-                        } else {
-                          borderClass = "border-amber-500/50 text-amber-500 opacity-60 cursor-not-allowed";
-                          bgClass = "bg-amber-500/5";
-                          statusText = "Menunggu";
-                          textClass = "text-amber-550 font-bold";
-                        }
+                if (isSelected) {
+                  borderClass = "border-primary text-primary";
+                  bgClass = "bg-primary/10";
+                  textClass = "text-primary font-bold";
+                } else if (isBooked) {
+                  if (bookedStatus === "confirmed") {
+                    borderClass = "border-red-500/50 text-red-500 opacity-60 cursor-not-allowed";
+                    bgClass = "bg-red-500/5";
+                    statusText = "Dibooking";
+                    textClass = "text-red-500 font-bold";
+                  } else {
+                    borderClass = "border-amber-500/50 text-amber-500 opacity-60 cursor-not-allowed";
+                    bgClass = "bg-amber-500/5";
+                    statusText = "Menunggu";
+                    textClass = "text-amber-550 font-bold";
+                  }
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => {
+                      if (!isBooked) {
+                        handleTableToggle(t.id);
                       }
+                    }}
+                    disabled={isBooked}
+                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${bgClass} ${borderClass}`}
+                  >
+                    <span className={`font-black text-lg ${textClass || "text-text-light dark:text-text-dark"}`}>Meja {t.table_number}</span>
+                    <span className={`text-[10px] font-bold mt-1 ${textClass || "text-muted"}`}>{statusText}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {tables.length === 0 && <p className="text-sm text-red-500">Tidak ada meja tersedia saat ini.</p>}
+          </div>
 
-                      return (
-                        <button
-                          type="button"
-                          key={t.id}
-                          onClick={() => {
-                            if (!isBooked) {
-                              handleTableToggle(t.id);
-                            }
-                          }}
-                          disabled={isBooked}
-                          className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${bgClass} ${borderClass}`}
-                        >
-                          <span className={`font-black text-lg ${textClass || "text-text-light dark:text-text-dark"}`}>Meja {t.table_number}</span>
-                          <span className={`text-[10px] font-bold mt-1 ${textClass || "text-muted"}`}>{statusText}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {tables.length === 0 && <p className="text-sm text-red-500">Tidak ada meja tersedia saat ini.</p>}
-                </div>
+          <div>
+            <label htmlFor="resNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
+            <textarea id="resNotes" title="Catatan" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" rows={2} placeholder="Contoh: Butuh colokan listrik, AC dingin, dll" />
+          </div>
 
-                <div>
-                  <label htmlFor="resNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
-                  <textarea id="resNotes" title="Catatan" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" rows={2} placeholder="Contoh: Butuh colokan listrik, AC dingin, dll" />
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Batal</button>
-                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={submitting} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Ajukan Sekarang</>}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+            <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Batal</button>
+            <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={submitting} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Ajukan Sekarang</>}
+            </motion.button>
+          </div>
+        </form>
+      </BaseModal>
 
       {/* Modal Pembatalan */}
-      <AnimatePresence>
-        {cancellingId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCancellingId(null)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark">
-              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl">
-                  <X className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
-                  <p className="text-white/80 text-sm">Berikan alasan pembatalan Anda</p>
-                </div>
-              </div>
-              <form onSubmit={handleCancelSubmit} className="p-6 space-y-4">
-                <div>
-                  <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Alasan Pembatalan</label>
-                  <textarea
-                    id="cancelReason"
-                    value={cancelReason}
-                    onChange={e => setCancelReason(e.target.value)}
-                    placeholder="Tuliskan alasan Anda..."
-                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
-                    required
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Kembali</button>
-                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim()} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
-                    {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BaseModal
+        isOpen={!!cancellingId}
+        onClose={() => setCancellingId(null)}
+        showCloseButton={false}
+        size="md"
+      >
+        <div className="bg-gradient-to-r from-red-600 to-red-700 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex items-center gap-4 mb-6">
+          <div className="p-3 bg-white/20 rounded-xl">
+            <X className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
+            <p className="text-white/80 text-sm">Berikan alasan pembatalan Anda</p>
+          </div>
+        </div>
+        <form onSubmit={handleCancelSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Alasan Pembatalan</label>
+            <textarea
+              id="cancelReason"
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="Tuliskan alasan Anda..."
+              className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
+              required
+            />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Kembali</button>
+            <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim()} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
+              {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
+            </motion.button>
+          </div>
+        </form>
+      </BaseModal>
 
       {/* Modal Konfirmasi Hapus Riwayat */}
-      <AnimatePresence>
-        {deletingHistoryId && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
-            onClick={() => setDeletingHistoryId(null)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }} 
-              onClick={e => e.stopPropagation()} 
-              className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark"
+      <BaseModal
+        isOpen={!!deletingHistoryId}
+        onClose={() => setDeletingHistoryId(null)}
+        showCloseButton={false}
+        size="md"
+      >
+        <div className="bg-gradient-to-r from-red-600 to-red-700 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex items-center gap-4 mb-6">
+          <div className="p-3 bg-white/20 rounded-xl">
+            <Trash2 className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Hapus Riwayat</h2>
+            <p className="text-white/80 text-sm">Konfirmasi tindakan</p>
+          </div>
+        </div>
+        <div className="p-0 space-y-4">
+          <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
+            Apakah Anda yakin ingin menghapus riwayat reservasi ini secara permanen dari akun Anda? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <div className="flex gap-3">
+            <button 
+              type="button" 
+              onClick={() => setDeletingHistoryId(null)} 
+              className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800"
             >
-              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl">
-                  <Trash2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">Hapus Riwayat</h2>
-                  <p className="text-white/80 text-sm">Konfirmasi tindakan</p>
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
-                  Apakah Anda yakin ingin menghapus riwayat reservasi ini secara permanen dari akun Anda? Tindakan ini tidak dapat dibatalkan.
-                </p>
-                <div className="flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setDeletingHistoryId(null)} 
-                    className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-border-light dark:border-border-dark"
-                  >
-                    Batal
-                  </button>
-                  <motion.button 
-                    whileTap={{ scale: 0.98 }} 
-                    onClick={async () => {
-                      const id = deletingHistoryId;
-                      setDeletingHistoryId(null);
-                      await handleDeleteHistory(id);
-                    }}
-                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
-                  >
-                    Hapus
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Batal
+            </button>
+            <motion.button 
+              whileTap={{ scale: 0.98 }} 
+              onClick={async () => {
+                const id = deletingHistoryId;
+                setDeletingHistoryId(null);
+                if (id) {
+                  await handleDeleteHistory(id);
+                }
+              }}
+              className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+            >
+              Hapus
+            </motion.button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

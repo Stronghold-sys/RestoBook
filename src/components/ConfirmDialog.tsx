@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ShieldAlert, Info, CheckCircle, X } from "lucide-react";
+import BaseModal from "@/components/BaseModal";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -85,89 +85,54 @@ export default function ConfirmDialog({
   const colors = colorMap[type];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-dialog-title"
-        >
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
-          />
-
-          {/* Dialog Box */}
-          <motion.div
-            initial={{ scale: 0.92, opacity: 0, y: 12 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.92, opacity: 0, y: 12 }}
-            transition={{ type: "spring", damping: 22, stiffness: 280 }}
-            className="relative z-10 w-full max-w-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl overflow-hidden"
-          >
-            {/* Close Button */}
-            {!isLoading && (
-              <button
-                onClick={onClose}
-                aria-label="Tutup dialog"
-                title="Tutup"
-                className="absolute top-4 right-4 p-1.5 text-muted hover:text-text-light dark:hover:text-text-dark rounded-lg transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="p-6 space-y-5">
-              {/* Icon */}
-              <div className={`w-14 h-14 rounded-2xl ${colors.iconBg} ${colors.icon} flex items-center justify-center`}>
-                {iconMap[type]}
-              </div>
-
-              {/* Content */}
-              <div className="space-y-2">
-                <h2
-                  id="confirm-dialog-title"
-                  className="text-lg font-black text-text-light dark:text-text-dark"
-                >
-                  {title}
-                </h2>
-                <p className="text-sm text-muted leading-relaxed">
-                  {message}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className={`flex gap-3 ${singleButton ? "justify-center" : ""}`}>
-                {!singleButton && (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isLoading}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-border-light dark:border-border-dark text-sm font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-all"
-                  >
-                    {cancelText}
-                  </button>
-                )}
-                <button
-                  ref={confirmBtnRef}
-                  type="button"
-                  onClick={onConfirm}
-                  disabled={isLoading}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-black disabled:opacity-60 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-md ${colors.confirmBtn}`}
-                >
-                  {isLoading ? "Memproses..." : confirmText}
-                </button>
-              </div>
-            </div>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      showCloseButton={!isLoading}
+      size="sm"
+    >
+      <div className="space-y-5">
+        {/* Icon */}
+        <div className={`w-14 h-14 rounded-2xl ${colors.iconBg} ${colors.icon} flex items-center justify-center`}>
+          {iconMap[type]}
         </div>
-      )}
-    </AnimatePresence>
+
+        {/* Content */}
+        <div className="space-y-2">
+          <h2
+            id="confirm-dialog-title"
+            className="text-lg font-black text-text-light dark:text-text-dark"
+          >
+            {title}
+          </h2>
+          <p className="text-sm text-muted leading-relaxed">
+            {message}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className={`flex gap-3 ${singleButton ? "justify-center" : ""}`}>
+          {!singleButton && (
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-border-light dark:border-border-dark text-sm font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-all"
+            >
+              {cancelText}
+            </button>
+          )}
+          <button
+            ref={confirmBtnRef}
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-black disabled:opacity-60 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-md ${colors.confirmBtn}`}
+          >
+            {isLoading ? "Memproses..." : confirmText}
+          </button>
+        </div>
+      </div>
+    </BaseModal>
   );
 }

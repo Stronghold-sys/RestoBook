@@ -660,6 +660,17 @@ export default function AdminRewardsPage() {
     }
   };
 
+  // Helper: escape a single CSV cell value safely
+  const escapeCSV = (val: any): string => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val)
+      .replace(/\r\n/g, ' ')   // remove carriage return + newline
+      .replace(/\r/g, ' ')      // remove carriage return
+      .replace(/\n/g, ' ')      // remove newline
+      .replace(/"/g, '""');     // escape quotes by doubling them
+    return `"${str}"`;
+  };
+
   const handleExportCustomersCSV = () => {
     if (customers.length === 0) {
       toast.error("Tidak ada data pelanggan untuk diekspor");
@@ -676,11 +687,34 @@ export default function AdminRewardsPage() {
       return matchSearch && matchStatus;
     });
 
-    let csvContent = "\uFEFF"; // Add UTF-8 BOM
-    csvContent += `"ID Pelanggan","Nama Pelanggan","Email","Nomor HP","Poin Aktif","Poin Pending","Status Poin","Blokir Redeem"\n`;
+    const headers = [
+      'No',
+      'ID Pelanggan',
+      'Nama Pelanggan',
+      'Email',
+      'Nomor HP',
+      'Poin Aktif',
+      'Poin Pending',
+      'Status Poin',
+      'Blokir Redeem',
+    ];
 
-    filtered.forEach(c => {
-      csvContent += `"${c.id}","${c.full_name}","${c.email || ''}","${c.phone || ''}","${c.points || 0}","${c.pending_points || 0}","${c.points_status || 'aktif'}","${c.is_redeem_blocked ? 'Ya' : 'Tidak'}"\n`;
+    const rows = filtered.map((c, i) => [
+      i + 1,
+      c.id,
+      c.full_name,
+      c.email || '-',
+      c.phone || '-',
+      c.points || 0,
+      c.pending_points || 0,
+      c.points_status || 'aktif',
+      c.is_redeem_blocked ? 'Ya' : 'Tidak',
+    ]);
+
+    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
+    csvContent += headers.map(escapeCSV).join(',') + '\r\n';
+    rows.forEach(row => {
+      csvContent += row.map(escapeCSV).join(',') + '\r\n';
     });
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -691,6 +725,7 @@ export default function AdminRewardsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     toast.success("Data pelanggan berhasil diekspor ke CSV!");
   };
 
@@ -707,12 +742,45 @@ export default function AdminRewardsPage() {
         return;
       }
 
-      let csvContent = "\uFEFF"; // Add UTF-8 BOM
-      csvContent += `"ID Transaksi","Nama Pelanggan","Email Pelanggan","Poin","Sebelum","Sesudah","Status","Jenis Sumber","Keterangan/Alasan","Operator Admin","Waktu Pembuatan"\n`;
+      const headers = [
+        'No',
+        'ID Transaksi',
+        'Nama Pelanggan',
+        'Email Pelanggan',
+        'Nomor HP',
+        'Poin',
+        'Poin Sebelum',
+        'Poin Sesudah',
+        'Status',
+        'Jenis Sumber',
+        'Keterangan / Alasan',
+        'Operator Admin',
+        'Waktu',
+      ];
 
-      txs.forEach((t: any) => {
+      const rows = txs.map((t: any, i: number) => {
         const timeStr = format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss");
-        csvContent += `"${t.id}","${t.profiles?.full_name || 'Pelanggan'}","${t.profiles?.email || ''}","${t.points}","${t.before_points !== null ? t.before_points : ''}","${t.after_points !== null ? t.after_points : ''}","${t.status}","${t.source_type || ''}","${(t.reason || t.description || '').replace(/"/g, '""')}","${t.acted_profile?.full_name || 'Sistem'}","${timeStr}"\n`;
+        return [
+          i + 1,
+          t.id,
+          t.customer?.full_name || 'Pelanggan',
+          t.customer?.email || '-',
+          t.customer?.phone || '-',
+          t.points,
+          t.before_points !== null && t.before_points !== undefined ? t.before_points : '-',
+          t.after_points !== null && t.after_points !== undefined ? t.after_points : '-',
+          t.status,
+          t.source_type || '-',
+          t.reason || t.description || '-',
+          t.acted_profile?.full_name || 'Sistem',
+          timeStr,
+        ];
+      });
+
+      let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
+      csvContent += headers.map(escapeCSV).join(',') + '\r\n';
+      rows.forEach((row: any[]) => {
+        csvContent += row.map(escapeCSV).join(',') + '\r\n';
       });
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -723,6 +791,7 @@ export default function AdminRewardsPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success("Laporan mutasi berhasil diekspor ke CSV!", { id: loadingToast });
     } catch (err: any) {
       toast.error(err.message, { id: loadingToast });

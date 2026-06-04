@@ -31,12 +31,12 @@ export async function GET(req: NextRequest) {
         .from('point_transactions')
         .select(`
           *,
-          profiles (
+          customer:profiles!point_transactions_customer_id_fkey (
             full_name,
             email,
             phone
           ),
-          acted_profile:acted_by (
+          acted_profile:profiles!point_transactions_acted_by_fkey (
             full_name
           )
         `)

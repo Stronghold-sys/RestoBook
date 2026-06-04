@@ -247,7 +247,19 @@ export default function CustomerOrdersPage() {
         <AnimatePresence mode="wait">
           {currentOrders.length === 0 ? (
             <motion.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20 bg-card-light dark:bg-card-dark rounded-2xl border border-dashed border-border-light dark:border-border-dark">
-              {activeTab === "active" && <><ShoppingBag className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" /><h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak ada pesanan aktif</h3><p className="text-muted mt-2">Pesan makanan favorit Anda dari menu!</p></>}
+              {activeTab === "active" && (
+                <div className="flex flex-col items-center p-6">
+                  <ShoppingBag className="w-16 h-16 text-muted mb-4 opacity-50" />
+                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak ada pesanan aktif</h3>
+                  <p className="text-muted mt-2 text-sm max-w-md">Belum ada pesanan. Klik tombol Buat Pesanan untuk memulai.</p>
+                  <Link
+                    href="/customer/menu"
+                    className="mt-6 px-6 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-primary/20 hover:scale-105"
+                  >
+                    Buat Pesanan
+                  </Link>
+                </div>
+              )}
               {activeTab === "completed" && <><CheckCircle className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" /><h3 className="text-xl font-medium text-text-light dark:text-text-dark">Belum ada pesanan selesai</h3><p className="text-muted mt-2">Pesanan yang sudah selesai akan muncul di sini.</p></>}
               {activeTab === "cancelled" && <><XCircle className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" /><h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak ada pesanan dibatalkan</h3><p className="text-muted mt-2">Pesanan yang dibatalkan akan muncul di sini.</p></>}
             </motion.div>

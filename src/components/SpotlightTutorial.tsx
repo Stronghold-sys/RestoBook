@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 export default function SpotlightTutorial() {
-  const { isTutorialActive, currentStep, steps, nextStep, prevStep, stopTutorial } = useTutorialStore();
+  const { isTutorialActive, currentStep, steps, nextStep, prevStep, stopTutorial, skipTutorial } = useTutorialStore();
   const [coords, setCoords] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [windowSize, setWindowSize] = useState({ width: 1200, height: 800 });
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -177,8 +177,7 @@ export default function SpotlightTutorial() {
   };
 
   const handleSkip = () => {
-    localStorage.setItem('restobook_tutorial_completed', 'true');
-    stopTutorial();
+    skipTutorial();
   };
 
   return (

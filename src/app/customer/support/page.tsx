@@ -8,10 +8,11 @@ import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAudioStore } from "@/store/useAudioStore";
+import { useTutorialStore } from "@/store/useTutorialStore";
 import {
   LifeBuoy, Plus, ClipboardList, Send, FileText,
   User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2,
-  Paperclip, Camera, Upload, Trash2, Loader2
+  Paperclip, Camera, Upload, Trash2, Loader2, Search, HelpCircle, PhoneCall, Mail, Clock4
 } from "lucide-react";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 
@@ -55,10 +56,56 @@ export default function CustomerSupportPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat'>('aktif');
+  const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat' | 'bantuan'>('aktif');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Help Center Search & Category States
+  const [faqSearchQuery, setFaqSearchQuery] = useState('');
+  const [faqCategory, setFaqCategory] = useState('semua');
+  const [openFaqId, setOpenFaqId] = useState<number | null>(null);
+
+  const startTutorial = useTutorialStore(state => state.startTutorial);
+
+  const FAQS = [
+    {
+      id: 1,
+      category: "Pemesanan",
+      question: "Bagaimana cara melakukan reservasi meja di RestoBook?",
+      answer: "Untuk memesan meja, masuk ke menu 'Menu' pada sidebar, lalu pilih meja yang tersedia dan klik 'Reservasi'. Pilih tanggal, waktu, dan jumlah tamu, lalu konfirmasi pesanan."
+    },
+    {
+      id: 2,
+      category: "Pembayaran",
+      question: "Bagaimana cara menggunakan saldo Dompetku untuk pembayaran?",
+      answer: "Saat berada di halaman checkout pembayaran pesanan, pilih metode pembayaran 'Dompetku'. Saldo Anda akan otomatis terpotong sesuai nominal pesanan jika status Dompetku aktif."
+    },
+    {
+      id: 3,
+      category: "Pembayaran",
+      question: "Bagaimana jika akun Dompetku saya ditandai diblokir?",
+      answer: "Jika Dompetku Anda diblokir, semua transaksi pembayaran dan top up akan dinonaktifkan demi keamanan. Silakan buat tiket pengaduan di menu ini dengan kategori 'Masalah Pembayaran' agar admin meninjau akun Anda."
+    },
+    {
+      id: 4,
+      category: "Poin & Reward",
+      question: "Bagaimana cara mendapatkan dan menukarkan poin reward?",
+      answer: "Setiap transaksi selesai akan memberikan Anda poin reward. Masuk ke menu 'Tukar Point' untuk menukarkan akumulasi poin Anda dengan voucher diskon makanan."
+    },
+    {
+      id: 5,
+      category: "Voucher",
+      question: "Bagaimana cara memasang voucher diskon belanja?",
+      answer: "Voucher diskon makanan yang telah Anda klaim akan otomatis muncul sebagai opsi di halaman Checkout Keranjang Belanja. Pilih voucher sebelum menekan tombol bayar."
+    },
+    {
+      id: 6,
+      category: "Keamanan",
+      question: "Bagaimana cara memperbarui password akun saya?",
+      answer: "Masuk ke halaman 'Profil', lalu klik tombol 'Ganti Password' di kanan atas. Konfirmasikan kata sandi saat ini dan verifikasi kode OTP yang dikirim melalui email/WhatsApp."
+    }
+  ];
 
   // Form states
   const [formTitle, setFormTitle] = useState('');
@@ -633,7 +680,7 @@ export default function CustomerSupportPage() {
                 setActiveTab('aktif');
                 setActiveTicket(null);
               }}
-              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+              className={`flex-1 py-2.5 text-[10px] font-black rounded-lg uppercase transition-all ${
                 activeTab === 'aktif'
                   ? 'bg-primary text-white shadow-sm'
                   : 'text-muted hover:text-primary'
@@ -646,7 +693,7 @@ export default function CustomerSupportPage() {
                 setActiveTab('riwayat');
                 setActiveTicket(null);
               }}
-              className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+              className={`flex-1 py-2.5 text-[10px] font-black rounded-lg uppercase transition-all ${
                 activeTab === 'riwayat'
                   ? 'bg-primary text-white shadow-sm'
                   : 'text-muted hover:text-primary'
@@ -654,9 +701,49 @@ export default function CustomerSupportPage() {
             >
               Riwayat
             </button>
+            <button
+              onClick={() => {
+                setActiveTab('bantuan');
+                setActiveTicket(null);
+              }}
+              className={`flex-1 py-2.5 text-[10px] font-black rounded-lg uppercase transition-all ${
+                activeTab === 'bantuan'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted hover:text-primary'
+              }`}
+            >
+              Bantuan
+            </button>
           </div>
 
-          {loading ? (
+          {activeTab === 'bantuan' ? (
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase text-muted tracking-wide">Topik Bantuan</span>
+              {['semua', 'Pemesanan', 'Pembayaran', 'Poin & Reward', 'Voucher', 'Keamanan'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFaqCategory(cat.toLowerCase())}
+                  className={`w-full py-2.5 px-4 text-xs font-bold rounded-xl text-left border uppercase tracking-wider transition-all ${
+                    faqCategory === cat.toLowerCase()
+                      ? 'bg-primary border-primary text-white shadow-sm'
+                      : 'bg-background-light/30 dark:bg-background-dark/10 border-border-light dark:border-border-dark text-muted hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+
+              <div className="pt-4 border-t border-border-light dark:border-border-dark mt-4 space-y-3">
+                <span className="text-[10px] font-black uppercase text-muted tracking-wide block">Panduan Interaktif</span>
+                <button
+                  onClick={() => startTutorial('customer')}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 hover:scale-[1.02]"
+                >
+                  <HelpCircle className="w-4.5 h-4.5" /> Mulai Ulang Tour
+                </button>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="text-center py-12 text-muted">Memuat data tiket...</div>
           ) : filteredTickets.length === 0 ? (
             <div className="text-center py-16 text-muted space-y-2">
@@ -961,6 +1048,104 @@ export default function CustomerSupportPage() {
                 </form>
               )}
 
+            </div>
+          ) : activeTab === 'bantuan' ? (
+            // Searchable FAQ Knowledge Base & Help Contact Cards
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm min-h-[600px] overflow-y-auto">
+              <div>
+                <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">Pusat Bantuan & FAQ</h2>
+                <p className="text-xs text-muted mt-1">Cari artikel bantuan mengenai fitur pemesanan, pembayaran, reward, dan akun</p>
+              </div>
+
+              {/* Search Bar Input */}
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Cari kata kunci panduan (misal: reservasi, dompetku, password)..."
+                  value={faqSearchQuery}
+                  onChange={(e) => setFaqSearchQuery(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                />
+              </div>
+
+              {/* Search Result FAQS List */}
+              <div className="space-y-3">
+                {(() => {
+                  const filtered = FAQS.filter(faq => {
+                    const matchesCategory = faqCategory === 'semua' || faq.category.toLowerCase() === faqCategory;
+                    const matchesSearch = faq.question.toLowerCase().includes(faqSearchQuery.toLowerCase()) || 
+                                          faq.answer.toLowerCase().includes(faqSearchQuery.toLowerCase());
+                    return matchesCategory && matchesSearch;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-12 border border-dashed border-border-light dark:border-border-dark rounded-2xl">
+                        <HelpCircle className="w-12 h-12 mx-auto text-primary/40 mb-2" />
+                        <p className="font-bold text-sm text-text-light dark:text-text-dark">Artikel tidak ditemukan</p>
+                        <p className="text-xs text-muted max-w-[280px] mx-auto mt-1">Coba cari dengan kata kunci lain atau kirim tiket pengaduan baru di tab aktif.</p>
+                      </div>
+                    );
+                  }
+
+                  return filtered.map((faq) => {
+                    const isOpen = openFaqId === faq.id;
+                    return (
+                      <div key={faq.id} className="border border-border-light dark:border-border-dark rounded-2xl overflow-hidden bg-background-light/35 dark:bg-background-dark/15 transition-all">
+                        <button
+                          onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
+                          className="w-full px-5 py-4 flex justify-between items-center text-left hover:bg-primary/5 transition-colors gap-3"
+                        >
+                          <span className="font-bold text-sm text-text-light dark:text-text-dark">{faq.question}</span>
+                          <span className="text-[10px] font-black uppercase text-primary shrink-0 bg-primary/10 px-2 py-0.5 rounded">{faq.category}</span>
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="px-5 pb-5 pt-1 border-t border-border-light dark:border-border-dark"
+                            >
+                              <p className="text-xs text-muted leading-relaxed whitespace-pre-line">{faq.answer}</p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Direct Support Contact Cards */}
+              <div className="pt-6 border-t border-border-light dark:border-border-dark">
+                <span className="text-[10px] font-black uppercase text-muted tracking-wide block mb-3">Hubungi Kontak Support Kami</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-background-light/40 dark:bg-background-dark/25 border border-border-light dark:border-border-dark rounded-2xl flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 text-primary rounded-xl"><PhoneCall className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted uppercase">WhatsApp Center</p>
+                      <p className="text-xs font-bold text-text-light dark:text-text-dark">0812-3456-7890</p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-background-light/40 dark:bg-background-dark/25 border border-border-light dark:border-border-dark rounded-2xl flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl"><Mail className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted uppercase">Email Support</p>
+                      <p className="text-xs font-bold text-text-light dark:text-text-dark">support@restobook.id</p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-background-light/40 dark:bg-background-dark/25 border border-border-light dark:border-border-dark rounded-2xl flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl"><Clock4 className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted uppercase">Jam Operasional</p>
+                      <p className="text-xs font-bold text-text-light dark:text-text-dark">09:00 - 22:00 WIB</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl p-16 text-center text-muted space-y-4">

@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, X, MessageSquare, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, Volume2, VolumeX } from "lucide-react";
+import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, X, MessageSquare, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, Volume2, VolumeX, HelpCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { useModalStore } from "@/store/useModalStore";
 import { useAudioStore } from "@/store/useAudioStore";
 import { useActivityStore } from "@/store/useActivityStore";
+import { useTutorialStore } from "@/store/useTutorialStore";
 
 function ResignCountdownWidget({ req, profile }: { req: any, profile: any }) {
   const [timeLeft, setTimeLeft] = useState<{d:number, h:number, m:number, s:number} | null>(null);
@@ -626,7 +627,7 @@ export default function ProfileContent() {
             </div>
 
             {profile.role === "customer" && (
-              <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2">
+              <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2 w-full">
                 <span className="text-[10px] font-black uppercase text-muted">Suara Notifikasi</span>
                 <button
                   onClick={handleToggleSound}
@@ -649,6 +650,21 @@ export default function ProfileContent() {
                 </button>
               </div>
             )}
+
+            <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2 w-full">
+              <span className="text-[10px] font-black uppercase text-muted">Panduan Interaktif</span>
+              <button
+                onClick={() => {
+                  useTutorialStore.getState().resetTutorial();
+                  useTutorialStore.getState().startTutorial(profile.role);
+                  toast.success("Tutorial onboarding dimulai ulang!");
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-orange-500 hover:from-primary-hover hover:to-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-primary/10 hover:scale-[1.02] w-full"
+                title="Mulai Ulang Tutorial"
+              >
+                <HelpCircle className="w-4 h-4" /> Mulai Ulang Tour
+              </button>
+            </div>
           </motion.div>
         </div>
 

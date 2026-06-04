@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import MaintenanceBlockPage from "@/components/MaintenanceBlockPage";
 import { useAudioStore } from "@/store/useAudioStore";
 import NotificationCenterDrawer from "@/components/layout/NotificationCenterDrawer";
+import { useTutorialStore } from "@/store/useTutorialStore";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -339,6 +340,52 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     if (profile) {
       setRole(profile.role);
       setUserProfile(profile);
+
+      // Onboarding Tutorial Initialization & Invite Notification
+      const tutorialStore = useTutorialStore.getState();
+      tutorialStore.initTutorialStatus(session.user.id, profile.role || 'customer');
+      const currentStatus = useTutorialStore.getState().status;
+
+      if (currentStatus?.first_login) {
+        toast((t) => (
+          <div className="flex flex-col gap-2 p-1 text-xs">
+            <span className="font-bold">👋 Selamat datang! Ingin memulai panduan onboarding interaktif?</span>
+            <button
+              onClick={() => {
+                tutorialStore.startTutorial(profile.role || 'customer');
+                toast.dismiss(t.id);
+              }}
+              className="bg-primary text-white text-[10px] font-black uppercase px-3.5 py-2 rounded-xl w-fit hover:opacity-90 transition-all self-end"
+            >
+              Mulai Tutorial
+            </button>
+          </div>
+        ), {
+          duration: 10000,
+          id: "onboarding-toast-invite"
+        });
+
+        // Insert database notification via async IIFE
+        (async () => {
+          try {
+            await supabase.from("notifications").insert({
+              user_id: profile.id,
+              title: "Selamat datang di RestoBook!",
+              message: "Halo! Klik Bantuan di halaman Pengaduan untuk melihat tutorial panduan lengkap kami kapan saja.",
+              is_read: false,
+              type: "system"
+            });
+            if (tutorialStore.status) {
+              const updated = { ...tutorialStore.status, first_login: false };
+              localStorage.setItem(`restobook_tutorial_status_${session.user.id}`, JSON.stringify(updated));
+              useTutorialStore.setState({ status: updated });
+            }
+          } catch (err) {
+            console.error("Welcome notif failed:", err);
+          }
+        })();
+      }
+
       if (profile.role === "customer") {
         const { count } = await supabase
           .from("notifications")
@@ -504,7 +551,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
-          { name: "Notifikasi", href: "/customer/notifications", icon: Bell, badge: unreadNotifCount },
           { name: "Pengaduan & Bantuan", href: "/customer/support", icon: LifeBuoy },
           { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];
@@ -568,6 +614,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             <div className="mt-6 border-t border-border-light dark:border-border-dark pt-6">
               <button
                 onClick={handleLogout}
+                data-tour="logout-button"
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-500 transition-all hover:bg-rose-50 border border-transparent hover:border-rose-100"
               >
                 <LogOut className="h-5 w-5" />
@@ -616,6 +663,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               </button>
               <button
                 onClick={() => setIsNotifCenterOpen(true)}
+                data-tour="header-notifications"
                 className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all relative"
                 title="Pusat Informasi"
                 aria-label="Pusat Informasi"
@@ -745,6 +793,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 <div className="absolute bottom-6 left-6 right-6">
                    <button
                     onClick={handleLogout}
+                    data-tour="logout-button"
                     className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-500 transition-all hover:bg-rose-50"
                   >
                     <LogOut className="h-5 w-5" />

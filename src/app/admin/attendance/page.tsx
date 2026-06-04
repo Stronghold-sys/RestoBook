@@ -50,26 +50,43 @@ export default function AdminAttendancePage() {
     if (!isSilent) setLoading(true);
     try {
       if (activeTab === "employees") {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Gunakan zona waktu WIB (Asia/Jakarta) agar filter tanggal tepat
+        const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+        const todayStr = nowWIB.getFullYear() + '-' +
+          String(nowWIB.getMonth() + 1).padStart(2, '0') + '-' +
+          String(nowWIB.getDate()).padStart(2, '0');
 
-        const { data } = await supabase
+        // QUERY 1: Ambil semua profil karyawan aktif TANPA filter attendance
+        // (filter pada nested table bisa menyebabkan profil tanpa absensi tidak muncul)
+        const { data: profilesData, error: profileErr } = await supabase
           .from('profiles')
           .select(`
             *,
-            attendance(id, type, created_at, photo_url, status),
             work_shift_assignments(
               *,
               work_shifts(*)
             )
           `)
           .in('role', ['admin', 'cashier'])
-          .filter('attendance.created_at', 'gte', today.toISOString())
-          .filter('attendance.created_at', 'lt', tomorrow.toISOString())
           .order('full_name');
-        setEmployees(data || []);
+
+        if (profileErr) throw profileErr;
+
+        // QUERY 2: Ambil absensi hari ini secara terpisah (filter tanggal WIB)
+        const { data: todayAttendance } = await supabase
+          .from('attendance')
+          .select('id, type, created_at, photo_url, status, profile_id')
+          .gte('created_at', `${todayStr}T00:00:00+07:00`)
+          .lt('created_at', `${todayStr}T23:59:59+07:00`)
+          .order('created_at', { ascending: false });
+
+        // MERGE: Gabungkan data attendance ke dalam profil masing-masing
+        const merged = (profilesData || []).map(emp => ({
+          ...emp,
+          attendance: (todayAttendance || []).filter(a => a.profile_id === emp.id)
+        }));
+
+        setEmployees(merged);
       } else if (activeTab === "shifts") {
         const { data } = await supabase
           .from('shifts')
@@ -174,6 +191,25 @@ export default function AdminAttendancePage() {
           return !!(subAssignment || (regAssignment && !isReplaced));
         };
 
+        if (loading) {
+          return (
+            <div className="flex flex-col items-center justify-center p-20 gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="text-muted text-sm font-bold">Memuat data karyawan...</p>
+            </div>
+          );
+        }
+
+        if (employees.length === 0) {
+          return (
+            <div className="bg-card-light dark:bg-card-dark p-20 rounded-3xl border border-dashed border-border-light dark:border-border-dark text-center">
+              <Users className="w-12 h-12 text-muted mx-auto mb-4 opacity-20" />
+              <p className="text-muted font-bold">Belum ada data karyawan.</p>
+              <p className="text-muted text-xs mt-1">Tambahkan karyawan di halaman Manajemen Karyawan terlebih dahulu.</p>
+            </div>
+          );
+        }
+
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {employees.map((emp) => {
@@ -241,6 +277,7 @@ export default function AdminAttendancePage() {
           </div>
         );
       })()}
+
 
       {activeTab === "requests" && (
         <div className="space-y-4">

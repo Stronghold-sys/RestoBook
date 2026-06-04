@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select(`
         *,
-        work_shift_assignments(
+        work_shift_assignments!work_shift_assignments_profile_id_fkey(
           *,
           work_shifts(*)
         )

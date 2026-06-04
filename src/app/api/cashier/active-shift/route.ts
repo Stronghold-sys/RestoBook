@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       // Tarik semua kolega di shift yang sama
       const { data: colleagues } = await supabase
         .from('work_shift_assignments')
-        .select('id, profiles(full_name, avatar_url)')
+        .select('id, profiles!work_shift_assignments_profile_id_fkey(full_name, avatar_url)')
         .eq('work_shift_id', nextActiveCandidate.work_shift_id);
       
       assignedEmployees = colleagues || [];

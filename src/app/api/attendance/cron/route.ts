@@ -220,10 +220,98 @@ async function processAutoAlpha() {
     }
   }
 
+  // =====================================================================
+  // 7. PEMBERSIHAN ALPHA ORPHAN (sesuai chatboot.md):
+  // Hapus record alpha yang jadwal kerjanya sudah tidak berlaku lagi
+  // (misalnya admin menghapus shift, atau karyawan tidak lagi ditugaskan).
+  // =====================================================================
+  const deletedAlphaList: any[] = [];
+
+  if (attendances) {
+    const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+    // Kumpulkan semua record alpha dari 15 hari terakhir
+    const alphaRecords = attendances.filter((att: any) => att.type === 'alpha' && att.profile_id);
+
+    for (const alphaRecord of alphaRecords) {
+      // Dapatkan tanggal alpha dalam format WIB (YYYY-MM-DD)
+      const alphaDateStr = getJakartaDateStr(alphaRecord.created_at);
+
+      // Dapatkan nama hari dalam Bahasa Indonesia untuk tanggal alpha
+      const alphaDateObj = new Date(alphaRecord.created_at);
+      const alphaLocalObj = new Date(alphaDateObj.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+      const alphaDayName = dayNames[alphaLocalObj.getDay()];
+
+      // Cari profil karyawan yang bersangkutan (harus aktif dan sudah di-load)
+      const alphaProfile = profiles.find((p: any) => p.id === alphaRecord.profile_id);
+      if (!alphaProfile) {
+        // Profil tidak ditemukan di daftar aktif → alpha ini orphan, hapus
+        await supabaseAdmin.from('attendance').delete().eq('id', alphaRecord.id);
+        deletedAlphaList.push({ id: alphaRecord.id, reason: 'profile_not_active' });
+        continue;
+      }
+
+      // Evaluasi ulang apakah karyawan ini memiliki jadwal valid pada tanggal alpha tersebut
+      const subAssignmentCheck = assignments?.find(
+        (a: any) => a.profile_id === alphaRecord.profile_id &&
+             a.substitute_date === alphaDateStr &&
+             a.is_substitute === true
+      );
+      const regAssignmentCheck = assignments?.find(
+        (a: any) => a.profile_id === alphaRecord.profile_id &&
+             a.substitute_date === null &&
+             a.work_shifts?.days?.includes(alphaDayName)
+      );
+      const isReplacedCheck = assignments?.some(
+        (a: any) => a.substitute_for_profile_id === alphaRecord.profile_id &&
+             a.substitute_date === alphaDateStr
+      );
+
+      const hasValidSchedule = !!(subAssignmentCheck || (regAssignmentCheck && !isReplacedCheck));
+
+      // Jika tidak ada jadwal valid pada tanggal itu → alpha ini adalah ORPHAN → hapus!
+      if (!hasValidSchedule) {
+        const { error: delAlphaErr } = await supabaseAdmin
+          .from('attendance')
+          .delete()
+          .eq('id', alphaRecord.id);
+
+        if (!delAlphaErr) {
+          // Catat penghapusan ke audit_logs
+          await supabaseAdmin.from('audit_logs').insert({
+            action: 'delete_orphan_alpha',
+            operator_id: null,
+            operator_name: 'System Automated Scheduler',
+            target_id: alphaRecord.profile_id,
+            target_name: alphaProfile.full_name,
+            data_before: {
+              attendance_id: alphaRecord.id,
+              date: alphaDateStr,
+              reason: 'Jadwal kerja dihapus oleh admin atau karyawan tidak lagi ditugaskan'
+            },
+            data_after: null,
+            ip_address: '127.0.0.1',
+            browser: 'System Cron Job',
+            device: 'Server'
+          });
+
+          deletedAlphaList.push({
+            employee_name: alphaProfile.full_name,
+            date: alphaDateStr,
+            reason: 'no_valid_schedule'
+          });
+        } else {
+          console.error(`Gagal menghapus alpha orphan ID ${alphaRecord.id}:`, delAlphaErr);
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     success: true,
-    message: `Selesai memproses kehadiran. Berhasil menandai ${markedAlphaList.length} status ALPHA baru.`,
+    message: `Selesai memproses kehadiran. Berhasil menandai ${markedAlphaList.length} status ALPHA baru. Berhasil membersihkan ${deletedAlphaList.length} alpha tidak valid.`,
     processed_count: markedAlphaList.length,
-    marked_alpha: markedAlphaList
+    marked_alpha: markedAlphaList,
+    deleted_orphan_alpha: deletedAlphaList
   });
 }

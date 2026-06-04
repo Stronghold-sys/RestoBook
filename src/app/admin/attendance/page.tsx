@@ -59,7 +59,11 @@ export default function AdminAttendancePage() {
           .from('profiles')
           .select(`
             *,
-            attendance(id, type, created_at, photo_url, status)
+            attendance(id, type, created_at, photo_url, status),
+            work_shift_assignments(
+              *,
+              work_shifts(*)
+            )
           `)
           .in('role', ['admin', 'cashier'])
           .filter('attendance.created_at', 'gte', today.toISOString())
@@ -146,57 +150,97 @@ export default function AdminAttendancePage() {
           </button>
         </div>
       </div>
+      {activeTab === "employees" && (() => {
+        const hasScheduleToday = (emp: any) => {
+          const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+          const today = new Date();
+          const nowJakarta = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+          const todayStr = nowJakarta.getFullYear() + '-' + 
+            String(nowJakarta.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(nowJakarta.getDate()).padStart(2, '0');
+          const todayIndoName = dayNames[nowJakarta.getDay()];
 
-      {activeTab === "employees" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((emp) => {
-            const latest = emp.attendance?.[0];
-            return (
-              <motion.div layout key={emp.id} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-6 shadow-xl hover:shadow-2xl transition-all group">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 relative shadow-inner">
-                    {emp.avatar_url ? (
-                      <img 
-                        src={emp.avatar_url} 
-                        alt={`Foto profil ${emp.full_name}`} 
-                        title={`Foto profil ${emp.full_name}`}
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <User className="w-8 h-8 text-muted m-auto absolute inset-0" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-black text-lg leading-tight">{emp.full_name}</h3>
-                    <p className="text-[10px] font-black text-muted uppercase tracking-widest">{emp.employee_id} - {emp.role}</p>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedEmployee(emp)} 
-                    className="ml-auto p-3 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all"
-                    title="Lihat Detail Karyawan"
-                    aria-label="Lihat Detail Karyawan"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                </div>
+          const assigns = emp.work_shift_assignments || [];
+          const subAssignment = assigns.find(
+            (a: any) => a.substitute_date === todayStr && a.is_substitute === true
+          );
+          const regAssignment = assigns.find(
+            (a: any) => a.substitute_date === null && a.work_shifts?.days?.includes(todayIndoName)
+          );
+          const isReplaced = assigns.some(
+            (a: any) => a.substitute_for_profile_id === emp.id && a.substitute_date === todayStr
+          );
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
-                    <span className="text-[10px] font-black uppercase text-muted">Status Hari Ini</span>
-                    {latest ? (
-                      <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${latest.type === 'check_in' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
-                        {latest.type === 'check_in' ? 'Sudah Masuk' : 'Sudah Pulang'}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-red-100 text-red-600 tracking-wider">Tanpa Keterangan</span>
-                    )}
+          return !!(subAssignment || (regAssignment && !isReplaced));
+        };
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {employees.map((emp) => {
+              const latest = emp.attendance?.[0];
+              return (
+                <motion.div layout key={emp.id} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-6 shadow-xl hover:shadow-2xl transition-all group">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 relative shadow-inner">
+                      {emp.avatar_url ? (
+                        <img 
+                          src={emp.avatar_url} 
+                          alt={`Foto profil ${emp.full_name}`} 
+                          title={`Foto profil ${emp.full_name}`}
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <User className="w-8 h-8 text-muted m-auto absolute inset-0" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-black text-lg leading-tight">{emp.full_name}</h3>
+                      <p className="text-[10px] font-black text-muted uppercase tracking-widest">{emp.employee_id} - {emp.role}</p>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedEmployee(emp)} 
+                      className="ml-auto p-3 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all"
+                      title="Lihat Detail Karyawan"
+                      aria-label="Lihat Detail Karyawan"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
+                      <span className="text-[10px] font-black uppercase text-muted">Status Hari Ini</span>
+                      {latest ? (
+                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${
+                          latest.type === 'check_in' ? 'bg-green-100 text-green-600' :
+                          latest.type === 'check_out' ? 'bg-blue-100 text-blue-600' :
+                          latest.type === 'alpha' ? 'bg-red-100 text-red-600' :
+                          latest.type === 'izin' ? 'bg-amber-100 text-amber-700' :
+                          latest.type === 'sakit' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-650'
+                        }`}>
+                          {latest.type === 'check_in' ? 'Sudah Masuk' :
+                           latest.type === 'check_out' ? 'Sudah Pulang' :
+                           latest.type === 'alpha' ? 'Alpha' :
+                           latest.type === 'izin' ? 'Izin' :
+                           latest.type === 'sakit' ? 'Sakit' :
+                           latest.type}
+                        </span>
+                      ) : (
+                        hasScheduleToday(emp) ? (
+                          <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-red-100 text-red-600 tracking-wider">Tanpa Keterangan</span>
+                        ) : (
+                          <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-gray-100 text-gray-500 tracking-wider">Libur</span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {activeTab === "requests" && (
         <div className="space-y-4">
@@ -796,6 +840,8 @@ function WorkShiftsManager() {
       toast.success(editingShift ? "Shift diperbarui!" : "Shift baru berhasil dibuat!");
       setIsModalOpen(false);
       fetchData();
+      // Trigger cron agar alpha orphan langsung dibersihkan secara realtime (chatboot.md)
+      fetch('/api/attendance/cron').catch((e: any) => console.error('Cron trigger error:', e));
     } catch (err: any) {
       toast.error("Error: " + err.message);
     }
@@ -823,6 +869,8 @@ function WorkShiftsManager() {
       
       fetchData(); // Realtime refresh
       setConfirmDeleteId(null);
+      // Trigger cron agar alpha orphan yang jadwalnya dihapus langsung dibersihkan (chatboot.md)
+      fetch('/api/attendance/cron').catch((e: any) => console.error('Cron trigger error:', e));
     } catch (err: any) { 
       toast.error(err.message); 
     } finally {

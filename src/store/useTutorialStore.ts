@@ -38,8 +38,8 @@ interface TutorialStore {
 const CUSTOMER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Selamat datang di TiketKu',
-    description: 'Kami akan memandu Anda mengenal semua fitur penting agar Anda lebih mudah memesan, membayar, dan melihat tiket digital.',
+    title: 'Selamat datang di RestoBook',
+    description: 'Kami akan memandu Anda mengenal semua fitur penting agar Anda lebih mudah memesan makanan, membayar, dan melihat detail reservasi meja.',
     position: 'bottom'
   },
   {
@@ -57,7 +57,7 @@ const CUSTOMER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="nav-Pesanan Saya"]',
     title: 'Data Pesanan',
-    description: 'Menu ini menampilkan semua pesanan tiket yang sedang diproses, sudah dibayar, atau menunggu tindakan Anda.',
+    description: 'Menu ini menampilkan semua pesanan makanan yang sedang diproses, sudah dibayar, atau menunggu tindakan Anda.',
     position: 'right'
   },
   {
@@ -69,25 +69,25 @@ const CUSTOMER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="nav-Dompetku"]',
     title: 'Pembayaran',
-    description: 'Gunakan menu ini untuk menyelesaikan pembayaran pesanan tiket Anda dengan aman dan cepat.',
+    description: 'Gunakan menu ini untuk menyelesaikan pembayaran pesanan makanan Anda dengan aman dan cepat.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Reservasi"]',
-    title: 'Tiket Digital',
-    description: 'Setelah pembayaran berhasil, tiket Anda akan muncul di sini lengkap dengan detail film dan kode QR untuk digunakan saat masuk bioskop.',
+    title: 'Detail Reservasi Meja',
+    description: 'Setelah pembayaran berhasil, detail reservasi meja Anda akan muncul di sini lengkap dengan pesanan hidangan dan kode QR untuk digunakan saat masuk restoran.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Reservasi"]',
-    title: 'Kode QR Tiket',
-    description: 'Tunjukkan kode QR ini saat masuk. Kode ini berisi data tiket Anda dan akan diverifikasi oleh petugas.',
+    title: 'Kode QR Reservasi',
+    description: 'Tunjukkan kode QR ini saat masuk. Kode ini berisi data reservasi Anda dan akan diverifikasi oleh petugas.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="header-notifications"]',
     title: 'Notifikasi Penting',
-    description: 'Semua pemberitahuan seperti status pembayaran, tiket siap, atau informasi terbaru akan tampil di sini.',
+    description: 'Semua pemberitahuan seperti status pembayaran, pesanan siap, atau informasi terbaru akan tampil di sini.',
     position: 'bottom'
   },
   {
@@ -105,7 +105,7 @@ const CUSTOMER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="nav-Menu"]',
     title: 'Mulai Pesanan',
-    description: 'Klik tombol ini untuk memulai pemesanan tiket baru dan memilih film, jadwal, serta kursi.',
+    description: 'Klik tombol ini untuk memulai pemesanan hidangan baru dan memilih menu makanan, jadwal makan, serta meja.',
     position: 'right'
   },
   {

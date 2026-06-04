@@ -23,6 +23,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, role: initialRole }: DashboardLayoutProps) {
+  const isTutorialActive = useTutorialStore((state) => state.isTutorialActive);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [role, setRole] = useState<string | null>(initialRole || null);
@@ -341,49 +342,38 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       setRole(profile.role);
       setUserProfile(profile);
 
-      // Onboarding Tutorial Initialization & Invite Notification
+      // Onboarding Tutorial Initialization & Direct Forced Activation
       const tutorialStore = useTutorialStore.getState();
       tutorialStore.initTutorialStatus(session.user.id, profile.role || 'customer');
       const currentStatus = useTutorialStore.getState().status;
 
-      if (currentStatus?.first_login) {
-        toast((t) => (
-          <div className="flex flex-col gap-2 p-1 text-xs">
-            <span className="font-bold">👋 Selamat datang! Ingin memulai panduan onboarding interaktif?</span>
-            <button
-              onClick={() => {
-                tutorialStore.startTutorial(profile.role || 'customer');
-                toast.dismiss(t.id);
-              }}
-              className="bg-primary text-white text-[10px] font-black uppercase px-3.5 py-2 rounded-xl w-fit hover:opacity-90 transition-all self-end"
-            >
-              Mulai Tutorial
-            </button>
-          </div>
-        ), {
-          duration: 10000,
-          id: "onboarding-toast-invite"
-        });
+      if (currentStatus && !currentStatus.tour_completed && !currentStatus.skipped_tour) {
+        // Automatically start the onboarding tutorial for new users/first login without any toast invite
+        setTimeout(() => {
+          tutorialStore.startTutorial(profile.role || 'customer');
+        }, 1200);
 
-        // Insert database notification via async IIFE
-        (async () => {
-          try {
-            await supabase.from("notifications").insert({
-              user_id: profile.id,
-              title: "Selamat datang di RestoBook!",
-              message: "Halo! Klik Bantuan di halaman Pengaduan untuk melihat tutorial panduan lengkap kami kapan saja.",
-              is_read: false,
-              type: "system"
-            });
-            if (tutorialStore.status) {
-              const updated = { ...tutorialStore.status, first_login: false };
-              localStorage.setItem(`restobook_tutorial_status_${session.user.id}`, JSON.stringify(updated));
-              useTutorialStore.setState({ status: updated });
+        if (currentStatus.first_login) {
+          // Insert database notification via async IIFE
+          (async () => {
+            try {
+              await supabase.from("notifications").insert({
+                user_id: profile.id,
+                title: "Selamat datang di RestoBook!",
+                message: "Halo! Panduan onboarding interaktif telah dimulai otomatis untuk memperkenalkan seluruh fitur kami.",
+                is_read: false,
+                type: "system"
+              });
+              if (tutorialStore.status) {
+                const updated = { ...tutorialStore.status, first_login: false };
+                localStorage.setItem(`restobook_tutorial_status_${session.user.id}`, JSON.stringify(updated));
+                useTutorialStore.setState({ status: updated });
+              }
+            } catch (err) {
+              console.error("Welcome notif failed:", err);
             }
-          } catch (err) {
-            console.error("Welcome notif failed:", err);
-          }
-        })();
+          })();
+        }
       }
 
       if (profile.role === "customer") {
@@ -577,7 +567,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               <span className="text-2xl font-black tracking-tight text-primary">RestoBook</span>
             </button>
 
-            <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
+            <nav className={`flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar ${isTutorialActive ? "pointer-events-none" : ""}`}>
               {getMenuLinks().map((link) => (
                 <Link
                   key={link.href}
@@ -611,7 +601,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               ))}
             </nav>
 
-            <div className="mt-6 border-t border-border-light dark:border-border-dark pt-6">
+            <div className={`mt-6 border-t border-border-light dark:border-border-dark pt-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
               <button
                 onClick={handleLogout}
                 data-tour="logout-button"
@@ -627,7 +617,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         {/* Main Content */}
         <div className="lg:pl-72 min-h-screen flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl">
+          <header className={`sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl ${isTutorialActive ? "pointer-events-none" : ""}`}>
             <div className="flex items-center gap-4 lg:hidden">
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -701,7 +691,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </div>
           )}
 
-          <main className="flex-1 relative">
+          <main className={`flex-1 relative ${isTutorialActive ? "pointer-events-none" : ""}`}>
             {maintenanceSettings.is_maintenance_active && role !== "admin" && isTransactionRoute(pathname) ? (
               <MaintenanceBlockPage 
                 message={maintenanceSettings.maintenance_message} 
@@ -760,7 +750,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   </button>
                 </div>
 
-                <nav className="space-y-1.5 overflow-y-auto custom-scrollbar h-[calc(100%-160px)]">
+                <nav className={`space-y-1.5 overflow-y-auto custom-scrollbar h-[calc(100%-160px)] ${isTutorialActive ? "pointer-events-none" : ""}`}>
                   {getMenuLinks().map((link) => (
                     <Link
                       key={link.href}
@@ -790,7 +780,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   ))}
                 </nav>
 
-                <div className="absolute bottom-6 left-6 right-6">
+                <div className={`absolute bottom-6 left-6 right-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
                    <button
                     onClick={handleLogout}
                     data-tour="logout-button"

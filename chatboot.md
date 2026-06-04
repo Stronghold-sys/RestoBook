@@ -1,241 +1,353 @@
-TAMBAHKAN FITUR BARU: SPOTLIGHT TOUR / INTERACTIVE USER GUIDE / ONBOARDING TUTORIAL
+===========================================
+SPOTLIGHT TOUR WAJIB UNTUK SEMUA ROLE
+===========================================
 
-Ke dalam website/aplikasi yang sedang dikembangkan, implementasikan fitur onboarding interaktif bernama "Spotlight Tour" yang berfungsi sebagai tutorial panduan penggunaan web dan aplikasi secara visual, modern, dan mudah dipahami.
+PENTING:
 
-TUJUAN UTAMA:
+Tutorial onboarding wajib dijalankan oleh seluruh pengguna baru sebelum dapat mengakses sistem.
 
-- Membimbing user baru secara otomatis saat pertama kali login / daftar akun baru.
-- Menjelaskan seluruh menu, halaman, tombol, alur kerja, dan fitur yang ada di halaman pelanggan setelah login.
-- Memberikan panduan bertahap, interaktif, dan kontekstual langsung di dalam UI.
-- Bisa diulang kembali kapan saja oleh user lama melalui menu bantuan / profil / pengaturan.
-- Memberikan pengalaman onboarding yang profesional, ramah pengguna, dan cocok untuk production.
+Role yang wajib memiliki tutorial masing-masing:
 
-RUANG LINGKUP FITUR SPOTLIGHT TOUR:
+- Pelanggan
+- Kasir
+- Admin
+- Owner / Super Admin
 
-1. Tampilkan tutorial otomatis untuk akun baru / pelanggan baru saat login pertama kali.
-2. Tampilkan highlight bertahap untuk seluruh menu halaman pelanggan, termasuk:
-   - Dashboard
-   - Profil akun
-   - Data pesanan
-   - Riwayat transaksi
-   - Tiket digital
-   - Pembayaran
-   - Notifikasi
-   - Bantuan / pusat bantuan
-   - Pengaturan akun
-   - Fitur-fitur lain yang tersedia di halaman pelanggan
-3. Setiap langkah tutorial menyorot elemen UI tertentu dengan efek spotlight / overlay gelap di luar area fokus.
-4. Tampilkan pop-up penjelasan singkat, jelas, dan mudah dipahami untuk setiap fitur.
-5. Sediakan tombol:
-   - Next
-   - Previous
-   - Skip Tour
-   - Finish
-   - Jangan tampilkan lagi
-6. Setelah tour selesai, simpan status bahwa tutorial sudah pernah ditampilkan.
-7. Jika user menekan “Jangan tampilkan lagi”, tutorial tidak muncul otomatis lagi kecuali di-reset.
-8. Sediakan menu “Lihat Panduan” / “Ulangi Tour” di halaman pelanggan agar user bisa membuka tutorial kapan saja.
+===========================================
+ATURAN WAJIB TUTORIAL
+===========================================
 
-LOGIKA SISTEM SPOTLIGHT TOUR:
+1. Tutorial hanya muncul pada:
+   - Akun baru
+   - Login pertama kali
 
-- Saat user pertama kali registrasi atau login sebagai akun baru:
-  - sistem mengecek status `is_first_login` atau `tour_completed`.
-  - jika belum pernah melihat tutorial, maka tour langsung muncul otomatis.
-- Setelah tour selesai:
-  - simpan flag ke database atau local storage:
-    - `tour_completed = true`
-    - `first_login = false`
-- Jika user memilih skip:
-  - tetap simpan status bahwa tour pernah ditampilkan.
-- Jika admin ingin reset tutorial:
-  - sediakan fitur reset dari panel admin.
-- Tutorial harus bersifat per halaman:
-  - halaman dashboard punya tour sendiri
-  - halaman riwayat punya tour sendiri
-  - halaman tiket digital punya tour sendiri
-  - halaman pembayaran punya tour sendiri
-- Jika user membuka fitur baru yang belum pernah dipakai:
-  - tampilkan micro-tour / tooltip singkat untuk fitur tersebut.
-- Gunakan kondisi agar tour tidak mengganggu user lama:
-  - hanya tampil otomatis pada akun baru atau saat fitur baru ditambahkan.
+2. Tutorial tidak muncul lagi apabila:
+   - Sudah selesai
+   - Sudah di-skip
 
-FITUR TAMBAHAN YANG WAJIB DIIMPLEMENTASIKAN SECARA LENGKAP:
+3. Saat tutorial berjalan:
+   - Semua menu dikunci
+   - Semua halaman dikunci
+   - Semua fitur dikunci
+   - Tidak dapat mengakses sistem sebelum tutorial selesai
 
-1. Contextual Help / Tooltip
-   - tooltip muncul saat hover atau klik pada icon bantuan.
-   - menjelaskan fungsi tombol dan menu secara singkat.
+4. Gunakan Parent Layout Tutorial khusus:
+   - Overlay fullscreen
+   - Background blur
+   - Background gelap
+   - Fokus spotlight pada menu yang dijelaskan
+   - Popup berada tepat di tengah layar
+   - Tidak bisa ditutup dengan klik luar popup
+   - Responsif desktop dan mobile
 
-2. Guided Empty State
-   - saat data masih kosong, tampilkan pesan edukatif:
-     “Belum ada pesanan. Klik tombol Buat Pesanan untuk memulai.”
+5. Tampilkan:
+   - Judul langkah
+   - Deskripsi
+   - Progress langkah
+   - Tombol Previous
+   - Tombol Next
+   - Tombol Skip
+   - Tombol Finish
 
-3. Help Center / Pusat Bantuan
-   - halaman khusus berisi panduan penggunaan, FAQ, langkah-langkah, dan kontak bantuan.
+6. Progress contoh:
+   Langkah 3 dari 15
 
-4. Searchable Knowledge Base
-   - user bisa mencari kata kunci panduan fitur tertentu.
+7. Setelah tutorial selesai:
+   - tour_completed = true
+   - first_login = false
 
-5. Progress Tutorial
-   - tampilkan progres langkah tutorial, misalnya:
-     “Langkah 2 dari 8”.
+8. Setelah tutorial selesai:
+   - Semua menu terbuka
+   - Semua fitur dapat digunakan
 
-6. Tutorial Multi-Device
-   - responsif di desktop, tablet, dan mobile.
+===========================================
+TUTORIAL PELANGGAN
+===========================================
 
-7. Accessibility Support
-   - tombol mudah diakses keyboard
-   - kontras jelas
-   - teks mudah dibaca
-   - dukungan screen reader.
+LANGKAH 1
 
-8. Admin Tutorial Management
-   - admin bisa mengubah isi tutorial, urutan langkah, teks penjelasan, dan status aktif/nonaktif.
+Judul:
+Selamat Datang di RestoBook
 
-9. Analytics Tutorial
-   - catat apakah user menyelesaikan tutorial, skip, atau mengulangi tour.
-   - simpan data untuk evaluasi UX.
+Isi:
+Selamat datang di RestoBook. Kami akan memandu Anda mengenal seluruh fitur yang tersedia agar proses pemesanan makanan dan reservasi meja menjadi lebih mudah, cepat, dan nyaman.
 
-10. Notification Onboarding
+--------------------------------------------------
 
-- setelah daftar/login pertama, tampilkan notifikasi sambutan dan ajakan memulai tour.
+LANGKAH 2
 
-1. Reset Tour Button
+Judul:
+Dashboard
 
-- user bisa reset tour dari pengaturan akun.
-- admin juga bisa reset dari dashboard admin.
+Isi:
+Ini adalah halaman utama akun Anda. Di sini Anda dapat melihat ringkasan aktivitas, pesanan hidangan terbaru, notifikasi, dan informasi penting lainnya.
 
-1. Role-Based Tutorial
+--------------------------------------------------
 
-- jika ada role berbeda, tampilkan tutorial sesuai role:
-  - pelanggan
-  - admin
-  - kasir / operator
-  - owner / super admin
+LANGKAH 3
 
-KETENTUAN UI/UX:
+Judul:
+Menu Makanan
 
-- Desain modern, clean, premium, dan konsisten dengan desain website.
-- Gunakan animasi halus saat berpindah langkah.
-- Overlay spotlight harus fokus pada elemen aktif dan membuat area lain redup.
-- Pop-up tutorial harus mobile-friendly.
-- Gunakan bahasa tutorial yang sederhana, sopan, dan mudah dipahami oleh user awam.
-- Jangan membuat tutorial terlalu panjang dalam satu langkah.
-- Pastikan tutorial tidak mengganggu proses transaksi penting.
+Isi:
+Pada menu ini Anda dapat melihat seluruh daftar hidangan makanan dan minuman yang tersedia beserta informasi harga dan detail porsinya.
 
-STRUKTUR DATA / DATABASE YANG DISARANKAN:
-Buat tabel atau struktur data untuk menyimpan:
+--------------------------------------------------
 
-- user_id
-- tour_completed
+LANGKAH 4
+
+Judul:
+Reservasi Meja
+
+Isi:
+Pilih jadwal kunjungan makan yang sesuai dengan waktu yang Anda inginkan sebelum melakukan pemesanan tempat di restoran kami.
+
+--------------------------------------------------
+
+LANGKAH 5
+
+Judul:
+Pilih Meja
+
+Isi:
+Gunakan fitur ini untuk memilih posisi meja makan yang tersedia sesuai kenyamanan dan jumlah tamu Anda.
+
+--------------------------------------------------
+
+LANGKAH 6
+
+Judul:
+Pesanan Saya
+
+Isi:
+Menu ini menampilkan seluruh pesanan makanan yang sedang berlangsung maupun yang telah selesai diproses oleh dapur.
+
+--------------------------------------------------
+
+LANGKAH 7
+
+Judul:
+Pembayaran
+
+Isi:
+Lakukan pembayaran dengan metode yang tersedia untuk menyelesaikan proses pemesanan makanan Anda secara instan.
+
+--------------------------------------------------
+
+LANGKAH 8
+
+Judul:
+Detail Reservasi
+
+Isi:
+Setelah pembayaran berhasil diverifikasi, detail reservasi meja Anda akan tersedia pada halaman ini dan siap ditunjukkan saat datang.
+
+--------------------------------------------------
+
+LANGKAH 9
+
+Judul:
+Kode Reservasi
+
+Isi:
+Setiap pesanan memiliki kode reservasi unik yang digunakan sebagai identitas pemesanan saat melakukan verifikasi kedatangan di restoran.
+
+--------------------------------------------------
+
+LANGKAH 10
+
+Judul:
+Riwayat Transaksi
+
+Isi:
+Semua transaksi saldo Dompetku dan pembayaran makanan yang pernah dilakukan akan tersimpan dan dapat dilihat kembali kapan saja.
+
+--------------------------------------------------
+
+LANGKAH 11
+
+Judul:
+Notifikasi
+
+Isi:
+Seluruh informasi penting seperti status pembayaran, pesanan siap disajikan, promo menu, dan pengumuman akan muncul di sini.
+
+--------------------------------------------------
+
+LANGKAH 12
+
+Judul:
+Profil Akun
+
+Isi:
+Kelola informasi akun Anda seperti nama, email, nomor telepon, foto profil, dan preferensi audio suara notifikasi.
+
+--------------------------------------------------
+
+LANGKAH 13
+
+Judul:
+Pusat Bantuan
+
+Isi:
+Apabila mengalami kendala atau memiliki pertanyaan, Anda dapat menggunakan pusat bantuan untuk mendapatkan panduan, FAQ, dan mengajukan tiket bantuan.
+
+--------------------------------------------------
+
+LANGKAH 14
+
+Judul:
+Pengaturan Akun
+
+Isi:
+Atur keamanan akun, preferensi sistem, pengaturan notifikasi, dan kebutuhan personalisasi lainnya.
+
+--------------------------------------------------
+
+LANGKAH 15
+
+Judul:
+Logout
+
+Isi:
+Gunakan menu ini untuk keluar dari akun dengan aman setelah selesai menggunakan aplikasi.
+
+--------------------------------------------------
+
+LANGKAH 16
+
+Judul:
+Tutorial Selesai
+
+Isi:
+Selamat. Anda telah menyelesaikan tutorial penggunaan RestoBook dan sekarang dapat menggunakan seluruh fitur yang tersedia.
+
+===========================================
+TUTORIAL KASIR
+===========================================
+
+1. Selamat Datang di Dashboard Kasir
+2. Dashboard Kasir
+3. Data Pelanggan
+4. Data Transaksi
+5. Input Pesanan Manual
+6. Validasi Pembayaran
+7. Verifikasi Reservasi
+8. Cetak Struk Pesanan
+9. Cetak Laporan Harian
+10. Riwayat Transaksi
+11. Laporan Shift
+12. Notifikasi
+13. Pengaturan Akun
+14. Logout
+15. Tutorial Selesai
+
+Gunakan penjelasan profesional yang menjelaskan fungsi operasional masing-masing menu.
+
+===========================================
+TUTORIAL ADMIN
+===========================================
+
+1. Selamat Datang di Panel Admin
+2. Dashboard Admin
+3. Kelola Menu Makanan
+4. Kelola Kategori
+5. Kelola Reservasi Meja
+6. Kelola Tata Letak Area
+7. Kelola Meja
+8. Kelola Pesanan Aktif
+9. Kelola Pembayaran
+10. Kelola Pelanggan
+11. Kelola Kasir
+12. Kelola Voucher Promo
+13. Kelola Banner Banner
+14. Kelola Notifikasi Massal
+15. Kelola Halaman FAQ/Bantuan
+16. Laporan Keuangan
+17. Analitik Penjualan
+18. Pengaturan Sistem
+19. Manajemen Tutorial Onboarding
+20. Logout
+21. Tutorial Selesai
+
+Setiap langkah wajib memiliki penjelasan yang jelas dan mudah dipahami.
+
+===========================================
+TUTORIAL OWNER / SUPER ADMIN
+===========================================
+
+1. Selamat Datang di Panel Owner
+2. Dashboard Eksekutif
+3. Statistik Pendapatan Restoran
+4. Statistik Penjualan Menu
+5. Monitoring Transaksi Keuangan
+6. Monitoring Akun Pelanggan
+7. Monitoring Kinerja Kasir
+8. Monitoring Aktivitas Admin
+9. Monitoring Keamanan Sistem
+10. Audit Log Aktivitas
+11. Rekap Laporan Bulanan
+12. Pembagian Hak Akses
+13. Backup Database
+14. Restore Database
+15. Pengaturan Tarif & Pajak
+16. Monitoring Tutorial User
+17. Reset Tutorial User
+18. Logout
+19. Tutorial Selesai
+
+===========================================
+FITUR TAMBAHAN WAJIB
+===========================================
+
+- Contextual Tooltip
+- Interactive Help Center
+- FAQ
+- Search Knowledge Base
+- Guided Empty State
+- Analytics Tutorial
+- Tutorial Progress Tracking
+- Tutorial Versioning
+- Reset Tutorial
+- Tutorial Management Panel
+- Role-Based Tutorial Engine
+- Future Feature Tutorial Detection
+- Multi Device Support
+- Accessibility Support
+- Dark Mode Support
+- Mobile Responsive
+
+===========================================
+DATABASE
+===========================================
+
+users
+
 - first_login
-- tour_version
-- last_tour_step
-- skipped_tour
-- tour_reset_at
-- role
-- created_at
-- updated_at
+- tour_completed
+- tutorial_version
+- last_tutorial_step
 
-Jika perlu, buat juga tabel:
+tutorial_steps
+tutorial_roles
+tutorial_progress
+tutorial_logs
+tutorial_versions
 
-- tutorial_steps
-- tutorial_categories
-- tutorial_logs
-- tutorial_progress
+===========================================
+HASIL AKHIR
+===========================================
 
-ALUR PENGGUNAAN:
+Buat sistem onboarding enterprise-grade yang:
 
-1. User registrasi / login pertama kali.
-2. Sistem mendeteksi akun baru.
-3. Tour otomatis muncul.
-4. User mengikuti langkah demi langkah.
-5. User bisa next, back, skip, atau finish.
-6. Setelah selesai, status tersimpan.
-7. Pada login berikutnya, tour tidak muncul lagi kecuali di-reset.
-8. User bisa membuka tour manual dari menu bantuan kapan saja.
-
-KATA-KATA PENJELASAN TUTORIAL YANG MUNCUL DI SETIAP LANGKAH:
-
-1. Selamat Datang
-   - Judul: Selamat datang di TiketKu
-   - Teks: Kami akan memandu Anda mengenal semua fitur penting agar Anda lebih mudah memesan, membayar, dan melihat tiket digital.
-
-2. Dashboard
-   - Judul: Halaman Utama
-   - Teks: Ini adalah pusat aktivitas Anda. Dari sini Anda bisa melihat ringkasan pesanan, notifikasi, dan akses cepat ke fitur utama.
-
-3. Menu Profil
-   - Judul: Profil Akun
-   - Teks: Di sini Anda dapat melihat dan mengubah data diri, email, nomor kontak, serta pengaturan akun Anda.
-
-4. Menu Pesanan
-   - Judul: Data Pesanan
-   - Teks: Menu ini menampilkan semua pesanan tiket yang sedang diproses, sudah dibayar, atau menunggu tindakan Anda.
-
-5. Menu Riwayat
-   - Judul: Riwayat Transaksi
-   - Teks: Semua transaksi yang pernah Anda lakukan akan tersimpan di sini agar mudah dicek kembali kapan saja.
-
-6. Menu Pembayaran
-   - Judul: Pembayaran
-   - Teks: Gunakan menu ini untuk menyelesaikan pembayaran pesanan tiket Anda dengan aman dan cepat.
-
-7. Tiket Digital
-   - Judul: Tiket Digital
-   - Teks: Setelah pembayaran berhasil, tiket Anda akan muncul di sini lengkap dengan detail film dan kode QR untuk digunakan saat masuk bioskop.
-
-8. Kode QR
-   - Judul: Kode QR Tiket
-   - Teks: Tunjukkan kode QR ini saat masuk. Kode ini berisi data tiket Anda dan akan diverifikasi oleh petugas.
-
-9. Notifikasi
-   - Judul: Notifikasi Penting
-   - Teks: Semua pemberitahuan seperti status pembayaran, tiket siap, atau informasi terbaru akan tampil di sini.
-
-10. Bantuan
-
-- Judul: Pusat Bantuan
-- Teks: Jika ada yang belum jelas, buka menu ini untuk melihat panduan, FAQ, atau cara menggunakan setiap fitur.
-
-1. Pengaturan Akun
-
-- Judul: Pengaturan
-- Teks: Di sini Anda bisa mengatur preferensi akun, keamanan, bahasa, dan tampilan aplikasi.
-
-1. Tombol Buat Pesanan
-
-- Judul: Mulai Pesanan
-- Teks: Klik tombol ini untuk memulai pemesanan tiket baru dan memilih film, jadwal, serta kursi.
-
-1. Status Pesanan
-
-- Judul: Pantau Status
-- Teks: Bagian ini membantu Anda mengetahui apakah pesanan masih menunggu, sudah dibayar, atau sudah selesai.
-
-1. Logout
-
-- Judul: Keluar Akun
-- Teks: Gunakan tombol ini untuk keluar dari akun Anda dengan aman setelah selesai menggunakan aplikasi.
-
-1. Selesai Tutorial
-
-- Judul: Tutorial Selesai
-- Teks: Anda sudah mengenal fitur utama aplikasi. Anda bisa membuka panduan ini lagi kapan saja melalui menu bantuan.
-
-HASIL AKHIR YANG DIINGINKAN:
-
-- Implementasikan fitur Spotlight Tour secara full production-ready.
-- Pastikan semua menu halaman pelanggan memiliki panduan masing-masing.
-- Tambahkan fitur onboarding, bantuan, tooltip, FAQ, dan manajemen tutorial.
-- Buat sistem yang scalable, rapi, dan mudah dikembangkan.
-- Jangan hanya membuat popup sederhana, tetapi buat sistem tutorial interaktif yang benar-benar lengkap dan profesional.
-
-OUTPUT YANG DIMINTA:
-
-- Kode implementasi lengkap
-- Struktur logika fitur
-- Integrasi ke seluruh halaman pelanggan
-- Integrasi ke database / penyimpanan status tutorial
-- Desain UI yang konsisten
-- Fitur admin untuk mengelola tutorial
-- Dokumentasi singkat cara kerja fitur
+- Modern
+- Production Ready
+- Mudah digunakan
+- Responsif
+- Aman
+- Dapat dikembangkan
+- Mendukung semua role
+- Mengunci akses hingga tutorial selesai
+- Hanya muncul saat login pertama
+- Dikelola penuh oleh admin
+- Menjelaskan seluruh menu dan fitur utama sistem

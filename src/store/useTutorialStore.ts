@@ -194,6 +194,123 @@ const CASHIER_STEPS: TutorialStep[] = [
   }
 ];
 
+const OWNER_STEPS: TutorialStep[] = [
+  {
+    targetSelector: '[data-tour="logo"]',
+    title: 'Selamat Datang di Panel Owner',
+    description: 'Selamat datang di Panel Pemilik/Owner RestoBook. Pantau performa bisnis dan kelola konfigurasi global restoran Anda.',
+    position: 'bottom'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Dashboard Eksekutif',
+    description: 'Lihat ringkasan keuntungan, penjualan harian, dan grafik performa bisnis secara real-time.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Statistik Pendapatan Restoran',
+    description: 'Pantau total pendapatan bersih, pajak restoran, serta laporan transaksi keuangan harian.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Menu Makanan"]',
+    title: 'Statistik Penjualan Menu',
+    description: 'Analisis hidangan terlaris dan performa menu masakan terpopuler.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Monitoring Transaksi Keuangan',
+    description: 'Pantau seluruh mutasi pembayaran, pengembalian dana, dan saldo Dompetku.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Pelanggan"]',
+    title: 'Monitoring Akun Pelanggan',
+    description: 'Lihat total pelanggan terdaftar, tingkat keaktifan, dan ulasan restoran.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Monitoring Kinerja Kasir',
+    description: 'Pantau shift kerja, laporan pos harian, dan pembukuan kasir.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Monitoring Aktivitas Admin',
+    description: 'Awasi riwayat pengelolaan menu dan pengaturan restoran oleh admin staf.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Monitoring Keamanan Sistem',
+    description: 'Tinjau keamanan sistem, deteksi bot rate limiter, dan status server.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Audit Log Aktivitas',
+    description: 'Catat setiap aksi penting yang dilakukan oleh seluruh pengguna sistem.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dashboard"]',
+    title: 'Rekap Laporan Bulanan',
+    description: 'Unduh laporan rekap omset dan penjualan untuk audit berkala.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Pembagian Hak Akses',
+    description: 'Atur wewenang khusus untuk kasir, admin, supervisor, dan staf operasional.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Backup Database',
+    description: 'Ekspor cadangan data restoran secara aman untuk mengamankan riwayat transaksi.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Restore Database',
+    description: 'Pulihkan data dari file cadangan jika terjadi pemeliharaan darurat.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Pengaturan Tarif & Pajak',
+    description: 'Sesuaikan persentase pajak PB1, service charge, serta biaya admin secara terpusat.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Monitoring Tutorial User',
+    description: 'Lihat analitik penyelesaian tutorial onboarding oleh semua pengguna baru.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Settings"]',
+    title: 'Reset Tutorial User',
+    description: 'Reset status onboarding agar pengguna baru wajib mengulangi panduan ini.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="logout-button"]',
+    title: 'Keluar Akun',
+    description: 'Gunakan tombol ini untuk keluar dari akun owner dengan aman setelah selesai memantau sistem.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="logo"]',
+    title: 'Tutorial Selesai',
+    description: 'Selamat. Anda telah menyelesaikan tutorial penggunaan Panel Owner RestoBook.',
+    position: 'bottom'
+  }
+];
+
 export const useTutorialStore = create<TutorialStore>((set, get) => ({
   isTutorialActive: false,
   currentStep: 0,
@@ -233,6 +350,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
     let steps = CUSTOMER_STEPS;
     if (role === 'admin') steps = ADMIN_STEPS;
     else if (role === 'cashier') steps = CASHIER_STEPS;
+    else if (role === 'owner' || role === 'super_admin') steps = OWNER_STEPS;
 
     const { userId, status } = get();
     if (userId && status) {

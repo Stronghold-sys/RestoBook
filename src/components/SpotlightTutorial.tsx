@@ -81,99 +81,30 @@ export default function SpotlightTutorial() {
 
   const activeStep = steps[currentStep];
 
-  // Draw spotlight overlay path using SVG EvenOdd rule
-  const getSvgPath = () => {
+  // Compute clip-path polygon to cut out the highlighted element
+  const getClipPath = () => {
+    if (!coords) return 'polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%)';
+    const { left, top, width, height } = coords;
+    const padding = 8;
+    const x1 = left - padding;
+    const y1 = top - padding;
+    const x2 = left + width + padding;
+    const y2 = top + height + padding;
     const w = windowSize.width;
     const h = windowSize.height;
-    if (!coords) return `M 0 0 H ${w} V ${h} H 0 Z`;
 
-    const { left, top, width, height } = coords;
-    const padding = 6;
-    const x = left - padding;
-    const y = top - padding;
-    const rW = width + padding * 2;
-    const rH = height + padding * 2;
-    const radius = 12;
-
-    // Standard outer rectangle + inner rounded cutout path
-    return `
-      M 0 0 H ${w} V ${h} H 0 Z
-      M ${x + radius} ${y}
-      h ${rW - radius * 2}
-      a ${radius} ${radius} 0 0 1 ${radius} ${radius}
-      v ${rH - radius * 2}
-      a ${radius} ${radius} 0 0 1 -${radius} ${radius}
-      h -${rW - radius * 2}
-      a ${radius} ${radius} 0 0 1 -${radius} -${radius}
-      v -${rH - radius * 2}
-      a ${radius} ${radius} 0 0 1 ${radius} -${radius}
-      Z
-    `;
+    // Outer rectangle (fullscreen) and inner rectangle (cutout hole)
+    return `polygon(0px 0px, ${w}px 0px, ${w}px ${h}px, 0px ${h}px, 0px 0px, ${x1}px ${y1}px, ${x1}px ${y2}px, ${x2}px ${y2}px, ${x2}px ${y1}px, ${x1}px ${y1}px)`;
   };
 
-  // Compute position of tooltip
+  // Compute position of tooltip (Always center of the screen)
   const getTooltipStyle = () => {
-    if (!coords) {
-      return {
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
-        position: 'fixed' as const
-      };
-    }
-
-    const { left, top, width, height } = coords;
-    const offset = 16;
-    const padding = 6;
-
-    let tLeft = left;
-    let tTop = top;
-
-    switch (activeStep.position) {
-      case 'bottom':
-        tLeft = left + width / 2;
-        tTop = top + height + offset + padding;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translateX(-50%)',
-          position: 'absolute' as const
-        };
-      case 'top':
-        tLeft = left + width / 2;
-        tTop = top - offset - padding;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translate(-50%, -100%)',
-          position: 'absolute' as const
-        };
-      case 'left':
-        tLeft = left - offset - padding;
-        tTop = top + height / 2;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translate(-100%, -50%)',
-          position: 'absolute' as const
-        };
-      case 'right':
-        tLeft = left + width + offset + padding;
-        tTop = top + height / 2;
-        return {
-          left: `${tLeft}px`,
-          top: `${tTop}px`,
-          transform: 'translateY(-50%)',
-          position: 'absolute' as const
-        };
-      default:
-        return {
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          position: 'fixed' as const
-        };
-    }
+    return {
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+      position: 'fixed' as const
+    };
   };
 
   const handleSkip = () => {
@@ -182,15 +113,17 @@ export default function SpotlightTutorial() {
 
   return (
     <div className="fixed inset-0 z-[99998] overflow-hidden pointer-events-none">
-      {/* SVG Mask Overlay */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto" fillRule="evenodd">
-        <motion.path
-          d={getSvgPath()}
-          fill="rgba(0, 0, 0, 0.7)"
-          animate={{ d: getSvgPath() }}
-          transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-        />
-      </svg>
+      {/* Background Blur & Dark Overlay with Spotlight Cutout */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[99996] bg-black/65 backdrop-blur-[4px] pointer-events-auto"
+        style={{
+          clipPath: getClipPath(),
+          transition: 'clip-path 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+      />
 
       {/* Spotlight highlight outline */}
       {coords && (
@@ -203,11 +136,11 @@ export default function SpotlightTutorial() {
             height: coords.height + 16
           }}
           transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-          className="absolute border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.4)] pointer-events-none"
+          className="absolute border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.4)] pointer-events-none z-[99997]"
         />
       )}
 
-      {/* Floating Tooltip Panel */}
+      {/* Floating Tooltip Panel (Always centered) */}
       <AnimatePresence mode="wait">
         <motion.div
           ref={tooltipRef}
@@ -217,7 +150,7 @@ export default function SpotlightTutorial() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-80 max-w-sm pointer-events-auto z-10 flex flex-col gap-4 text-text-light dark:text-text-dark"
+          className="fixed bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-80 max-w-sm pointer-events-auto z-[99999] flex flex-col gap-4 text-text-light dark:text-text-dark"
         >
           {/* Tooltip Header */}
           <div className="flex justify-between items-start gap-2">

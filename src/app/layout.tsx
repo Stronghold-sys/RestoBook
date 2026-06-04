@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import ModernToaster from "@/components/ModernToaster";
 import DynamicFavicon from "@/components/DynamicFavicon";
 import Script from "next/script";
 import ConnectionDetector from "@/components/ConnectionDetector";
@@ -71,7 +71,7 @@ export default function RootLayout({
         {children}
         <GlobalModalContainer />
         <SpotlightTutorial />
-        <Toaster position="top-center" containerStyle={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }} />
+        <ModernToaster />
         <RestoBot />
         <Script id="register-sw" strategy="afterInteractive">
           {`

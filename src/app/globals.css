@@ -216,7 +216,28 @@ aside.fixed.lg\:hidden {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+/* ── Custom Keyframes for Toast Notifications ── */
+@keyframes toast-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.animate-toast-shrink {
+  animation: toast-shrink linear forwards;
+}
 
+@keyframes toast-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.animate-toast-shake {
+  animation: toast-shake 0.4s ease-in-out;
+}
 
-
-
+@keyframes toast-pulse-glow {
+  0%, 100% { box-shadow: 0 10px 35px rgba(139, 92, 246, 0.25), 0 0 0 0px rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4), 0 0 12px 4px rgba(139, 92, 246, 0.2); }
+}
+.animate-toast-pulse-glow {
+  animation: toast-pulse-glow 2s infinite ease-in-out;
+}

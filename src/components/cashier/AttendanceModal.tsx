@@ -2,18 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Camera, RefreshCw, CheckCircle2, DollarSign, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import { Camera, RefreshCw, CheckCircle2, DollarSign, Loader2, AlertCircle, ShieldCheck, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import BaseModal from "@/components/BaseModal";
 
 interface AttendanceModalProps {
   onSuccess: (shiftId: string) => void;
+  onClose?: () => void;
   substituteDetails?: any;
   workShiftId?: string;
 }
 
-export default function AttendanceModal({ onSuccess, substituteDetails, workShiftId }: AttendanceModalProps) {
+export default function AttendanceModal({ onSuccess, onClose, substituteDetails, workShiftId }: AttendanceModalProps) {
   const [step, setStep] = useState<1 | 2>(1); // 1: Photo, 2: Initial Cash
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -160,12 +161,22 @@ export default function AttendanceModal({ onSuccess, substituteDetails, workShif
   return (
     <BaseModal
       isOpen={true}
-      onClose={() => {}}
+      onClose={onClose || (() => {})}
       showCloseButton={false}
       noPadding
       size="md"
     >
         <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white rounded-xl hover:bg-white/10 transition-colors z-20"
+              title="Tutup"
+              aria-label="Tutup"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
           <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
             <ShieldCheck className="w-10 h-10" />

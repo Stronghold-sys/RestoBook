@@ -48,6 +48,7 @@ export default function AdminSettingsPage() {
     logo_url: "",
     late_tolerance_minutes: 15,
     auto_deduct_late_salary: false,
+    auto_alpha_enabled: true,
     minutes_per_working_day: 480,
     payday_date: 28,
     cutoff_date: 27,
@@ -152,6 +153,7 @@ export default function AdminSettingsPage() {
           is_auto_close_shift_enabled: data.is_auto_close_shift_enabled !== undefined && data.is_auto_close_shift_enabled !== null ? !!data.is_auto_close_shift_enabled : true,
           late_tolerance_minutes: data.late_tolerance_minutes !== null ? Number(data.late_tolerance_minutes) : 15,
           auto_deduct_late_salary: !!data.auto_deduct_late_salary,
+          auto_alpha_enabled: data.auto_alpha_enabled !== undefined && data.auto_alpha_enabled !== null ? !!data.auto_alpha_enabled : true,
           minutes_per_working_day: data.minutes_per_working_day !== null ? Number(data.minutes_per_working_day) : 480,
           payday_date: data.payday_date !== null ? Number(data.payday_date) : 28,
           cutoff_date: data.cutoff_date !== null ? Number(data.cutoff_date) : 27,
@@ -322,6 +324,7 @@ export default function AdminSettingsPage() {
         logo_url: settings.logo_url,
         late_tolerance_minutes: Number(settings.late_tolerance_minutes || 15),
         auto_deduct_late_salary: settings.auto_deduct_late_salary,
+        auto_alpha_enabled: settings.auto_alpha_enabled,
         minutes_per_working_day: Number(settings.minutes_per_working_day || 480),
         payday_date: Number(settings.payday_date || 28),
         cutoff_date: Number(settings.cutoff_date || 27),
@@ -857,6 +860,22 @@ export default function AdminSettingsPage() {
                   className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-rose-400 outline-none text-text-light dark:text-text-dark text-sm" />
               </div>
               <p className="text-[11px] text-muted mt-1">Menit maksimal sebelum absensi dicatat TERLAMBAT otomatis.</p>
+            </div>
+
+            {/* Auto Alpha Toggle */}
+            <div className="flex flex-col gap-3 p-4 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-900/30">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-rose-800 dark:text-rose-400 flex items-center gap-1.5"><AlarmClock className="w-4 h-4" /> Tandai ALPHA Otomatis</p>
+                  <p className="text-[11px] text-rose-700/70 dark:text-rose-500/70">Jika diaktifkan, karyawan yang tidak absen hingga akhir shift otomatis ditandai ALPHA</p>
+                </div>
+                <Toggle 
+                  checked={settings.auto_alpha_enabled} 
+                  onChange={v => setSettings({ ...settings, auto_alpha_enabled: v })} 
+                  colorClass="peer-checked:bg-rose-500" 
+                  title="Tandai ALPHA Otomatis" 
+                />
+              </div>
             </div>
 
             {/* Potong gaji otomatis */}

@@ -163,8 +163,6 @@ export async function GET(request: Request) {
 
     let chosenCandidate = nextActiveCandidate;
     let shiftDate = todayISOStr;
-    // isHolidayToday: true jika hari ini tidak ada jadwal shift aktif
-    const isHolidayToday = !chosenCandidate;
 
     // Jika hari ini tidak ada shift aktif lagi, cari shift di hari-hari berikutnya (maksimal 7 hari ke depan)
     if (!chosenCandidate) {
@@ -210,7 +208,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      isHolidayToday: isHolidayToday,
       todayShift: chosenCandidate?.work_shifts ? {
         ...chosenCandidate.work_shifts,
         shiftDate: shiftDate

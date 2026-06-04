@@ -29,6 +29,22 @@ async function processAutoAlpha() {
     String(nowJakarta.getMonth() + 1).padStart(2, '0') + '-' + 
     String(nowJakarta.getDate()).padStart(2, '0');
 
+  // 1.5. Cek apakah fitur auto-alpha diaktifkan oleh admin
+  const { data: settingsData } = await supabaseAdmin
+    .from('restaurant_settings')
+    .select('auto_alpha_enabled')
+    .single();
+
+  if (settingsData && settingsData.auto_alpha_enabled === false) {
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Fitur auto-alpha dinonaktifkan oleh admin. Tidak ada tindakan yang diambil.',
+      processed_count: 0,
+      marked_alpha: [],
+      deleted_orphan_alpha: []
+    });
+  }
+
   // 2. Tentukan rentang pengecekan (14 hari ke belakang hingga kemarin)
   const pastDates: { dateStr: string; dayName: string }[] = [];
   for (let i = 1; i <= 14; i++) {

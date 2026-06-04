@@ -21,7 +21,8 @@ export default function CustomerRewardsPage() {
     pending_points: 0,
     points_used: 0,
     is_redeem_blocked: false,
-    wallet_balance: 0
+    wallet_balance: 0,
+    points_status: "aktif"
   });
   const [rewards, setRewards] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -319,18 +320,46 @@ export default function CustomerRewardsPage() {
     }
   };
 
+  const getSourceLabel = (sourceType: string, description: string) => {
+    if (sourceType === 'order') return 'dari order';
+    if (sourceType === 'reward') return 'dari reward';
+    if (sourceType === 'refund') return 'dari refund';
+    if (sourceType === 'pembatalan') return 'dari pembatalan';
+    if (sourceType === 'manual') return 'dari admin';
+    if (sourceType === 'sistem') return 'dari promo';
+    
+    const desc = (description || '').toLowerCase();
+    if (desc.includes('order') || desc.includes('pesanan')) return 'dari order';
+    if (desc.includes('reward') || desc.includes('voucher') || desc.includes('tukar')) return 'dari reward';
+    if (desc.includes('refund') || desc.includes('kembali')) return 'dari refund';
+    if (desc.includes('batal') || desc.includes('cancel')) return 'dari pembatalan';
+    if (desc.includes('admin') || desc.includes('manual')) return 'dari admin';
+    if (desc.includes('welcome') || desc.includes('promo')) return 'dari promo';
+    
+    return 'dari sistem';
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
+      case "diproses":
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-50 text-yellow-600 border border-yellow-100 uppercase animate-pulse whitespace-nowrap">Pending</span>;
       case "earned":
       case "manual_earned":
+      case "aktif":
+      case "selesai":
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase whitespace-nowrap">Selesai</span>;
       case "redeemed":
       case "manual_redeemed":
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-rose-50 text-rose-600 border border-rose-100 uppercase whitespace-nowrap">Redeem</span>;
       case "cancelled":
-        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase whitespace-nowrap">Batal</span>;
+      case "dibatalkan":
+      case "ditolak":
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-red-50 text-red-600 border border-red-200 uppercase whitespace-nowrap">Batal</span>;
+      case "koreksi":
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-orange-50 text-orange-600 border border-orange-200 uppercase whitespace-nowrap">Koreksi</span>;
+      case "reset":
+        return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase whitespace-nowrap">Reset</span>;
       case "refunded":
       case "returned":
         return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase whitespace-nowrap">Dikembalikan</span>;
@@ -399,6 +428,30 @@ export default function CustomerRewardsPage() {
     return format(date, "EEEE, dd MMMM yyyy 'pukul' HH:mm", { locale: id }) + " WIB";
   };
 
+  const cancelledPointsTotal = transactions
+    .filter(tx => ['cancelled', 'dibatalkan', 'ditolak'].includes(tx.status))
+    .reduce((sum, tx) => sum + Math.abs(tx.points), 0);
+
+  const getPointsStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Pending Verifikasi';
+      case 'diblokir': return 'Diblokir';
+      case 'dibatasi': return 'Dibatasi';
+      case 'nonaktif_sementara': return 'Nonaktif Sementara';
+      default: return 'Aktif';
+    }
+  };
+
+  const getPointsStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-250';
+      case 'diblokir': return 'bg-red-100 text-red-800 border-red-250';
+      case 'dibatasi': return 'bg-orange-100 text-orange-850 border-orange-250';
+      case 'nonaktif_sementara': return 'bg-gray-100 text-gray-800 border-gray-250';
+      default: return 'bg-emerald-100 text-emerald-800 border-emerald-250';
+    }
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
       {/* Header */}
@@ -427,31 +480,50 @@ export default function CustomerRewardsPage() {
         </div>
       ) : (
         <>
+          {/* Status Alert Banner */}
+          {profile.points_status !== 'aktif' && (
+            <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-3xl text-xs text-red-800 dark:text-red-400 font-bold flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <div>
+                <span className="font-extrabold uppercase block text-[10px] tracking-wider mb-0.5">Pemberitahuan Status Poin</span>
+                {profile.points_status === 'diblokir' && "Akses penukaran poin Anda saat ini ditangguhkan/diblokir oleh admin. Hubungi admin untuk bantuan."}
+                {profile.points_status === 'dibatasi' && "Akses penukaran poin Anda sedang dibatasi oleh admin. Beberapa penukaran reward mungkin dinonaktifkan sementara."}
+                {profile.points_status === 'nonaktif_sementara' && "Penggunaan poin Anda dinonaktifkan sementara oleh admin."}
+                {profile.points_status === 'pending' && "Akun poin Anda dalam status peninjauan pending."}
+              </div>
+            </div>
+          )}
+
           {/* Hero Point Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <motion.div 
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }}
-              className="md:col-span-2 relative overflow-hidden bg-gradient-to-br from-primary to-orange-600 rounded-[2rem] p-6 text-white shadow-xl shadow-primary/20 flex flex-col justify-between min-h-[160px]"
+              className="relative overflow-hidden bg-gradient-to-br from-primary to-orange-600 rounded-[2rem] p-6 text-white shadow-xl shadow-primary/20 flex flex-col justify-between min-h-[160px]"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
               <div className="flex justify-between items-start z-10">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-white/80">Poin Aktif Saya</p>
-                  <h2 className="text-5xl font-black mt-1 font-mono tracking-tight">{profile.points} <span className="text-xs font-bold text-white/90">Poin</span></h2>
+                  <h2 className="text-4xl font-black mt-1 font-mono tracking-tight">{profile.points} <span className="text-xs font-bold text-white/90">Poin</span></h2>
                 </div>
-                <div className="bg-white/20 p-3 rounded-2xl">
-                  <Award className="w-6 h-6 text-yellow-300" />
+                <div className="bg-white/20 p-2.5 rounded-2xl">
+                  <Award className="w-5 h-5 text-yellow-300" />
                 </div>
               </div>
-              <div className="border-t border-white/20 pt-3 mt-4 flex justify-between items-center z-10 text-xs text-white/90">
-                <span className="font-bold flex items-center gap-1.5">
-                  <Wallet className="w-4 h-4 text-emerald-300" />
-                  Saldo Dompet: Rp {profile.wallet_balance.toLocaleString("id-ID")}
+              <div className="border-t border-white/20 pt-3 mt-4 flex flex-col gap-1.5 z-10 text-xs text-white/90">
+                <span className="font-bold flex items-center gap-1">
+                  <Wallet className="w-3.5 h-3.5 text-emerald-300" />
+                  Wallet: Rp {profile.wallet_balance.toLocaleString("id-ID")}
                 </span>
-                {profile.is_redeem_blocked && (
-                  <span className="bg-red-500/80 px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider">REDEEM BLOCKED</span>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${getPointsStatusColor(profile.points_status)}`}>
+                    Status: {getPointsStatusLabel(profile.points_status)}
+                  </span>
+                  {profile.is_redeem_blocked && (
+                    <span className="bg-red-650 px-2 py-0.5 rounded font-black text-[8px] uppercase tracking-wider">BLOCK</span>
+                  )}
+                </div>
               </div>
             </motion.div>
 
@@ -459,14 +531,14 @@ export default function CustomerRewardsPage() {
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex flex-col justify-between"
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[160px]"
             >
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted">Point Pending</p>
                 <h3 className="text-3xl font-black mt-2 font-mono text-amber-500">{profile.pending_points}</h3>
               </div>
-              <p className="text-[10px] text-muted leading-tight mt-4">
-                Poin akan aktif setelah pesanan diproses selesai oleh kasir.
+              <p className="text-[9px] text-muted leading-tight mt-4">
+                Poin ditahan sementara dan akan aktif setelah transaksi diselesaikan.
               </p>
             </motion.div>
 
@@ -474,14 +546,29 @@ export default function CustomerRewardsPage() {
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex flex-col justify-between"
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[160px]"
             >
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total Point Terpakai</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total Poin Terpakai</p>
                 <h3 className="text-3xl font-black mt-2 font-mono text-primary">{profile.points_used}</h3>
               </div>
-              <p className="text-[10px] text-muted leading-tight mt-4">
-                Jumlah total poin yang telah Anda belanjakan untuk menukar reward.
+              <p className="text-[9px] text-muted leading-tight mt-4">
+                Jumlah poin yang telah dibelanjakan untuk klaim voucher/reward.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }} 
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[160px]"
+            >
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Poin Dibatalkan</p>
+                <h3 className="text-3xl font-black mt-2 font-mono text-red-500">{cancelledPointsTotal}</h3>
+              </div>
+              <p className="text-[9px] text-muted leading-tight mt-4">
+                Jumlah poin dari order yang dibatalkan atau pengembalian dana.
               </p>
             </motion.div>
           </div>
@@ -990,18 +1077,25 @@ export default function CustomerRewardsPage() {
                           <tbody>
                             {transactions.map((tx, idx) => {
                               const isAdd = tx.points > 0;
+                              const sourceLabel = getSourceLabel(tx.source_type, tx.description);
                               return (
                                 <tr key={tx.id} className={`border-b border-border-light dark:border-border-dark text-xs ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-900/10" : ""}`}>
                                   <td className="px-6 py-4 text-muted">
                                     {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}
                                   </td>
-                                  <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark">
-                                    {tx.description || "Transaksi Point"}
+                                  <td className="px-6 py-4 text-text-light dark:text-text-dark font-medium">
+                                    <div className="font-bold uppercase text-[11px]">{tx.description || "Transaksi Point"}</div>
+                                    <div className="text-[10px] text-muted font-bold tracking-wide mt-0.5 flex flex-wrap gap-1.5 items-center">
+                                      <span className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[9px] uppercase">{sourceLabel}</span>
+                                      {tx.status === 'pending' && (
+                                        <span className="text-amber-500 font-extrabold text-[9px] uppercase tracking-wide">Menunggu proses verifikasi pesanan selesai</span>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="px-6 py-4">
                                     {getStatusBadge(tx.status)}
                                   </td>
-                                  <td className={`px-6 py-4 text-right font-black font-mono text-sm ${isAdd ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                  <td className={`px-6 py-4 text-right font-mono text-sm font-black ${isAdd ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                                     {isAdd ? `+${tx.points}` : tx.points}
                                   </td>
                                 </tr>

@@ -79,14 +79,34 @@ export default function AdminRewardsPage() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [adjustForm, setAdjustForm] = useState({
-    action: "adjust", // adjust, reset, adjust_wallet, reset_wallet, toggle_wallet_block
+    action: "adjust", // adjust, set, reset, update_status
     amount: "",
-    reason: ""
+    reason: "",
+    status: "aktif"
   });
   const [customerTxLogs, setCustomerTxLogs] = useState<any[]>([]);
   const [customerWalletTxLogs, setCustomerWalletTxLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [activeLogsTab, setActiveLogsTab] = useState<"points" | "wallet" | "quota" | "rewards">("points");
+
+  // Customer points search/filter & bulk action states
+  const [custSearchQuery, setCustSearchQuery] = useState("");
+  const [custStatusFilter, setCustStatusFilter] = useState("all");
+  const [selectedCustIds, setSelectedCustIds] = useState<string[]>([]);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'adjust' | 'reset' | 'status' | null>(null);
+  const [bulkForm, setBulkForm] = useState({
+    amount: "",
+    reason: "",
+    status: "aktif"
+  });
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  // Detail customer logs date & type filter
+  const [activePointsTab, setActivePointsTab] = useState<"semua" | "masuk" | "keluar" | "pending" | "dibatalkan" | "reward" | "order" | "refund" | "manual">("semua");
+  const [txStartDate, setTxStartDate] = useState("");
+  const [txEndDate, setTxEndDate] = useState("");
+  const [txSearchQuery, setTxSearchQuery] = useState("");
 
   // Custom delete confirmation modal
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,6 +122,17 @@ export default function AdminRewardsPage() {
   const [selectedRedemptionForDelete, setSelectedRedemptionForDelete] = useState<any>(null);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    if (showAdjustModal || showBulkModal || showRewardModal || showBlockModal || showDeleteConfirm || showDeleteRedemptionConfirm) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [showAdjustModal, showBulkModal, showRewardModal, showBlockModal, showDeleteConfirm, showDeleteRedemptionConfirm]);
 
   useEffect(() => {
     fetchAdminData();
@@ -401,10 +432,15 @@ export default function AdminRewardsPage() {
     setAdjustForm({
       action: "adjust",
       amount: "",
-      reason: ""
+      reason: "",
+      status: cust.points_status || "aktif"
     });
     setCustomerTxLogs([]);
     setCustomerWalletTxLogs([]);
+    setActivePointsTab("semua");
+    setTxStartDate("");
+    setTxEndDate("");
+    setTxSearchQuery("");
     setShowAdjustModal(true);
 
     // Fetch customer logs
@@ -426,6 +462,39 @@ export default function AdminRewardsPage() {
   const handleAdjustPointsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer || saving) return;
+    if (!adjustForm.reason.trim()) {
+      toast.error("Alasan penyesuaian wajib diisi!");
+      return;
+    }
+    
+    // Client-side negative validation
+    if (adjustForm.action === 'adjust' && Number(adjustForm.amount) < 0) {
+      const currentPoints = selectedCustomer.points || 0;
+      if (currentPoints + Number(adjustForm.amount) < 0) {
+        toast.error("Saldo poin aktif tidak mencukupi untuk dikurangi.");
+        return;
+      }
+    }
+
+    // Client-side validation for 'set' action
+    if (adjustForm.action === 'set') {
+      const target = Number(adjustForm.amount);
+      if (isNaN(target) || target < 0) {
+        toast.error("Nominal poin target tidak valid (harus lebih besar atau sama dengan 0).");
+        return;
+      }
+    }
+
+    const confirmMsg = adjustForm.action === 'reset'
+      ? "APAKAH ANDA YAKIN? Tindakan ini akan menghapus semua poin aktif pelanggan menjadi 0. Konfirmasi reset poin pelanggan?"
+      : adjustForm.action === 'set'
+      ? `Apakah Anda yakin ingin mengubah total poin aktif pelanggan menjadi ${adjustForm.amount} poin?`
+      : adjustForm.action === 'update_status'
+      ? `Apakah Anda yakin ingin mengubah status poin pelanggan menjadi '${adjustForm.status}'?`
+      : `Apakah Anda yakin ingin melakukan penyesuaian poin sebesar ${adjustForm.amount} poin untuk pelanggan ini?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
     setSaving(true);
     const loadingToast = toast.loading("Memproses penyesuaian...");
     try {
@@ -435,8 +504,9 @@ export default function AdminRewardsPage() {
         body: JSON.stringify({
           customerId: selectedCustomer.id,
           action: adjustForm.action,
-          amount: ["reset", "reset_wallet", "toggle_wallet_block"].includes(adjustForm.action) ? 0 : Number(adjustForm.amount),
-          reason: adjustForm.reason
+          amount: ["reset"].includes(adjustForm.action) ? 0 : Number(adjustForm.amount),
+          status: adjustForm.action === "update_status" ? adjustForm.status : "",
+          reason: adjustForm.reason.trim()
         })
       });
       const data = await res.json();
@@ -452,8 +522,9 @@ export default function AdminRewardsPage() {
     }
   };
 
-
   const handleToggleBlockRedeem = async (cust: any) => {
+    const nextStatus = !cust.is_redeem_blocked;
+    const reason = nextStatus ? "Akses penukaran diblokir oleh admin" : "Akses penukaran dibuka oleh admin";
     const loadingToast = toast.loading("Mengubah status blokir pelanggan...");
     try {
       const res = await fetch("/api/admin/customers/points", {
@@ -461,14 +532,198 @@ export default function AdminRewardsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerId: cust.id,
-          action: "toggle_block"
+          action: "update_status",
+          status: nextStatus ? "diblokir" : "aktif",
+          reason: reason
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengubah status blokir");
 
-      toast.success(data.isRedeemBlocked ? "Akses redeem berhasil diblokir!" : "Akses redeem berhasil dibuka!", { id: loadingToast });
+      toast.success(nextStatus ? "Akses redeem berhasil diblokir!" : "Akses redeem berhasil dibuka!", { id: loadingToast });
       fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleApprovePending = async (txId: string, custId: string) => {
+    const reason = window.prompt("Masukkan alasan menyetujui poin pending:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      toast.error("Alasan persetujuan wajib diisi!");
+      return;
+    }
+
+    const loadingToast = toast.loading("Menyetujui poin pending...");
+    try {
+      const res = await fetch("/api/admin/customers/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve_pending",
+          customerId: custId,
+          transactionId: txId,
+          reason: reason.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyetujui poin");
+
+      toast.success("Poin pending berhasil disetujui!", { id: loadingToast });
+      fetchAdminData();
+      
+      // Refresh current customer logs if open
+      if (selectedCustomer && selectedCustomer.id === custId) {
+        // Find updated customer object
+        const updatedCust = customers.find(c => c.id === custId) || selectedCustomer;
+        handleOpenAdjustModal(updatedCust);
+      }
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleRejectPending = async (txId: string, custId: string) => {
+    const reason = window.prompt("Masukkan alasan menolak poin pending:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      toast.error("Alasan penolakan wajib diisi!");
+      return;
+    }
+
+    const loadingToast = toast.loading("Menolak poin pending...");
+    try {
+      const res = await fetch("/api/admin/customers/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reject_pending",
+          customerId: custId,
+          transactionId: txId,
+          reason: reason.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menolak poin");
+
+      toast.success("Poin pending berhasil ditolak!", { id: loadingToast });
+      fetchAdminData();
+
+      // Refresh current customer logs if open
+      if (selectedCustomer && selectedCustomer.id === custId) {
+        const updatedCust = customers.find(c => c.id === custId) || selectedCustomer;
+        handleOpenAdjustModal(updatedCust);
+      }
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    }
+  };
+
+  const handleBulkActionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedCustIds.length === 0 || !bulkAction) return;
+    if (!bulkForm.reason.trim()) {
+      toast.error("Alasan penyesuaian massal wajib diisi!");
+      return;
+    }
+    setBulkSaving(true);
+    const loadingToast = toast.loading("Memproses aksi massal...");
+    try {
+      let apiAction = "";
+      if (bulkAction === "adjust") apiAction = "bulk_adjust";
+      else if (bulkAction === "reset") apiAction = "bulk_reset";
+      else if (bulkAction === "status") apiAction = "bulk_update_status";
+
+      const res = await fetch("/api/admin/customers/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: apiAction,
+          customerIds: selectedCustIds,
+          amount: bulkAction === "adjust" ? Number(bulkForm.amount) : 0,
+          status: bulkAction === "status" ? bulkForm.status : "",
+          reason: bulkForm.reason.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses aksi massal");
+
+      toast.success(data.message || "Aksi massal berhasil diproses!", { id: loadingToast });
+      setShowBulkModal(false);
+      setSelectedCustIds([]);
+      fetchAdminData();
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingToast });
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const handleExportCustomersCSV = () => {
+    if (customers.length === 0) {
+      toast.error("Tidak ada data pelanggan untuk diekspor");
+      return;
+    }
+
+    const filtered = customers.filter(cust => {
+      const matchSearch = 
+        cust.full_name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+        (cust.email || '').toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+        (cust.phone || '').toLowerCase().includes(custSearchQuery.toLowerCase());
+      
+      const matchStatus = custStatusFilter === 'all' || cust.points_status === custStatusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    let csvContent = "\uFEFF"; // Add UTF-8 BOM
+    csvContent += `"ID Pelanggan","Nama Pelanggan","Email","Nomor HP","Poin Aktif","Poin Pending","Status Poin","Blokir Redeem"\n`;
+
+    filtered.forEach(c => {
+      csvContent += `"${c.id}","${c.full_name}","${c.email || ''}","${c.phone || ''}","${c.points || 0}","${c.pending_points || 0}","${c.points_status || 'aktif'}","${c.is_redeem_blocked ? 'Ya' : 'Tidak'}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `laporan_poin_pelanggan_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Data pelanggan berhasil diekspor ke CSV!");
+  };
+
+  const handleExportMutationsCSV = async () => {
+    const loadingToast = toast.loading("Mengambil seluruh log mutasi poin...");
+    try {
+      const res = await fetch("/api/admin/customers/points?allTransactions=true");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengambil data mutasi");
+
+      const txs = data.transactions || [];
+      if (txs.length === 0) {
+        toast.error("Tidak ada log mutasi poin untuk diekspor", { id: loadingToast });
+        return;
+      }
+
+      let csvContent = "\uFEFF"; // Add UTF-8 BOM
+      csvContent += `"ID Transaksi","Nama Pelanggan","Email Pelanggan","Poin","Sebelum","Sesudah","Status","Jenis Sumber","Keterangan/Alasan","Operator Admin","Waktu Pembuatan"\n`;
+
+      txs.forEach((t: any) => {
+        const timeStr = format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss");
+        csvContent += `"${t.id}","${t.profiles?.full_name || 'Pelanggan'}","${t.profiles?.email || ''}","${t.points}","${t.before_points !== null ? t.before_points : ''}","${t.after_points !== null ? t.after_points : ''}","${t.status}","${t.source_type || ''}","${(t.reason || t.description || '').replace(/"/g, '""')}","${t.acted_profile?.full_name || 'Sistem'}","${timeStr}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `mutasi_poin_loyalitas_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Laporan mutasi berhasil diekspor ke CSV!", { id: loadingToast });
     } catch (err: any) {
       toast.error(err.message, { id: loadingToast });
     }
@@ -931,77 +1186,243 @@ export default function AdminRewardsPage() {
                 )}
               </div>
             ) : activeTab === "customers" ? (
-              <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
-                        <th className="px-6 py-4 whitespace-nowrap">Nama Pelanggan</th>
-                        <th className="px-6 py-4 whitespace-nowrap">Email</th>
-                        <th className="px-6 py-4 text-right whitespace-nowrap">Poin</th>
-                        <th className="px-6 py-4 text-right whitespace-nowrap">Pending</th>
-                        <th className="px-6 py-4 text-right whitespace-nowrap">Dompet (Rp)</th>
-                        <th className="px-6 py-4 text-center whitespace-nowrap">Status</th>
-                        <th className="px-6 py-4 text-center whitespace-nowrap">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customers.map((cust) => (
-                        <tr key={cust.id} className="border-b border-border-light dark:border-border-dark text-xs hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
-                          <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark uppercase whitespace-nowrap">
-                            {cust.full_name}
-                          </td>
-                          <td className="px-6 py-4 text-muted whitespace-nowrap">
-                            {cust.email || "-"}
-                          </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-primary text-sm whitespace-nowrap">
-                            {cust.points || 0}
-                          </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-amber-500 text-sm whitespace-nowrap">
-                            {cust.pending_points || 0}
-                          </td>
-                          <td className="px-6 py-4 text-right font-black font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            Rp {Number(cust.wallet_balance || 0).toLocaleString("id-ID")}
-                          </td>
-                          <td className="px-6 py-4 text-center whitespace-nowrap">
-                            <div className="flex flex-col items-center gap-1.5 justify-center">
-                              {cust.is_redeem_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200 block w-24 text-center whitespace-nowrap">Redeem Blok</span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Redeem Aktif</span>
-                              )}
-                              {cust.is_wallet_blocked ? (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200 block w-24 text-center whitespace-nowrap">Dompet Blok</span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 text-center whitespace-nowrap">Dompet Aktif</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2 whitespace-nowrap">
-                              <button
-                                onClick={() => handleOpenAdjustModal(cust)}
-                                className="px-3 py-1.5 bg-primary/10 text-primary font-black text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
-                              >
-                                Detail & Poin
-                              </button>
-                              <button
-                                onClick={() => handleToggleBlockRedeem(cust)}
-                                className={`p-1.5 rounded-xl border text-xs transition-all ${
-                                  cust.is_redeem_blocked
-                                    ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                                    : "bg-red-50 border-red-200 text-red-500 hover:bg-red-100"
-                                }`}
-                                title={cust.is_redeem_blocked ? "Buka Blokir Redeem" : "Blokir Redeem"}
-                              >
-                                {cust.is_redeem_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </td>
+              <div className="space-y-4">
+                {/* Search, Filter, Export Bar */}
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card-light dark:bg-card-dark p-4 border border-border-light dark:border-border-dark rounded-3xl shadow-sm">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
+                    <input
+                      type="text"
+                      placeholder="Cari nama, email, nomor HP, ID pelanggan..."
+                      value={custSearchQuery}
+                      onChange={e => {
+                        setCustSearchQuery(e.target.value);
+                        setSelectedCustIds([]); // Reset selection
+                      }}
+                      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark flex-1 max-w-md"
+                    />
+                    <select
+                      value={custStatusFilter}
+                      onChange={e => {
+                        setCustStatusFilter(e.target.value);
+                        setSelectedCustIds([]); // Reset selection
+                      }}
+                      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-muted"
+                    >
+                      <option value="all">Semua Status Poin</option>
+                      <option value="aktif">Status: Aktif</option>
+                      <option value="pending">Status: Pending</option>
+                      <option value="diblokir">Status: Diblokir</option>
+                      <option value="dibatasi">Status: Dibatasi</option>
+                      <option value="nonaktif_sementara">Status: Nonaktif Sementara</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto shrink-0 justify-end">
+                    <button
+                      onClick={handleExportCustomersCSV}
+                      className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-gray-50 hover:bg-gray-100 text-muted border border-border-light dark:border-border-dark rounded-xl transition-all"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      onClick={handleExportMutationsCSV}
+                      className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-primary/10 hover:bg-primary/25 text-primary rounded-xl transition-all"
+                    >
+                      Laporan Mutasi
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bulk Action Bar (Visible when customers checked) */}
+                {selectedCustIds.length > 0 && (
+                  <div className="flex flex-wrap gap-3 items-center justify-between p-4 bg-orange-50/50 dark:bg-orange-950/10 border border-orange-200/50 rounded-2xl animate-fade-in">
+                    <span className="text-xs font-bold text-orange-700 dark:text-orange-400">
+                      {selectedCustIds.length} pelanggan dipilih secara massal
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setBulkAction("adjust");
+                          setBulkForm({ amount: "", reason: "", status: "aktif" });
+                          setShowBulkModal(true);
+                        }}
+                        className="px-3.5 py-2 bg-primary text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-primary-hover shadow-md transition-all"
+                      >
+                        Adjust Poin massal
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBulkAction("status");
+                          setBulkForm({ amount: "", reason: "", status: "aktif" });
+                          setShowBulkModal(true);
+                        }}
+                        className="px-3.5 py-2 bg-card-light dark:bg-card-dark text-muted border border-border-light dark:border-border-dark text-xs font-black uppercase tracking-wider rounded-xl hover:text-primary transition-all"
+                      >
+                        Ubah Status Massal
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBulkAction("reset");
+                          setBulkForm({ amount: "", reason: "", status: "aktif" });
+                          setShowBulkModal(true);
+                        }}
+                        className="px-3.5 py-2 bg-red-50 text-red-650 border border-red-200 text-xs font-black uppercase tracking-wider rounded-xl hover:bg-red-100 transition-all"
+                      >
+                        Reset Massal
+                      </button>
+                      <button
+                        onClick={() => setSelectedCustIds([])}
+                        className="px-3 py-2 text-xs font-bold text-muted hover:text-primary transition-all"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Customers Table */}
+                <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-900 border-b border-border-light dark:border-border-dark text-[10px] font-black uppercase text-muted tracking-wider">
+                          <th className="px-6 py-4 w-10 text-center">
+                            <input
+                              type="checkbox"
+                              checked={customers.length > 0 && selectedCustIds.length === customers.filter(c => {
+                                const matchSearch = 
+                                  c.full_name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                                  (c.email || '').toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                                  (c.phone || '').toLowerCase().includes(custSearchQuery.toLowerCase());
+                                const matchStatus = custStatusFilter === 'all' || c.points_status === custStatusFilter;
+                                return matchSearch && matchStatus;
+                              }).length}
+                              onChange={e => {
+                                const filtered = customers.filter(c => {
+                                  const matchSearch = 
+                                    c.full_name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                                    (c.email || '').toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                                    (c.phone || '').toLowerCase().includes(custSearchQuery.toLowerCase());
+                                  const matchStatus = custStatusFilter === 'all' || c.points_status === custStatusFilter;
+                                  return matchSearch && matchStatus;
+                                });
+                                if (e.target.checked) {
+                                  setSelectedCustIds(filtered.map(c => c.id));
+                                } else {
+                                  setSelectedCustIds([]);
+                                }
+                              }}
+                              className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                              title="Pilih Semua"
+                              aria-label="Pilih Semua"
+                            />
+                          </th>
+                          <th className="px-6 py-4 whitespace-nowrap">Nama Pelanggan</th>
+                          <th className="px-6 py-4 whitespace-nowrap">Email</th>
+                          <th className="px-6 py-4 text-right whitespace-nowrap">Poin</th>
+                          <th className="px-6 py-4 text-right whitespace-nowrap">Pending</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">Status Poin</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">Pembatasan</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">Aksi</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {customers.filter(c => {
+                          const matchSearch = 
+                            c.full_name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                            (c.email || '').toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                            (c.phone || '').toLowerCase().includes(custSearchQuery.toLowerCase());
+                          const matchStatus = custStatusFilter === 'all' || c.points_status === custStatusFilter;
+                          return matchSearch && matchStatus;
+                        }).length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="text-center py-10 text-muted text-xs">
+                              Tidak ada data pelanggan yang cocok dengan pencarian / filter.
+                            </td>
+                          </tr>
+                        ) : (
+                          customers.filter(c => {
+                            const matchSearch = 
+                              c.full_name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                              (c.email || '').toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+                              (c.phone || '').toLowerCase().includes(custSearchQuery.toLowerCase());
+                            const matchStatus = custStatusFilter === 'all' || c.points_status === custStatusFilter;
+                            return matchSearch && matchStatus;
+                          }).map((cust) => (
+                            <tr key={cust.id} className="border-b border-border-light dark:border-border-dark text-xs hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
+                              <td className="px-6 py-4 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCustIds.includes(cust.id)}
+                                  onChange={e => {
+                                    if (e.target.checked) {
+                                      setSelectedCustIds(prev => [...prev, cust.id]);
+                                    } else {
+                                      setSelectedCustIds(prev => prev.filter(id => id !== cust.id));
+                                    }
+                                  }}
+                                  className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                  title={`Pilih ${cust.full_name}`}
+                                  aria-label={`Pilih ${cust.full_name}`}
+                                />
+                              </td>
+                              <td className="px-6 py-4 font-bold text-text-light dark:text-text-dark uppercase whitespace-nowrap">
+                                {cust.full_name}
+                              </td>
+                              <td className="px-6 py-4 text-muted whitespace-nowrap">
+                                <div>{cust.email || "-"}</div>
+                                {cust.phone && <div className="text-[10px] text-muted/80">{cust.phone}</div>}
+                              </td>
+                              <td className="px-6 py-4 text-right font-black font-mono text-primary text-sm whitespace-nowrap">
+                                {cust.points || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right font-black font-mono text-amber-500 text-sm whitespace-nowrap">
+                                {cust.pending_points || 0}
+                              </td>
+                              <td className="px-6 py-4 text-center whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border inline-block text-center w-28 whitespace-nowrap ${
+                                  cust.points_status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' :
+                                  cust.points_status === 'diblokir' ? 'bg-red-50 text-red-600 border-red-200' :
+                                  cust.points_status === 'dibatasi' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                                  cust.points_status === 'nonaktif_sementara' ? 'bg-gray-50 text-gray-500 border-gray-200' :
+                                  'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                }`}>
+                                  {cust.points_status || 'aktif'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-center whitespace-nowrap">
+                                {cust.is_redeem_blocked ? (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-50 text-red-600 border border-red-200 block w-24 mx-auto text-center whitespace-nowrap">Redeem Blok</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 block w-24 mx-auto text-center whitespace-nowrap">Redeem Aktif</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                                  <button
+                                    onClick={() => handleOpenAdjustModal(cust)}
+                                    className="px-3 py-1.5 bg-primary/10 text-primary font-black text-xs rounded-xl hover:bg-primary hover:text-white transition-all uppercase"
+                                  >
+                                    Detail & Poin
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleBlockRedeem(cust)}
+                                    className={`p-1.5 rounded-xl border text-xs transition-all ${
+                                      cust.is_redeem_blocked
+                                        ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                                        : "bg-red-50 border-red-200 text-red-500 hover:bg-red-100"
+                                    }`}
+                                    title={cust.is_redeem_blocked ? "Buka Blokir Redeem" : "Blokir Redeem"}
+                                  >
+                                    {cust.is_redeem_blocked ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             ) : activeTab === "redemptions" ? (
@@ -1733,267 +2154,479 @@ export default function AdminRewardsPage() {
 
       {/* 2. Customer Manual points control Sheet Modal */}
       <AnimatePresence>
-        {showAdjustModal && selectedCustomer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdjustModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <div>
-                  <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-tight">Detail & Kelola Poin</h3>
-                  <p className="text-[10px] text-muted font-bold mt-0.5">Pelanggan: {selectedCustomer.full_name} ({selectedCustomer.email || "Tanpa Email"})</p>
-                </div>
-                <button onClick={() => setShowAdjustModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
+        {showAdjustModal && selectedCustomer && (() => {
+          const cancelledPointsTotal = customerTxLogs
+            .filter(tx => ['cancelled', 'dibatalkan', 'ditolak'].includes(tx.status))
+            .reduce((sum, tx) => sum + Math.abs(tx.points), 0);
 
-              <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
-                {/* Profile points card */}
-                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
+          const filteredTxLogs = customerTxLogs.filter(tx => {
+            // 1. Kategori Tab
+            if (activePointsTab === "masuk" && !(tx.points > 0)) return false;
+            if (activePointsTab === "keluar" && !(tx.points < 0 || tx.status === 'redeemed' || tx.status === 'manual_redeemed')) return false;
+            if (activePointsTab === "pending" && tx.status !== 'pending') return false;
+            if (activePointsTab === "dibatalkan" && !['cancelled', 'dibatalkan', 'ditolak'].includes(tx.status)) return false;
+            if (activePointsTab === "reward" && tx.source_type !== 'reward' && tx.status !== 'redeemed' && tx.status !== 'manual_redeemed') return false;
+            if (activePointsTab === "order" && tx.source_type !== 'order') return false;
+            if (activePointsTab === "refund" && tx.source_type !== 'refund') return false;
+            if (activePointsTab === "manual" && tx.source_type !== 'manual') return false;
+
+            // 2. Rentang Tanggal
+            if (txStartDate) {
+              const start = new Date(txStartDate);
+              start.setHours(0, 0, 0, 0);
+              const txDate = new Date(tx.created_at);
+              if (txDate < start) return false;
+            }
+            if (txEndDate) {
+              const end = new Date(txEndDate);
+              end.setHours(23, 59, 59, 999);
+              const txDate = new Date(tx.created_at);
+              if (txDate > end) return false;
+            }
+
+            // 3. Pencarian ID / Deskripsi / Alasan
+            if (txSearchQuery.trim()) {
+              const q = txSearchQuery.toLowerCase();
+              const idMatch = String(tx.id).toLowerCase().includes(q);
+              const descMatch = (tx.description || '').toLowerCase().includes(q);
+              const reasonMatch = (tx.reason || '').toLowerCase().includes(q);
+              if (!idMatch && !descMatch && !reasonMatch) return false;
+            }
+
+            return true;
+          });
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdjustModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                   <div>
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Aktif</span>
-                    <span className="text-xl font-mono font-black text-primary">{selectedCustomer.points || 0}</span>
+                    <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-tight">Detail & Kelola Poin</h3>
+                    <p className="text-[10px] text-muted font-bold mt-0.5">Pelanggan: {selectedCustomer.full_name} ({selectedCustomer.email || "Tanpa Email"})</p>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Pending</span>
-                    <span className="text-xl font-mono font-black text-amber-500">{selectedCustomer.pending_points || 0}</span>
-                  </div>
+                  <button onClick={() => setShowAdjustModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Adjustment Form */}
-                  <form onSubmit={handleAdjustPointsSubmit} className="space-y-4 border-r border-border-light dark:border-border-dark pr-0 md:pr-6">
-                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Penyesuaian Manual</h4>
-                    
+                <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                  {/* Profile points card */}
+                  <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
                     <div>
-                      <label htmlFor="adjustAction" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Pilih Aksi</label>
-                      <select 
-                        id="adjustAction"
-                        value={adjustForm.action} 
-                        onChange={e => setAdjustForm({ ...adjustForm, action: e.target.value })} 
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                        title="Pilih Aksi"
-                      >
-                        <option value="adjust">Tambah / Kurangi Poin</option>
-                        <option value="reset">Reset Poin ke 0</option>
-                      </select>
+                      <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Aktif</span>
+                      <span className="text-xl font-mono font-black text-primary">{selectedCustomer.points || 0}</span>
                     </div>
+                    <div>
+                      <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Pending</span>
+                      <span className="text-xl font-mono font-black text-amber-500">{selectedCustomer.pending_points || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Poin Dibatalkan</span>
+                      <span className="text-xl font-mono font-black text-rose-550">{cancelledPointsTotal}</span>
+                    </div>
+                    <div className="col-span-3 flex justify-between items-center bg-white dark:bg-gray-800 p-2 px-3.5 rounded-xl border border-border-light/40 dark:border-border-dark/40 text-xs">
+                      <span className="text-[9.5px] font-black text-muted uppercase tracking-wider">Status Akun Poin:</span>
+                      <span className={`px-2.5 py-0.5 rounded-full font-black text-[9px] uppercase tracking-wide border ${
+                        selectedCustomer.points_status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-250' :
+                        selectedCustomer.points_status === 'diblokir' ? 'bg-red-50 text-red-650 border-red-200' :
+                        selectedCustomer.points_status === 'dibatasi' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                        selectedCustomer.points_status === 'nonaktif_sementara' ? 'bg-gray-50 text-gray-500 border-gray-250' :
+                        'bg-emerald-50 text-emerald-600 border-emerald-250'
+                      }`}>
+                        {selectedCustomer.points_status || 'aktif'}
+                      </span>
+                    </div>
+                  </div>
 
-                    {adjustForm.action === "adjust" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Adjustment Form */}
+                    <form onSubmit={handleAdjustPointsSubmit} className="space-y-4 border-r border-border-light dark:border-border-dark pr-0 md:pr-6">
+                      <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Penyesuaian Manual</h4>
+                      
                       <div>
-                        <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
-                          Jumlah Poin (Negatif untuk kurangi)
-                        </label>
-                        <input 
-                          id="adjustAmount"
-                          type="number" 
-                          required 
-                          placeholder="Misal: 50 atau -25"
-                          title="Jumlah"
-                          value={adjustForm.amount} 
-                          onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
+                        <label htmlFor="adjustAction" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Pilih Aksi</label>
+                        <select 
+                          id="adjustAction"
+                          value={adjustForm.action} 
+                          onChange={e => setAdjustForm({ ...adjustForm, action: e.target.value })} 
+                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                          title="Pilih Aksi"
+                        >
+                          <option value="adjust">Tambah / Kurangi Poin</option>
+                          <option value="set">Set Poin ke Nominal Tertentu</option>
+                          <option value="reset">Reset Poin ke 0</option>
+                          <option value="update_status">Ubah Status Poin</option>
+                        </select>
+                      </div>
+
+                      {adjustForm.action === "adjust" && (
+                        <div>
+                          <label htmlFor="adjustAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                            Jumlah Poin (Negatif untuk kurangi)
+                          </label>
+                          <input 
+                            id="adjustAmount"
+                            type="number" 
+                            required 
+                            placeholder="Misal: 50 atau -25"
+                            title="Jumlah"
+                            value={adjustForm.amount} 
+                            onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
+                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                          />
+                        </div>
+                      )}
+
+                      {adjustForm.action === "set" && (
+                        <div>
+                          <label htmlFor="adjustSetAmount" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                            Set Total Poin Baru
+                          </label>
+                          <input 
+                            id="adjustSetAmount"
+                            type="number" 
+                            min={0}
+                            required 
+                            placeholder="Misal: 100"
+                            title="Set Total Poin"
+                            value={adjustForm.amount} 
+                            onChange={e => setAdjustForm({ ...adjustForm, amount: e.target.value })} 
+                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                          />
+                        </div>
+                      )}
+
+                      {adjustForm.action === "update_status" && (
+                        <div>
+                          <label htmlFor="adjustStatus" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                            Pilih Status Poin
+                          </label>
+                          <select 
+                            id="adjustStatus"
+                            value={adjustForm.status} 
+                            onChange={e => setAdjustForm({ ...adjustForm, status: e.target.value })} 
+                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                            title="Pilih Status Poin"
+                          >
+                            <option value="aktif">Aktif</option>
+                            <option value="pending">Pending Verifikasi</option>
+                            <option value="diblokir">Diblokir</option>
+                            <option value="dibatasi">Dibatasi</option>
+                            <option value="nonaktif_sementara">Nonaktif Sementara</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {adjustForm.action === "reset" && (
+                        <div className="p-3 bg-red-50 dark:bg-red-955/15 rounded-xl border border-red-200/50 text-[10px] text-red-750 dark:text-red-400 font-bold leading-normal">
+                          Perhatian: Aksi ini akan mereset seluruh poin aktif pelanggan menjadi 0. Alasan wajib diisi dan diperlukan konfirmasi lanjutan.
+                        </div>
+                      )}
+
+                      <div>
+                        <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
+                        <textarea 
+                          id="adjustReason"
+                          rows={2} 
+                          required
+                          placeholder="Masukkan alasan manipulasi poin..."
+                          title="Alasan Penyesuaian"
+                          value={adjustForm.reason} 
+                          onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
                           className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                         />
                       </div>
-                    )}
 
-                    <div>
-                      <label htmlFor="adjustReason" className="text-[9px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Penyesuaian</label>
-                      <textarea 
-                        id="adjustReason"
-                        rows={2} 
-                        required
-                        placeholder="Masukkan alasan manipulasi poin..."
-                        title="Alasan Penyesuaian"
-                        value={adjustForm.reason} 
-                        onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} 
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                      />
-                    </div>
+                      <button 
+                        type="submit" 
+                        disabled={saving || !adjustForm.reason.trim()}
+                        className="w-full py-3 bg-primary text-white font-black rounded-xl shadow-md hover:shadow-lg transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                      >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Penyesuaian"}
+                      </button>
+                    </form>
 
-                    <button 
-                      type="submit" 
-                      disabled={saving}
-                      className="w-full py-3 bg-primary text-white font-black rounded-xl shadow-md hover:shadow-lg transition-all text-xs uppercase tracking-wider"
-                    >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Penyesuaian"}
-                    </button>
-                  </form>
-
-                  {/* Customer Transaction Logs */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-2">
-                      <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat</h4>
-                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px] shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setActiveLogsTab("points")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
-                            activeLogsTab === "points" ? "bg-primary text-white" : "text-muted"
-                          }`}
-                        >
-                          Poin ({customerTxLogs.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveLogsTab("rewards")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
-                            activeLogsTab === "rewards" ? "bg-primary text-white" : "text-muted"
-                          }`}
-                        >
-                          Reward ({redemptions.filter(r => r.customer_id === selectedCustomer.id).length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveLogsTab("quota")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
-                            activeLogsTab === "quota" ? "bg-primary text-white" : "text-muted"
-                          }`}
-                        >
-                          Kuota Reward
-                        </button>
+                    {/* Customer Transaction Logs */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-2">
+                        <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat</h4>
+                        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px] shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogsTab("points")}
+                            className={`px-2 py-1 rounded font-bold transition-all ${
+                              activeLogsTab === "points" ? "bg-primary text-white" : "text-muted"
+                            }`}
+                          >
+                            Poin ({customerTxLogs.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogsTab("rewards")}
+                            className={`px-2 py-1 rounded font-bold transition-all ${
+                              activeLogsTab === "rewards" ? "bg-primary text-white" : "text-muted"
+                            }`}
+                          >
+                            Reward ({redemptions.filter(r => r.customer_id === selectedCustomer.id).length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogsTab("quota")}
+                            className={`px-2 py-1 rounded font-bold transition-all ${
+                              activeLogsTab === "quota" ? "bg-primary text-white" : "text-muted"
+                            }`}
+                          >
+                            Kuota Reward
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {loadingLogs ? (
-                      <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-                    ) : activeLogsTab === "points" ? (
-                      customerTxLogs.length === 0 ? (
-                        <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas poin</div>
-                      ) : (
-                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                          {customerTxLogs.map((tx) => (
-                            <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-start gap-3">
-                              <div>
-                                <p className="font-bold text-text-light dark:text-text-dark">{tx.description}</p>
-                                <span className="text-[9px] text-muted">{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
-                              </div>
-                              <span className={`font-mono font-black text-xs shrink-0 ${tx.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                                {tx.points > 0 ? `+${tx.points}` : tx.points}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    ) : activeLogsTab === "rewards" ? (
-                      redemptions.filter(r => r.customer_id === selectedCustomer.id).length === 0 ? (
-                        <div className="text-center py-10 text-muted text-[11px]">Belum ada reward yang ditukarkan</div>
-                      ) : (
-                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                          {redemptions
-                            .filter(r => r.customer_id === selectedCustomer.id)
-                            .map((red) => (
-                              <div key={red.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-center gap-3">
-                                <div>
-                                  <p className="font-bold text-text-light dark:text-text-dark">{red.rewards?.title || 'Reward Dihapus'}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-muted">
-                                    <span>{format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
-                                    <span>•</span>
-                                    <span className="font-semibold">{red.points_spent} Poin</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {red.status === 'cancelled' ? (
-                                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 uppercase">Dibatalkan</span>
-                                  ) : red.status === 'used' ? (
-                                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 uppercase">Digunakan</span>
-                                  ) : red.status === 'expired' ? (
-                                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-rose-50 text-rose-600 uppercase">Kadaluarsa</span>
-                                  ) : (
-                                    <>
-                                      <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 uppercase animate-pulse">Aktif</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRefundRedemption(red)}
-                                        className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
-                                        title="Batalkan & Refund"
-                                      >
-                                        Refund
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
+                      
+                      {loadingLogs ? (
+                        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                      ) : activeLogsTab === "points" ? (
+                        <div className="space-y-3">
+                          {/* Sub-tabs category */}
+                          <div className="flex gap-1 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-gray-250 dark:scrollbar-thumb-gray-750 text-[9px]">
+                            {(["semua", "masuk", "keluar", "pending", "dibatalkan", "reward", "order", "refund", "manual"] as const).map(tab => (
+                              <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setActivePointsTab(tab)}
+                                className={`px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap transition-all border ${
+                                  activePointsTab === tab
+                                    ? "bg-gray-800 text-white border-gray-800 dark:bg-white dark:text-gray-900"
+                                    : "text-muted border-border-light dark:border-border-dark hover:border-gray-400"
+                                }`}
+                              >
+                                {tab}
+                              </button>
                             ))}
-                        </div>
-                      )
-                    ) : (
-                      rewards.filter(r => r.redeem_limit !== null && r.redeem_limit > 0).length === 0 ? (
-                        <div className="text-center py-10 text-muted text-[11px]">Belum ada reward dengan batas kuota penukaran</div>
-                      ) : (
-                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                          {rewards
-                            .filter(r => r.redeem_limit !== null && r.redeem_limit > 0)
-                            .map((reward) => {
-                              const activeReds = getCustomerActiveRedemptionsCount(reward, selectedCustomer.id);
-                              const count = activeReds.length;
-                              const limit = reward.redeem_limit;
-                              const period = reward.redeem_limit_period;
-                              const value = reward.redeem_limit_value || 1;
+                          </div>
 
-                              let periodLabel = "";
-                              if (period === "all") periodLabel = "selamanya";
-                              else {
-                                const unitLabel = 
-                                  period === "minute" ? "menit" :
-                                  period === "hour" ? "jam" :
-                                  period === "day" ? "hari" :
-                                  period === "week" ? "minggu" :
-                                  period === "month" ? "bulan" : "periode";
-                                periodLabel = `per ${value} ${unitLabel}`;
-                              }
+                          {/* Date Range & ID Search Filters */}
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div>
+                              <label htmlFor="txSearchInput" className="sr-only">Cari ID / Keterangan</label>
+                              <input
+                                id="txSearchInput"
+                                type="text"
+                                placeholder="Cari ID / Keterangan..."
+                                value={txSearchQuery}
+                                onChange={e => setTxSearchQuery(e.target.value)}
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-[10px] font-semibold text-text-light dark:text-text-dark outline-none focus:ring-1 focus:ring-primary"
+                              />
+                            </div>
+                            <div className="flex gap-1 items-center">
+                              <label htmlFor="startDateInput" className="sr-only">Mulai</label>
+                              <input
+                                id="startDateInput"
+                                type="date"
+                                title="Tanggal Mulai"
+                                value={txStartDate}
+                                onChange={e => setTxStartDate(e.target.value)}
+                                className="w-[48%] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-[9px] font-semibold text-text-light dark:text-text-dark outline-none"
+                              />
+                              <span className="text-muted text-[8px] font-bold">s/d</span>
+                              <label htmlFor="endDateInput" className="sr-only">Selesai</label>
+                              <input
+                                id="endDateInput"
+                                type="date"
+                                title="Tanggal Selesai"
+                                value={txEndDate}
+                                onChange={e => setTxEndDate(e.target.value)}
+                                className="w-[48%] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-[9px] font-semibold text-text-light dark:text-text-dark outline-none"
+                              />
+                            </div>
+                          </div>
 
-                              return (
-                                <div key={reward.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] space-y-2">
-                                  <div className="flex justify-between items-start gap-2">
+                          {filteredTxLogs.length === 0 ? (
+                            <div className="text-center py-10 text-muted text-[11px]">Belum ada aktivitas poin yang cocok</div>
+                          ) : (
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                              {filteredTxLogs.map((tx) => (
+                                <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] space-y-2">
+                                  <div className="flex justify-between items-start gap-3">
                                     <div>
-                                      <p className="font-bold text-text-light dark:text-text-dark">{reward.title}</p>
-                                      <p className="text-[9px] text-muted font-medium uppercase tracking-wide">Limit: {limit}x {periodLabel}</p>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-bold text-text-light dark:text-text-dark">{tx.description}</span>
+                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
+                                          tx.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 animate-pulse' :
+                                          tx.status === 'cancelled' || tx.status === 'dibatalkan' || tx.status === 'ditolak' ? 'bg-red-50 text-red-650 border-red-200' :
+                                          tx.status === 'aktif' || tx.status === 'earned' || tx.status === 'selesai' ? 'bg-emerald-50 text-emerald-600 border-emerald-250' :
+                                          tx.status === 'redeemed' || tx.status === 'manual_redeemed' ? 'bg-rose-50 text-rose-600 border-rose-200' :
+                                          tx.status === 'koreksi' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                                          tx.status === 'reset' ? 'bg-gray-100 text-gray-500 border-gray-250' :
+                                          'bg-blue-50 text-blue-650 border-blue-200'
+                                        }`}>
+                                          {tx.status}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-muted">
+                                        <span>ID: {tx.id}</span>
+                                        <span>•</span>
+                                        <span>{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                                        {tx.acted_profile?.full_name && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="font-semibold text-primary/80">Oleh: {tx.acted_profile.full_name}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {tx.reason && (
+                                        <p className="text-[10px] text-muted italic mt-1 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-border-light/30 dark:border-border-dark/30 leading-normal">
+                                          Alasan: {tx.reason}
+                                        </p>
+                                      )}
                                     </div>
-                                    <span className={`font-mono font-black text-xs shrink-0 px-2 py-0.5 rounded ${count >= limit ? "bg-red-50 text-red-600 border border-red-200" : "bg-primary/10 text-primary"}`}>
-                                      {count}/{limit} Aktif
+                                    <span className={`font-mono font-black text-xs shrink-0 ${tx.points > 0 ? "text-emerald-600 dark:text-emerald-400" : tx.points < 0 ? "text-rose-600 dark:text-rose-400" : "text-gray-550"}`}>
+                                      {tx.points > 0 ? `+${tx.points}` : tx.points}
                                     </span>
                                   </div>
-                                  
-                                  <div className="flex gap-2 justify-end pt-1">
-                                    {redemptions.filter(r => r.customer_id === selectedCustomer.id && r.reward_id === reward.id && r.status !== "cancelled" && r.is_quota_freed).length > 0 && (
+
+                                  {tx.status === 'pending' && (
+                                    <div className="flex gap-1.5 justify-end pt-1">
                                       <button
                                         type="button"
-                                        onClick={() => handleAdjustQuota('add', reward, selectedCustomer.id)}
-                                        className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                        onClick={() => handleApprovePending(tx.id, selectedCustomer.id)}
+                                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-lg text-[9px] uppercase tracking-wider transition-all shadow-sm"
                                       >
-                                        Tambah 1
+                                        Setujui
                                       </button>
-                                    )}
-                                    {count > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRejectPending(tx.id, selectedCustomer.id)}
+                                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-lg text-[9px] uppercase tracking-wider transition-all shadow-sm"
+                                      >
+                                        Tolak
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : activeLogsTab === "rewards" ? (
+                        redemptions.filter(r => r.customer_id === selectedCustomer.id).length === 0 ? (
+                          <div className="text-center py-10 text-muted text-[11px]">Belum ada reward yang ditukarkan</div>
+                        ) : (
+                          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                            {redemptions
+                              .filter(r => r.customer_id === selectedCustomer.id)
+                              .map((red) => (
+                                <div key={red.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] flex justify-between items-center gap-3">
+                                  <div>
+                                    <p className="font-bold text-text-light dark:text-text-dark">{red.rewards?.title || 'Reward Dihapus'}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-muted">
+                                      <span>{format(new Date(red.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</span>
+                                      <span>•</span>
+                                      <span className="font-semibold">{red.points_spent} Poin</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {red.status === 'cancelled' ? (
+                                      <span className="px-2 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 uppercase">Dibatalkan</span>
+                                    ) : red.status === 'used' ? (
+                                      <span className="px-2 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 uppercase">Digunakan</span>
+                                    ) : red.status === 'expired' ? (
+                                      <span className="px-2 py-0.5 text-[9px] font-black rounded bg-rose-50 text-rose-600 uppercase">Kadaluarsa</span>
+                                    ) : (
                                       <>
+                                        <span className="px-2 py-0.5 text-[9px] font-black rounded bg-yellow-50 text-yellow-600 uppercase animate-pulse">Aktif</span>
                                         <button
                                           type="button"
-                                          onClick={() => handleAdjustQuota('reduce', reward, selectedCustomer.id)}
+                                          onClick={() => handleRefundRedemption(red)}
                                           className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                          title="Batalkan & Refund"
                                         >
-                                          Kurangi 1
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleAdjustQuota('reset', reward, selectedCustomer.id)}
-                                          className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
-                                        >
-                                          Reset Kuota (0)
+                                          Refund
                                         </button>
                                       </>
                                     )}
                                   </div>
                                 </div>
-                              );
-                            })}
-                        </div>
-                      )
-                    )}
+                              ))}
+                          </div>
+                        )
+                      ) : (
+                        rewards.filter(r => r.redeem_limit !== null && r.redeem_limit > 0).length === 0 ? (
+                          <div className="text-center py-10 text-muted text-[11px]">Belum ada reward dengan batas kuota penukaran</div>
+                        ) : (
+                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                            {rewards
+                              .filter(r => r.redeem_limit !== null && r.redeem_limit > 0)
+                              .map((reward) => {
+                                const activeReds = getCustomerActiveRedemptionsCount(reward, selectedCustomer.id);
+                                const count = activeReds.length;
+                                const limit = reward.redeem_limit;
+                                const period = reward.redeem_limit_period;
+                                const value = reward.redeem_limit_value || 1;
+
+                                let periodLabel = "";
+                                if (period === "all") periodLabel = "selamanya";
+                                else {
+                                  const unitLabel = 
+                                    period === "minute" ? "menit" :
+                                    period === "hour" ? "jam" :
+                                    period === "day" ? "hari" :
+                                    period === "week" ? "minggu" :
+                                    period === "month" ? "bulan" : "periode";
+                                  periodLabel = `per ${value} ${unitLabel}`;
+                                }
+
+                                return (
+                                  <div key={reward.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/30 dark:border-border-dark/30 rounded-xl text-[11px] space-y-2">
+                                    <div className="flex justify-between items-start gap-2">
+                                      <div>
+                                        <p className="font-bold text-text-light dark:text-text-dark">{reward.title}</p>
+                                        <p className="text-[9px] text-muted font-medium uppercase tracking-wide">Limit: {limit}x {periodLabel}</p>
+                                      </div>
+                                      <span className={`font-mono font-black text-xs shrink-0 px-2 py-0.5 rounded ${count >= limit ? "bg-red-50 text-red-650 border border-red-200" : "bg-primary/10 text-primary"}`}>
+                                        {count}/{limit} Aktif
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex gap-2 justify-end pt-1">
+                                      {redemptions.filter(r => r.customer_id === selectedCustomer.id && r.reward_id === reward.id && r.status !== "cancelled" && r.is_quota_freed).length > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAdjustQuota('add', reward, selectedCustomer.id)}
+                                          className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                        >
+                                          Tambah 1
+                                        </button>
+                                      )}
+                                      {count > 0 && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAdjustQuota('reduce', reward, selectedCustomer.id)}
+                                            className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                          >
+                                            Kurangi 1
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAdjustQuota('reset', reward, selectedCustomer.id)}
+                                            className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all"
+                                          >
+                                            Reset Kuota (0)
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Block Redemption Modal */}
@@ -2032,7 +2665,7 @@ export default function AdminRewardsPage() {
                   placeholder="Misal: Reward ditangguhkan karena pelanggaran ketentuan penggunaan atau transaksi mencurigakan."
                   value={blockReason} 
                   onChange={e => setBlockReason(e.target.value)} 
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-255 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
                 />
               </div>
 
@@ -2073,14 +2706,14 @@ export default function AdminRewardsPage() {
               exit={{ scale: 0.9, opacity: 0 }} 
               className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800 z-10 space-y-4"
             >
-              <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 mx-auto rounded-2xl flex items-center justify-center mb-2 border border-red-200">
-                <Trash2 className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-955/20 mx-auto rounded-2xl flex items-center justify-center mb-2 border border-red-200">
+                <Trash2 className="w-8 h-8 text-red-650" />
               </div>
               <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Hapus Penukaran?</h3>
               <p className="text-xs text-muted leading-relaxed font-medium">
                 Apakah Anda yakin ingin menghapus data penukaran reward <span className="font-bold text-text-light dark:text-text-dark">&ldquo;{selectedRedemptionForDelete.rewards?.title}&rdquo;</span> milik <span className="font-bold text-text-light dark:text-text-dark">{selectedRedemptionForDelete.profiles?.full_name}</span>?
               </p>
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/15 rounded-2xl text-[10px] text-amber-700 dark:text-amber-450 font-bold border border-amber-200/50">
+              <div className="p-3 bg-amber-50 dark:bg-amber-955/15 rounded-2xl text-[10px] text-amber-700 dark:text-amber-450 font-bold border border-amber-200/50">
                 Tindakan ini tidak dapat dibatalkan. Reward akan langsung hilang dari halaman &ldquo;Reward Saya&rdquo; pelanggan secara real-time.
               </div>
               <div className="flex gap-3">
@@ -2092,11 +2725,120 @@ export default function AdminRewardsPage() {
                 </button>
                 <button 
                   onClick={confirmDeleteRedemption} 
-                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-700 transition-all text-xs uppercase"
+                  className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 hover:bg-red-705 transition-all text-xs uppercase"
                 >
                   Ya, Hapus
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. Bulk Action Confirmation Modal */}
+      <AnimatePresence>
+        {showBulkModal && bulkAction && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowBulkModal(false)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden p-8 border border-gray-150 dark:border-gray-800 z-10 space-y-6"
+            >
+              <div>
+                <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight text-center">
+                  {bulkAction === 'adjust' && 'Aksi Massal: Penyesuaian Poin'}
+                  {bulkAction === 'status' && 'Aksi Massal: Ubah Status Poin'}
+                  {bulkAction === 'reset' && 'Aksi Massal: Reset Poin ke 0'}
+                </h3>
+                <p className="text-xs text-muted mt-1 leading-relaxed text-center">
+                  Memproses {selectedCustIds.length} pelanggan yang dipilih.
+                </p>
+              </div>
+
+              <form onSubmit={handleBulkActionSubmit} className="space-y-4">
+                {bulkAction === 'adjust' && (
+                  <div>
+                    <label htmlFor="bulkAmount" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                      Jumlah Poin (Negatif untuk kurangi)
+                    </label>
+                    <input 
+                      id="bulkAmount"
+                      type="number" 
+                      required 
+                      placeholder="Misal: 50 atau -25"
+                      title="Jumlah Poin"
+                      value={bulkForm.amount} 
+                      onChange={e => setBulkForm({ ...bulkForm, amount: e.target.value })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                    />
+                  </div>
+                )}
+
+                {bulkAction === 'status' && (
+                  <div>
+                    <label htmlFor="bulkStatus" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">
+                      Pilih Status Poin
+                    </label>
+                    <select 
+                      id="bulkStatus"
+                      value={bulkForm.status} 
+                      onChange={e => setBulkForm({ ...bulkForm, status: e.target.value })} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                      title="Pilih Status"
+                    >
+                      <option value="aktif">Aktif</option>
+                      <option value="pending">Pending Verifikasi</option>
+                      <option value="diblokir">Diblokir</option>
+                      <option value="dibatasi">Dibatasi</option>
+                      <option value="nonaktif_sementara">Nonaktif Sementara</option>
+                    </select>
+                  </div>
+                )}
+
+                {bulkAction === 'reset' && (
+                  <div className="p-3.5 bg-red-50 dark:bg-red-950/15 rounded-2xl text-[10px] text-red-750 dark:text-red-400 font-bold border border-red-200/50">
+                    Peringatan: Seluruh poin aktif milik {selectedCustIds.length} pelanggan terpilih akan direset secara permanen menjadi 0. Tindakan ini tidak dapat dibatalkan.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label htmlFor="bulkReason" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Penyesuaian Massal</label>
+                  <textarea 
+                    id="bulkReason"
+                    rows={3} 
+                    required
+                    placeholder="Masukkan alasan penyesuaian untuk log mutasi..."
+                    value={bulkForm.reason} 
+                    onChange={e => setBulkForm({ ...bulkForm, reason: e.target.value })} 
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-255 dark:border-gray-700 rounded-xl p-3.5 text-xs outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setShowBulkModal(false)} 
+                    className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-xs uppercase"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={bulkSaving || !bulkForm.reason.trim()}
+                    className="flex-1 py-3.5 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover transition-all disabled:opacity-50 text-xs uppercase"
+                  >
+                    {bulkSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Massal"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

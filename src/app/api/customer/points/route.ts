@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, points, pending_points, points_used, is_redeem_blocked, wallet_balance')
+      .select('id, points, pending_points, points_used, is_redeem_blocked, wallet_balance, points_status')
       .eq('user_id', user.id)
       .single();
 
@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
         pending_points: profile.pending_points || 0,
         points_used: profile.points_used || 0,
         is_redeem_blocked: !!profile.is_redeem_blocked,
-        wallet_balance: Number(profile.wallet_balance || 0)
+        wallet_balance: Number(profile.wallet_balance || 0),
+        points_status: profile.points_status || 'aktif'
       },
       transactions: transactions || []
     });

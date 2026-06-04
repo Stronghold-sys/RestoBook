@@ -91,7 +91,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       iconColor: 'text-emerald-500',
       progressBg: 'bg-emerald-500',
       shadow: 'shadow-[0_8px_30px_rgba(16,185,129,0.08)]',
-      icon: <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-500" />
+      icon: <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-emerald-500" />
     },
     error: {
       border: 'border-rose-500/25 dark:border-rose-500/35',
@@ -100,7 +100,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       iconColor: 'text-rose-500',
       progressBg: 'bg-rose-500',
       shadow: 'shadow-[0_8px_30px_rgba(244,63,94,0.08)]',
-      icon: <XCircle className="w-6 h-6 shrink-0 text-rose-500" />
+      icon: <XCircle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-rose-500" />
     },
     warning: {
       border: 'border-amber-500/25 dark:border-amber-500/35',
@@ -109,7 +109,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       iconColor: 'text-amber-500',
       progressBg: 'bg-amber-500',
       shadow: 'shadow-[0_8px_30px_rgba(245,158,11,0.08)]',
-      icon: <AlertTriangle className="w-6 h-6 shrink-0 text-amber-500" />
+      icon: <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-amber-500" />
     },
     info: {
       border: 'border-blue-500/25 dark:border-blue-500/35',
@@ -118,7 +118,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       iconColor: 'text-blue-500',
       progressBg: 'bg-blue-500',
       shadow: 'shadow-[0_8px_30px_rgba(59,130,246,0.08)]',
-      icon: <Info className="w-6 h-6 shrink-0 text-blue-500" />
+      icon: <Info className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-blue-500" />
     },
     realtime: {
       border: 'border-violet-500/35 dark:border-violet-500/45',
@@ -127,7 +127,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       iconColor: 'text-violet-500',
       progressBg: 'bg-violet-500',
       shadow: 'shadow-[0_12px_40px_rgba(139,92,246,0.2)] animate-toast-pulse-glow',
-      icon: <Bell className="w-6 h-6 shrink-0 text-violet-500 animate-bounce" />
+      icon: <Bell className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-violet-500 animate-bounce" />
     }
   };
 
@@ -189,7 +189,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
       onKeyDown={(e) => {
         if (e.key === 'Escape') toast.dismiss(t.id);
       }}
-      className={`w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-w-2xl bg-white/80 dark:bg-slate-900/85 backdrop-blur-xl border ${styleConfig.border} ${styleConfig.text} ${styleConfig.shadow} p-5 rounded-2xl flex items-center gap-4 relative overflow-hidden transition-all duration-300 pointer-events-auto`}
+      className={`w-[calc(100vw-24px)] xs:w-[350px] sm:w-[480px] md:w-[540px] bg-white/80 dark:bg-slate-900/85 backdrop-blur-xl border ${styleConfig.border} ${styleConfig.text} ${styleConfig.shadow} p-3.5 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4 relative overflow-hidden transition-all duration-300 pointer-events-auto`}
     >
       {/* Icon Area */}
       <div className="flex-shrink-0 flex items-center justify-center">

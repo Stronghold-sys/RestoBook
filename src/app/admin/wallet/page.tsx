@@ -435,6 +435,8 @@ export default function AdminWalletPage() {
                       <th className="py-3 px-2">
                         <input
                           type="checkbox"
+                          title="Pilih Semua Pelanggan"
+                          aria-label="Pilih Semua Pelanggan"
                           checked={selectedIds.length === customers.length && customers.length > 0}
                           onChange={e => handleSelectAll(e.target.checked)}
                           className="rounded border-border-light dark:border-border-dark text-primary focus:ring-primary"
@@ -452,6 +454,8 @@ export default function AdminWalletPage() {
                         <td className="py-3 px-2">
                           <input
                             type="checkbox"
+                            title={`Pilih ${c.full_name}`}
+                            aria-label={`Pilih ${c.full_name}`}
                             checked={selectedIds.includes(c.id)}
                             onChange={e => handleSelectRow(c.id, e.target.checked)}
                             className="rounded border-border-light dark:border-border-dark text-primary focus:ring-primary"

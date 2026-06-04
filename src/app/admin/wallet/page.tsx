@@ -91,6 +91,17 @@ export default function AdminWalletPage() {
     };
   }, [searchQuery, statusFilter]);
 
+  useEffect(() => {
+    if (showManageModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showManageModal]);
+
   const fetchCustomerLogs = async (custId: string) => {
     setLoadingModalLogs(true);
     try {
@@ -582,10 +593,21 @@ export default function AdminWalletPage() {
       {/* Manage Customer Wallet Modal */}
       <AnimatePresence>
         {showManageModal && selectedCustomer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowManageModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowManageModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md"
+            />
             
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 bg-white dark:bg-card-dark w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800"
+            >
               {/* Modal Header */}
               <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                 <div>

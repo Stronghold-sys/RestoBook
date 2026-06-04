@@ -10,6 +10,7 @@ import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 import OrderCountdown from "@/components/OrderCountdown";
 import OrderEstimationBadge from "@/components/OrderEstimationBadge";
+import BaseModal from "@/components/BaseModal";
 
 export default function CashierOrders() {
   const [loading, setLoading] = useState(true);
@@ -454,243 +455,246 @@ export default function CashierOrders() {
       </AnimatePresence>
 
       {/* Detail Modal */}
-      <AnimatePresence>
-        {selectedOrder && !showReceipt && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedOrder(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.95 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-              <div className="p-8 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-black text-2xl text-text-light dark:text-text-dark whitespace-nowrap">No. Pesanan {selectedOrder.id.split("-")[0]}</h3>
-                    <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase whitespace-nowrap ${selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder.status}</span>
-                  </div>
-                  <p className="text-sm text-muted mt-1">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
-                </div>
-                <button onClick={() => setSelectedOrder(null)} title="Tutup" aria-label="Tutup" className="p-3 text-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-all"><X className="w-6 h-6" /></button>
+      <BaseModal
+        isOpen={!!selectedOrder && !showReceipt}
+        onClose={() => setSelectedOrder(null)}
+        size="lg"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col">
+          <div className="p-8 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-black text-2xl text-text-light dark:text-text-dark whitespace-nowrap">No. Pesanan {selectedOrder?.id.split("-")[0]}</h3>
+                <span className={`text-[10px] px-2 py-1 rounded-md font-black uppercase whitespace-nowrap ${selectedOrder?.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{selectedOrder?.status}</span>
               </div>
+              <p className="text-sm text-muted mt-1">{selectedOrder && new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</p>
+            </div>
+            <button onClick={() => setSelectedOrder(null)} title="Tutup" aria-label="Tutup" className="p-3 text-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-all"><X className="w-6 h-6" /></button>
+          </div>
 
-              <div className="p-8 overflow-y-auto flex-1 space-y-8">
-                <div className="grid grid-cols-2 gap-6 p-6 bg-background-light dark:bg-background-dark rounded-3xl border border-border-light dark:border-border-dark">
-                  <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pelanggan</p><p className="font-black text-lg text-text-light dark:text-text-dark">{customerName || getCustomerName(selectedOrder)}</p></div>
-                  <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Tipe</p><p className="font-black text-lg text-primary uppercase">{selectedOrder.order_type === "dine_in" ? `Dine In (Meja ${selectedOrder.tables?.table_number})` : selectedOrder.order_type}</p></div>
-                  <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pembayaran</p><p className="font-black flex items-center gap-2 text-text-light dark:text-text-dark">
-                    {(() => {
-                      const m = selectedOrder.notes?.includes("[METODE:") ? selectedOrder.notes.split("[METODE:")[1].split("]")[0] : selectedOrder.payment_method;
-                      if (!m) return "-";
-                      const lower = m.trim().toLowerCase();
-                      return (lower === "cash" || lower === "tunai") ? "TUNAI" : "NON TUNAI";
-                    })()}
-                  </p></div>
-                  <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Status Bayar</p><span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${selectedOrder.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{selectedOrder.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span></div>
-                </div>
-
-                {selectedOrder.estimated_duration_minutes && (
-                  <OrderCountdown order={selectedOrder} />
-                )}
-
-                {selectedOrder.order_type === "delivery" && (
-                  <div className="p-6 bg-primary/5 border border-primary/20 rounded-3xl space-y-3 text-xs">
-                    <p className="font-black text-primary uppercase text-[10px] tracking-widest">Detail Pengiriman</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-muted block">Nama Penerima</span>
-                        <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_recipient_name || "-"}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted block">No. HP Penerima</span>
-                        <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder.delivery_phone || "-"}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted block">Alamat Lengkap</span>
-                      <span className="font-bold text-text-light dark:text-text-dark">
-                        {selectedOrder.delivery_address || ""}, Kel. {selectedOrder.delivery_village || ""}, Kec. {selectedOrder.delivery_district || ""}, {selectedOrder.delivery_regency || ""}, {selectedOrder.delivery_province || ""} {selectedOrder.delivery_postal_code || ""}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedOrder.status === "cancelled" && selectedOrder.cancel_reason && (
-                  <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-3xl flex gap-4">
-                    <Ban className="w-6 h-6 text-red-500 shrink-0" />
-                    <div>
-                      <p className="font-black text-red-700 dark:text-red-400 uppercase text-xs">Alasan Pembatalan</p>
-                      <p className="text-red-600 dark:text-red-300 mt-1 font-medium">{selectedOrder.cancel_reason}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <h4 className="font-black text-sm uppercase tracking-widest text-muted flex items-center gap-2"><ReceiptIcon className="w-4 h-4" /> Daftar Pesanan</h4>
-                  <div className="space-y-3">
-                    {orderItems.map(item => (
-                      <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-light dark:border-border-dark">
-                        <div>
-                          <p className="font-bold text-text-light dark:text-text-dark">{item.quantity}x {item.menu_items?.name}</p>
-                          {item.notes && <p className="text-[10px] font-bold text-primary mt-1 uppercase">Notes: {item.notes}</p>}
-                        </div>
-                        <p className="font-black text-text-light dark:text-text-dark">Rp {Number(item.subtotal).toLocaleString("id-ID")}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-8 border-t border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/30 space-y-4">
-                {(() => {
-                  const foodSubtotal = orderItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
-                  const foodDiscount = Number(selectedOrder.discount || 0);
-                  const shipFee = Number(selectedOrder.shipping_fee || 0);
-                  const shipDiscount = Number(selectedOrder.shipping_discount || 0);
-                  
-                  return (
-                    <div className="space-y-2 text-xs font-bold text-muted border-b border-border-light dark:border-border-dark pb-4">
-                      <div className="flex justify-between">
-                        <span>Subtotal Hidangan:</span>
-                        <span className="text-text-light dark:text-text-dark">Rp {foodSubtotal.toLocaleString("id-ID")}</span>
-                      </div>
-                      {foodDiscount > 0 && (
-                        <div className="flex justify-between text-green-600 dark:text-green-400">
-                          <span>Diskon Voucher:</span>
-                          <span>-Rp {foodDiscount.toLocaleString("id-ID")}</span>
-                        </div>
-                      )}
-                      {selectedOrder.order_type === "delivery" && (
-                        <>
-                          <div className="flex justify-between">
-                            <span>Biaya Pengiriman ({Number(selectedOrder.distance_km || 0).toFixed(1)} km):</span>
-                            <span className="text-text-light dark:text-text-dark">Rp {shipFee.toLocaleString("id-ID")}</span>
-                          </div>
-                          {shipDiscount > 0 && (
-                            <div className="flex justify-between text-green-600 dark:text-green-400">
-                              <span>Diskon Ongkir:</span>
-                              <span>-Rp {shipDiscount.toLocaleString("id-ID")}</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-2 gap-6 p-6 bg-background-light dark:bg-background-dark rounded-3xl border border-border-light dark:border-border-dark">
+              <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pelanggan</p><p className="font-black text-lg text-text-light dark:text-text-dark">{customerName || (selectedOrder && getCustomerName(selectedOrder))}</p></div>
+              <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Tipe</p><p className="font-black text-lg text-primary uppercase">{selectedOrder?.order_type === "dine_in" ? `Dine In (Meja ${selectedOrder?.tables?.table_number})` : selectedOrder?.order_type}</p></div>
+              <div><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Pembayaran</p><p className="font-black flex items-center gap-2 text-text-light dark:text-text-dark">
+                {selectedOrder && (() => {
+                  const m = selectedOrder.notes?.includes("[METODE:") ? selectedOrder.notes.split("[METODE:")[1].split("]")[0] : selectedOrder.payment_method;
+                  if (!m) return "-";
+                  const lower = m.trim().toLowerCase();
+                  return (lower === "cash" || lower === "tunai") ? "TUNAI" : "NON TUNAI";
                 })()}
+              </p></div>
+              <div className="text-right"><p className="text-[10px] font-bold uppercase text-muted tracking-widest mb-1">Status Bayar</p><span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${selectedOrder?.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{selectedOrder?.payment_status === "paid" ? "Lunas" : "Belum Bayar"}</span></div>
+            </div>
 
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-black text-muted uppercase tracking-widest">Total Bayar</span>
-                  <span className="font-black text-3xl text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
+            {selectedOrder?.estimated_duration_minutes && (
+              <OrderCountdown order={selectedOrder} />
+            )}
+
+            {selectedOrder?.order_type === "delivery" && (
+              <div className="p-6 bg-primary/5 border border-primary/20 rounded-3xl space-y-3 text-xs">
+                <p className="font-black text-primary uppercase text-[10px] tracking-widest">Detail Pengiriman</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-muted block">Nama Penerima</span>
+                    <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder?.delivery_recipient_name || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted block">No. HP Penerima</span>
+                    <span className="font-bold text-text-light dark:text-text-dark">{selectedOrder?.delivery_phone || "-"}</span>
+                  </div>
                 </div>
+                <div>
+                  <span className="text-muted block">Alamat Lengkap</span>
+                  <span className="font-bold text-text-light dark:text-text-dark">
+                    {selectedOrder?.delivery_address || ""}, Kel. {selectedOrder?.delivery_village || ""}, Kec. {selectedOrder?.delivery_district || ""}, {selectedOrder?.delivery_regency || ""}, {selectedOrder?.delivery_province || ""} {selectedOrder?.delivery_postal_code || ""}
+                  </span>
+                </div>
+              </div>
+            )}
 
-                <div className="flex gap-4">
-                  {selectedOrder.status !== "cancelled" && selectedOrder.status !== "completed" && (
+            {selectedOrder?.status === "cancelled" && selectedOrder.cancel_reason && (
+              <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-3xl flex gap-4">
+                <Ban className="w-6 h-6 text-red-500 shrink-0" />
+                <div>
+                  <p className="font-black text-red-700 dark:text-red-400 uppercase text-xs">Alasan Pembatalan</p>
+                  <p className="text-red-600 dark:text-red-300 mt-1 font-medium">{selectedOrder.cancel_reason}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h4 className="font-black text-sm uppercase tracking-widest text-muted flex items-center gap-2"><ReceiptIcon className="w-4 h-4" /> Daftar Pesanan</h4>
+              <div className="space-y-3">
+                {orderItems.map(item => (
+                  <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-light dark:border-border-dark">
+                    <div>
+                      <p className="font-bold text-text-light dark:text-text-dark">{item.quantity}x {item.menu_items?.name}</p>
+                      {item.notes && <p className="text-[10px] font-bold text-primary mt-1 uppercase">Notes: {item.notes}</p>}
+                    </div>
+                    <p className="font-black text-text-light dark:text-text-dark">Rp {Number(item.subtotal).toLocaleString("id-ID")}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 border-t border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/30 space-y-4">
+            {selectedOrder && (() => {
+              const foodSubtotal = orderItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+              const foodDiscount = Number(selectedOrder.discount || 0);
+              const shipFee = Number(selectedOrder.shipping_fee || 0);
+              const shipDiscount = Number(selectedOrder.shipping_discount || 0);
+              
+              return (
+                <div className="space-y-2 text-xs font-bold text-muted border-b border-border-light dark:border-border-dark pb-4">
+                  <div className="flex justify-between">
+                    <span>Subtotal Hidangan:</span>
+                    <span className="text-text-light dark:text-text-dark">Rp {foodSubtotal.toLocaleString("id-ID")}</span>
+                  </div>
+                  {foodDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Diskon Voucher:</span>
+                      <span>-Rp {foodDiscount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                  {selectedOrder.order_type === "delivery" && (
                     <>
-                      {selectedOrder.status === "pending" && (
-                        <div className="flex gap-3 w-full flex-col sm:flex-row">
-                          <motion.button 
-                            whileTap={{ scale: 0.98 }} 
-                            onClick={() => updateOrderStatus(selectedOrder.id, "confirmed")} 
-                            className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 transition-all uppercase text-sm tracking-wider whitespace-nowrap"
-                          >
-                            <CheckCircle className="w-6 h-6" /> Terima Pesanan
-                          </motion.button>
-                          
-                          <motion.button 
-                            whileTap={{ scale: 0.98 }} 
-                            onClick={() => setShowCancelModal(true)} 
-                            className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap flex items-center justify-center gap-2"
-                          >
-                            <X className="w-5 h-5" /> Tolak Pesanan
-                          </motion.button>
-                        </div>
-                      )}
-                      
-                      {selectedOrder.payment_method === "non_cash" && selectedOrder.payment_status !== "paid" && (
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider">
-                          {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
-                        </motion.button>
-                      )}
-                      
-                      {(selectedOrder.status === "confirmed" || selectedOrder.status === "processing") && (
-                        <div className="flex flex-1 gap-3 flex-col sm:flex-row">
-                          <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider whitespace-nowrap">
-                            <CheckCircle className="w-6 h-6" /> Pesanan Selesai
-                          </motion.button>
-                          <motion.button 
-                            whileTap={{ scale: 0.98 }} 
-                            onClick={() => setShowCancelModal(true)} 
-                            className="py-4 px-6 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap"
-                          >
-                            Batalkan
-                          </motion.button>
+                      <div className="flex justify-between">
+                        <span>Biaya Pengiriman ({Number(selectedOrder.distance_km || 0).toFixed(1)} km):</span>
+                        <span className="text-text-light dark:text-text-dark">Rp {shipFee.toLocaleString("id-ID")}</span>
+                      </div>
+                      {shipDiscount > 0 && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>Diskon Ongkir:</span>
+                          <span>-Rp {shipDiscount.toLocaleString("id-ID")}</span>
                         </div>
                       )}
                     </>
                   )}
+                </div>
+              );
+            })()}
 
-                  {selectedOrder.payment_status === "paid" && selectedOrder.status !== "cancelled" && (
-                    <motion.button whileTap={{ scale: 0.98 }} onClick={() => setShowReceipt(true)} className="flex-1 py-4 bg-blue-500 text-white rounded-2xl font-black hover:bg-blue-600 flex items-center justify-center gap-2 shadow-xl shadow-blue-500/30 transition-all uppercase text-sm tracking-wider">
-                      <ReceiptIcon className="w-6 h-6" /> Kwitansi
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-black text-muted uppercase tracking-widest">Total Bayar</span>
+              <span className="font-black text-3xl text-primary">Rp {selectedOrder && Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
+            </div>
+
+            <div className="flex gap-4">
+              {selectedOrder?.status !== "cancelled" && selectedOrder?.status !== "completed" && (
+                <>
+                  {selectedOrder?.status === "pending" && (
+                    <div className="flex gap-3 w-full flex-col sm:flex-row">
+                      <motion.button 
+                        whileTap={{ scale: 0.98 }} 
+                        onClick={() => updateOrderStatus(selectedOrder.id, "confirmed")} 
+                        className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 transition-all uppercase text-sm tracking-wider whitespace-nowrap"
+                      >
+                        <CheckCircle className="w-6 h-6" /> Terima Pesanan
+                      </motion.button>
+                      
+                      <motion.button 
+                        whileTap={{ scale: 0.98 }} 
+                        onClick={() => setShowCancelModal(true)} 
+                        className="flex-1 py-4 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap flex items-center justify-center gap-2"
+                      >
+                        <X className="w-5 h-5" /> Tolak Pesanan
+                      </motion.button>
+                    </div>
+                  )}
+                  
+                  {selectedOrder?.payment_method === "non_cash" && selectedOrder?.payment_status !== "paid" && (
+                    <motion.button whileTap={{ scale: 0.98 }} onClick={() => processPayment(selectedOrder.id)} disabled={processingPayment} className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all uppercase text-xs tracking-wider">
+                      {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Verifikasi Manual</>}
                     </motion.button>
                   )}
-                </div>
-              </div>
-            </motion.div>
+                  
+                  {(selectedOrder?.status === "confirmed" || selectedOrder?.status === "processing") && (
+                    <div className="flex flex-1 gap-3 flex-col sm:flex-row">
+                      <motion.button whileTap={{ scale: 0.98 }} onClick={() => updateOrderStatus(selectedOrder.id, "completed")} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary-hover flex items-center justify-center gap-2 shadow-xl shadow-primary/30 transition-all uppercase text-sm tracking-wider whitespace-nowrap">
+                        <CheckCircle className="w-6 h-6" /> Pesanan Selesai
+                      </motion.button>
+                      <motion.button 
+                        whileTap={{ scale: 0.98 }} 
+                        onClick={() => setShowCancelModal(true)} 
+                        className="py-4 px-6 bg-red-50 text-red-500 rounded-2xl font-black hover:bg-red-100 transition-all uppercase text-xs whitespace-nowrap"
+                      >
+                        Batalkan
+                      </motion.button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {selectedOrder?.payment_status === "paid" && selectedOrder?.status !== "cancelled" && (
+                <motion.button whileTap={{ scale: 0.98 }} onClick={() => setShowReceipt(true)} className="flex-1 py-4 bg-blue-500 text-white rounded-2xl font-black hover:bg-blue-600 flex items-center justify-center gap-2 shadow-xl shadow-blue-500/30 transition-all uppercase text-sm tracking-wider">
+                  <ReceiptIcon className="w-6 h-6" /> Kwitansi
+                </motion.button>
+              )}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      </BaseModal>
 
       {/* Cancel Reason Modal */}
-      <AnimatePresence>
-        {showCancelModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCancelModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center"><Ban className="w-6 h-6 text-red-500" /></div>
-                <div>
-                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">Batalkan Pesanan</h3>
-                  <p className="text-sm text-muted">Berikan alasan pembatalan ini</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} placeholder="Contoh: Stok habis, pelanggan tidak jadi, dll..." className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500/20 text-text-light dark:text-text-dark font-medium" />
-                
-                <div className="flex gap-3">
-                  <button onClick={() => setShowCancelModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
-                  <button onClick={handleCancelOrder} disabled={cancellingOrder} className="flex-[2] py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 uppercase text-xs flex items-center justify-center gap-2">
-                    {cancellingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : "Batalkan Sekarang"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        size="md"
+        showCloseButton={false}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center"><Ban className="w-6 h-6 text-red-500" /></div>
+            <div>
+              <h3 className="font-black text-xl text-text-light dark:text-text-dark">Batalkan Pesanan</h3>
+              <p className="text-sm text-muted">Berikan alasan pembatalan ini</p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+          
+          <div className="space-y-4">
+            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} placeholder="Contoh: Stok habis, pelanggan tidak jadi, dll..." className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500/20 text-text-light dark:text-text-dark font-medium" />
+            
+            <div className="flex gap-3">
+              <button onClick={() => setShowCancelModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
+              <button onClick={handleCancelOrder} disabled={cancellingOrder} className="flex-[2] py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 uppercase text-xs flex items-center justify-center gap-2">
+                {cancellingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : "Batalkan Sekarang"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* Receipt Modal */}
-      <AnimatePresence>
-        {showReceipt && selectedOrder?.payment_status === "paid" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowReceipt(false)}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={e => e.stopPropagation()} className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-[420px] w-full my-8">
-              <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
-                <button onClick={() => setShowReceipt(false)} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"><ArrowLeft className="w-3 h-3" /> Kembali</button>
-                <div className="flex gap-2">
-                  <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"><ReceiptIcon className="w-4 h-4" /> PDF</button>
-                  <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-hover shadow-md transition-all uppercase"><Printer className="w-4 h-4" /> Cetak</button>
-                </div>
-              </div>
-              <Receipt ref={receiptRef} order={selectedOrder} orderItems={orderItems.map((i: any) => {
-                const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-                return {
-                  name: i.menu_items?.name || i.name,
-                  price: resolvedPrice,
-                  quantity: i.quantity,
-                  subtotal: i.subtotal || (resolvedPrice * i.quantity)
-                };
-              })} customerName={customerName || selectedOrder.profiles?.full_name || "Guest"} cashierName={cashierName} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BaseModal
+        isOpen={showReceipt && selectedOrder?.payment_status === "paid"}
+        onClose={() => setShowReceipt(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="bg-white text-gray-900 rounded-[2rem] overflow-hidden">
+          <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
+            <button onClick={() => setShowReceipt(false)} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"><ArrowLeft className="w-3 h-3" /> Kembali</button>
+            <div className="flex gap-2">
+              <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"><ReceiptIcon className="w-4 h-4" /> PDF</button>
+              <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-hover shadow-md transition-all uppercase"><Printer className="w-4 h-4" /> Cetak</button>
+            </div>
+          </div>
+          <Receipt ref={receiptRef} order={selectedOrder} orderItems={orderItems.map((i: any) => {
+            const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+            return {
+              name: i.menu_items?.name || i.name,
+              price: resolvedPrice,
+              quantity: i.quantity,
+              subtotal: i.subtotal || (resolvedPrice * i.quantity)
+            };
+          })} customerName={customerName || selectedOrder?.profiles?.full_name || "Guest"} cashierName={cashierName} />
+        </div>
+      </BaseModal>
     </div>
   );
 }

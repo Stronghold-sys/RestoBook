@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import AttendanceModal from "@/components/cashier/AttendanceModal";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 export default function CashierDashboard() {
   const [loading, setLoading] = useState(true);
@@ -929,101 +930,98 @@ export default function CashierDashboard() {
   
   // Fungsi untuk merender Modal Izin agar bisa dipakai di 2 tempat
   const renderLeaveModal = () => {
-    if (!showLeaveModal) return null;
     return (
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card-light dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20">
-          <div className="bg-amber-500 p-8 text-white text-center relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h3 className="font-black text-2xl uppercase tracking-tight">Formulir Pengajuan</h3>
-            <p className="text-white/70 text-xs mt-1">Sakit atau Izin akan diverifikasi oleh Admin</p>
+      <BaseModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} size="md" noPadding={true} showCloseButton={false}>
+        <div className="bg-amber-500 p-8 text-white text-center relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+            <AlertCircle className="w-8 h-8" />
           </div>
-          <form onSubmit={handleLeaveRequest} className="p-8 space-y-6">
-            <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
-              <button type="button" onClick={() => { setLeaveType("sakit"); setLeaveDuration("1"); setLeaveDurationUnit("hari"); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${leaveType === "sakit" ? "bg-white dark:bg-gray-700 shadow-md text-amber-600" : "text-muted"}`}>Sakit</button>
-              <button type="button" onClick={() => { setLeaveType("izin"); setLeaveDuration("1"); setLeaveDurationUnit("hari"); setLeaveNotes(""); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${leaveType === "izin" ? "bg-white dark:bg-gray-700 shadow-md text-amber-600" : "text-muted"}`}>Izin</button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label htmlFor="leaveDurationInput" className="text-[10px] font-black uppercase text-muted ml-2">Durasi</label>
-                <input 
-                  id="leaveDurationInput"
-                  type="number" 
-                  min="1"
-                  value={leaveDuration} 
-                  onChange={(e) => setLeaveDuration(e.target.value)}
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all font-bold"
-                  placeholder="Contoh: 1"
-                  title="Durasi Izin"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="leaveUnitSelect" className="text-[10px] font-black uppercase text-muted ml-2">Satuan</label>
-                <select 
-                  id="leaveUnitSelect"
-                  value={leaveDurationUnit}
-                  onChange={(e) => setLeaveDurationUnit(e.target.value as any)}
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all font-bold"
-                  title="Satuan Waktu Izin"
-                  aria-label="Satuan Waktu Izin"
-                >
-                  <option value="hari">Hari</option>
-                  <option value="minggu">Minggu</option>
-                  <option value="bulan">Bulan</option>
-                </select>
-              </div>
-            </div>
-
+          <h3 className="font-black text-2xl uppercase tracking-tight text-white">Formulir Pengajuan</h3>
+          <p className="text-white/70 text-xs mt-1">Sakit atau Izin akan diverifikasi oleh Admin</p>
+        </div>
+        <form onSubmit={handleLeaveRequest} className="p-8 space-y-6">
+          <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+            <button type="button" onClick={() => { setLeaveType("sakit"); setLeaveDuration("1"); setLeaveDurationUnit("hari"); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${leaveType === "sakit" ? "bg-white dark:bg-gray-700 shadow-md text-amber-600" : "text-muted"}`}>Sakit</button>
+            <button type="button" onClick={() => { setLeaveType("izin"); setLeaveDuration("1"); setLeaveDurationUnit("hari"); setLeaveNotes(""); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${leaveType === "izin" ? "bg-white dark:bg-gray-700 shadow-md text-amber-600" : "text-muted"}`}>Izin</button>
+          </div>
+ 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label htmlFor="leaveNotesInput" className="text-[10px] font-black uppercase text-muted ml-2">Keterangan</label>
-              <textarea 
-                id="leaveNotesInput"
-                value={leaveNotes}
-                onChange={(e) => setLeaveNotes(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all text-sm min-h-[80px]"
-                placeholder="Berikan alasan yang jelas..."
-                title="Keterangan Izin"
+              <label htmlFor="leaveDurationInput" className="text-[10px] font-black uppercase text-muted ml-2">Durasi</label>
+              <input 
+                id="leaveDurationInput"
+                type="number" 
+                min="1"
+                value={leaveDuration} 
+                onChange={(e) => setLeaveDuration(e.target.value)}
+                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all font-bold text-text-light dark:text-text-dark"
+                placeholder="Contoh: 1"
+                title="Durasi Izin"
                 required
               />
             </div>
-
-            {/* Upload Bukti */}
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase text-muted ml-2">Unggah Bukti (Opsional)</span>
-              <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer group">
-                <input 
-                  type="file" 
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  title="Pilih berkas bukti"
-                />
-                <Upload className="w-6 h-6 text-muted mb-2 group-hover:text-amber-500 transition-all" />
-                <p className="text-xs font-bold text-muted text-center leading-normal">
-                  {leaveFile ? leaveFile.name : "Ketuk untuk memilih foto atau berkas pdf"}
-                </p>
-                <p className="text-[9px] text-muted/60 mt-1">Maksimal ukuran file: 5MB</p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-2">
-              <button type="button" onClick={() => setShowLeaveModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-              <button 
-                type="submit"
-                disabled={submittingLeave}
-                className="flex-[2] py-4 bg-amber-500 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 uppercase"
+              <label htmlFor="leaveUnitSelect" className="text-[10px] font-black uppercase text-muted ml-2">Satuan</label>
+              <select 
+                id="leaveUnitSelect"
+                value={leaveDurationUnit}
+                onChange={(e) => setLeaveDurationUnit(e.target.value as any)}
+                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all font-bold text-text-light dark:text-text-dark"
+                title="Satuan Waktu Izin"
+                aria-label="Satuan Waktu Izin"
               >
-                {submittingLeave ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Pengajuan"}
-              </button>
+                <option value="hari">Hari</option>
+                <option value="minggu">Minggu</option>
+                <option value="bulan">Bulan</option>
+              </select>
             </div>
-          </form>
-        </motion.div>
-      </div>
+          </div>
+ 
+          <div className="space-y-1">
+            <label htmlFor="leaveNotesInput" className="text-[10px] font-black uppercase text-muted ml-2">Keterangan</label>
+            <textarea 
+              id="leaveNotesInput"
+              value={leaveNotes}
+              onChange={(e) => setLeaveNotes(e.target.value)}
+              className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-amber-500 rounded-2xl outline-none transition-all text-sm min-h-[80px] text-text-light dark:text-text-dark"
+              placeholder="Berikan alasan yang jelas..."
+              title="Keterangan Izin"
+              required
+            />
+          </div>
+ 
+          {/* Upload Bukti */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase text-muted ml-2">Unggah Bukti (Opsional)</span>
+            <div className="relative border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-4 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer group">
+              <input 
+                type="file" 
+                accept="image/*,application/pdf"
+                onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                title="Pilih berkas bukti"
+              />
+              <Upload className="w-6 h-6 text-muted mb-2 group-hover:text-amber-500 transition-all" />
+              <p className="text-xs font-bold text-muted text-center leading-normal">
+                {leaveFile ? leaveFile.name : "Ketuk untuk memilih foto atau berkas pdf"}
+              </p>
+              <p className="text-[9px] text-muted/60 mt-1">Maksimal ukuran file: 5MB</p>
+            </div>
+          </div>
+ 
+          <div className="flex gap-4 pt-2">
+            <button type="button" onClick={() => setShowLeaveModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
+            <button 
+              type="submit"
+              disabled={submittingLeave}
+              className="flex-[2] py-4 bg-amber-500 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 uppercase animate-none"
+            >
+              {submittingLeave ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Pengajuan"}
+            </button>
+          </div>
+        </form>
+      </BaseModal>
     );
   };
 
@@ -1359,139 +1357,135 @@ export default function CashierDashboard() {
       </div>
 
       {/* Close Shift Modal */}
-      {showCloseModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          {(() => {
-             // SISTEM FALLBACK ANTI-CRASH (Disaster Recovery Helper)
-             const effectiveStartTime = openShiftData?.start_time || latestAttendance?.created_at || new Date().toISOString();
-             const effectiveInitialCash = Number(openShiftData?.initial_cash || 0);
+      {(() => {
+         // SISTEM FALLBACK ANTI-CRASH (Disaster Recovery Helper)
+         const effectiveStartTime = openShiftData?.start_time || latestAttendance?.created_at || new Date().toISOString();
+         const effectiveInitialCash = Number(openShiftData?.initial_cash || 0);
 
-             return (
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-            <div className="bg-secondary p-6 text-white text-center">
-              <h3 className="font-black text-xl">Tutup Shift Kasir</h3>
-              <p className="text-white/70 text-xs">Hitung uang laci dan setoran akhir</p>
-            </div>
-            <div className="p-8 space-y-6">
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-border-light dark:border-border-dark">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted font-bold uppercase tracking-widest">Mulai Shift</span>
-                    <span className="font-black text-primary">{format(new Date(effectiveStartTime), 'HH:mm:ss')} WIB</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted font-bold uppercase tracking-widest">Selesai Shift</span>
-                    <span className="font-black text-secondary">{format(new Date(), 'HH:mm:ss')} WIB</span>
-                  </div>
-                  
-                  {/* Tampilkan Durasi Lembur Real-Time Jika Ada */}
-                  {(() => {
-                    const nowT = new Date();
-                    let isOvertime = false;
-                    let diff = 0;
-                    let titleLabel = "Waktu Lembur";
+         return (
+           <BaseModal isOpen={showCloseModal} onClose={() => setShowCloseModal(false)} size="md" noPadding={true} showCloseButton={false}>
+             <div className="bg-secondary p-6 text-white text-center relative">
+               <h3 className="font-black text-xl text-white">Tutup Shift Kasir</h3>
+               <p className="text-white/70 text-xs mt-1">Hitung uang laci dan setoran akhir</p>
+             </div>
+             <div className="p-8 space-y-6">
+               <div className="space-y-4 text-text-light dark:text-text-dark">
+                 <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-border-light dark:border-border-dark">
+                   <div className="flex justify-between text-xs">
+                     <span className="text-muted font-bold uppercase tracking-widest">Mulai Shift</span>
+                     <span className="font-black text-primary">{format(new Date(effectiveStartTime), 'HH:mm:ss')} WIB</span>
+                   </div>
+                   <div className="flex justify-between text-xs">
+                     <span className="text-muted font-bold uppercase tracking-widest">Selesai Shift</span>
+                     <span className="font-black text-secondary">{format(new Date(), 'HH:mm:ss')} WIB</span>
+                   </div>
+                   
+                   {/* Tampilkan Durasi Lembur Real-Time Jika Ada */}
+                   {(() => {
+                     const nowT = new Date();
+                     let isOvertime = false;
+                     let diff = 0;
+                     let titleLabel = "Waktu Lembur";
 
-                    if (subDetails?.isSubstitute) {
-                       // KHUSUS PENGGANTI: Lembur dihitung sejak menit ke-1 absensi!
-                       isOvertime = true;
-                       diff = nowT.getTime() - new Date(effectiveStartTime).getTime();
-                       titleLabel = "Lembur Penuh (Pengganti)";
-                    } else if (todayShift?.end_time) {
-                       // KARYAWAN NORMAL: Lembur dihitung setelah jam shift berakhir
-                       const [h, m] = todayShift.end_time.split(':').map(Number);
-                       const targetEnd = new Date(nowT);
-                       targetEnd.setHours(h, m, 0, 0);
-                       if (nowT.getTime() - targetEnd.getTime() > 12 * 60 * 60 * 1000) targetEnd.setDate(targetEnd.getDate() + 1);
-                       
-                       diff = nowT.getTime() - targetEnd.getTime();
-                       isOvertime = diff > 0;
-                    }
+                     if (subDetails?.isSubstitute) {
+                        // KHUSUS PENGGANTI: Lembur dihitung sejak menit ke-1 absensi!
+                        isOvertime = true;
+                        diff = nowT.getTime() - new Date(effectiveStartTime).getTime();
+                        titleLabel = "Lembur Penuh (Pengganti)";
+                     } else if (todayShift?.end_time) {
+                        // KARYAWAN NORMAL: Lembur dihitung setelah jam shift berakhir
+                        const [h, m] = todayShift.end_time.split(':').map(Number);
+                        const targetEnd = new Date(nowT);
+                        targetEnd.setHours(h, m, 0, 0);
+                        if (nowT.getTime() - targetEnd.getTime() > 12 * 60 * 60 * 1000) targetEnd.setDate(targetEnd.getDate() + 1);
+                        
+                        diff = nowT.getTime() - targetEnd.getTime();
+                        isOvertime = diff > 0;
+                     }
 
-                    if (!isOvertime || diff <= 0) return null;
+                     if (!isOvertime || diff <= 0) return null;
 
-                    const oh = Math.floor(diff / 3600000);
-                    const om = Math.floor((diff % 3600000) / 60000);
-                    return (
-                      <div className="flex flex-col gap-1 bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-900/30 dark:to-orange-900/30 p-3 rounded-xl border border-red-200 dark:border-red-900/50 animate-pulse">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                           <Flame className="w-3 h-3 animate-bounce" /> {titleLabel}
-                        </span>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-xs font-bold text-muted">Total Akumulasi</span>
-                          <span className="font-black text-lg text-red-600 dark:text-red-400">{oh} jam {om} menit</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                     const oh = Math.floor(diff / 3600000);
+                     const om = Math.floor((diff % 3600000) / 60000);
+                     return (
+                       <div className="flex flex-col gap-1 bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-900/30 dark:to-orange-900/30 p-3 rounded-xl border border-red-200 dark:border-red-900/50 animate-pulse">
+                         <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                            <Flame className="w-3 h-3 animate-bounce" /> {titleLabel}
+                         </span>
+                         <div className="flex justify-between items-baseline">
+                           <span className="text-xs font-bold text-muted">Total Akumulasi</span>
+                           <span className="font-black text-lg text-red-600 dark:text-red-400">{oh} jam {om} menit</span>
+                         </div>
+                       </div>
+                     );
+                   })()}
 
-                  <div className="h-px bg-border-light dark:bg-border-dark my-1" />
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted font-bold uppercase tracking-widest">Durasi Kerja</span>
-                    <span className="font-black">
-                      {(() => {
-                        const timeDiff = new Date().getTime() - new Date(effectiveStartTime).getTime();
-                        const h = Math.floor(timeDiff / 3600000);
-                        const m = Math.floor((timeDiff % 3600000) / 60000);
-                        return `${h} jam ${m} menit`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted font-bold uppercase text-[10px]">Modal Awal</span>
-                  <span className="font-bold">Rp {effectiveInitialCash.toLocaleString('id-ID')}</span>
-                </div>
-              </div>
+                   <div className="h-px bg-border-light dark:bg-border-dark my-1" />
+                   <div className="flex justify-between text-xs">
+                     <span className="text-muted font-bold uppercase tracking-widest">Durasi Kerja</span>
+                     <span className="font-black">
+                       {(() => {
+                         const timeDiff = new Date().getTime() - new Date(effectiveStartTime).getTime();
+                         const h = Math.floor(timeDiff / 3600000);
+                         const m = Math.floor((timeDiff % 3600000) / 60000);
+                         return `${h} jam ${m} menit`;
+                       })()}
+                     </span>
+                   </div>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-muted font-bold uppercase text-[10px]">Modal Awal</span>
+                   <span className="font-bold">Rp {effectiveInitialCash.toLocaleString('id-ID')}</span>
+                 </div>
+               </div>
 
-              <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-muted">Uang Fisik di Laci</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
-                    <input 
-                      type="number" 
-                      value={actualCash}
-                      onChange={(e) => setActualCash(e.target.value)}
-                      placeholder="Contoh: 500000"
-                      className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-2xl transition-all"
-                    />
-                  </div>
+               <div className="space-y-3">
+                   <label className="text-[10px] font-black uppercase text-muted">Uang Fisik di Laci</label>
+                   <div className="relative">
+                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
+                     <input 
+                       type="number" 
+                       value={actualCash}
+                       onChange={(e) => setActualCash(e.target.value)}
+                       placeholder="Contoh: 500000"
+                       className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-2xl transition-all text-text-light dark:text-text-dark"
+                     />
+                   </div>
 
-                  {actualCash && (
-                    <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
-                      Number(actualCash) - effectiveInitialCash >= 0 
-                        ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
-                        : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
-                    }`}>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang</span>
-                        <span className="text-xs font-bold">
-                          {Number(actualCash) - effectiveInitialCash >= 0 ? 'Kelebihan (Plus)' : 'Kekurangan (Minus)'}
-                        </span>
-                      </div>
-                      <span className="font-black text-2xl">
-                        {Number(actualCash) - effectiveInitialCash >= 0 ? '+' : ''}
-                        {(Number(actualCash) - effectiveInitialCash).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                   {actualCash && (
+                     <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
+                       Number(actualCash) - effectiveInitialCash >= 0 
+                         ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
+                         : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
+                     }`}>
+                       <div className="flex flex-col">
+                         <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang</span>
+                         <span className="text-xs font-bold">
+                           {Number(actualCash) - effectiveInitialCash >= 0 ? 'Kelebihan (Plus)' : 'Kekurangan (Minus)'}
+                         </span>
+                       </div>
+                       <span className="font-black text-2xl">
+                         {Number(actualCash) - effectiveInitialCash >= 0 ? '+' : ''}
+                         {(Number(actualCash) - effectiveInitialCash).toLocaleString('id-ID')}
+                       </span>
+                     </div>
+                   )}
+                 </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => setShowCloseModal(false)} className="flex-1 py-3 bg-gray-100 text-muted rounded-xl font-bold">Batal</button>
-                <button 
-                  onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
-                  disabled={closing}
-                  className="flex-2 py-3 bg-secondary text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg"
-                >
-                  {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Tutup & Simpan Shift" : "Tutup Sesi Darurat"}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-          );
-          })()}
-        </div>
-      )}
+               <div className="flex gap-3">
+                 <button onClick={() => setShowCloseModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase">Batal</button>
+                 <button 
+                   onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
+                   disabled={closing}
+                   className="flex-2 py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
+                 >
+                   {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Tutup & Simpan Shift" : "Tutup Sesi Darurat"}
+                 </button>
+               </div>
+             </div>
+           </BaseModal>
+         );
+      })()}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div whileHover={{ y: -4 }} className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-border-light dark:border-border-dark flex items-center gap-4">

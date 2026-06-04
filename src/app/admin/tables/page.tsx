@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Trash2, X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 export default function AdminTables() {
   const [tables, setTables] = useState<any[]>([]);
@@ -179,65 +180,72 @@ export default function AdminTables() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-xl text-text-light dark:text-text-dark">{editingId ? 'Edit Meja' : 'Tambah Meja'}</h3>
-                <button onClick={() => setIsModalOpen(false)} aria-label="Tutup" title="Tutup" className="text-muted hover:text-text-light dark:hover:text-text-dark"><X className="w-5 h-5" /></button>
-              </div>
-              <form onSubmit={handleSave} className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label htmlFor="tableNumber" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Nomor Meja</label>
-                    <input id="tableNumber" title="Nomor Meja" required type="number" min={1} value={formData.table_number} onChange={e => setFormData({...formData, table_number: parseInt(e.target.value)})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark text-center font-bold" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="tableCapacity" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Kapasitas (Orang)</label>
-                    <input id="tableCapacity" title="Kapasitas" required type="number" min={1} value={formData.capacity} onChange={e => setFormData({...formData, capacity: parseInt(e.target.value)})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark text-center" />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="tableStatus" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Status</label>
-                  <select id="tableStatus" title="Status" aria-label="Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark">
-                    <option value="available">Available (Tersedia)</option>
-                    <option value="occupied">Occupied (Terisi)</option>
-                    <option value="reserved">Reserved (Dipesan)</option>
-                  </select>
-                </div>
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-lg font-medium bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Batal</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg font-bold bg-primary text-white hover:bg-primary-hover transition-colors flex justify-center items-center gap-2">
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Simpan Meja'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      {/* Add/Edit Table Modal */}
+      <BaseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        size="sm"
+        showCloseButton={false}
+        noPadding={true}
+      >
+        <div className="bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-xl text-text-light dark:text-text-dark">{editingId ? 'Edit Meja' : 'Tambah Meja'}</h3>
+            <button onClick={() => setIsModalOpen(false)} aria-label="Tutup" title="Tutup" className="text-muted hover:text-text-light dark:hover:text-text-dark"><X className="w-5 h-5" /></button>
           </div>
-        )}
-        {deleteId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteId(null)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-6 text-center space-y-4">
-              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                <Trash2 className="w-6 h-6" />
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="tableNumber" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Nomor Meja</label>
+                <input id="tableNumber" title="Nomor Meja" required type="number" min={1} value={formData.table_number} onChange={e => setFormData({...formData, table_number: parseInt(e.target.value)})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark text-center font-bold" />
               </div>
-              <div className="space-y-2">
-                <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Hapus Meja?</h3>
-                <p className="text-sm text-muted">Apakah Anda yakin ingin menghapus meja ini? Tindakan ini tidak dapat dibatalkan.</p>
+              <div className="flex-1">
+                <label htmlFor="tableCapacity" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Kapasitas (Orang)</label>
+                <input id="tableCapacity" title="Kapasitas" required type="number" min={1} value={formData.capacity} onChange={e => setFormData({...formData, capacity: parseInt(e.target.value)})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark text-center" />
               </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setDeleteId(null)} className="flex-1 py-2.5 rounded-xl font-medium bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Batal</button>
-                <button type="button" onClick={executeDelete} disabled={deleting} className="flex-1 py-2.5 rounded-xl font-bold bg-red-500 hover:bg-red-600 text-white transition-colors flex justify-center items-center gap-2">
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Hapus"}
-                </button>
-              </div>
-            </motion.div>
+            </div>
+            <div>
+              <label htmlFor="tableStatus" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Status</label>
+              <select id="tableStatus" title="Status" aria-label="Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark">
+                <option value="available">Available (Tersedia)</option>
+                <option value="occupied">Occupied (Terisi)</option>
+                <option value="reserved">Reserved (Dipesan)</option>
+              </select>
+            </div>
+            <div className="pt-4 flex gap-3">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-lg font-medium bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Batal</button>
+              <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg font-bold bg-primary text-white hover:bg-primary-hover transition-colors flex justify-center items-center gap-2">
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Simpan Meja'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </BaseModal>
+
+      {/* Delete Confirmation Modal */}
+      <BaseModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        size="sm"
+        showCloseButton={false}
+        noPadding={true}
+      >
+        <div className="bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark p-6 text-center space-y-4">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto">
+            <Trash2 className="w-6 h-6" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Hapus Meja?</h3>
+            <p className="text-sm text-muted">Apakah Anda yakin ingin menghapus meja ini? Tindakan ini tidak dapat dibatalkan.</p>
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setDeleteId(null)} className="flex-1 py-2.5 rounded-xl font-medium bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Batal</button>
+            <button type="button" onClick={executeDelete} disabled={deleting} className="flex-1 py-2.5 rounded-xl font-bold bg-red-50 hover:bg-red-600 text-white transition-colors flex justify-center items-center gap-2">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Hapus"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

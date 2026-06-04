@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/useCartStore";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { SkeletonMenuCard } from "@/components/Skeleton";
+import BaseModal from "@/components/BaseModal";
 
 interface Category {
   id: string;
@@ -353,57 +354,46 @@ export default function CustomerMenuPage() {
       )}
 
       {/* WARNING MODAL FOR OUT OF STOCK */}
-      <AnimatePresence>
-        {outOfStockItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => { setOutOfStockItem(null); setClickCount(0); }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }} 
-              className="bg-card-light dark:bg-card-dark rounded-3xl p-8 max-w-md w-full border border-border-light dark:border-border-dark shadow-2xl space-y-6 relative z-10 text-center"
-            >
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <Ban className="w-8 h-8" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-black text-xl text-text-light dark:text-text-dark">Menu Tidak Tersedia</h3>
-                <p className="text-muted text-sm leading-relaxed">
-                  {clickCount > 2 ? (
-                    <span className="text-red-500 font-bold block">
-                      Maaf, menu {outOfStockItem.name} sudah habis dan tidak bisa ditambahkan ke pesanan Anda.
-                    </span>
-                  ) : (
-                    <span>
-                      Menu <span className="font-bold text-primary">{outOfStockItem.name}</span> sedang tidak tersedia saat ini. Silakan pilih menu lain atau hubungi kasir untuk informasi lebih lanjut.
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => { setOutOfStockItem(null); setClickCount(0); }} 
-                  className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs uppercase"
-                >
-                  Tutup
-                </button>
-                <button 
-                  onClick={() => { setOutOfStockItem(null); setClickCount(0); }} 
-                  className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl transition-colors uppercase text-xs shadow-lg shadow-primary/20"
-                >
-                  Lihat Menu Lain
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={!!outOfStockItem}
+        onClose={() => { setOutOfStockItem(null); setClickCount(0); }}
+        size="md"
+        showCloseButton={false}
+      >
+        <div className="space-y-6 text-center">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <Ban className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="font-black text-xl text-text-light dark:text-text-dark">Menu Tidak Tersedia</h3>
+            <p className="text-muted text-sm leading-relaxed">
+              {clickCount > 2 ? (
+                <span className="text-red-500 font-bold block">
+                  Maaf, menu {outOfStockItem?.name} sudah habis dan tidak bisa ditambahkan ke pesanan Anda.
+                </span>
+              ) : (
+                <span>
+                  Menu <span className="font-bold text-primary">{outOfStockItem?.name}</span> sedang tidak tersedia saat ini. Silakan pilih menu lain atau hubungi kasir untuk informasi lebih lanjut.
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => { setOutOfStockItem(null); setClickCount(0); }} 
+              className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs uppercase"
+            >
+              Tutup
+            </button>
+            <button 
+              onClick={() => { setOutOfStockItem(null); setClickCount(0); }} 
+              className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl transition-colors uppercase text-xs shadow-lg shadow-primary/20"
+            >
+              Lihat Menu Lain
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

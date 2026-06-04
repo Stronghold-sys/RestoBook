@@ -13,6 +13,7 @@ import {
   Paperclip, Camera, Trash2
 } from "lucide-react";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
+import BaseModal from "@/components/BaseModal";
 
 interface Ticket {
   id: string;
@@ -1878,80 +1879,77 @@ export default function AdminSupportPage() {
       )}
 
       {/* Decision (Approve/Reject) Confirmation Modal */}
-      <AnimatePresence>
-        {showApprovalModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+      <BaseModal
+        isOpen={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        size="md"
+        showCloseButton={false}
+        noPadding={true}
+      >
+        <div className="bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark p-6 space-y-4">
+          <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
+            <h3 className="text-lg font-bold text-text-light dark:text-text-dark">
+              {approvalType === 'approved' ? 'Setujui Permintaan Perubahan' : 'Tolak Permintaan Perubahan'}
+            </h3>
+            <button
+              onClick={() => setShowApprovalModal(false)}
+              title="Tutup dialog"
+              aria-label="Tutup"
+              className="text-muted hover:text-red-500 transition-colors"
             >
-              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
-                <h3 className="text-lg font-bold text-text-light dark:text-text-dark">
-                  {approvalType === 'approved' ? 'Setujui Permintaan Perubahan' : 'Tolak Permintaan Perubahan'}
-                </h3>
-                <button
-                  onClick={() => setShowApprovalModal(false)}
-                  title="Tutup dialog"
-                  aria-label="Tutup"
-                  className="text-muted hover:text-red-500 transition-colors"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleDecisionSubmit} className="space-y-4">
-                <p className="text-xs text-muted leading-relaxed">
-                  {approvalType === 'approved'
-                    ? 'Menyetujui permintaan ini akan membuka kolom input data yang bersangkutan pada halaman profil pelanggan secara sementara.'
-                    : 'Menolak permintaan ini akan membatalkan proses perubahan data dan kolom input pada profil pelanggan akan tetap terkunci.'}
-                </p>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="decisionReason" className="text-xs font-bold text-muted uppercase">
-                    {approvalType === 'approved' ? 'Alasan Persetujuan' : 'Alasan Penolakan'}
-                  </label>
-                  <textarea
-                    id="decisionReason"
-                    required
-                    placeholder={
-                      approvalType === 'approved'
-                        ? 'Masukkan alasan persetujuan (contoh: Dokumen verifikasi valid)'
-                        : 'Masukkan alasan penolakan (contoh: Dokumen lampiran tidak sesuai)'
-                    }
-                    value={decisionReason}
-                    onChange={(e) => setDecisionReason(e.target.value)}
-                    rows={3}
-                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3 text-xs text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
-                  <button
-                    type="button"
-                    onClick={() => setShowApprovalModal(false)}
-                    className="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-xs font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={decisionLoading || !decisionReason.trim()}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md ${
-                      approvalType === 'approved'
-                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                        : 'bg-red-600 hover:bg-red-700'
-                    }`}
-                  >
-                    {decisionLoading ? 'Memproses...' : approvalType === 'approved' ? 'Setujui' : 'Tolak'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              <XCircle className="w-5 h-5" />
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+
+          <form onSubmit={handleDecisionSubmit} className="space-y-4">
+            <p className="text-xs text-muted leading-relaxed">
+              {approvalType === 'approved'
+                ? 'Menyetujui permintaan ini akan membuka kolom input data yang bersangkutan pada halaman profil pelanggan secara sementara.'
+                : 'Menolak permintaan ini akan membatalkan proses perubahan data dan kolom input pada profil pelanggan akan tetap terkunci.'}
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="decisionReason" className="text-xs font-bold text-muted uppercase">
+                {approvalType === 'approved' ? 'Alasan Persetujuan' : 'Alasan Penolakan'}
+              </label>
+              <textarea
+                id="decisionReason"
+                required
+                placeholder={
+                  approvalType === 'approved'
+                    ? 'Masukkan alasan persetujuan (contoh: Dokumen verifikasi valid)'
+                    : 'Masukkan alasan penolakan (contoh: Dokumen lampiran tidak sesuai)'
+                }
+                value={decisionReason}
+                onChange={(e) => setDecisionReason(e.target.value)}
+                rows={3}
+                className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-3 text-xs text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
+              <button
+                type="button"
+                onClick={() => setShowApprovalModal(false)}
+                className="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-xs font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={decisionLoading || !decisionReason.trim()}
+                className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md ${
+                  approvalType === 'approved'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {decisionLoading ? 'Memproses...' : approvalType === 'approved' ? 'Setujui' : 'Tolak'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </BaseModal>
 
       <CameraCaptureModal
         isOpen={isCameraModalOpen}

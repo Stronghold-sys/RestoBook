@@ -9,7 +9,7 @@ interface BaseModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'full';
   showCloseButton?: boolean;
   noPadding?: boolean;
 }
@@ -82,6 +82,9 @@ export default function BaseModal({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
     full: 'max-w-full m-0 h-full rounded-none'
   };
 

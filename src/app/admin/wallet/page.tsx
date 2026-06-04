@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 type WalletStatusFilter = "all" | "active" | "inactive" | "blocked" | "pending" | "processing";
 
@@ -595,336 +596,319 @@ export default function AdminWalletPage() {
       </AnimatePresence>
 
       {/* Manage Customer Wallet Modal */}
-      <AnimatePresence>
-        {showManageModal && selectedCustomer && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowManageModal(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md"
-            />
-            
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative z-10 bg-white dark:bg-card-dark w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800"
-            >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+      <BaseModal
+        isOpen={showManageModal && !!selectedCustomer}
+        onClose={() => setShowManageModal(false)}
+        size="3xl"
+        showCloseButton={false}
+        noPadding={true}
+      >
+        {selectedCustomer && (
+          <div className="flex flex-col bg-white dark:bg-card-dark text-text-light dark:text-text-dark">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+              <div>
+                <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-tight">Kelola Dompet Pelanggan</h3>
+                <p className="text-[10px] text-muted font-bold mt-0.5">Nama: {selectedCustomer.full_name} ({selectedCustomer.email || "Tanpa Email"})</p>
+              </div>
+              <button onClick={() => setShowManageModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div className="flex border-b border-gray-100 dark:border-gray-800 px-6 py-2 bg-gray-50/20 dark:bg-gray-900/20 gap-2 overflow-x-auto scrollbar-none">
+              {[
+                { key: "status", label: "Status Dompet", icon: ShieldAlert },
+                { key: "balance", label: "Kelola Saldo", icon: CreditCard },
+                { key: "history", label: "Mutasi Saldo", icon: Clipboard },
+                { key: "audit", label: "Log Audit", icon: Activity },
+                { key: "note", label: "Catatan Memo", icon: Info }
+              ].map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setManageTab(t.key as any)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                    manageTab === t.key
+                      ? "bg-primary text-white border-primary"
+                      : "bg-transparent text-muted border-transparent hover:text-text-light dark:hover:text-text-dark"
+                  }`}
+                >
+                  <t.icon className="w-4 h-4" />
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6 flex-1 text-xs">
+              
+              {/* Profile Snapshot Header */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/30 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
                 <div>
-                  <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-tight">Kelola Dompet Pelanggan</h3>
-                  <p className="text-[10px] text-muted font-bold mt-0.5">Nama: {selectedCustomer.full_name} ({selectedCustomer.email || "Tanpa Email"})</p>
+                  <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Saldo Saat Ini</span>
+                  <span className="text-lg font-mono font-black text-emerald-650 dark:text-emerald-400">Rp {Number(selectedCustomer.wallet_balance || 0).toLocaleString("id-ID")}</span>
                 </div>
-                <button onClick={() => setShowManageModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+                <div>
+                  <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Status Awal</span>
+                  <span className="text-xs font-black uppercase block tracking-widest mt-1 text-primary">
+                    {selectedCustomer.wallet_status || "Belum Aktif"}
+                  </span>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Terakhir Update</span>
+                  <span className="text-[10px] font-bold block mt-1">
+                    {selectedCustomer.wallet_updated_at 
+                      ? format(new Date(selectedCustomer.wallet_updated_at), "dd MMM yyyy HH:mm", { locale: localeId })
+                      : "-"}
+                  </span>
+                </div>
               </div>
 
-              {/* Modal Navigation Tabs */}
-              <div className="flex border-b border-gray-100 dark:border-gray-800 px-6 py-2 bg-gray-50/20 dark:bg-gray-900/20 gap-2 overflow-x-auto scrollbar-none">
-                {[
-                  { key: "status", label: "Status Dompet", icon: ShieldAlert },
-                  { key: "balance", label: "Kelola Saldo", icon: CreditCard },
-                  { key: "history", label: "Mutasi Saldo", icon: Clipboard },
-                  { key: "audit", label: "Log Audit", icon: Activity },
-                  { key: "note", label: "Catatan Memo", icon: Info }
-                ].map(t => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setManageTab(t.key as any)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
-                      manageTab === t.key
-                        ? "bg-primary text-white border-primary"
-                        : "bg-transparent text-muted border-transparent hover:text-text-light dark:hover:text-text-dark"
-                    }`}
-                  >
-                    <t.icon className="w-4 h-4" />
-                    <span>{t.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar text-xs">
-                
-                {/* Profile Snapshot Header */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/30 p-4 rounded-2xl border border-border-light dark:border-border-dark text-center">
-                  <div>
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Saldo Saat Ini</span>
-                    <span className="text-lg font-mono font-black text-emerald-650 dark:text-emerald-400">Rp {Number(selectedCustomer.wallet_balance || 0).toLocaleString("id-ID")}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Status Awal</span>
-                    <span className="text-xs font-black uppercase block tracking-widest mt-1 text-primary">
-                      {selectedCustomer.is_wallet_blocked ? "Terblokir" : (selectedCustomer.wallet_status || "nonaktif")}
-                    </span>
-                  </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <span className="text-[9px] font-black text-muted uppercase tracking-wider block">Nomor HP</span>
-                    <span className="text-xs font-bold font-mono block mt-1 text-text-light dark:text-text-dark">{selectedCustomer.phone || "-"}</span>
-                  </div>
-                </div>
-
-                {/* Tab: STATUS */}
-                {manageTab === "status" && (
-                  <form onSubmit={handleStatusSubmit} className="space-y-4">
+              {/* Tab: STATUS */}
+              {manageTab === "status" && (
+                <form onSubmit={handleStatusSubmit} className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Ubah Status Dompetku</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label htmlFor="targetStatusSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block">Ubah Status Menjadi</label>
+                      <label htmlFor="targetStatus" className="text-[10px] font-black uppercase text-muted tracking-widest block">Status Target</label>
                       <select
-                        id="targetStatusSelect"
+                        id="targetStatus"
                         value={statusForm.targetStatus}
-                        onChange={e => setStatusForm({ ...statusForm, targetStatus: e.target.value })}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-bold text-text-light dark:text-text-dark"
+                        onChange={e => setStatusForm(prev => ({ ...prev, targetStatus: e.target.value }))}
+                        required
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
                       >
-                        <option value="aktif">Aktif (Dapat Bertransaksi)</option>
-                        <option value="nonaktif">Nonaktif (Dinonaktifkan Sementara)</option>
-                        <option value="diblokir">Diblokir (Pelanggaran / Masalah Keamanan)</option>
-                        <option value="buka_blokir">Buka Blokir</option>
-                        <option value="pending">Pending Verifikasi</option>
-                        <option value="diproses">Dalam Proses Peninjauan</option>
+                        <option value="">-- Pilih Status --</option>
+                        <option value="aktif">Aktif (Buka Blokir / Verifikasi Manual)</option>
+                        <option value="nonaktif">Nonaktifkan</option>
+                        <option value="diblokir">Blokir Sementara</option>
                       </select>
                     </div>
 
-                    {statusForm.targetStatus === "buka_blokir" && (
+                    {statusForm.targetStatus === "aktif" && (
                       <div className="space-y-1.5">
-                        <label htmlFor="resumeStatusSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block">Status Lanjutan Setelah Blokir Dibuka</label>
+                        <label htmlFor="resumeStatus" className="text-[10px] font-black uppercase text-muted tracking-widest block">Level Aktif</label>
                         <select
-                          id="resumeStatusSelect"
+                          id="resumeStatus"
                           value={statusForm.resumeStatus}
-                          onChange={e => setStatusForm({ ...statusForm, resumeStatus: e.target.value })}
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-bold text-text-light dark:text-text-dark"
+                          onChange={e => setStatusForm(prev => ({ ...prev, resumeStatus: e.target.value }))}
+                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
                         >
-                          <option value="aktif">Aktif (Kembali Normal)</option>
-                          <option value="nonaktif">Nonaktif</option>
+                          <option value="aktif">Aktif Penuh</option>
                         </select>
-                      </div>
-                    )}
-
-                    <div className="space-y-1.5">
-                      <label htmlFor="statusReasonInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">
-                        Alasan Perubahan Status {statusForm.targetStatus === "diblokir" && <span className="text-red-500 font-bold">(Wajib)</span>}
-                      </label>
-                      <textarea
-                        id="statusReasonInput"
-                        required={statusForm.targetStatus === "diblokir"}
-                        value={statusForm.reason}
-                        onChange={e => setStatusForm({ ...statusForm, reason: e.target.value })}
-                        placeholder="Masukkan alasan formal perubahan status..."
-                        rows={3}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label htmlFor="statusNoteInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Catatan Internal Admin (Opsional)</label>
-                      <textarea
-                        id="statusNoteInput"
-                        value={internalNote}
-                        onChange={e => setInternalNote(e.target.value)}
-                        placeholder="Memo internal yang hanya dapat dilihat oleh admin..."
-                        rows={2}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow uppercase tracking-wider"
-                    >
-                      {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Perbarui Status Akun"}
-                    </button>
-                  </form>
-                )}
-
-                {/* Tab: BALANCE */}
-                {manageTab === "balance" && (
-                  <form onSubmit={handleBalanceSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label htmlFor="balanceTypeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block">Tipe Penyesuaian Saldo</label>
-                        <select
-                          id="balanceTypeSelect"
-                          value={balanceForm.type}
-                          onChange={e => setBalanceForm({ ...balanceForm, type: e.target.value })}
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-bold text-text-light dark:text-text-dark"
-                        >
-                          <option value="add">Tambah Saldo</option>
-                          <option value="deduct">Kurangi Saldo</option>
-                          <option value="correct">Koreksi Saldo Manual (Set ke nominal)</option>
-                          <option value="reset">Reset Saldo ke Rp 0</option>
-                          <option value="refund">Refund Dana Transaksi</option>
-                        </select>
-                      </div>
-
-                      {balanceForm.type !== "reset" && (
-                        <div className="space-y-1.5">
-                          <label htmlFor="balanceAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">
-                            {balanceForm.type === "correct" ? "Nominal Target Saldo (Rp)" : "Nominal Saldo (Rp)"}
-                          </label>
-                          <input
-                            id="balanceAmountInput"
-                            type="number"
-                            required
-                            min={0}
-                            value={balanceForm.amountValue}
-                            onChange={e => setBalanceForm({ ...balanceForm, amountValue: e.target.value })}
-                            placeholder="Misal: 50000"
-                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-bold font-mono text-text-light dark:text-text-dark"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {balanceForm.type === "refund" && (
-                      <div className="space-y-1.5">
-                        <label htmlFor="balanceRefundRef" className="text-[10px] font-black uppercase text-muted tracking-widest block">ID Transaksi / Nomor Referensi Sumber Refund</label>
-                        <input
-                          id="balanceRefundRef"
-                          type="text"
-                          required
-                          value={balanceForm.refundReference}
-                          onChange={e => setBalanceForm({ ...balanceForm, refundReference: e.target.value })}
-                          placeholder="Masukkan nomor transaksi atau ID pesanan..."
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-bold text-text-light dark:text-text-dark"
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-1.5">
-                      <label htmlFor="balanceAdjustReason" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Penyesuaian Saldo <span className="text-red-500 font-bold">(Wajib)</span></label>
-                      <textarea
-                        id="balanceAdjustReason"
-                        required
-                        value={balanceForm.adjustReason}
-                        onChange={e => setBalanceForm({ ...balanceForm, adjustReason: e.target.value })}
-                        placeholder="Contoh: Refund pembatalan pesanan makanan karena bahan habis."
-                        rows={2}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label htmlFor="balanceNoteInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Catatan Internal Admin (Opsional)</label>
-                      <textarea
-                        id="balanceNoteInput"
-                        value={internalNote}
-                        onChange={e => setInternalNote(e.target.value)}
-                        placeholder="Memo internal yang hanya dapat dilihat oleh admin..."
-                        rows={2}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="w-full py-3 bg-emerald-650 hover:bg-emerald-700 text-white font-black rounded-xl shadow uppercase tracking-wider"
-                    >
-                      {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Penyesuaian Saldo"}
-                    </button>
-                  </form>
-                )}
-
-                {/* Tab: MUTATION HISTORY */}
-                {manageTab === "history" && (
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Riwayat Mutasi Saldo Pelanggan</h4>
-                    {loadingModalLogs ? (
-                      <div className="text-center py-10"><RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto" /></div>
-                    ) : customerTx.length === 0 ? (
-                      <div className="text-center py-10 text-muted">Belum ada riwayat transaksi dompet.</div>
-                    ) : (
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                        {customerTx.map((tx) => {
-                          const isPositive = ["topup", "refund", "cashback", "adjust"].includes(tx.type) && tx.status === "success" ? tx.amount > 0 : false;
-                          return (
-                            <div key={tx.id} className="p-3 bg-gray-50/50 dark:bg-gray-900/30 border border-border-light/35 dark:border-border-dark/35 rounded-xl flex justify-between items-start gap-3">
-                              <div>
-                                <p className="font-bold text-text-light dark:text-text-dark">{tx.description || "Penyesuaian Saldo"}</p>
-                                <div className="flex items-center gap-1.5 mt-1 text-[9px] text-muted">
-                                  <span className="px-1.5 py-0.2 bg-gray-200 dark:bg-gray-800 text-[8px] font-black uppercase rounded tracking-wide">{tx.type}</span>
-                                  <span>{format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })} WIB</span>
-                                </div>
-                              </div>
-                              <span className={`font-mono font-black text-xs shrink-0 ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                                {isPositive ? "+" : "-"}Rp {Math.abs(Number(tx.amount)).toLocaleString("id-ID")}
-                              </span>
-                            </div>
-                          );
-                        })}
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Tab: AUDIT LOGS */}
-                {manageTab === "audit" && (
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Jejak Audit Aktivitas Admin</h4>
-                    {loadingModalLogs ? (
-                      <div className="text-center py-10"><RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto" /></div>
-                    ) : customerAudit.length === 0 ? (
-                      <div className="text-center py-10 text-muted">Belum ada jejak audit untuk pelanggan ini.</div>
-                    ) : (
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                        {customerAudit.map((log) => (
-                          <div key={log.id} className="p-3 bg-gray-50/40 dark:bg-gray-900/20 border border-border-light/40 dark:border-border-dark/40 rounded-xl space-y-1.5">
-                            <div className="flex justify-between items-center text-[9px] text-muted border-b border-border-light/20 pb-1">
-                              <span className="font-black text-primary uppercase">{log.action_type.replace("_", " ")}</span>
-                              <span>{format(new Date(log.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</span>
-                            </div>
-                            <p className="font-semibold text-text-light dark:text-text-dark">{log.reason}</p>
-                            <div className="grid grid-cols-2 gap-4 text-[9px] text-muted pt-1">
-                              <div>Nilai Sebelum: <span className="font-bold text-text-light dark:text-text-dark">{log.before_value || "-"}</span></div>
-                              <div>Nilai Sesudah: <span className="font-bold text-text-light dark:text-text-dark">{log.after_value || "-"}</span></div>
-                            </div>
-                            <div className="text-[9px] text-muted flex justify-between items-center pt-1 border-t border-border-light/10">
-                              <span>Oleh Admin: {log.actor?.full_name || "Sistem"}</span>
-                              {log.internal_note && <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">Memo: {log.internal_note}</span>}
-                            </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="statusReason" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Perubahan <span className="text-red-500 font-bold">(Wajib)</span></label>
+                    <input
+                      id="statusReason"
+                      type="text"
+                      required
+                      placeholder="Masukkan alasan detail untuk perubahan status dompet ini..."
+                      value={statusForm.reason}
+                      onChange={e => setStatusForm(prev => ({ ...prev, reason: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving || !statusForm.targetStatus}
+                    className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Terapkan Perubahan Status"}
+                  </button>
+                </form>
+              )}
+
+              {/* Tab: BALANCE */}
+              {manageTab === "balance" && (
+                <form onSubmit={handleBalanceSubmit} className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Penyesuaian / Kredit / Debit Saldo</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="balanceType" className="text-[10px] font-black uppercase text-muted tracking-widest block">Tipe Penyesuaian</label>
+                      <select
+                        id="balanceType"
+                        value={balanceForm.type}
+                        onChange={e => setBalanceForm(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                      >
+                        <option value="add">Kredit / Tambah Saldo (Top Up Manual / Bonus)</option>
+                        <option value="sub">Debit / Kurangi Saldo (Penalti / Koreksi)</option>
+                        <option value="refund">Refund Transaksi / Pengembalian Dana</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="amountInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Jumlah Nominal (Rp) <span className="text-red-500 font-bold">(Wajib)</span></label>
+                      <input
+                        id="amountInput"
+                        type="number"
+                        min="100"
+                        required
+                        placeholder="Contoh: 50000"
+                        value={balanceForm.amountValue}
+                        onChange={e => setBalanceForm(prev => ({ ...prev, amountValue: e.target.value }))}
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-mono font-bold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                  </div>
+
+                  {balanceForm.type === "refund" && (
+                    <div className="space-y-1.5">
+                      <label htmlFor="refInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">ID Transaksi / Nomor Referensi Refund <span className="text-red-500 font-bold">(Wajib)</span></label>
+                      <input
+                        id="refInput"
+                        type="text"
+                        required
+                        placeholder="Masukkan ID Order atau kode reservasi..."
+                        value={balanceForm.refundReference}
+                        onChange={e => setBalanceForm(prev => ({ ...prev, refundReference: e.target.value }))}
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="adjustReason" className="text-[10px] font-black uppercase text-muted tracking-widest block">Alasan Detail Penyesuaian Saldo <span className="text-red-500 font-bold">(Wajib)</span></label>
+                    <input
+                      id="adjustReason"
+                      type="text"
+                      required
+                      placeholder="Tulis alasan, memo, atau referensi audit internal..."
+                      value={balanceForm.adjustReason}
+                      onChange={e => setBalanceForm(prev => ({ ...prev, adjustReason: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving || !balanceForm.amountValue}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl shadow uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Eksekusi Mutasi Saldo"}
+                  </button>
+                </form>
+              )}
+
+              {/* Tab: HISTORY (MUTATION LOG) */}
+              {manageTab === "history" && (
+                <div className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Riwayat Mutasi Saldo Pelanggan</h4>
+                  
+                  {customerTx.length === 0 ? (
+                    <div className="py-8 text-center text-muted font-bold flex flex-col items-center justify-center gap-2">
+                      <Clock className="w-8 h-8 opacity-40" />
+                      <span>Belum ada riwayat transaksi dompet digital.</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+                      {customerTx.map((tx: any) => (
+                        <div key={tx.id} className="p-3 bg-gray-50 dark:bg-gray-900/30 border border-border-light dark:border-border-dark rounded-xl flex items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full inline-block ${
+                              tx.transaction_type === "topup" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                              tx.transaction_type === "payment" ? "bg-blue-500/10 text-blue-600 dark:text-blue-450" :
+                              tx.transaction_type === "refund" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" :
+                              "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            }`}>
+                              {tx.transaction_type}
+                            </span>
+                            <p className="text-[10px] font-black text-text-light dark:text-text-dark mt-1">{tx.description || "Tanpa Keterangan"}</p>
+                            <span className="text-[8px] text-muted block font-bold">
+                              {format(new Date(tx.created_at), "dd MMM yyyy HH:mm:ss", { locale: localeId })}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tab: NOTE (INTERNAL MEMO) */}
-                {manageTab === "note" && (
-                  <form onSubmit={handleNoteSubmit} className="space-y-4">
-                    <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Tambahkan Memo Internal Admin</h4>
-                    
-                    <div className="space-y-1.5">
-                      <label htmlFor="memoInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Memo Internal <span className="text-red-500 font-bold">(Wajib)</span></label>
-                      <textarea
-                        id="memoInput"
-                        required
-                        value={internalNote}
-                        onChange={e => setInternalNote(e.target.value)}
-                        placeholder="Memo khusus ini hanya dapat diakses dan dibaca oleh administrator. Tulis rincian atau investigasi penting..."
-                        rows={4}
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
-                      />
+                          <div className="text-right">
+                            <span className={`font-mono font-black text-sm block ${
+                              tx.transaction_type === "topup" || tx.transaction_type === "refund"
+                                ? "text-emerald-650 dark:text-emerald-400"
+                                : "text-red-500"
+                            }`}>
+                              {tx.transaction_type === "topup" || tx.transaction_type === "refund" ? "+" : "-"} 
+                              Rp {Number(tx.amount || 0).toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-[8px] text-muted block font-mono">Saldo akhir: Rp {Number(tx.current_balance || 0).toLocaleString("id-ID")}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <button
-                      type="submit"
-                      disabled={saving || !internalNote.trim()}
-                      className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow uppercase tracking-wider disabled:opacity-50"
-                    >
-                      {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Simpan Memo Internal"}
-                    </button>
-                  </form>
-                )}
+              {/* Tab: AUDIT LOG */}
+              {manageTab === "audit" && (
+                <div className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Log Jejak Audit Administrator</h4>
+                  
+                  {customerAudit.length === 0 ? (
+                    <div className="py-8 text-center text-muted font-bold flex flex-col items-center justify-center gap-2">
+                      <Clock className="w-8 h-8 opacity-40" />
+                      <span>Belum ada log jejak audit terekam.</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+                      {customerAudit.map((log: any) => (
+                        <div key={log.id} className="p-3 bg-gray-50 dark:bg-gray-900/30 border border-border-light dark:border-border-dark rounded-xl space-y-1 text-[10px]">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-black text-text-light dark:text-text-dark uppercase">{log.action_type || "Aksi Sistem"}</span>
+                            <span className="text-[8px] text-muted font-bold">{format(new Date(log.created_at), "dd MMM yyyy HH:mm", { locale: localeId })}</span>
+                          </div>
+                          <p className="text-muted font-semibold">{log.reason || "Tidak ada alasan tertulis"}</p>
+                          <div className="grid grid-cols-2 gap-4 text-[9px] text-muted pt-1">
+                            <div>Nilai Sebelum: <span className="font-bold text-text-light dark:text-text-dark">{log.before_value || "-"}</span></div>
+                            <div>Nilai Sesudah: <span className="font-bold text-text-light dark:text-text-dark">{log.after_value || "-"}</span></div>
+                          </div>
+                          <div className="text-[9px] text-muted flex justify-between items-center pt-1 border-t border-border-light/10">
+                            <span>Oleh Admin: {log.actor?.full_name || "Sistem"}</span>
+                            {log.internal_note && <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">Memo: {log.internal_note}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              </div>
-            </motion.div>
+              {/* Tab: NOTE (INTERNAL MEMO) */}
+              {manageTab === "note" && (
+                <form onSubmit={handleNoteSubmit} className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-widest text-muted border-b border-border-light dark:border-border-dark pb-2">Tambahkan Memo Internal Admin</h4>
+                  
+                  <div className="space-y-1.5">
+                    <label htmlFor="memoInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Memo Internal <span className="text-red-500 font-bold">(Wajib)</span></label>
+                    <textarea
+                      id="memoInput"
+                      required
+                      value={internalNote}
+                      onChange={e => setInternalNote(e.target.value)}
+                      placeholder="Memo khusus ini hanya dapat diakses dan dibaca oleh administrator. Tulis rincian atau investigasi penting..."
+                      rows={4}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving || !internalNote.trim()}
+                    className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {saving ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Simpan Memo Internal"}
+                  </button>
+                </form>
+              )}
+
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </div>
   );
 }

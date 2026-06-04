@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 export default function AdminVouchersPage() {
   const [loading, setLoading] = useState(true);
@@ -728,46 +729,42 @@ export default function AdminVouchersPage() {
         </div>
       </div>
       {/* GENERIC MODERN CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
-            >
-              <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
-                <AlertCircle className="w-8 h-8" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => {
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                  }}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={async () => {
-                    await confirmModal.onConfirm();
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                  }}
-                  className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
-                >
-                  {confirmModal.confirmText}
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="text-center space-y-6 bg-white dark:bg-card-dark text-text-light dark:text-text-dark">
+          <div className={`w-16 h-16 ${confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-2xl flex items-center justify-center mx-auto`}>
+            <AlertCircle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+            <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => {
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+              }}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={async () => {
+                await confirmModal.onConfirm();
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+              }}
+              className={`flex-1 py-3.5 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-primary hover:bg-primary/90'} text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+            >
+              {confirmModal.confirmText}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen, getOperationalStatus, getStoreStatus } from "@/utils/operationalHours";
+import BaseModal from "@/components/BaseModal";
 
 
 interface Table { id: string; table_number: number; capacity: number; status: string; }
@@ -1722,198 +1723,169 @@ export default function CartPage() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showPaymentModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowPaymentModal(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden border border-border-light dark:border-border-dark my-8">
-              <div className="bg-primary p-6 md:p-7 text-white flex justify-between items-center relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-                <div className="relative">
-                  <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight">Selesaikan Pembayaran</h2>
-                  <p className="text-white/90 text-xs md:text-sm mt-1 font-medium">
-                    Total Tagihan: <span className="font-extrabold text-white text-sm md:text-base">Rp {totalAmount.toLocaleString("id-ID")}</span>
-                  </p>
-                </div>
-                <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-5 h-5 md:w-6 h-6" /></button>
-              </div>
-
-              <div className="p-6 md:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                {paymentMethod === "cash" && (
-                  <div className="space-y-6 text-center py-4 md:py-6">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
-                      <Banknote className="w-8 h-8 md:w-10 md:h-10" />
-                    </div>
-                    <div className="space-y-2 max-w-md mx-auto">
-                      <h3 className="font-bold text-lg md:text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
-                      <p className="text-muted text-xs md:text-sm leading-relaxed px-2">
-                        {orderType === "delivery" ? (
-                          <>Pesanan Anda akan segera kami proses. Silakan siapkan pembayaran tunai untuk diberikan kepada kurir saat pesanan tiba di alamat Anda.</>
-                        ) : orderType === "takeaway" ? (
-                          <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir saat mengambil pesanan.</>
-                        ) : (
-                          <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir setelah selesai makan.</>
-                        )}
-                      </p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-4 border-t border-border-light/60 dark:border-border-dark/60">
-                      <button 
-                        onClick={() => setShowPaymentModal(false)} 
-                        className="w-full sm:flex-1 order-2 sm:order-1 py-2.5 sm:py-3 px-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm md:text-base"
-                      >
-                        Batal
-                      </button>
-                      <button 
-                        onClick={() => handleCheckoutClick()} 
-                        disabled={loading} 
-                        className="w-full sm:flex-1 order-1 sm:order-2 py-2.5 sm:py-3 px-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all text-xs sm:text-sm md:text-base disabled:opacity-50"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> Konfirmasi Pesanan</>}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {showTopUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTopUpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10">
-              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
-                </h3>
-                <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
-
-              <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
-                <div>
-                  <label htmlFor="checkoutTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
-                    <input 
-                      id="checkoutTopUpAmountInput"
-                      type="number" 
-                      required 
-                      min={10000}
-                      value={topUpAmount} 
-                      onChange={e => setTopUpAmount(e.target.value)} 
-                      placeholder="Contoh: 50000" 
-                      title="Nominal Isi Saldo (Rp)"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                    />
-                  </div>
-                  <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp 10.000</span>
-                </div>
-
-                {/* Quick Nominal Selectors */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Cepat</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
-                      <button
-                        key={nom}
-                        type="button"
-                        onClick={() => setTopUpAmount(String(nom))}
-                        className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                          topUpAmount === String(nom)
-                            ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
-                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
-                        }`}
-                      >
-                        Rp {nom.toLocaleString('id-ID').replace(',00', '')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingTopUp}
-                  className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
-                </button>
-              </form>
-            </motion.div>
+      <BaseModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} size="lg" noPadding={true} showCloseButton={false}>
+        <div className="bg-primary p-6 md:p-7 text-white flex justify-between items-center relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <div className="relative">
+            <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-white">Selesaikan Pembayaran</h2>
+            <p className="text-white/90 text-xs md:text-sm mt-1 font-medium">
+              Total Tagihan: <span className="font-extrabold text-white text-sm md:text-base">Rp {totalAmount.toLocaleString("id-ID")}</span>
+            </p>
           </div>
-        )}
-      </AnimatePresence>
+          <button onClick={() => setShowPaymentModal(false)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-full text-white relative z-10"><X className="w-5 h-5 md:w-6 h-6" /></button>
+        </div>
+
+        <div className="p-6 md:p-8 space-y-6">
+          {paymentMethod === "cash" && (
+            <div className="space-y-6 text-center py-4 md:py-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+                <Banknote className="w-8 h-8 md:w-10 md:h-10" />
+              </div>
+              <div className="space-y-2 max-w-md mx-auto">
+                <h3 className="font-bold text-lg md:text-xl text-text-light dark:text-text-dark">Pembayaran Tunai</h3>
+                <p className="text-muted text-xs md:text-sm leading-relaxed px-2">
+                  {orderType === "delivery" ? (
+                    <>Pesanan Anda akan segera kami proses. Silakan siapkan pembayaran tunai untuk diberikan kepada kurir saat pesanan tiba di alamat Anda.</>
+                  ) : orderType === "takeaway" ? (
+                    <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir saat mengambil pesanan.</>
+                  ) : (
+                    <>Pesanan Anda akan segera kami teruskan ke dapur. Pembayaran dapat Anda lakukan secara tunai di kasir setelah selesai makan.</>
+                  )}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-4 border-t border-border-light/60 dark:border-border-dark/60">
+                <button 
+                  onClick={() => setShowPaymentModal(false)} 
+                  className="w-full sm:flex-1 order-2 sm:order-1 py-2.5 sm:py-3 px-4 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm md:text-base"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => handleCheckoutClick()} 
+                  disabled={loading} 
+                  className="w-full sm:flex-1 order-1 sm:order-2 py-2.5 sm:py-3 px-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all text-xs sm:text-sm md:text-base disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> Konfirmasi Pesanan</>}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </BaseModal>
+
+      <BaseModal isOpen={showTopUpModal} onClose={() => setShowTopUpModal(false)} size="md" noPadding={true} showCloseButton={false}>
+        <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
+          </h3>
+          <button type="button" onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
+
+        <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
+          <div>
+            <label htmlFor="checkoutTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
+              <input 
+                id="checkoutTopUpAmountInput"
+                type="number" 
+                required 
+                min={10000}
+                value={topUpAmount} 
+                onChange={e => setTopUpAmount(e.target.value)} 
+                placeholder="Contoh: 50000" 
+                title="Nominal Isi Saldo (Rp)"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+              />
+            </div>
+            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp 10.000</span>
+          </div>
+
+          {/* Quick Nominal Selectors */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Cepat</span>
+            <div className="grid grid-cols-3 gap-2">
+              {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
+                <button
+                  key={nom}
+                  type="button"
+                  onClick={() => setTopUpAmount(String(nom))}
+                  className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                    topUpAmount === String(nom)
+                      ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
+                      : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
+                  }`}
+                >
+                  Rp {nom.toLocaleString('id-ID').replace(',00', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submittingTopUp}
+            className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+          >
+            {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+          </button>
+        </form>
+      </BaseModal>
 
       {/* 4. PIN Payment Modal */}
-      <AnimatePresence>
-        {showPinPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setShowPinPaymentModal(false)} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
-            />
-            <motion.div 
-              initial={{ scale: 0.9, y: 30 }} 
-              animate={{ scale: 1, y: 0 }} 
-              exit={{ scale: 0.9, y: 30 }} 
-              className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10"
-            >
-              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-primary" /> PIN Transaksi
-                </h3>
-                <button onClick={() => setShowPinPaymentModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
+      <BaseModal isOpen={showPinPaymentModal} onClose={() => setShowPinPaymentModal(false)} size="sm" noPadding={true} showCloseButton={false}>
+        <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" /> PIN Transaksi
+          </h3>
+          <button type="button" onClick={() => setShowPinPaymentModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
 
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleCheckoutClick(paymentPin);
-                }} 
-                className="p-6 space-y-4"
-              >
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
-                    <Wallet className="w-6 h-6" />
-                  </div>
-                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Masukkan PIN Dompetku</h4>
-                  <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed">
-                    Demi keamanan, silakan masukkan 6 digit PIN transaksi Dompetku Anda untuk menyelesaikan pembayaran sebesar <strong>Rp {totalAmount.toLocaleString("id-ID")}</strong>.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <input
-                    id="paymentPinInput"
-                    type="password"
-                    maxLength={6}
-                    required
-                    autoFocus
-                    value={paymentPin}
-                    onChange={e => setPaymentPin(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Masukkan 6 Digit PIN"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-3.5 text-lg outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold text-text-light dark:text-text-dark"
-                  />
-                  {pinRemainingAttempts !== null && (
-                    <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || paymentPin.length !== 6}
-                  className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
-                </button>
-              </form>
-            </motion.div>
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCheckoutClick(paymentPin);
+          }} 
+          className="p-6 space-y-4"
+        >
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Masukkan PIN Dompetku</h4>
+            <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed">
+              Demi keamanan, silakan masukkan 6 digit PIN transaksi Dompetku Anda untuk menyelesaikan pembayaran sebesar <strong>Rp {totalAmount.toLocaleString("id-ID")}</strong>.
+            </p>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="space-y-1.5">
+            <input
+              id="paymentPinInput"
+              type="password"
+              maxLength={6}
+              required
+              autoFocus
+              value={paymentPin}
+              onChange={e => setPaymentPin(e.target.value.replace(/\D/g, ""))}
+              placeholder="Masukkan 6 Digit PIN"
+              className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-3.5 text-lg outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold text-text-light dark:text-text-dark"
+            />
+            {pinRemainingAttempts !== null && (
+              <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
+              </span>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || paymentPin.length !== 6}
+            className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
+          </button>
+        </form>
+      </BaseModal>
     </div>
   );
 }

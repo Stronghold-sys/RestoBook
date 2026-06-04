@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 import { formatToIndonesianDate } from "@/utils/operationalHours";
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -1240,34 +1241,36 @@ export default function AdminSettingsPage() {
         {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> Menyimpan...</> : <><Save className="w-5 h-5" /> Simpan Semua Konfigurasi</>}
       </motion.button>
 
-      {/* ═══════════════════════════════════════ */}
       {/* CROP MODAL */}
-      {/* ═══════════════════════════════════════ */}
-      <AnimatePresence>
-        {showCropModal && upImg && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl max-w-lg w-full">
-              <h3 className="text-xl font-black mb-4 text-gray-900 dark:text-white uppercase tracking-wider">Potong {cropTarget === 'favicon' ? 'Favicon' : 'Logo'}</h3>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] p-4">
-                <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)} aspect={cropTarget === 'favicon' ? 1 : undefined}>
-                  <img src={upImg} onLoad={(e) => onLoad(e.currentTarget)} alt="Upload Preview" style={{ maxHeight: '60vh' }} />
-                </ReactCrop>
-              </div>
-              <p className="text-xs text-muted mt-3 text-center">
-                {cropTarget === 'favicon' ? "Gunakan aspek rasio 1:1 agar favicon terlihat jelas di tab browser." : "Gunakan crop box untuk menentukan batas logo Anda."}
-              </p>
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowCropModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
-                  Batal
-                </button>
-                <button onClick={handleUploadCroppedLogo} className="px-5 py-2.5 rounded-xl font-black text-sm text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
-                  <Upload className="w-4 h-4" /> Unggah & Simpan
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showCropModal && !!upImg}
+        onClose={() => setShowCropModal(false)}
+        size="lg"
+        showCloseButton={false}
+        noPadding={true}
+      >
+        <div className="bg-white dark:bg-gray-900 text-text-light dark:text-text-dark p-6 space-y-4">
+          <h3 className="text-xl font-black mb-4 text-gray-900 dark:text-white uppercase tracking-wider">Potong {cropTarget === 'favicon' ? 'Favicon' : 'Logo'}</h3>
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] p-4">
+            {upImg && (
+              <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)} aspect={cropTarget === 'favicon' ? 1 : undefined}>
+                <img src={upImg} onLoad={(e) => onLoad(e.currentTarget)} alt="Upload Preview" style={{ maxHeight: '60vh' }} />
+              </ReactCrop>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+          <p className="text-xs text-muted mt-3 text-center">
+            {cropTarget === 'favicon' ? "Gunakan aspek rasio 1:1 agar favicon terlihat jelas di tab browser." : "Gunakan crop box untuk menentukan batas logo Anda."}
+          </p>
+          <div className="flex justify-end gap-3 mt-6">
+            <button onClick={() => setShowCropModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+              Batal
+            </button>
+            <button onClick={handleUploadCroppedLogo} className="px-5 py-2.5 rounded-xl font-black text-sm text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
+              <Upload className="w-4 h-4" /> Unggah & Simpan
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

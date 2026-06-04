@@ -17,6 +17,7 @@ import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 import OrderCountdown from "@/components/OrderCountdown";
 import { useAudioStore } from "@/store/useAudioStore";
+import BaseModal from "@/components/BaseModal";
 
 declare const google: any;
 
@@ -1652,314 +1653,306 @@ export default function OrderTrackingPage() {
         </div>
       </div>
 
-      {/* ================== MODALS ZONE ================== */}
-
-      {/* 1. CANCEL CONFIRM MODAL */}
-      <AnimatePresence>
-        {showCancelConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCancelConfirm(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800">
-              <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-red-100"><ShieldAlert className="w-8 h-8 text-red-500" /></div>
-              <h3 className="font-black text-xl text-gray-900 dark:text-white mb-2">Batalkan Pesanan?</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">Tindakan ini tidak dapat dibatalkan. Lanjutkan membatalkan pesanan Anda?</p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Kembali</button>
-                <button onClick={handleCancelOrder} disabled={cancelling} className="flex-1 py-3.5 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center hover:bg-red-600">
-                  {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Batalkan"}
-                </button>
-              </div>
-            </motion.div>
+      {/* ================== MODALS ZONE ================== */}      {/* 1. CANCEL CONFIRM MODAL */}
+      <BaseModal
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="space-y-6 text-center">
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 mx-auto rounded-2xl flex items-center justify-center border border-red-100 dark:border-red-900/50"><ShieldAlert className="w-8 h-8 text-red-500" /></div>
+          <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Batalkan Pesanan?</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Tindakan ini tidak dapat dibatalkan. Lanjutkan membatalkan pesanan Anda?</p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Kembali</button>
+            <button onClick={handleCancelOrder} disabled={cancelling} className="flex-1 py-3.5 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center hover:bg-red-600">
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Batalkan"}
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      </BaseModal>
 
       {/* 2. REFUND APPLICATION MODAL */}
-      <AnimatePresence>
-        {showRefundModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRefundModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2"><RotateCcw className="w-5 h-5 text-primary" /> Pengajuan Refund</h3>
-                <button 
-                  onClick={() => setShowRefundModal(false)} 
-                  aria-label="Tutup"
-                  title="Tutup"
-                  className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto space-y-5">
-                <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 font-bold leading-relaxed flex items-start gap-3">
-                  <Info className="w-5 h-5 shrink-0" />
-                  Dana yang sudah dibayar akan diproses pengembaliannya ke pilihan tujuan di bawah.
-                </p>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Metode Pengembalian Dana</label>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <button type="button" onClick={() => setRefundMethod("wallet")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
-                      <Wallet className="w-5 h-5" /><span className="font-bold text-xs">Saldo Dompet</span>
-                    </button>
-                    <button type="button" onClick={() => setRefundMethod("bank")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "bank" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
-                      <CreditCard className="w-5 h-5" /><span className="font-bold text-xs">Rekening Bank</span>
-                    </button>
-                  </div>
-                </div>
-
-                {refundMethod === "wallet" ? (
-                  <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3.5 rounded-xl border border-green-200 dark:border-green-800 font-bold leading-relaxed flex items-start gap-2.5">
-                    <Wallet className="w-4 h-4 shrink-0 mt-0.5" />
-                    Dana refund akan langsung dikreditkan ke Saldo Dompet Anda secara otomatis setelah pengajuan disetujui admin.
-                  </p>
-                ) : (
-                  <>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bank / Platform E-Wallet</label>
-                      <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Contoh: BCA / DANA / OVO" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nomor Rekening / Nomor HP</label>
-                      <input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Nomor akun/nomor HP yang terdaftar" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Atas Nama Pemilik Akun</label>
-                      <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} placeholder="Nama lengkap pemilik rekening" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
-                    </div>
-                  </>
-                )}
-                <div>
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Pembatalan</label>
-                  <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Contoh: Menunggu terlalu lama karena pesanan tidak kunjung diproses atau alasan lainnya..." className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />
-                </div>
-              </div>
-              <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
-                <button onClick={handleSubmitRefund} disabled={submittingRefund} className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 transition-all uppercase">
-                  {submittingRefund ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Pengajuan Refund"}
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+            <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2"><RotateCcw className="w-5 h-5 text-primary" /> Pengajuan Refund</h3>
+            <button 
+              onClick={() => setShowRefundModal(false)} 
+              aria-label="Tutup"
+              title="Tutup"
+              className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all text-muted"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+          <div className="p-6 space-y-5">
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 font-bold leading-relaxed flex items-start gap-3">
+              <Info className="w-5 h-5 shrink-0" />
+              Dana yang sudah dibayar akan diproses pengembaliannya ke pilihan tujuan di bawah.
+            </p>
+            <div>
+              <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Metode Pengembalian Dana</label>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <button type="button" onClick={() => setRefundMethod("wallet")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "wallet" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
+                  <Wallet className="w-5 h-5" /><span className="font-bold text-xs">Saldo Dompet</span>
+                </button>
+                <button type="button" onClick={() => setRefundMethod("bank")} className={`py-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${refundMethod === "bank" ? "border-primary bg-primary/5 text-primary" : "border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"}`}>
+                  <CreditCard className="w-5 h-5" /><span className="font-bold text-xs">Rekening Bank</span>
+                </button>
+              </div>
+            </div>
+
+            {refundMethod === "wallet" ? (
+              <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3.5 rounded-xl border border-green-200 dark:border-green-800 font-bold leading-relaxed flex items-start gap-2.5">
+                <Wallet className="w-4 h-4 shrink-0 mt-0.5" />
+                Dana refund akan langsung dikreditkan ke Saldo Dompet Anda secara otomatis setelah pengajuan disetujui admin.
+              </p>
+            ) : (
+              <>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Bank / Platform E-Wallet</label>
+                  <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Contoh: BCA / DANA / OVO" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nomor Rekening / Nomor HP</label>
+                  <input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Nomor akun/nomor HP yang terdaftar" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Atas Nama Pemilik Akun</label>
+                  <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} placeholder="Nama lengkap pemilik rekening" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" />
+                </div>
+              </>
+            )}
+            <div>
+              <label className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Alasan Pembatalan</label>
+              <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} placeholder="Contoh: Menunggu terlalu lama karena pesanan tidak kunjung diproses atau alasan lainnya..." className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-medium text-text-light dark:text-text-dark" />
+            </div>
+          </div>
+          <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+            <button onClick={handleSubmitRefund} disabled={submittingRefund} className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 transition-all uppercase">
+              {submittingRefund ? <Loader2 className="w-5 h-5 animate-spin" /> : "Kirim Pengajuan Refund"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* 3. REVIEW MODAL */}
-      <AnimatePresence>
-        {showReviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReviewModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 50 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden text-center border border-gray-200 dark:border-gray-800">
-               <div className="p-10 bg-gradient-to-br from-orange-400 via-primary to-red-600 text-white flex flex-col items-center relative overflow-hidden">
-                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent animate-pulse" />
-                 <Star className="w-16 h-16 mb-4 fill-yellow-300 text-yellow-300 drop-shadow-[0_5px_15px_rgba(253,224,71,0.5)] relative z-10" />
-                 <h3 className="text-3xl font-black uppercase tracking-tight relative z-10">Berikan Ulasan</h3>
-                 <p className="text-white/90 text-sm mt-2 font-bold relative z-10">Kepuasan Anda adalah prioritas utama kami!</p>
-               </div>
-               <div className="p-8 space-y-6">
-                 <div className="flex justify-center gap-3">
-                   {[1, 2, 3, 4, 5].map(star => (
-                     <button 
-                       key={star} 
-                       onClick={() => setReviewRating(star)} 
-                       aria-label={`Beri Bintang ${star}`}
-                       title={`Beri Bintang ${star}`}
-                       className="transition-all hover:scale-125 transform active:scale-95"
-                     >
-                       <Star className={`w-12 h-12 ${reviewRating >= star ? "fill-yellow-400 text-yellow-400 drop-shadow-sm" : "text-gray-200 dark:text-gray-700 fill-gray-50 dark:fill-gray-800"}`} />
-                     </button>
-                   ))}
-                 </div>
-                 <div className="text-center">
-                    <span className="px-4 py-1 bg-orange-50 dark:bg-orange-900/20 text-primary font-black text-sm rounded-full border border-orange-100 dark:border-orange-800 uppercase tracking-widest">
-                        {reviewRating === 5 ? "Luar Biasa! " : reviewRating === 4 ? "Sangat Enak! " : reviewRating === 3 ? "Biasa Saja " : reviewRating === 2 ? "Kurang Memuaskan " : "Sangat Buruk "}
-                    </span>
-                 </div>
-                 <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={3} placeholder="Tulis pengalaman bersantap Anda di sini (Rasa, pelayanan, porsi, dll)..." className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-4 text-sm outline-none focus:border-primary text-left font-medium text-text-light dark:text-text-dark" />
-                 <div className="flex gap-3 pt-2">
-                    <button onClick={() => setShowReviewModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Nanti</button>
-                    <button onClick={handleSendReview} disabled={submittingReview} className="flex-[2] py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 hover:bg-primary-hover transition-all">
-                      {submittingReview ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Kirim Ulasan"}
-                    </button>
-                 </div>
-               </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col text-center">
+          <div className="p-10 bg-gradient-to-br from-orange-400 via-primary to-red-600 text-white flex flex-col items-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent animate-pulse" />
+            <Star className="w-16 h-16 mb-4 fill-yellow-300 text-yellow-300 drop-shadow-[0_5px_15px_rgba(253,224,71,0.5)] relative z-10" />
+            <h3 className="text-3xl font-black uppercase tracking-tight relative z-10">Berikan Ulasan</h3>
+            <p className="text-white/90 text-sm mt-2 font-bold relative z-10">Kepuasan Anda adalah prioritas utama kami!</p>
           </div>
-        )}
-      </AnimatePresence>
+          <div className="p-8 space-y-6">
+            <div className="flex justify-center gap-3">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button 
+                  key={star} 
+                  onClick={() => setReviewRating(star)} 
+                  aria-label={`Beri Bintang ${star}`}
+                  title={`Beri Bintang ${star}`}
+                  className="transition-all hover:scale-125 transform active:scale-95"
+                >
+                  <Star className={`w-12 h-12 ${reviewRating >= star ? "fill-yellow-400 text-yellow-400 drop-shadow-sm" : "text-gray-200 dark:text-gray-700 fill-gray-50 dark:fill-gray-800"}`} />
+                </button>
+              ))}
+            </div>
+            <div className="text-center">
+               <span className="px-4 py-1 bg-orange-50 dark:bg-orange-900/20 text-primary font-black text-sm rounded-full border border-orange-100 dark:border-orange-800 uppercase tracking-widest">
+                   {reviewRating === 5 ? "Luar Biasa! " : reviewRating === 4 ? "Sangat Enak! " : reviewRating === 3 ? "Biasa Saja " : reviewRating === 2 ? "Kurang Memuaskan " : "Sangat Buruk "}
+               </span>
+            </div>
+            <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={3} placeholder="Tulis pengalaman bersantap Anda di sini (Rasa, pelayanan, porsi, dll)..." className="w-full bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-4 text-sm outline-none focus:border-primary text-left font-medium text-text-light dark:text-text-dark" />
+            <div className="flex gap-3 pt-2">
+               <button onClick={() => setShowReviewModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Nanti</button>
+               <button onClick={handleSendReview} disabled={submittingReview} className="flex-[2] py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 hover:bg-primary-hover transition-all">
+                 {submittingReview ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Kirim Ulasan"}
+               </button>
+            </div>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* 4. RECEIPT OVERLAY MODAL */}
-      <AnimatePresence>
-        {showReceipt && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReceipt(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                   <h4 className="font-black text-xs uppercase tracking-widest text-gray-500">Pratinjau Kwitansi</h4>
-                   <button 
-                      onClick={() => setShowReceipt(false)} 
-                      aria-label="Tutup Pratinjau"
-                      title="Tutup"
-                      className="p-2 text-muted hover:bg-gray-200 rounded-xl"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                </div>
-                <div className="flex-1 overflow-y-auto bg-gray-100 p-4 flex justify-center items-start">
-                   <Receipt ref={receiptRef} order={order} orderItems={orderItems.map((i: any) => {
-                     const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-                     return {
-                       name: i.menu_items?.name || i.name,
-                       price: resolvedPrice,
-                       quantity: i.quantity,
-                       subtotal: i.subtotal || (resolvedPrice * i.quantity)
-                     };
-                   })} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
-                </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="bg-white text-gray-900 rounded-[2rem] overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+             <h4 className="font-black text-xs uppercase tracking-widest text-gray-500">Pratinjau Kwitansi</h4>
+             <button 
+                onClick={() => setShowReceipt(false)} 
+                aria-label="Tutup Pratinjau"
+                title="Tutup"
+                className="p-2 text-muted hover:bg-gray-200 rounded-xl"
+              >
+                <X className="w-4 h-4" />
+              </button>
           </div>
-        )}
-      </AnimatePresence>
+          <div className="p-4 bg-gray-100 flex justify-center items-start">
+             <Receipt ref={receiptRef} order={order} orderItems={orderItems.map((i: any) => {
+               const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+               return {
+                 name: i.menu_items?.name || i.name,
+                 price: resolvedPrice,
+                 quantity: i.quantity,
+                 subtotal: i.subtotal || (resolvedPrice * i.quantity)
+               };
+             })} customerName={customerName || "Pelanggan"} cashierName={cashierName || undefined} />
+          </div>
+        </div>
+      </BaseModal>
 
       {/* 5. TOP UP MODAL */}
-      <AnimatePresence>
-        {showTopUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTopUpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10">
-              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
-                </h3>
-                <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-150 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
-                <div>
-                  <label htmlFor="orderTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
-                    <input 
-                      id="orderTopUpAmountInput"
-                      type="number" 
-                      required 
-                      min={10000}
-                      value={topUpAmount} 
-                      onChange={e => setTopUpAmount(e.target.value)} 
-                      placeholder="Contoh: 50000" 
-                      title="Nominal Isi Saldo (Rp)"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                    />
-                  </div>
-                  <span className="text-[9px] text-muted font-medium mt-1 block font-bold">Minimal Rp 10.000</span>
-                </div>
-
-                {/* Quick Nominal Selectors */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block font-bold">Pilih Cepat</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
-                      <button
-                        key={nom}
-                        type="button"
-                        onClick={() => setTopUpAmount(String(nom))}
-                        className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                          topUpAmount === String(nom)
-                            ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
-                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
-                        }`}
-                      >
-                        Rp {nom.toLocaleString('id-ID').replace(',00', '')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingTopUp}
-                  className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
-                </button>
-              </form>
-            </motion.div>
+      <BaseModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col">
+          <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+            <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
+            </h3>
+            <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
           </div>
-        )}
-      </AnimatePresence>
+
+          <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
+            <div>
+              <label htmlFor="orderTopUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
+                <input 
+                  id="orderTopUpAmountInput"
+                  type="number" 
+                  required 
+                  min={10000}
+                  value={topUpAmount} 
+                  onChange={e => setTopUpAmount(e.target.value)} 
+                  placeholder="Contoh: 50000" 
+                  title="Nominal Isi Saldo (Rp)"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+                />
+              </div>
+              <span className="text-[9px] text-muted font-medium mt-1 block font-bold">Minimal Rp 10.000</span>
+            </div>
+
+            {/* Quick Nominal Selectors */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase text-muted tracking-widest block font-bold">Pilih Cepat</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
+                  <button
+                    key={nom}
+                    type="button"
+                    onClick={() => setTopUpAmount(String(nom))}
+                    className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                      topUpAmount === String(nom)
+                        ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
+                        : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
+                    }`}
+                  >
+                    Rp {nom.toLocaleString('id-ID').replace(',00', '')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingTopUp}
+              className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+            >
+              {submittingTopUp ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+            </button>
+          </form>
+        </div>
+      </BaseModal>
 
       {/* 6. PIN Payment Modal */}
-      <AnimatePresence>
-        {showPinPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setShowPinPaymentModal(false)} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
-            />
-            <motion.div 
-              initial={{ scale: 0.9, y: 30 }} 
-              animate={{ scale: 1, y: 0 }} 
-              exit={{ scale: 0.9, y: 30 }} 
-              className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border-light dark:border-border-dark z-10"
-            >
-              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-primary" /> PIN Transaksi
-                </h3>
-                <button onClick={() => setShowPinPaymentModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
-
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handlePayViaWallet(paymentPin);
-                }} 
-                className="p-6 space-y-4"
-              >
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
-                    <Wallet className="w-6 h-6" />
-                  </div>
-                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Masukkan PIN Dompetku</h4>
-                  <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed">
-                    Demi keamanan, silakan masukkan 6 digit PIN transaksi Dompetku Anda untuk menyelesaikan pembayaran sebesar <strong>Rp {Number(order?.total_amount || 0).toLocaleString("id-ID")}</strong>.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <input
-                    id="orderPaymentPinInput"
-                    type="password"
-                    maxLength={6}
-                    required
-                    autoFocus
-                    value={paymentPin}
-                    onChange={e => setPaymentPin(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Masukkan 6 Digit PIN"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-3.5 text-lg outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold text-text-light dark:text-text-dark"
-                  />
-                  {pinRemainingAttempts !== null && (
-                    <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={payingViaWallet || paymentPin.length !== 6}
-                  className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {payingViaWallet ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
-                </button>
-              </form>
-            </motion.div>
+      <BaseModal
+        isOpen={showPinPaymentModal}
+        onClose={() => setShowPinPaymentModal(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col">
+          <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+            <h3 className="font-black text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" /> PIN Transaksi
+            </h3>
+            <button onClick={() => setShowPinPaymentModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
           </div>
-        )}
-      </AnimatePresence>
+
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handlePayViaWallet(paymentPin);
+            }} 
+            className="p-6 space-y-4"
+          >
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+                <Wallet className="w-6 h-6" />
+              </div>
+              <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Masukkan PIN Dompetku</h4>
+              <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed">
+                Demi keamanan, silakan masukkan 6 digit PIN transaksi Dompetku Anda untuk menyelesaikan pembayaran sebesar <strong>Rp {Number(order?.total_amount || 0).toLocaleString("id-ID")}</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <input
+                id="orderPaymentPinInput"
+                type="password"
+                maxLength={6}
+                required
+                autoFocus
+                value={paymentPin}
+                onChange={e => setPaymentPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="Masukkan 6 Digit PIN"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-3.5 text-lg outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold text-text-light dark:text-text-dark"
+              />
+              {pinRemainingAttempts !== null && (
+                <span className="text-[10px] text-rose-500 font-extrabold text-center block mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 inline-block mr-1.5 shrink-0 align-text-bottom" /> Sisa percobaan PIN: {pinRemainingAttempts} kali lagi.
+                </span>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={payingViaWallet || paymentPin.length !== 6}
+              className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+            >
+              {payingViaWallet ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
+            </button>
+          </form>
+        </div>
+      </BaseModal>
 
       {/* Sliding Chat Drawer Sisi Kanan */}
       <AnimatePresence>

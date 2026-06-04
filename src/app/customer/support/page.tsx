@@ -15,6 +15,7 @@ import {
   Paperclip, Camera, Upload, Trash2, Loader2, Search, HelpCircle, PhoneCall, Mail, Clock4
 } from "lucide-react";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
+import BaseModal from "@/components/BaseModal";
 
 interface Ticket {
   id: string;
@@ -1155,248 +1156,240 @@ export default function CustomerSupportPage() {
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Manual Ticket Creation Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4"
+          {/* Manual Ticket Creation Modal */}
+      <BaseModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        size="lg"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="flex flex-col">
+          <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark p-6 pb-4 bg-gray-50/50 dark:bg-gray-800/30">
+            <h3 className="text-xl font-bold text-text-light dark:text-text-dark">Formulir Pengaduan Baru</h3>
+            <button
+              onClick={() => setShowCreateModal(false)}
+              title="Tutup formulir"
+              aria-label="Tutup"
+              className="text-muted hover:text-red-500 transition-colors"
             >
-              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
-                <h3 className="text-xl font-bold text-text-light dark:text-text-dark">Formulir Pengaduan Baru</h3>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  title="Tutup formulir"
-                  aria-label="Tutup"
-                  className="text-muted hover:text-red-500 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
+              <XCircle className="w-6 h-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreateTicket} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted uppercase">Judul Pengaduan</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masukkan judul singkat keluhan"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
 
-              <form onSubmit={handleCreateTicket} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Judul Pengaduan</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Masukkan judul singkat keluhan"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+              <div className="space-y-1.5">
+                <label htmlFor="formCategory" className="text-xs font-bold text-muted uppercase">Kategori Keluhan</label>
+                <select
+                  id="formCategory"
+                  title="Kategori Keluhan"
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="perubahan email">Perubahan Email</option>
+                  <option value="perubahan nama">Perubahan Nama</option>
+                  <option value="perubahan nomor telepon">Perubahan Nomor Telepon</option>
+                  <option value="perubahan alamat">Perubahan Alamat</option>
+                  <option value="koreksi data profil">Koreksi Data Profil</option>
+                  <option value="verifikasi ulang">Verifikasi Ulang</option>
+                  <option value="bantuan login">Bantuan Login</option>
+                  <option value="pembayaran">Masalah Pembayaran</option>
+                  <option value="pesanan">Masalah Pesanan</option>
+                  <option value="reward">Masalah Reward / Poin</option>
+                  <option value="lainnya">Lainnya</option>
+                </select>
+              </div>
+            </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="formCategory" className="text-xs font-bold text-muted uppercase">Kategori Keluhan</label>
-                    <select
-                      id="formCategory"
-                      title="Kategori Keluhan"
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="perubahan email">Perubahan Email</option>
-                      <option value="perubahan nama">Perubahan Nama</option>
-                      <option value="perubahan nomor telepon">Perubahan Nomor Telepon</option>
-                      <option value="perubahan alamat">Perubahan Alamat</option>
-                      <option value="koreksi data profil">Koreksi Data Profil</option>
-                      <option value="verifikasi ulang">Verifikasi Ulang</option>
-                      <option value="bantuan login">Bantuan Login</option>
-                      <option value="pembayaran">Masalah Pembayaran</option>
-                      <option value="pesanan">Masalah Pesanan</option>
-                      <option value="reward">Masalah Reward / Poin</option>
-                      <option value="lainnya">Lainnya</option>
-                    </select>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted uppercase">Subkategori (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Dompetku, Double Cash"
+                  value={formSubcategory}
+                  onChange={(e) => setFormSubcategory(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Subkategori (Opsional)</label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Dompetku, Double Cash"
-                      value={formSubcategory}
-                      onChange={(e) => setFormSubcategory(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+              <div className="space-y-1.5">
+                <label htmlFor="formUrgency" className="text-xs font-bold text-muted uppercase">Tingkat Urgensi</label>
+                <select
+                  id="formUrgency"
+                  title="Tingkat Urgensi"
+                  value={formUrgency}
+                  onChange={(e: any) => setFormUrgency(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="low">Rendah</option>
+                  <option value="medium">Sedang</option>
+                  <option value="high">Tinggi</option>
+                  <option value="urgent">Mendesak</option>
+                </select>
+              </div>
+            </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="formUrgency" className="text-xs font-bold text-muted uppercase">Tingkat Urgensi</label>
-                    <select
-                      id="formUrgency"
-                      title="Tingkat Urgensi"
-                      value={formUrgency}
-                      onChange={(e: any) => setFormUrgency(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="low">Rendah</option>
-                      <option value="medium">Sedang</option>
-                      <option value="high">Tinggi</option>
-                      <option value="urgent">Mendesak</option>
-                    </select>
-                  </div>
-                </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted uppercase">Isi Keluhan / Keterangan</label>
+              <textarea
+                required
+                rows={4}
+                placeholder="Jelaskan kendala Anda secara terperinci agar kami dapat membantu lebih cepat"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+            </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted uppercase">Isi Keluhan / Keterangan</label>
-                  <textarea
-                    required
-                    rows={4}
-                    placeholder="Jelaskan kendala Anda secara terperinci agar kami dapat membantu lebih cepat"
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted uppercase">Kontak yang Bisa Dihubungi</label>
+                <input
+                  type="text"
+                  placeholder="Nomor WA / Telepon aktif"
+                  value={formContactInfo}
+                  onChange={(e) => setFormContactInfo(e.target.value)}
+                  className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Kontak yang Bisa Dihubungi</label>
-                    <input
-                      type="text"
-                      placeholder="Nomor WA / Telepon aktif"
-                      value={formContactInfo}
-                      onChange={(e) => setFormContactInfo(e.target.value)}
-                      className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4.5 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Lampiran Bukti (Opsional)</label>
-                    <div className="flex flex-col gap-2">
-                      {formAttachmentUrl ? (
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
-                          {formAttachmentUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)/i) ? (
-                            <img src={formAttachmentUrl} alt="Preview Bukti" className="w-12 h-12 object-cover rounded-lg border border-border-light dark:border-border-dark" />
-                          ) : (
-                            <FileText className="w-8 h-8 text-primary" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-text-light dark:text-text-dark truncate">Bukti Terunggah</p>
-                            <a href={formAttachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline block truncate">{formAttachmentUrl}</a>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormAttachmentUrl('')}
-                            className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-lg transition-all"
-                            title="Hapus Bukti"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted uppercase">Lampiran Bukti (Opsional)</label>
+                <div className="flex flex-col gap-2">
+                  {formAttachmentUrl ? (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark">
+                      {formAttachmentUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)/i) ? (
+                        <img src={formAttachmentUrl} alt="Preview Bukti" className="w-12 h-12 object-cover rounded-lg border border-border-light dark:border-border-dark" />
                       ) : (
-                        <label className={`w-full py-4 border-2 border-dashed border-border-light dark:border-border-dark hover:border-primary/50 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${uploadingFormFile ? 'opacity-50 pointer-events-none' : ''}`}>
-                          {uploadingFormFile ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                          ) : (
-                            <Upload className="w-6 h-6 text-muted" />
-                          )}
-                          <span className="text-xs font-black text-text-light dark:text-text-dark uppercase tracking-wider">
-                            {uploadingFormFile ? 'Mengunggah Berkas...' : 'Pilih Berkas Bukti'}
-                          </span>
-                          <span className="text-[10px] text-muted text-center max-w-xs px-4">
-                            Lampirkan berkas, foto, atau screenshot bukti kendala keluhan Anda (Maks. 5MB)
-                          </span>
-                          <input
-                            type="file"
-                            disabled={uploadingFormFile}
-                            className="hidden"
-                            onChange={handleFormFileUpload}
-                          />
-                        </label>
+                        <FileText className="w-8 h-8 text-primary" />
                       )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-text-light dark:text-text-dark truncate">Bukti Terunggah</p>
+                        <a href={formAttachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline block truncate">{formAttachmentUrl}</a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormAttachmentUrl('')}
+                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-lg transition-all"
+                        title="Hapus Bukti"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <label className={`w-full py-4 border-2 border-dashed border-border-light dark:border-border-dark hover:border-primary/50 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${uploadingFormFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {uploadingFormFile ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="w-6 h-6 text-muted" />
+                      )}
+                      <span className="text-xs font-black text-text-light dark:text-text-dark uppercase tracking-wider">
+                        {uploadingFormFile ? 'Mengunggah Berkas...' : 'Pilih Berkas Bukti'}
+                      </span>
+                      <span className="text-[10px] text-muted text-center max-w-xs px-4">
+                        Lampirkan berkas, foto, atau screenshot bukti kendala keluhan Anda (Maks. 5MB)
+                      </span>
+                      <input
+                        type="file"
+                        disabled={uploadingFormFile}
+                        className="hidden"
+                        onChange={handleFormFileUpload}
+                      />
+                    </label>
+                  )}
                 </div>
+              </div>
+            </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark text-muted font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitLoading}
-                    className="bg-primary hover:bg-primary-hover disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all"
-                  >
-                    {submitLoading ? "Mengirim..." : "Kirim Pengaduan"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark text-muted font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={submitLoading}
+                className="bg-primary hover:bg-primary-hover disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all"
+              >
+                {submitLoading ? "Mengirim..." : "Kirim Pengaduan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </BaseModal>
 
       {/* 2. CANCEL TICKET MODAL */}
-      <AnimatePresence>
-        {showCancelModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+      <BaseModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        size="md"
+        showCloseButton={false}
+      >
+        <div className="space-y-6">
+          <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
+            <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Batalkan Tiket Pengaduan</h3>
+            <button
+              onClick={() => setShowCancelModal(false)}
+              title="Tutup formulir"
+              aria-label="Tutup"
+              className="text-muted hover:text-red-500 transition-colors"
             >
-              <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-3">
-                <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Batalkan Tiket Pengaduan</h3>
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  title="Tutup formulir"
-                  aria-label="Tutup"
-                  className="text-muted hover:text-red-500 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted uppercase">Alasan Pembatalan</label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="Masukkan alasan Anda membatalkan tiket pengaduan ini..."
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
-                  <button
-                    type="button"
-                    onClick={() => setShowCancelModal(false)}
-                    className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark text-muted font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleCancelTicket}
-                    disabled={cancelLoading || !cancelReason.trim()}
-                    className="disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all bg-red-600 hover:bg-red-700"
-                  >
-                    {cancelLoading ? "Memproses..." : "Ya, Batalkan Tiket"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+              <XCircle className="w-6 h-6" />
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted uppercase">Alasan Pembatalan</label>
+              <textarea
+                required
+                rows={3}
+                placeholder="Masukkan alasan Anda membatalkan tiket pengaduan ini..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-2.5 text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-border-light dark:border-border-dark">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark text-muted font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCancelTicket}
+                disabled={cancelLoading || !cancelReason.trim()}
+                className="disabled:bg-gray-250 dark:disabled:bg-gray-800 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition-all bg-red-600 hover:bg-red-700"
+              >
+                {cancelLoading ? "Memproses..." : "Ya, Batalkan Tiket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </BaseModal>
 
       <CameraCaptureModal
         isOpen={isCameraModalOpen}

@@ -13,6 +13,7 @@ import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BaseModal from "@/components/BaseModal";
 
 interface Transaction {
   id: string;
@@ -1018,391 +1019,381 @@ export default function CustomerWalletPage() {
       )}
 
       {/* 1. Help Modal */}
-      <AnimatePresence>
-        {showHelpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowHelpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-10">
-              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-primary" /> Informasi & Bantuan
-                </h3>
-                <button onClick={() => setShowHelpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
-              <div className="p-6 space-y-4 text-sm text-muted leading-relaxed">
-                <div>
-                  <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Apa itu Dompetku?</h4>
-                  <p>Dompetku adalah e-wallet internal yang memungkinkan Anda menyimpan saldo digital di RestoBook guna melakukan checkout pesanan atau pembayaran deposit reservasi dengan sangat cepat tanpa perlu mengulang pembayaran di luar.</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Metode Top Up Pembayaran</h4>
-                  <p>Top Up didukung penuh secara realtime dengan Integrasi Gerbang Pembayaran Resmi. Anda bisa menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), E-Wallet (DANA, OVO, ShopeePay), dan Gerai Retail terdekat (Indomaret, Alfamart).</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Ketentuan Top Up</h4>
-                  <p>Minimal isi saldo sekali transaksi adalah Rp {settings.minTopup.toLocaleString('id-ID')} dan maksimal sebesar Rp {settings.maxTopup.toLocaleString('id-ID')}.</p>
-                </div>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-primary" /> Informasi & Bantuan
+          </h3>
+          <button onClick={() => setShowHelpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
+        <div className="p-6 space-y-4 text-sm text-muted leading-relaxed">
+          <div>
+            <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Apa itu Dompetku?</h4>
+            <p>Dompetku adalah e-wallet internal yang memungkinkan Anda menyimpan saldo digital di RestoBook guna melakukan checkout pesanan atau pembayaran deposit reservasi dengan sangat cepat tanpa perlu mengulang pembayaran di luar.</p>
           </div>
-        )}
-      </AnimatePresence>
+          <div>
+            <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Metode Top Up Pembayaran</h4>
+            <p>Top Up didukung penuh secara realtime dengan Integrasi Gerbang Pembayaran Resmi. Anda bisa menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), E-Wallet (DANA, OVO, ShopeePay), dan Gerai Retail terdekat (Indomaret, Alfamart).</p>
+          </div>
+          <div>
+            <h4 className="font-bold text-text-light dark:text-text-dark text-xs uppercase tracking-wider mb-1">Ketentuan Top Up</h4>
+            <p>Minimal isi saldo sekali transaksi adalah Rp {settings.minTopup.toLocaleString('id-ID')} dan maksimal sebesar Rp {settings.maxTopup.toLocaleString('id-ID')}.</p>
+          </div>
+        </div>
+      </BaseModal>      {/* 2. Top Up Modal */}
+      <BaseModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+            <ArrowDownLeft className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
+          </h3>
+          <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
 
-      {/* 2. Top Up Modal */}
-      <AnimatePresence>
-        {showTopUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTopUpModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-10">
-              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                  <ArrowDownLeft className="w-5 h-5 text-primary" /> Isi Saldo Dompetku
-                </h3>
-                <button onClick={() => setShowTopUpModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
+        <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
+          <div>
+            <label htmlFor="topUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
+              <input 
+                id="topUpAmountInput"
+                type="number" 
+                required 
+                min={settings.minTopup}
+                max={settings.maxTopup}
+                value={topUpAmount} 
+                onChange={e => setTopUpAmount(e.target.value)} 
+                placeholder="Contoh: 50000" 
+                title="Nominal Isi Saldo (Rp)"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
+              />
+            </div>
+            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} • Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
+          </div>
 
-              <form onSubmit={handleTopUpSubmit} className="p-6 space-y-5">
-                <div>
-                  <label htmlFor="topUpAmountInput" className="text-[10px] font-black uppercase text-muted tracking-widest mb-1.5 block">Nominal Isi Saldo (Rp)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted text-sm">Rp</span>
-                    <input 
-                      id="topUpAmountInput"
-                      type="number" 
-                      required 
-                      min={settings.minTopup}
-                      max={settings.maxTopup}
-                      value={topUpAmount} 
-                      onChange={e => setTopUpAmount(e.target.value)} 
-                      placeholder="Contoh: 50000" 
-                      title="Nominal Isi Saldo (Rp)"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
-                    />
-                  </div>
-                  <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} • Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
-                </div>
-
-                {/* Quick Nominal Selectors */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Cepat</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
-                      <button
-                        key={nom}
-                        type="button"
-                        onClick={() => setTopUpAmount(String(nom))}
-                        className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                          topUpAmount === String(nom)
-                            ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
-                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
-                        }`}
-                      >
-                        Rp {nom.toLocaleString('id-ID').replace(',00', '')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+          {/* Quick Nominal Selectors */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Cepat</span>
+            <div className="grid grid-cols-3 gap-2">
+              {[10000, 20000, 50000, 100000, 200000, 500000].map(nom => (
                 <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+                  key={nom}
+                  type="button"
+                  onClick={() => setTopUpAmount(String(nom))}
+                  className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                    topUpAmount === String(nom)
+                      ? "bg-primary border-primary text-white shadow-md shadow-primary/10"
+                      : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted hover:border-primary/50"
+                  }`}
                 >
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+                  Rp {nom.toLocaleString('id-ID').replace(',00', '')}
                 </button>
-              </form>
-            </motion.div>
+              ))}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
 
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+          >
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Lanjut Pembayaran"}
+          </button>
+        </form>
+      </BaseModal>
       {/* 3. Bayar Sekarang (Unpaid Transactions) Modal */}
-      <AnimatePresence>
-        {showUnpaidModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUnpaidModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-[calc(100%-2rem)] md:w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-gray-200 dark:border-gray-800 z-10">
-              <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white flex items-center gap-2">
-                  <Play className="w-5 h-5 text-primary" /> Transaksi Belum Dibayar
-                </h3>
-                <button onClick={() => setShowUnpaidModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
+      <BaseModal
+        isOpen={showUnpaidModal}
+        onClose={() => setShowUnpaidModal(false)}
+        showCloseButton={false}
+        noPadding
+        size="lg"
+      >
+        <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white flex items-center gap-2">
+            <Play className="w-5 h-5 text-primary" /> Transaksi Belum Dibayar
+          </h3>
+          <button onClick={() => setShowUnpaidModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
 
-              <div className="p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar flex-1">
-                <p className="text-xs md:text-sm text-muted leading-relaxed">
-                  Pilih transaksi yang tertunda di bawah ini untuk melanjutkan proses pembayaran secara aman.
-                </p>
+        <div className="p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar flex-1">
+          <p className="text-xs md:text-sm text-muted leading-relaxed">
+            Pilih transaksi yang tertunda di bawah ini untuk melanjutkan proses pembayaran secara aman.
+          </p>
 
-                {unpaidTransactions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <CheckCircle className="w-16 h-16 text-emerald-500 mb-4 animate-bounce" />
-                    <span className="font-extrabold text-base text-text-light dark:text-text-dark">Semua Tagihan Lunas!</span>
-                    <span className="text-xs text-muted mt-1.5">Tidak ada transaksi atau isi saldo yang menunggu pembayaran saat ini.</span>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {unpaidTransactions.map((tx) => (
-                      <div
-                        key={tx.id}
-                        onClick={() => handleUnpaidClick(tx)}
-                        className="p-4 sm:p-5 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-850/50 border border-gray-150 dark:border-gray-700/60 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group shadow-sm hover:shadow"
-                      >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors shrink-0">
-                            {tx.type === 'topup' ? (
-                              <Wallet className="w-6 h-6 text-primary" />
-                            ) : (
-                              <ShoppingBag className="w-6 h-6 text-orange-500" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-black text-text-light dark:text-text-dark">
-                                {tx.type === 'topup' ? 'Isi Saldo Dompetku' : 'Pesanan Makanan'}
-                              </span>
-                              <CountdownTimer
-                                createdAt={tx.created_at}
-                                expiryMinutes={tx.type === 'topup' ? (settings.topupExpiryMinutes || 15) : (settings.paymentExpiryMinutes || 60)}
-                                onExpire={() => fetchWalletData()}
-                              />
-                            </div>
-                            <span className="text-xs text-muted block mt-1 font-medium truncate max-w-full">
-                              {tx.description}
-                            </span>
-                            <span className="text-[10px] font-mono text-muted uppercase mt-0.5 tracking-wider block">
-                              ID: #{tx.id.substring(0, 8).toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 dark:border-gray-700/50 shrink-0">
-                          <span className="font-mono font-black text-base text-primary block">
-                            Rp {Number(tx.amount).toLocaleString("id-ID")}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 text-xs font-black text-white bg-primary px-4 py-2 rounded-xl uppercase tracking-wider sm:mt-2 shadow-md shadow-primary/20 group-hover:bg-primary-hover group-hover:shadow-primary/30 transition-all">
-                            Bayar <ArrowRight className="w-3.5 h-3.5" />
-                          </span>
-                        </div>
+          {unpaidTransactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <CheckCircle className="w-16 h-16 text-emerald-500 mb-4 animate-bounce" />
+              <span className="font-extrabold text-base text-text-light dark:text-text-dark">Semua Tagihan Lunas!</span>
+              <span className="text-xs text-muted mt-1.5">Tidak ada transaksi atau isi saldo yang menunggu pembayaran saat ini.</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {unpaidTransactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  onClick={() => handleUnpaidClick(tx)}
+                  className="p-4 sm:p-5 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-850/50 border border-gray-150 dark:border-gray-700/60 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group shadow-sm hover:shadow"
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors shrink-0">
+                      {tx.type === 'topup' ? (
+                        <Wallet className="w-6 h-6 text-primary" />
+                      ) : (
+                        <ShoppingBag className="w-6 h-6 text-orange-500" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-black text-text-light dark:text-text-dark">
+                          {tx.type === 'topup' ? 'Isi Saldo Dompetku' : 'Pesanan Makanan'}
+                        </span>
+                        <CountdownTimer
+                          createdAt={tx.created_at}
+                          expiryMinutes={tx.type === 'topup' ? (settings.topupExpiryMinutes || 15) : (settings.paymentExpiryMinutes || 60)}
+                          onExpire={() => fetchWalletData()}
+                        />
                       </div>
-                    ))}
+                      <span className="text-xs text-muted block mt-1 font-medium truncate max-w-full">
+                        {tx.description}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted uppercase mt-0.5 tracking-wider block">
+                        ID: #{tx.id.substring(0, 8).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 dark:border-gray-700/50 shrink-0">
+                    <span className="font-mono font-black text-base text-primary block">
+                      Rp {Number(tx.amount).toLocaleString("id-ID")}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-white bg-primary px-4 py-2 rounded-xl uppercase tracking-wider sm:mt-2 shadow-md shadow-primary/20 group-hover:bg-primary-hover group-hover:shadow-primary/30 transition-all">
+                      Bayar <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </BaseModal>
       {/* 4. PIN Modal */}
-      <AnimatePresence>
-        {showPinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPinModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-10">
-              <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-primary" /> {pinType === "create" ? "Buat PIN Keamanan Baru" : "Ubah PIN Keamanan"}
-                </h3>
-                <button onClick={() => setShowPinModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
-              </div>
+      <BaseModal
+        isOpen={showPinModal}
+        onClose={() => setShowPinModal(false)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" /> {pinType === "create" ? "Buat PIN Keamanan Baru" : "Ubah PIN Keamanan"}
+          </h3>
+          <button onClick={() => setShowPinModal(false)} title="Tutup" className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-muted" /></button>
+        </div>
 
-              <form onSubmit={handlePinSubmit} className="p-6 space-y-4">
-                {pinType === "change" && (
-                  <div className="space-y-1.5">
-                    <label htmlFor="oldPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">PIN Transaksi Lama</label>
-                    <input
-                      id="oldPinInput"
-                      type="password"
-                      maxLength={6}
-                      required
-                      value={pinForm.oldPin}
-                      onChange={e => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
-                      placeholder="Masukkan 6 digit PIN lama"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
-                    />
-                  </div>
-                )}
+        <form onSubmit={handlePinSubmit} className="p-6 space-y-4">
+          {pinType === "change" && (
+            <div className="space-y-1.5">
+              <label htmlFor="oldPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">PIN Transaksi Lama</label>
+              <input
+                id="oldPinInput"
+                type="password"
+                maxLength={6}
+                required
+                value={pinForm.oldPin}
+                onChange={e => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
+                placeholder="Masukkan 6 digit PIN lama"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
+              />
+            </div>
+          )}
 
-                <div className="space-y-1.5">
-                  <label htmlFor="newPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">
-                    {pinType === "create" ? "PIN Transaksi Baru (6 Digit)" : "PIN Transaksi Baru"}
-                  </label>
-                  <input
-                    id="newPinInput"
-                    type="password"
-                    maxLength={6}
-                    required
-                    value={pinType === "create" ? pinForm.pin : pinForm.newPin}
-                    onChange={e => setPinForm(
-                      pinType === "create" 
-                        ? { ...pinForm, pin: e.target.value.replace(/\D/g, "") }
-                        : { ...pinForm, newPin: e.target.value.replace(/\D/g, "") }
-                    )}
-                    placeholder="Masukkan 6 digit angka"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
-                  />
-                </div>
-
-                <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Metode Pengiriman OTP</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
-                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                        pinForm.otpChannel === "email"
-                          ? "bg-primary border-primary text-white"
-                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
-                      }`}
-                    >
-                      Email
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
-                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                        pinForm.otpChannel === "whatsapp"
-                          ? "bg-primary border-primary text-white"
-                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
-                      }`}
-                    >
-                      WhatsApp
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1 space-y-1.5">
-                    <label htmlFor="otpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Kode OTP Verifikasi</label>
-                    <input
-                      id="otpInput"
-                      type="text"
-                      maxLength={6}
-                      required
-                      value={pinForm.otp}
-                      onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
-                      placeholder="6 Digit OTP"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={otpLoading || otpTimer > 0}
-                    onClick={handleSendOtp}
-                    className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
-                  >
-                    {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={pinLoading || !pinForm.otp || (pinType === "create" ? !pinForm.pin : !pinForm.newPin)}
-                  className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Simpan PIN"}
-                </button>
-              </form>
-            </motion.div>
+          <div className="space-y-1.5">
+            <label htmlFor="newPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">
+              {pinType === "create" ? "PIN Transaksi Baru (6 Digit)" : "PIN Transaksi Baru"}
+            </label>
+            <input
+              id="newPinInput"
+              type="password"
+              maxLength={6}
+              required
+              value={pinType === "create" ? pinForm.pin : pinForm.newPin}
+              onChange={e => setPinForm(
+                pinType === "create" 
+                  ? { ...pinForm, pin: e.target.value.replace(/\D/g, "") }
+                  : { ...pinForm, newPin: e.target.value.replace(/\D/g, "") }
+              )}
+              placeholder="Masukkan 6 digit angka"
+              className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center"
+            />
           </div>
-        )}
-      </AnimatePresence>
 
+          <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Metode Pengiriman OTP</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
+                className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                  pinForm.otpChannel === "email"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                }`}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
+                className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                  pinForm.otpChannel === "whatsapp"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                }`}
+              >
+                WhatsApp
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1.5">
+              <label htmlFor="otpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Kode OTP Verifikasi</label>
+              <input
+                id="otpInput"
+                type="text"
+                maxLength={6}
+                required
+                value={pinForm.otp}
+                onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
+                placeholder="6 Digit OTP"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={otpLoading || otpTimer > 0}
+              onClick={handleSendOtp}
+              className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
+            >
+              {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={pinLoading || !pinForm.otp || (pinType === "create" ? !pinForm.pin : !pinForm.newPin)}
+            className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+          >
+            {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Simpan PIN"}
+          </button>
+        </form>
+      </BaseModal>
       {/* 5. Forced PIN Reset Modal */}
-      <AnimatePresence>
-        {wallet.pinResetRequired && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/85 backdrop-blur-xl pointer-events-none" />
-            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} className="relative bg-white dark:bg-card-dark w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 z-[101]">
-              <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 bg-emerald-500/5 text-center">
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
-                <h3 className="font-black text-xl text-gray-900 dark:text-white">Banding Dompetku Disetujui!</h3>
-                <p className="text-xs text-muted mt-2 leading-relaxed">
-                  Permohonan banding Anda telah disetujui. Untuk menjaga keamanan saldo Dompetku Anda dari potensi akses ilegal, <strong>Anda wajib membuat PIN transaksi baru</strong> sebelum dapat bertransaksi kembali.
-                </p>
-              </div>
-
-              <form onSubmit={handlePinSubmit} className="p-6 md:p-8 space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="forcedNewPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Buat PIN Transaksi Baru (6 Digit)</label>
-                  <input
-                    id="forcedNewPinInput"
-                    type="password"
-                    maxLength={6}
-                    required
-                    value={pinForm.pin}
-                    onChange={e => setPinForm({ ...pinForm, pin: e.target.value.replace(/\D/g, "") })}
-                    placeholder="Masukkan 6 digit angka baru"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold"
-                  />
-                </div>
-
-                <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-                  <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Saluran Kirim OTP</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
-                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                        pinForm.otpChannel === "email"
-                          ? "bg-primary border-primary text-white"
-                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
-                      }`}
-                    >
-                      Email
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
-                      className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
-                        pinForm.otpChannel === "whatsapp"
-                          ? "bg-primary border-primary text-white"
-                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
-                      }`}
-                    >
-                      WhatsApp
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1 space-y-1.5">
-                    <label htmlFor="forcedOtpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Masukkan Kode OTP</label>
-                    <input
-                      id="forcedOtpInput"
-                      type="text"
-                      maxLength={6}
-                      required
-                      value={pinForm.otp}
-                      onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
-                      placeholder="6 Digit OTP"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={otpLoading || otpTimer > 0}
-                    onClick={handleSendOtp}
-                    className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
-                  >
-                    {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={pinLoading || !pinForm.otp || !pinForm.pin}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
-                >
-                  {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Buat PIN & Aktifkan E-Wallet"}
-                </button>
-              </form>
-            </motion.div>
+      <BaseModal
+        isOpen={wallet.pinResetRequired}
+        onClose={() => {}}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="p-6 md:p-8 border-b border-gray-150 dark:border-gray-800 bg-emerald-500/5 text-center">
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+            <CheckCircle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <h3 className="font-black text-xl text-gray-900 dark:text-white">Banding Dompetku Disetujui!</h3>
+          <p className="text-xs text-muted mt-2 leading-relaxed">
+            Permohonan banding Anda telah disetujui. Untuk menjaga keamanan saldo Dompetku Anda dari potensi akses ilegal, <strong>Anda wajib membuat PIN transaksi baru</strong> sebelum dapat bertransaksi kembali.
+          </p>
+        </div>
+
+        <form onSubmit={handlePinSubmit} className="p-6 md:p-8 space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="forcedNewPinInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Buat PIN Transaksi Baru (6 Digit)</label>
+            <input
+              id="forcedNewPinInput"
+              type="password"
+              maxLength={6}
+              required
+              value={pinForm.pin}
+              onChange={e => setPinForm({ ...pinForm, pin: e.target.value.replace(/\D/g, "") })}
+              placeholder="Masukkan 6 digit angka baru"
+              className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono tracking-widest text-center font-bold"
+            />
+          </div>
+
+          <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest block">Pilih Saluran Kirim OTP</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPinForm({ ...pinForm, otpChannel: "email" })}
+                className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                  pinForm.otpChannel === "email"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                }`}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setPinForm({ ...pinForm, otpChannel: "whatsapp" })}
+                className={`py-2 px-3 border rounded-xl text-xs font-bold transition-all ${
+                  pinForm.otpChannel === "whatsapp"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-muted"
+                }`}
+              >
+                WhatsApp
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1.5">
+              <label htmlFor="forcedOtpInput" className="text-[10px] font-black uppercase text-muted tracking-widest block">Masukkan Kode OTP</label>
+              <input
+                id="forcedOtpInput"
+                type="text"
+                maxLength={6}
+                required
+                value={pinForm.otp}
+                onChange={e => setPinForm({ ...pinForm, otp: e.target.value.replace(/\D/g, "") })}
+                placeholder="6 Digit OTP"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary font-mono text-center font-bold"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={otpLoading || otpTimer > 0}
+              onClick={handleSendOtp}
+              className="px-4 py-3.5 bg-gray-150 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700 text-muted rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider disabled:opacity-50 h-[46px]"
+            >
+              {otpLoading ? "Mengirim..." : otpTimer > 0 ? `Ulangi (${otpTimer}s)` : "Kirim OTP"}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={pinLoading || !pinForm.otp || !pinForm.pin}
+            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 uppercase tracking-wider text-xs"
+          >
+            {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Buat PIN & Aktifkan E-Wallet"}
+          </button>
+        </form>
+      </BaseModal>
     </div>
   );
 }

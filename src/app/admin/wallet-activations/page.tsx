@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 type TabType = "diajukan" | "diproses" | "selesai" | "ditolak" | "logs";
 
@@ -695,28 +696,19 @@ export default function AdminWalletActivationsPage() {
       </div>
 
       {/* Image Preview Zoom Modal */}
-      <AnimatePresence>
-        {zoomImage && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-4xl w-full h-[85vh] flex items-center justify-center"
-            >
-              <button 
-                onClick={() => setZoomImage(null)} 
-                className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/85 rounded-xl text-white backdrop-blur-sm z-55 transition-all"
-                title="Tutup Preview Gambar"
-                aria-label="Tutup Preview Gambar"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <img src={zoomImage} alt="Zoom Preview" className="object-contain max-w-full max-h-full rounded-2xl" />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <BaseModal isOpen={!!zoomImage} onClose={() => setZoomImage(null)} size="full" noPadding={true} showCloseButton={false}>
+        <div className="relative w-full h-full flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <button 
+            onClick={() => setZoomImage(null)} 
+            className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/85 rounded-xl text-white backdrop-blur-sm z-50 transition-all"
+            title="Tutup Preview Gambar"
+            aria-label="Tutup Preview Gambar"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          {zoomImage && <img src={zoomImage} alt="Zoom Preview" className="object-contain max-w-full max-h-full rounded-2xl" />}
+        </div>
+      </BaseModal>
     </div>
   );
 }

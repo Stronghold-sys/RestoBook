@@ -12,6 +12,7 @@ import jsPDF from "jspdf";
 import ReceiptComponent from "@/components/Receipt";
 import { useRef } from "react";
 import { downloadFile } from "@/utils/downloadHelper";
+import BaseModal from "@/components/BaseModal";
 
 export default function CashierTransactionsPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -422,85 +423,86 @@ export default function CashierTransactionsPage() {
       </div>
 
       {/* Modal Detail Pesanan */}
-      <AnimatePresence>
+      <BaseModal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        showCloseButton={false}
+        size="md"
+      >
         {selectedOrder && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-card-dark rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-2xl relative">
-                <button aria-label="Tutup" title="Tutup" onClick={() => setSelectedOrder(null)} className="absolute right-6 top-6 text-muted hover:text-text-light dark:hover:text-text-dark bg-gray-100 dark:bg-gray-800 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-                
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark mb-6">Detail Pesanan <span className="text-primary">#{selectedOrder.id.split('-')[0]}</span></h3>
-                
-                <div className="space-y-4 mb-8">
-                  <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
-                    <span className="text-muted font-medium">Pelanggan</span>
-                    <span className="font-bold text-text-light dark:text-text-dark">{getCustomerName(selectedOrder)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
-                    <span className="text-muted font-medium">Waktu Transaksi</span>
-                    <span className="font-bold text-text-light dark:text-text-dark">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
-                    <span className="text-muted font-medium">Tipe</span>
-                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : selectedOrder.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
-                    <span className="text-muted font-medium">Pembayaran</span>
-                    <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center gap-1">
-                      {selectedOrder.payment_method === 'cash' ? <><Banknote className="w-3 h-3"/> Cash</> : <><CreditCard className="w-3 h-3"/> Non-Cash</>}
-                    </span>
-                  </div>
-                </div>
+          <div className="relative p-2">
+            <button aria-label="Tutup" title="Tutup" onClick={() => setSelectedOrder(null)} className="absolute right-0 top-0 text-muted hover:text-text-light dark:hover:text-text-dark bg-gray-100 dark:bg-gray-800 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+            
+            <h3 className="text-2xl font-black text-text-light dark:text-text-dark mb-6">Detail Pesanan <span className="text-primary">#{selectedOrder.id.split('-')[0]}</span></h3>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
+                <span className="text-muted font-medium">Pelanggan</span>
+                <span className="font-bold text-text-light dark:text-text-dark">{getCustomerName(selectedOrder)}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
+                <span className="text-muted font-medium">Waktu Transaksi</span>
+                <span className="font-bold text-text-light dark:text-text-dark">{new Date(selectedOrder.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })} WIB</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
+                <span className="text-muted font-medium">Tipe</span>
+                <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">{selectedOrder.order_type === "dine_in" ? "Dine In" : selectedOrder.order_type === "delivery" ? "Delivery" : "Takeaway"}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border-light dark:border-border-dark">
+                <span className="text-muted font-medium">Pembayaran</span>
+                <span className="font-bold uppercase tracking-wider text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center gap-1">
+                  {selectedOrder.payment_method === 'cash' ? <><Banknote className="w-3 h-3"/> Cash</> : <><CreditCard className="w-3 h-3"/> Non-Cash</>}
+                </span>
+              </div>
+            </div>
 
-                <div className="mb-6">
-                  <h4 className="font-bold text-text-light dark:text-text-dark mb-3">Item Dipesan:</h4>
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 space-y-3 max-h-48 overflow-y-auto">
-                    {selectedOrder.order_items?.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <span className="w-8 h-8 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center font-bold text-sm text-primary shadow-sm">{item.quantity}x</span>
-                          <span className="font-medium text-text-light dark:text-text-dark">{item.menu_items?.name}</span>
-                        </div>
-                        <span className="font-bold text-text-light dark:text-text-dark">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
-                      </div>
-                    ))}
+            <div className="mb-6">
+              <h4 className="font-bold text-text-light dark:text-text-dark mb-3">Item Dipesan:</h4>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 space-y-3 max-h-48 overflow-y-auto">
+                {selectedOrder.order_items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center font-bold text-sm text-primary shadow-sm">{item.quantity}x</span>
+                      <span className="font-medium text-text-light dark:text-text-dark">{item.menu_items?.name}</span>
+                    </div>
+                    <span className="font-bold text-text-light dark:text-text-dark">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="flex justify-between items-center p-5 bg-primary/10 dark:bg-primary/5 rounded-2xl border border-primary/20 mb-4">
-                  <span className="font-bold text-text-light dark:text-text-dark">Total Pembayaran</span>
-                  <span className="text-2xl font-black text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
-                </div>
+            <div className="flex justify-between items-center p-5 bg-primary/10 dark:bg-primary/5 rounded-2xl border border-primary/20 mb-4">
+              <span className="font-bold text-text-light dark:text-text-dark">Total Pembayaran</span>
+              <span className="text-2xl font-black text-primary">Rp {Number(selectedOrder.total_amount).toLocaleString("id-ID")}</span>
+            </div>
 
-                <div className="hidden">
-                  <ReceiptComponent 
-                    ref={receiptRef} 
-                    order={selectedOrder} 
-                    orderItems={selectedOrder.order_items.map((i: any) => {
-                      const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-                      return {
-                        name: i.menu_items?.name || i.name,
-                        price: resolvedPrice,
-                        quantity: i.quantity,
-                        subtotal: i.subtotal || (resolvedPrice * i.quantity)
-                      };
-                    })} 
-                    customerName={getCustomerName(selectedOrder)} 
-                    cashierName={cashierName} 
-                  />
-                </div>
+            <div className="hidden">
+              <ReceiptComponent 
+                ref={receiptRef} 
+                order={selectedOrder} 
+                orderItems={selectedOrder.order_items.map((i: any) => {
+                  const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                  return {
+                    name: i.menu_items?.name || i.name,
+                    price: resolvedPrice,
+                    quantity: i.quantity,
+                    subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                  };
+                })} 
+                customerName={getCustomerName(selectedOrder)} 
+                cashierName={cashierName} 
+              />
+            </div>
 
-                <button 
-                  onClick={handlePrint}
-                  className="w-full py-4 bg-gray-900 dark:bg-gray-800 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all uppercase tracking-widest text-sm"
-                >
-                  <FileText className="w-4 h-4" /> Cetak Struk Ulang
-                </button>
-              </motion.div>
-            </motion.div>
-          </>
+            <button 
+              onClick={handlePrint}
+              className="w-full py-4 bg-gray-900 dark:bg-gray-800 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all uppercase tracking-widest text-sm"
+            >
+              <FileText className="w-4 h-4" /> Cetak Struk Ulang
+            </button>
+          </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
     </div>
   );
 }

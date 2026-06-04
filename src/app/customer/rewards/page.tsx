@@ -12,6 +12,7 @@ import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { createClient } from "@/lib/supabase/client";
+import BaseModal from "@/components/BaseModal";
 
 export default function CustomerRewardsPage() {
   const [loading, setLoading] = useState(true);
@@ -1114,49 +1115,38 @@ export default function CustomerRewardsPage() {
       )}
 
       {/* Confirmation Redeem Modal */}
-      <AnimatePresence>
-        {confirmReward && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setConfirmReward(null)} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-md" 
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.9, opacity: 0 }} 
-              className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-center border border-gray-100 dark:border-gray-800 z-10"
-            >
-              <div className="w-16 h-16 bg-primary/10 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
-                {getRewardIcon(confirmReward.category)}
-              </div>
-              <h3 className="font-black text-xl text-gray-900 dark:text-white mb-2 uppercase tracking-tight">Tukar Reward?</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                Apakah Anda yakin ingin menukarkan <span className="font-extrabold text-primary font-mono">{confirmReward.min_points} poin</span> Anda dengan reward <span className="font-bold text-text-light dark:text-text-dark">&ldquo;{confirmReward.title}&rdquo;</span>?
-              </p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setConfirmReward(null)} 
-                  disabled={submitting}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={handleConfirmRedeem} 
-                  disabled={submitting} 
-                  className="flex-1 py-3.5 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Ya, Tukar"}
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={!!confirmReward}
+        onClose={() => setConfirmReward(null)}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="space-y-6 text-center">
+          <div className="w-16 h-16 bg-primary/10 mx-auto rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
+            {confirmReward && getRewardIcon(confirmReward.category)}
           </div>
-        )}
-      </AnimatePresence>
+          <h3 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tight">Tukar Reward?</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            Apakah Anda yakin ingin menukarkan <span className="font-extrabold text-primary font-mono">{confirmReward?.min_points} poin</span> Anda dengan reward <span className="font-bold text-text-light dark:text-text-dark">&ldquo;{confirmReward?.title}&rdquo;</span>?
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => setConfirmReward(null)} 
+              disabled={submitting}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={handleConfirmRedeem} 
+              disabled={submitting} 
+              className="flex-1 py-3.5 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-hover disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Ya, Tukar"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

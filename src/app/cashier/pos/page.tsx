@@ -10,6 +10,7 @@ import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
 import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen as originalIsRestaurantOpen, getOperationalStatus } from "@/utils/operationalHours";
+import BaseModal from "@/components/BaseModal";
 
 export default function POSPage() {
   const [loading, setLoading] = useState(true);
@@ -1346,368 +1347,348 @@ export default function POSPage() {
       </div>
 
       {/* Modal Pembayaran */}
-      <AnimatePresence>
-        {showPaymentModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {verificationStep === "duitku_embedded" ? (
-              <div className="fixed inset-0 z-[150] overflow-hidden bg-white/20 dark:bg-slate-900/20 backdrop-blur-[30px] flex items-center justify-center">
-                {/* Floating Background Aesthetic Details (matching design requirements) */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
-                   <div className="absolute top-12 -left-24 w-[500px] h-[500px] bg-orange-100/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
-                   <div className="absolute bottom-12 -right-24 w-[600px] h-[600px] bg-orange-50/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
-                   <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] dark:opacity-[0.1] dark:invert"></div>
+      <BaseModal 
+        isOpen={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
+        size={verificationStep === "duitku_embedded" ? "full" : "md"} 
+        noPadding={true} 
+        showCloseButton={false}
+      >
+        {verificationStep === "duitku_embedded" ? (
+          <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-12 xl:gap-32 p-8 bg-white/20 dark:bg-slate-900/20 backdrop-blur-[30px]">
+            {/* Floating Background Aesthetic Details (matching design requirements) */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+               <div className="absolute top-12 -left-24 w-[500px] h-[500px] bg-orange-100/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
+               <div className="absolute bottom-12 -right-24 w-[600px] h-[600px] bg-orange-50/40 dark:bg-orange-900/10 rounded-full blur-3xl"></div>
+               <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] dark:opacity-[0.1] dark:invert"></div>
+            </div>
+
+            <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-12 xl:gap-32 p-8">
+              {/* LEFT: Recreating visual box design from user reference */}
+              <motion.div 
+                initial={{ x: -100, opacity: 0 }} 
+                animate={{ x: 0, opacity: 1 }} 
+                transition={{ type: "spring", damping: 25, stiffness: 120 }}
+                className="hidden lg:flex flex-col items-center"
+              >
+                <div className="w-56 h-56 xl:w-72 xl:h-72 bg-white/60 dark:bg-gray-800/60 border-[12px] border-white/90 dark:border-gray-700/90 rounded-[3.5rem] shadow-[0_40px_80px_-20px_rgba(234,88,12,0.25)] backdrop-blur-sm flex items-center justify-center text-primary">
+                  <Utensils className="w-32 h-32 xl:w-40 xl:h-40 stroke-[1.5]" />
                 </div>
+              </motion.div>
 
-                <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-12 xl:gap-32 p-8">
-                  {/* LEFT: Recreating visual box design from user reference */}
-                  <motion.div 
-                    initial={{ x: -100, opacity: 0 }} 
-                    animate={{ x: 0, opacity: 1 }} 
-                    transition={{ type: "spring", damping: 25, stiffness: 120 }}
-                    className="hidden lg:flex flex-col items-center"
-                  >
-                    <div className="w-56 h-56 xl:w-72 xl:h-72 bg-white/60 dark:bg-gray-800/60 border-[12px] border-white/90 dark:border-gray-700/90 rounded-[3.5rem] shadow-[0_40px_80px_-20px_rgba(234,88,12,0.25)] backdrop-blur-sm flex items-center justify-center text-primary">
-                      <Utensils className="w-32 h-32 xl:w-40 xl:h-40 stroke-[1.5]" />
-                    </div>
-                  </motion.div>
+              {/* CENTER: Embedded Duitku Frame in standardized width for optimal mobile gateway scale */}
+              <motion.div 
+                initial={{ y: 50, opacity: 0, scale: 0.95 }} 
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+                className="relative z-10"
+              >
+                <div className="w-[90vw] max-w-[440px] bg-white dark:bg-gray-900 rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(234,88,12,0.4)] border-[12px] border-white dark:border-gray-800 relative overflow-hidden transition-all">
+                   <div className="p-10 md:p-12 flex flex-col items-center text-center">
+                      {/* STUNNING ANIMATED PULSER */}
+                      <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
+                         <div className="absolute inset-0 bg-orange-500/10 rounded-full animate-ping opacity-40"></div>
+                         <div className="absolute inset-6 bg-orange-500/20 rounded-full animate-pulse"></div>
+                         <div className="relative z-10 w-28 h-28 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-[0_15px_35px_-5px_rgba(234,88,12,0.6)]">
+                            <Loader className="w-12 h-12 text-white animate-spin stroke-[3]" style={{ animationDuration: '3s' }} />
+                         </div>
+                      </div>
 
-                  {/* CENTER: Embedded Duitku Frame in standardized width for optimal mobile gateway scale */}
-                  <motion.div 
-                    initial={{ y: 50, opacity: 0, scale: 0.95 }} 
-                    animate={{ y: 0, opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-                    className="relative z-10"
-                  >
-                    <div className="w-[90vw] max-w-[440px] bg-white dark:bg-gray-900 rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(234,88,12,0.4)] border-[12px] border-white dark:border-gray-800 relative overflow-hidden transition-all">
-                       <div className="p-10 md:p-12 flex flex-col items-center text-center">
-                          {/* STUNNING ANIMATED PULSER */}
-                          <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
-                             <div className="absolute inset-0 bg-orange-500/10 rounded-full animate-ping opacity-40"></div>
-                             <div className="absolute inset-6 bg-orange-500/20 rounded-full animate-pulse"></div>
-                             <div className="relative z-10 w-28 h-28 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-[0_15px_35px_-5px_rgba(234,88,12,0.6)]">
-                                <Loader className="w-12 h-12 text-white animate-spin stroke-[3]" style={{ animationDuration: '3s' }} />
-                             </div>
-                          </div>
+                      {/* DYNAMIC TEXT BLOCK */}
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                          Menunggu Pembayaran
+                        </h2>
+                        <p className="font-bold text-gray-500 dark:text-gray-400 text-xs tracking-widest uppercase italic">
+                          Waiting For Payment
+                        </p>
+                      </div>
 
-                          {/* DYNAMIC TEXT BLOCK */}
-                          <div className="space-y-2">
-                            <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
-                              Menunggu Pembayaran
-                            </h2>
-                            <p className="font-bold text-gray-500 dark:text-gray-400 text-xs tracking-widest uppercase italic">
-                              Waiting For Payment
-                            </p>
-                          </div>
+                      {/* INVOICE PILL */}
+                      <div className="mt-8 bg-orange-50 dark:bg-orange-900/20 px-8 py-4 rounded-3xl flex flex-col items-center shadow-inner border border-orange-100/50 dark:border-orange-800/30 w-full max-w-[280px]">
+                         <span className="text-[10px] font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest mb-1">Total Tagihan</span>
+                         <span className="text-3xl font-black text-gray-900 dark:text-white">
+                            Rp {cartTotal.toLocaleString("id-ID")}
+                         </span>
+                      </div>
 
-                          {/* INVOICE PILL */}
-                          <div className="mt-8 bg-orange-50 dark:bg-orange-900/20 px-8 py-4 rounded-3xl flex flex-col items-center shadow-inner border border-orange-100/50 dark:border-orange-800/30 w-full max-w-[280px]">
-                             <span className="text-[10px] font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest mb-1">Total Tagihan</span>
-                             <span className="text-3xl font-black text-gray-900 dark:text-white">
-                                Rp {cartTotal.toLocaleString("id-ID")}
-                             </span>
-                          </div>
+                      {/* RE-OPEN ACTION BUTTON */}
+                      <button 
+                        onClick={() => {
+                           const wWidth = 520, wHeight = 780;
+                           const wLeft = (window.screen.width / 2) - (wWidth / 2);
+                           const wTop = (window.screen.height / 2) - (wHeight / 2);
+                           window.open(activeDuitkuUrl, `DuitkuPayment_${Date.now()}`, `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes,status=no,menubar=no`);
+                        }}
+                        className="mt-10 w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-black py-5 px-8 rounded-2xl shadow-[0_20px_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_25px_50px_-10px_rgba(234,88,12,0.6)] transition-all active:scale-[0.96] flex items-center justify-center gap-3 uppercase tracking-wider text-sm group"
+                      >
+                        <ExternalLink className="w-5 h-5 group-hover:scale-110 transition-transform" /> Buka Portal Pembayaran
+                      </button>
 
-                          {/* RE-OPEN ACTION BUTTON */}
-                          <button 
-                            onClick={() => {
-                               const wWidth = 520, wHeight = 780;
-                               const wLeft = (window.screen.width / 2) - (wWidth / 2);
-                               const wTop = (window.screen.height / 2) - (wHeight / 2);
-                               window.open(activeDuitkuUrl, `DuitkuPayment_${Date.now()}`, `width=${wWidth},height=${wHeight},top=${wTop},left=${wLeft},scrollbars=yes,status=no,menubar=no`);
-                            }}
-                            className="mt-10 w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-black py-5 px-8 rounded-2xl shadow-[0_20px_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_25px_50px_-10px_rgba(234,88,12,0.6)] transition-all active:scale-[0.96] flex items-center justify-center gap-3 uppercase tracking-wider text-sm group"
-                          >
-                            <ExternalLink className="w-5 h-5 group-hover:scale-110 transition-transform" /> Buka Portal Pembayaran
-                          </button>
-
-                          <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed max-w-[300px]">
-                             Sebuah jendela pembayaran telah dibuka. Tekan tombol di atas jika Anda tidak melihat jendela tersebut.
-                          </p>
-                       </div>
-                    </div>
-                  </motion.div>
-
-                  {/* RIGHT: Giant "Book" typography visual anchor */}
-                  <motion.div 
-                    initial={{ x: 100, opacity: 0 }} 
-                    animate={{ x: 0, opacity: 1 }} 
-                    transition={{ type: "spring", damping: 25, stiffness: 120, delay: 0.1 }}
-                    className="hidden lg:block"
-                  >
-                     <h1 className="text-[9rem] xl:text-[13rem] font-black text-primary leading-none tracking-tighter select-none drop-shadow-[0_25px_50px_rgba(234,88,12,0.3)]">
-                       Book
-                     </h1>
-                  </motion.div>
+                      <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed max-w-[300px]">
+                         Sebuah jendela pembayaran telah dibuka. Tekan tombol di atas jika Anda tidak melihat jendela tersebut.
+                      </p>
+                   </div>
                 </div>
+              </motion.div>
 
-                {/* FLOATING ACTION ROW (Bilingual) */}
-                <div className="absolute top-6 right-6 z-[200] flex items-center gap-4">
-                  {/* Manual Sync Visual Button */}
-                  <button 
-                    onClick={() => processPayment(true)}
-                    className="px-5 py-3 bg-emerald-600 text-white font-black rounded-2xl shadow-xl hover:bg-emerald-700 transition-all uppercase text-xs tracking-wider flex items-center gap-2 border border-emerald-500"
-                  >
-                    <CheckCircle className="w-4 h-4" /> Konfirmasi / Confirm
-                  </button>
+              {/* RIGHT: Giant "Book" typography visual anchor */}
+              <motion.div 
+                initial={{ x: 100, opacity: 0 }} 
+                animate={{ x: 0, opacity: 1 }} 
+                transition={{ type: "spring", damping: 25, stiffness: 120, delay: 0.1 }}
+                className="hidden lg:block"
+              >
+                 <h1 className="text-[9rem] xl:text-[13rem] font-black text-primary leading-none tracking-tighter select-none drop-shadow-[0_25px_50px_rgba(234,88,12,0.3)]">
+                   Book
+                 </h1>
+              </motion.div>
+            </div>
 
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setVerificationStep("select_method");
-                      setActiveDuitkuUrl("");
-                    }}
-                    className="px-6 py-3 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 font-black rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-950 transition-all uppercase text-xs tracking-wider"
-                  >
-                    <X className="w-5 h-5 font-black" /> Batal / Cancel
-                  </motion.button>
-                </div>
-              </div>
-            ) : (
+            {/* FLOATING ACTION ROW (Bilingual) */}
+            <div className="absolute top-6 right-6 z-[200] flex items-center gap-4">
+              {/* Manual Sync Visual Button */}
+              <button 
+                onClick={() => processPayment(true)}
+                className="px-5 py-3 bg-emerald-600 text-white font-black rounded-2xl shadow-xl hover:bg-emerald-700 transition-all uppercase text-xs tracking-wider flex items-center gap-2 border border-emerald-500"
+              >
+                <CheckCircle className="w-4 h-4" /> Konfirmasi / Confirm
+              </button>
+
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setVerificationStep("select_method");
+                  setActiveDuitkuUrl("");
+                }}
+                className="px-6 py-3 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 font-black rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-950 transition-all uppercase text-xs tracking-wider"
+              >
+                <X className="w-5 h-5 font-black" /> Batal / Cancel
+              </motion.button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 md:p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
+              <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+
+            {verificationStep === "select_method" && (
               <>
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-                
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 md:p-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-black text-xl text-text-light dark:text-text-dark">Proses Pembayaran</h3>
-                    <button aria-label="Tutup" title="Tutup" onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 transition-colors"><X className="w-4 h-4" /></button>
+                <div className="mb-6">
+                  <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                      <Banknote className="w-6 h-6" /> Tunai
+                    </button>
+                    <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
+                      <CreditCard className="w-6 h-6" /> Non-Tunai
+                    </button>
                   </div>
+                </div>
 
-                  {verificationStep === "select_method" && (
-                    <>
-                      <div className="mb-6">
-                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-2">Metode Pembayaran</p>
-                        <div className="flex gap-3">
-                          <button onClick={() => setPaymentMethod("cash")} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "cash" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                            <Banknote className="w-6 h-6" /> Tunai
-                          </button>
-                          <button onClick={() => { setPaymentMethod("non_cash"); setNonCashType("online_duitku"); setNonCashProvider(""); }} className={`flex-1 py-3 rounded-xl font-bold flex flex-col items-center gap-2 border-2 transition-all ${paymentMethod === "non_cash" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400" : "border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-muted"}`}>
-                            <CreditCard className="w-6 h-6" /> Non-Tunai
-                          </button>
-                        </div>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
+                  <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                  <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                </div>
+
+                {paymentMethod === "cash" ? (
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
+                      <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none text-text-light dark:text-text-dark" placeholder="0" />
+                      <div className="flex gap-2 mt-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setCashAmount(cartTotal)} 
+                          className="px-4 py-2 text-xs font-bold rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
+                        >
+                          Uang Pas (Rp {cartTotal.toLocaleString("id-ID")})
+                        </button>
                       </div>
-
-                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
-                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                        <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                    </div>
+                    
+                    {Number(cashAmount) > 0 && (
+                      <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                        <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
+                        <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
                       </div>
-
-                      {paymentMethod === "cash" ? (
-                        <div className="space-y-4 mb-6">
-                          <div>
-                            <label className="text-xs font-bold uppercase text-muted tracking-widest mb-2 block">Uang Diterima (Rp)</label>
-                            <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value) || "")} className="w-full text-2xl font-black p-4 bg-background-light dark:bg-background-dark border-2 border-border-light dark:border-border-dark focus:border-green-500 rounded-2xl outline-none" placeholder="0" />
-                            <div className="flex gap-2 mt-2">
-                              <button 
-                                type="button" 
-                                onClick={() => setCashAmount(cartTotal)} 
-                                className="px-4 py-2 text-xs font-bold rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
-                              >
-                                Uang Pas (Rp {cartTotal.toLocaleString("id-ID")})
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {Number(cashAmount) > 0 && (
-                            <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                              <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
-                              <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
-                            </div>
-                          )}
-                          
-                          <button 
-                            onClick={() => processPayment(true)} 
-                            disabled={processing || Number(cashAmount) < cartTotal} 
-                            className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
-                          >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="mb-6 space-y-6">
-                          <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-100 dark:border-blue-800 rounded-3xl flex items-start gap-4 shadow-sm">
-                            <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 text-white">
-                              <QrCode className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase tracking-tight">Pembayaran Online</h4>
-                              <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
-                                Pelanggan dapat memilih E-Wallet (ShopeePay, OVO, Dana), QRIS, Virtual Account, atau gerai retail langsung di jendela pembayaran Duitku Pop yang akan muncul.
-                              </p>
-                            </div>
-                          </div>
-
-                          <button 
-                            onClick={handleGenerateDuitkuPOS} 
-                            disabled={processing} 
-                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black rounded-2xl transition-all uppercase tracking-wider flex justify-center items-center gap-3 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 active:scale-[0.98]"
-                          >
-                            {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Mulai Pembayaran Pop</>}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {verificationStep === "duitku_waiting" && (
-                    <div className="space-y-6 text-center py-8">
-                      <div className="relative mx-auto w-24 h-24 mb-4">
-                        <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
-                        </div>
+                    )}
+                    
+                    <button 
+                      onClick={() => processPayment(true)} 
+                      disabled={processing || Number(cashAmount) < cartTotal} 
+                      className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
+                    >
+                      {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mb-6 space-y-6">
+                    <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-100 dark:border-blue-800 rounded-3xl flex items-start gap-4 shadow-sm">
+                      <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 text-white">
+                        <QrCode className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
-                        <p className="text-sm text-muted mb-4">Sebuah jendela pembayaran terpisah telah dibuka. Silakan minta pelanggan untuk menyelesaikan pembayaran disana.</p>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
-                        <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                        <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
-                      </div>
-                      <div className="pt-4 flex gap-3">
-                        <button 
-                          onClick={() => setVerificationStep("select_method")} 
-                          className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                        >
-                          Batal / Ganti Metode
-                        </button>
-                        <button 
-                          onClick={() => processPayment(true)} 
-                          className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
-                        >
-                          Verifikasi Manual
-                        </button>
+                        <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase tracking-tight">Pembayaran Online</h4>
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                          Pelanggan dapat memilih E-Wallet (ShopeePay, OVO, Dana), QRIS, Virtual Account, atau gerai retail langsung di jendela pembayaran Duitku Pop yang akan muncul.
+                        </p>
                       </div>
                     </div>
-                  )}
-                </motion.div>
+
+                    <button 
+                      onClick={handleGenerateDuitkuPOS} 
+                      disabled={processing} 
+                      className="w-full py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black rounded-2xl transition-all uppercase tracking-wider flex justify-center items-center gap-3 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 active:scale-[0.98]"
+                    >
+                      {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CreditCard className="w-6 h-6" /> Mulai Pembayaran Pop</>}
+                    </button>
+                  </div>
+                )}
               </>
+            )}
+
+            {verificationStep === "duitku_waiting" && (
+              <div className="space-y-6 text-center py-8">
+                <div className="relative mx-auto w-24 h-24 mb-4">
+                  <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <CreditCard className="w-8 h-8 text-blue-500 animate-pulse" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-black text-xl text-text-light dark:text-text-dark mb-2">Menunggu Pembayaran</h3>
+                  <p className="text-sm text-muted mb-4">Sebuah jendela pembayaran terpisah telah dibuka. Silakan minta pelanggan untuk menyelesaikan pembayaran disana.</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border-light dark:border-border-dark inline-block w-full">
+                  <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                  <p className="text-2xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button 
+                    onClick={() => setVerificationStep("select_method")} 
+                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                  >
+                    Batal / Ganti Metode
+                  </button>
+                  <button 
+                    onClick={() => processPayment(true)} 
+                    className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
+                  >
+                    Verifikasi Manual
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
 
       {/* Modal Cetak Struk */}
-      <AnimatePresence>
-        {showReceipts && completedOrder && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="relative w-full max-w-md">
-              
-              {/* Struk Pelanggan (Satu saja sesuai request) */}
-              <div className="bg-white rounded-3xl p-6 shadow-2xl relative">
-                <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg">Untuk Pelanggan</div>
-                <div className="h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
-                  <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i: any) => {
-                    const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-                    return {
-                      name: i.menu_items?.name || i.name,
-                      price: resolvedPrice,
-                      quantity: i.quantity,
-                      subtotal: i.subtotal || (resolvedPrice * i.quantity)
-                    };
-                  })} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
-                </div>
-                <button onClick={() => handlePrint(receiptPelangganRef)} className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600">
-                  <Printer className="w-4 h-4" /> Cetak Struk Pelanggan
-                </button>
-              </div>
-
-            </motion.div>
-            
-            <button onClick={() => { setShowReceipts(false); clearCart(); }} className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white text-gray-900 px-8 py-3 rounded-full font-black uppercase text-sm shadow-2xl hover:scale-105 transition-all">Selesai & Tutup</button>
+      <BaseModal 
+        isOpen={showReceipts && !!completedOrder} 
+        onClose={() => { setShowReceipts(false); clearCart(); }} 
+        size="md" 
+        noPadding={true} 
+        showCloseButton={false}
+      >
+        <div className="p-6 relative">
+          <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg z-20">Untuk Pelanggan</div>
+          <div className="max-h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
+            <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i: any) => {
+              const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+              return {
+                name: i.menu_items?.name || i.name,
+                price: resolvedPrice,
+                quantity: i.quantity,
+                subtotal: i.subtotal || (resolvedPrice * i.quantity)
+              };
+            })} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
           </div>
-        )}
-      </AnimatePresence>
+          <button onClick={() => handlePrint(receiptPelangganRef)} className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600">
+            <Printer className="w-4 h-4" /> Cetak Struk Pelanggan
+          </button>
+          <button onClick={() => { setShowReceipts(false); clearCart(); }} className="w-full mt-3 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-black uppercase text-xs rounded-xl shadow-md transition-all">Selesai & Tutup</button>
+        </div>
+      </BaseModal>
 
       {/* Modal Peringatan Menu Habis */}
-      <AnimatePresence>
-        {outOfStockItem && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setOutOfStockItem(null)} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }} 
-              className="bg-card-light dark:bg-card-dark rounded-3xl p-8 max-w-md w-full border border-border-light dark:border-border-dark shadow-2xl space-y-6 relative z-10 text-center"
-            >
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Ban className="w-8 h-8" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-black text-xl text-text-light dark:text-text-dark">Menu Sudah Habis</h3>
-                <p className="text-muted text-sm leading-relaxed">
-                  Menu <span className="font-bold text-primary">{outOfStockItem.name}</span> sudah habis dan tidak dapat diproses. Silakan pilih menu lain yang tersedia.
-                </p>
-              </div>
-              <button 
-                onClick={() => setOutOfStockItem(null)} 
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors uppercase tracking-wider shadow-lg shadow-red-500/20 text-xs"
-              >
-                Tutup
-              </button>
-            </motion.div>
+      <BaseModal 
+        isOpen={!!outOfStockItem} 
+        onClose={() => setOutOfStockItem(null)} 
+        size="sm" 
+        noPadding={true} 
+        showCloseButton={false}
+      >
+        <div className="p-8 text-center space-y-6">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto">
+            <Ban className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="font-black text-xl text-text-light dark:text-text-dark">Menu Sudah Habis</h3>
+            <p className="text-muted text-sm leading-relaxed">
+              Menu <span className="font-bold text-primary">{outOfStockItem?.name}</span> sudah habis dan tidak dapat diproses. Silakan pilih menu lain yang tersedia.
+            </p>
+          </div>
+          <button 
+            onClick={() => setOutOfStockItem(null)} 
+            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors uppercase tracking-wider shadow-lg shadow-red-500/20 text-xs"
+          >
+            Tutup
+          </button>
+        </div>
+      </BaseModal>
 
       {/* GENERIC MODERN CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark max-w-sm w-full rounded-[2rem] p-8 shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6"
-            >
-              <div className={`w-16 h-16 ${
-                confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : 
-                confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 
-                confirmModal.type === 'success' ? 'bg-green-500/10 text-green-500' :
-                'bg-primary/10 text-primary'
-              } rounded-2xl flex items-center justify-center mx-auto`}>
-                <AlertTriangle className="w-8 h-8" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))}
-                  className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={async () => {
-                    await confirmModal.onConfirm();
-                    setConfirmModal(prev => ({...prev, isOpen: false}));
-                  }}
-                  className={`flex-1 py-3.5 ${
-                    confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 
-                    confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 
-                    confirmModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 
-                    'bg-primary hover:bg-primary/90'
-                  } text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
-                >
-                  {confirmModal.confirmText}
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal 
+        isOpen={confirmModal.isOpen} 
+        onClose={() => setConfirmModal(prev => ({...prev, isOpen: false}))} 
+        size="sm" 
+        noPadding={true} 
+        showCloseButton={false}
+      >
+        <div className="p-8 text-center space-y-6">
+          <div className={`w-16 h-16 ${
+            confirmModal.type === 'danger' ? 'bg-red-500/10 text-red-500' : 
+            confirmModal.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 
+            confirmModal.type === 'success' ? 'bg-green-500/10 text-green-500' :
+            'bg-primary/10 text-primary'
+          } rounded-2xl flex items-center justify-center mx-auto`}>
+            <AlertTriangle className="w-8 h-8" />
           </div>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">{confirmModal.title}</h3>
+            <p className="text-sm text-muted leading-relaxed">{confirmModal.message}</p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={async () => {
+                await confirmModal.onConfirm();
+                setConfirmModal(prev => ({...prev, isOpen: false}));
+              }}
+              className={`flex-1 py-3.5 ${
+                confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 
+                confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' : 
+                confirmModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 
+                'bg-primary hover:bg-primary/90'
+              } text-white font-black rounded-xl text-xs uppercase shadow-lg transition-all`}
+            >
+              {confirmModal.confirmText}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import BaseModal from "@/components/BaseModal";
 
 interface Table {
   id: string;
@@ -466,7 +467,13 @@ export default function CashierReservationsPage() {
       </div>
 
       {/* Detail Modal */}
-      <AnimatePresence>
+      <BaseModal
+        isOpen={!!selectedRes}
+        onClose={() => setSelectedRes(null)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
         {selectedRes && (() => {
           const parsed = getParsedNotes(selectedRes.notes);
           const clientName = parsed ? parsed.atas_nama : (selectedRes.profiles?.full_name || "Guest");
@@ -475,223 +482,220 @@ export default function CashierReservationsPage() {
           const notesText = parsed ? parsed.catatan : selectedRes.notes;
 
           return (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedRes(null)}>
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark">
-                <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800">
-                  <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Data Diri Pemesan</h3>
-                  <button onClick={() => setSelectedRes(null)} title="Tutup" aria-label="Tutup" className="text-muted hover:text-text-light"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Atas Nama</span>
-                    <p className="font-black text-lg text-text-light dark:text-text-dark">{clientName}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Nomor Telepon</span>
-                    <p className="font-bold text-text-light dark:text-text-dark">{clientPhone}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Tanggal</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{format(new Date(selectedRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Waktu</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.reservation_time?.substring(0, 5)} WIB</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Meja</span>
-                      <p className="font-bold text-primary text-base">Meja {mejaNumbers}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Tamu</span>
-                      <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.guest_count} Orang</p>
-                    </div>
-                  </div>
-                  {notesText && (
-                    <div>
-                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                      <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
-                    </div>
-                  )}
-                  {parsed?.catatan_tolak && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                      <span className="text-xs font-bold uppercase block mb-1">Alasan Penolakan</span>
-                      <p className="text-sm">{parsed.catatan_tolak}</p>
-                    </div>
-                  )}
-                  {parsed?.catatan_batal && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                      <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
-                      <p className="text-sm">{parsed.catatan_batal}</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          );
-        })()}
-      </AnimatePresence>
-
-      {/* Reject Reason Modal */}
-      <AnimatePresence>
-        {rejectingId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setRejectingId(null)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-border-light dark:border-border-dark p-6">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4 flex items-center gap-2 text-red-600">
-                <MessageSquare className="w-5 h-5" /> Tolak Reservasi
-              </h3>
-              <form onSubmit={handleRejectSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="rejectReasonInput" className="text-xs text-muted font-bold block mb-1 uppercase">Alasan Penolakan</label>
-                  <textarea
-                    id="rejectReasonInput"
-                    value={rejectReason}
-                    onChange={e => setRejectReason(e.target.value)}
-                    placeholder="Contoh: Meja sedang dipakai acara khusus, restoran penuh, dll..."
-                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-red-500"
-                    rows={3}
-                    required
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setRejectingId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium">Batal</button>
-                  <button type="submit" className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/10">Kirim Penolakan</button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Cashier Book on behalf modal */}
-      <AnimatePresence>
-        {showBookModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowBookModal(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-card-light dark:bg-card-dark rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
-              <div className="bg-primary p-6 text-white flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold">Buat Reservasi Baru</h2>
-                  <p className="text-white/80 text-sm mt-1">Isi data dan pilih beberapa meja jika diperlukan</p>
-                </div>
-                <button onClick={() => setShowBookModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+            <>
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+                <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Data Diri Pemesan</h3>
+                <button onClick={() => setSelectedRes(null)} title="Tutup" aria-label="Tutup" className="text-muted hover:text-text-light"><X className="w-5 h-5" /></button>
               </div>
-              <form onSubmit={handleCashierBook} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-hide">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="cashierAtasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                      <input id="cashierAtasNama" type="text" value={bookForm.atasNama} onChange={e => setBookForm({ ...bookForm, atasNama: e.target.value })} placeholder="Masukkan nama pelanggan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="cashierTelepon" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nomor Telepon</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                      <input id="cashierTelepon" type="tel" value={bookForm.telepon} onChange={e => setBookForm({ ...bookForm, telepon: e.target.value })} placeholder="Contoh: 081234567" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
-                    </div>
-                  </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Atas Nama</span>
+                  <p className="font-black text-lg text-text-light dark:text-text-dark">{clientName}</p>
                 </div>
-
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Nomor Telepon</span>
+                  <p className="font-bold text-text-light dark:text-text-dark">{clientPhone}</p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="cashierDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
-                    <input id="cashierDate" title="Tanggal Reservasi" type="date" value={bookForm.date} onChange={e => setBookForm({ ...bookForm, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Tanggal</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{format(new Date(selectedRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
                   </div>
                   <div>
-                    <label htmlFor="cashierTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>
-                    <input id="cashierTime" title="Waktu Reservasi" type="time" value={bookForm.time} onChange={e => setBookForm({ ...bookForm, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Waktu</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.reservation_time?.substring(0, 5)} WIB</p>
                   </div>
                 </div>
-
-                <div>
-                  <label htmlFor="cashierGuests" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Jumlah Tamu</label>
-                  <input id="cashierGuests" title="Jumlah Tamu" type="number" value={bookForm.guests} onChange={e => setBookForm({ ...bookForm, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Pilih Meja (Bisa pilih lebih dari satu)</label>
-                    {bookForm.date && bookForm.time && (
-                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-                        tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0) >= bookForm.guests
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                      }`}>
-                        Kapasitas Terpilih: {tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)} / {bookForm.guests} Orang
-                      </span>
-                    )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Meja</span>
+                    <p className="font-bold text-primary text-base">Meja {mejaNumbers}</p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {tables.map(t => {
-                      const bookedStatus = bookedTablesInfo[t.id];
-                      const isBooked = !!bookedStatus;
-                      const isSelected = selectedTableIds.includes(t.id);
-                      
-                      let borderClass = "border-border-light dark:border-border-dark text-muted hover:border-gray-300";
-                      let bgClass = "bg-background-light dark:bg-background-dark";
-                      let statusText = `Cap: ${t.capacity} org`;
-                      let textClass = "";
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Tamu</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.guest_count} Orang</p>
+                  </div>
+                </div>
+                {notesText && (
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
+                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
+                  </div>
+                )}
+                {parsed?.catatan_tolak && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
+                    <span className="text-xs font-bold uppercase block mb-1">Alasan Penolakan</span>
+                    <p className="text-sm">{parsed.catatan_tolak}</p>
+                  </div>
+                )}
+                {parsed?.catatan_batal && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
+                    <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
+                    <p className="text-sm">{parsed.catatan_batal}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+      </BaseModal>
 
-                      if (isSelected) {
-                        borderClass = "border-primary text-primary";
-                        bgClass = "bg-primary/10";
-                        textClass = "text-primary font-bold";
-                      } else if (isBooked) {
-                        if (bookedStatus === "confirmed") {
-                          borderClass = "border-red-500/50 text-red-500 opacity-60 cursor-not-allowed";
-                          bgClass = "bg-red-500/5";
-                          statusText = "Dibooking";
-                          textClass = "text-red-500 font-bold";
-                        } else {
-                          borderClass = "border-amber-500/50 text-amber-500 opacity-60 cursor-not-allowed";
-                          bgClass = "bg-amber-500/5";
-                          statusText = "Menunggu";
-                          textClass = "text-amber-550 font-bold";
-                        }
+      {/* Reject Reason Modal */}
+      <BaseModal
+        isOpen={!!rejectingId}
+        onClose={() => setRejectingId(null)}
+        showCloseButton={true}
+        size="sm"
+      >
+        <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4 flex items-center gap-2 text-red-600">
+          <MessageSquare className="w-5 h-5" /> Tolak Reservasi
+        </h3>
+        <form onSubmit={handleRejectSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="rejectReasonInput" className="text-xs text-muted font-bold block mb-1 uppercase">Alasan Penolakan</label>
+            <textarea
+              id="rejectReasonInput"
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="Contoh: Meja sedang dipakai acara khusus, restoran penuh, dll..."
+              className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-red-500 text-text-light dark:text-text-dark"
+              rows={3}
+              required
+            />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setRejectingId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium">Batal</button>
+            <button type="submit" className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/10">Kirim Penolakan</button>
+          </div>
+        </form>
+      </BaseModal>
+
+      {/* Cashier Book on behalf modal */}
+      <BaseModal
+        isOpen={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        showCloseButton={false}
+        noPadding
+        size="xl"
+      >
+        <div className="bg-primary p-6 text-white flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">Buat Reservasi Baru</h2>
+            <p className="text-white/80 text-sm mt-1">Isi data dan pilih beberapa meja jika diperlukan</p>
+          </div>
+          <button onClick={() => setShowBookModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+        </div>
+        <form onSubmit={handleCashierBook} className="p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="cashierAtasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                <input id="cashierAtasNama" type="text" value={bookForm.atasNama} onChange={e => setBookForm({ ...bookForm, atasNama: e.target.value })} placeholder="Masukkan nama pelanggan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="cashierTelepon" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nomor Telepon</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                <input id="cashierTelepon" type="tel" value={bookForm.telepon} onChange={e => setBookForm({ ...bookForm, telepon: e.target.value })} placeholder="Contoh: 081234567" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="cashierDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
+              <input id="cashierDate" title="Tanggal Reservasi" type="date" value={bookForm.date} onChange={e => setBookForm({ ...bookForm, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+            </div>
+            <div>
+              <label htmlFor="cashierTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>
+              <input id="cashierTime" title="Waktu Reservasi" type="time" value={bookForm.time} onChange={e => setBookForm({ ...bookForm, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="cashierGuests" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Jumlah Tamu</label>
+            <input id="cashierGuests" title="Jumlah Tamu" type="number" value={bookForm.guests} onChange={e => setBookForm({ ...bookForm, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-medium text-text-light dark:text-text-dark">Pilih Meja (Bisa pilih lebih dari satu)</label>
+              {bookForm.date && bookForm.time && (
+                <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                  tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0) >= bookForm.guests
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                }`}>
+                  Kapasitas Terpilih: {tables.filter(t => selectedTableIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)} / {bookForm.guests} Orang
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {tables.map(t => {
+                const bookedStatus = bookedTablesInfo[t.id];
+                const isBooked = !!bookedStatus;
+                const isSelected = selectedTableIds.includes(t.id);
+                
+                let borderClass = "border-border-light dark:border-border-dark text-muted hover:border-gray-300";
+                let bgClass = "bg-background-light dark:bg-background-dark";
+                let statusText = `Cap: ${t.capacity} org`;
+                let textClass = "";
+
+                if (isSelected) {
+                  borderClass = "border-primary text-primary";
+                  bgClass = "bg-primary/10";
+                  textClass = "text-primary font-bold";
+                } else if (isBooked) {
+                  if (bookedStatus === "confirmed") {
+                    borderClass = "border-red-500/50 text-red-500 opacity-60 cursor-not-allowed";
+                    bgClass = "bg-red-500/5";
+                    statusText = "Dibooking";
+                    textClass = "text-red-500 font-bold";
+                  } else {
+                    borderClass = "border-amber-500/50 text-amber-500 opacity-60 cursor-not-allowed";
+                    bgClass = "bg-amber-500/5";
+                    statusText = "Menunggu";
+                    textClass = "text-amber-555 font-bold";
+                  }
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => {
+                      if (!isBooked) {
+                        setSelectedTableIds(prev =>
+                          prev.includes(t.id) ? prev.filter(item => item !== t.id) : [...prev, t.id]
+                        );
                       }
+                    }}
+                    disabled={isBooked}
+                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${bgClass} ${borderClass}`}
+                  >
+                    <span className={`font-black text-lg ${textClass || "text-text-light dark:text-text-dark"}`}>Meja {t.table_number}</span>
+                    <span className={`text-[10px] font-bold mt-1 ${textClass || "text-muted"}`}>{statusText}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                      return (
-                        <button
-                          type="button"
-                          key={t.id}
-                          onClick={() => {
-                            if (!isBooked) {
-                              setSelectedTableIds(prev =>
-                                prev.includes(t.id) ? prev.filter(item => item !== t.id) : [...prev, t.id]
-                              );
-                            }
-                          }}
-                          disabled={isBooked}
-                          className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${bgClass} ${borderClass}`}
-                        >
-                          <span className={`font-black text-lg ${textClass || "text-text-light dark:text-text-dark"}`}>Meja {t.table_number}</span>
-                          <span className={`text-[10px] font-bold mt-1 ${textClass || "text-muted"}`}>{statusText}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+          <div>
+            <label htmlFor="cashierNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
+            <textarea id="cashierNotes" title="Catatan" value={bookForm.notes} onChange={e => setBookForm({ ...bookForm, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" rows={2} placeholder="Keterangan tambahan..." />
+          </div>
 
-                <div>
-                  <label htmlFor="cashierNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
-                  <textarea id="cashierNotes" title="Catatan" value={bookForm.notes} onChange={e => setBookForm({ ...bookForm, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" rows={2} placeholder="Keterangan tambahan..." />
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button type="button" onClick={() => setShowBookModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium">Batal</button>
-                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={bookingSubmit} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                    {bookingSubmit ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Buat Reservasi</>}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+            <button type="button" onClick={() => setShowBookModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium">Batal</button>
+            <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={bookingSubmit} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+              {bookingSubmit ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Buat Reservasi</>}
+            </motion.button>
+          </div>
+        </form>
+      </BaseModal>
     </div>
   );
 }

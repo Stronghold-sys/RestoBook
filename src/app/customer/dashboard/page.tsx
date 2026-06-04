@@ -11,6 +11,7 @@ import { SkeletonDashboard } from "@/components/Skeleton";
 import toast from "react-hot-toast";
 import Portal from "@/components/Portal";
 import { useTutorialStore } from "@/store/useTutorialStore";
+import BaseModal from "@/components/BaseModal";
 
 export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
@@ -320,59 +321,49 @@ export default function CustomerDashboard() {
       </div>
 
       {/* Welcome Gift Modal */}
-      <Portal>
-        <AnimatePresence>
-          {showWelcomeModal && (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-            >
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }} 
-                animate={{ scale: 1, opacity: 1 }} 
-                exit={{ scale: 0.9, opacity: 0 }} 
-                className="bg-card-light dark:bg-card-dark rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-border-light dark:border-border-dark p-8 flex flex-col items-center text-center relative"
-              >
-                {/* Decorative top background gradient */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-primary to-rose-500" />
-                
-                <div className="w-20 h-20 bg-amber-100 dark:bg-amber-950/40 rounded-full flex items-center justify-center text-amber-500 mb-6 shadow-inner animate-bounce">
-                  <Gift className="w-10 h-10" />
-                </div>
-                
-                <h2 className="text-2xl font-black text-text-light dark:text-text-dark mb-2 flex items-center gap-1.5 justify-center">
-                  Selamat Datang! <Sparkles className="w-5 h-5 text-amber-500 animate-pulse shrink-0" />
-                </h2>
-                
-                <p className="text-muted text-sm leading-relaxed mb-6">
-                  Terima kasih telah bergabung di RestoBook. Sebagai ucapan terima kasih spesial, dapatkan bonus poin cuma-cuma dari kami!
-                </p>
-                
-                <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 px-6 py-4 rounded-2xl mb-8 flex flex-col items-center justify-center">
-                  <span className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Bonus Akun Baru</span>
-                  <span className="text-3xl font-black text-amber-500 font-mono">+{welcomePoints.toLocaleString('id-ID')} Poin</span>
-                </div>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleClaimPoints}
-                  disabled={claiming}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:from-amber-600 hover:to-primary-hover transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"
-                >
-                  {claiming ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>Klaim Poin Reward</>
-                  )}
-                </motion.button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Portal>
+      <BaseModal
+        isOpen={showWelcomeModal}
+        onClose={() => {}}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="p-8 flex flex-col items-center text-center relative">
+          {/* Decorative top background gradient */}
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-primary to-rose-500" />
+          
+          <div className="w-20 h-20 bg-amber-100 dark:bg-amber-950/40 rounded-full flex items-center justify-center text-amber-500 mb-6 shadow-inner animate-bounce mt-4">
+            <Gift className="w-10 h-10" />
+          </div>
+          
+          <h2 className="text-2xl font-black text-text-light dark:text-text-dark mb-2 flex items-center gap-1.5 justify-center">
+            Selamat Datang! <Sparkles className="w-5 h-5 text-amber-500 animate-pulse shrink-0" />
+          </h2>
+          
+          <p className="text-muted text-sm leading-relaxed mb-6">
+            Terima kasih telah bergabung di RestoBook. Sebagai ucapan terima kasih spesial, dapatkan bonus poin cuma-cuma dari kami!
+          </p>
+          
+          <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 px-6 py-4 rounded-2xl mb-8 flex flex-col items-center justify-center">
+            <span className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Bonus Akun Baru</span>
+            <span className="text-3xl font-black text-amber-500 font-mono">+{welcomePoints.toLocaleString('id-ID')} Poin</span>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleClaimPoints}
+            disabled={claiming}
+            className="w-full py-4 bg-gradient-to-r from-amber-500 to-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:from-amber-600 hover:to-primary-hover transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"
+          >
+            {claiming ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>Klaim Poin Reward</>
+            )}
+          </motion.button>
+        </div>
+      </BaseModal>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Camera, RefreshCw, CheckCircle2, DollarSign, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 interface AttendanceModalProps {
   onSuccess: (shiftId: string) => void;
@@ -157,12 +158,13 @@ export default function AttendanceModal({ onSuccess, substituteDetails, workShif
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl">
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-card-light dark:bg-card-dark w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-border-light dark:border-border-dark overflow-hidden"
-      >
+    <BaseModal
+      isOpen={true}
+      onClose={() => {}}
+      showCloseButton={false}
+      noPadding
+      size="md"
+    >
         <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
           <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
@@ -271,7 +273,6 @@ export default function AttendanceModal({ onSuccess, substituteDetails, workShif
         <p className="text-center p-6 text-[10px] text-muted uppercase font-bold tracking-widest border-t border-border-light dark:border-border-dark">
           Keamanan RestoBook - Data Absensi Dienkripsi
         </p>
-      </motion.div>
-    </div>
+    </BaseModal>
   );
 }

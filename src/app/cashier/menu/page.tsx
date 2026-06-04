@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Ban, Check, UtensilsCrossed, ArrowLeft, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 export default function CashierMenuManagement() {
   const [loading, setLoading] = useState(true);
@@ -279,54 +280,45 @@ export default function CashierMenuManagement() {
       )}
 
       {/* CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmItem && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card-light dark:bg-card-dark rounded-3xl p-8 max-w-md w-full border border-border-light dark:border-border-dark shadow-2xl space-y-6"
+      <BaseModal
+        isOpen={!!confirmItem}
+        onClose={() => setConfirmItem(null)}
+        size="md"
+        showCloseButton={false}
+      >
+        <div className="space-y-6">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-xl text-text-light dark:text-text-dark">Konfirmasi Ubah Status</h3>
+              <p className="text-muted text-sm mt-1 leading-relaxed">
+                Apakah Anda yakin ingin mengubah status menu <span className="font-extrabold text-primary">{confirmItem?.name}</span> menjadi <span className="font-black text-red-500">{confirmItem?.is_active ? "HABIS" : "TERSEDIA KEMBALI"}</span>?
+              </p>
+            </div>
+          </div>
+ 
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              disabled={updating}
+              onClick={() => setConfirmItem(null)}
+              className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <div className="flex gap-4">
-                <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-black text-xl text-text-light dark:text-text-dark">Konfirmasi Ubah Status</h3>
-                  <p className="text-muted text-sm mt-1 leading-relaxed">
-                    Apakah Anda yakin ingin mengubah status menu <span className="font-extrabold text-primary">{confirmItem.name}</span> menjadi <span className="font-black text-red-500">{confirmItem.is_active ? "HABIS" : "TERSEDIA KEMBALI"}</span>?
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={updating}
-                  onClick={() => setConfirmItem(null)}
-                  className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  disabled={updating}
-                  onClick={handleConfirmToggle}
-                  className="flex-1 py-3 bg-primary text-white rounded-xl font-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Konfirmasi"}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Batal
+            </button>
+            <button
+              type="button"
+              disabled={updating}
+              onClick={handleConfirmToggle}
+              className="flex-1 py-3 bg-primary text-white rounded-xl font-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ya, Konfirmasi"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

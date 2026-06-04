@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Receipt from "@/components/Receipt";
 import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
+import BaseModal from "@/components/BaseModal";
 
 export default function OnlineOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -677,114 +678,101 @@ export default function OnlineOrdersPage() {
           </AnimatePresence>
         </div>
       </div>
-
       {/* Reject Modal */}
-      <AnimatePresence>
-        {showRejectModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowRejectModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }}
-              className="relative bg-card-light dark:bg-card-dark rounded-[2.5rem] border border-border-light dark:border-border-dark p-8 w-full max-w-md shadow-2xl"
-            >
-              <div className="flex items-center gap-5 mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shadow-inner">
-                  <AlertTriangle className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-text-light dark:text-text-dark tracking-tight">Tolak Pesanan</h3>
-                  <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mt-1">#{orderToReject?.id.substring(0, 8).toUpperCase()}</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <p className="text-sm text-muted font-medium">Mohon tuliskan alasan penolakan. Pelanggan akan menerima notifikasi alasan ini.</p>
-                <textarea 
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Contoh: Maaf, stok menu tersebut sudah habis atau restoran sedang tutup..."
-                  className="w-full h-40 p-5 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-[1.5rem] focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all font-medium resize-none shadow-inner"
-                />
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setShowRejectModal(false)}
-                    className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-muted hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={() => updateOrderStatus(orderToReject.id, 'cancelled', rejectionReason)}
-                    disabled={!rejectionReason.trim()}
-                    className="flex-1 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-xl shadow-rose-500/20"
-                  >
-                    KIRIM PENOLAKAN
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        size="md"
+        showCloseButton={false}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shadow-inner">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-text-light dark:text-text-dark tracking-tight">Tolak Pesanan</h3>
+              <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mt-1">#{orderToReject?.id.substring(0, 8).toUpperCase()}</p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+          
+          <div className="space-y-6">
+            <p className="text-sm text-muted font-medium">Mohon tuliskan alasan penolakan. Pelanggan akan menerima notifikasi alasan ini.</p>
+            <textarea 
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Contoh: Maaf, stok menu tersebut sudah habis atau restoran sedang tutup..."
+              className="w-full h-40 p-5 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-[1.5rem] focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all font-medium resize-none shadow-inner"
+            />
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowRejectModal(false)}
+                className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-muted hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => updateOrderStatus(orderToReject.id, 'cancelled', rejectionReason)}
+                disabled={!rejectionReason.trim()}
+                className="flex-1 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+              >
+                KIRIM PENOLAKAN
+              </button>
+            </div>
+          </div>
+        </div>
+      </BaseModal>
+
       {/* Receipt Modal */}
-      <AnimatePresence>
-        {showReceipt && selectedOrder && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 overflow-y-auto"
-            onClick={() => setShowReceipt(false)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-[420px] w-full my-8"
+      <BaseModal
+        isOpen={showReceipt && !!selectedOrder}
+        onClose={() => setShowReceipt(false)}
+        size="md"
+        noPadding
+        showCloseButton={false}
+      >
+        <div className="bg-white text-gray-900 rounded-[2rem] overflow-hidden">
+          <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
+            <button 
+              onClick={() => setShowReceipt(false)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"
             >
-              <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center gap-3 border-b border-gray-100">
-                <button 
-                  onClick={() => setShowReceipt(false)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-xs font-black hover:bg-gray-50 transition-all uppercase"
-                >
-                  <ArrowLeft className="w-3 h-3" /> Kembali
-                </button>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleDownloadPDF} 
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"
-                  >
-                    <ReceiptIcon className="w-4 h-4" /> PDF
-                  </button>
-                  <button 
-                    onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 shadow-md transition-all uppercase"
-                  >
-                    <Printer className="w-4 h-4" /> Cetak
-                  </button>
-                </div>
-              </div>
-              <div className="p-4 bg-gray-100">
-                <Receipt 
-                  ref={receiptRef} 
-                  order={selectedOrder} 
-                  orderItems={selectedOrder.order_items.map((i: any) => {
-                    const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-                    return {
-                      name: i.menu_items?.name || i.name,
-                      price: resolvedPrice,
-                      quantity: i.quantity,
-                      subtotal: i.subtotal || (resolvedPrice * i.quantity)
-                    };
-                  })} 
-                  customerName={selectedOrder.profiles?.full_name || "Guest"} 
-                  cashierName={cashierName} 
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <ArrowLeft className="w-3 h-3" /> Kembali
+            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleDownloadPDF} 
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 shadow-md transition-all uppercase"
+              >
+                <ReceiptIcon className="w-4 h-4" /> PDF
+              </button>
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 shadow-md transition-all uppercase"
+              >
+                <Printer className="w-4 h-4" /> Cetak
+              </button>
+            </div>
+          </div>
+          <div className="p-4 bg-gray-100">
+            <Receipt 
+              ref={receiptRef} 
+              order={selectedOrder} 
+              orderItems={selectedOrder?.order_items.map((i: any) => {
+                const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                return {
+                  name: i.menu_items?.name || i.name,
+                  price: resolvedPrice,
+                  quantity: i.quantity,
+                  subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                };
+              }) || []} 
+              customerName={selectedOrder?.profiles?.full_name || "Guest"} 
+              cashierName={cashierName} 
+            />
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 }

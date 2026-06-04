@@ -49,7 +49,7 @@ export default function AdminUsersPage() {
     city: "",
     province: "",
     postalCode: "",
-    jobTitle: "Kasir",
+    jobTitle: "",
     division: "",
     department: "",
     workShift: "Pagi",
@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
       city: "",
       province: "",
       postalCode: "",
-      jobTitle: "Kasir",
+      jobTitle: "",
       division: "",
       department: "",
       workShift: "Pagi",
@@ -578,7 +578,9 @@ export default function AdminUsersPage() {
                         <Shield className="w-3.5 h-3.5" />
                         {u.role}
                       </span>
-                      <p className="text-xs font-bold text-muted capitalize">{u.job_title || "Kasir"}</p>
+                      {u.job_title && (
+                        <p className="text-xs font-bold text-muted capitalize">{u.job_title}</p>
+                      )}
                     </div>
                   </td>
                   <td className="p-6 whitespace-nowrap">
@@ -598,33 +600,38 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="p-6 text-center whitespace-nowrap">
-                    <div className="flex justify-center gap-2">
-                      <button 
-                        onClick={() => handleEditClick(u)}
-                        className="p-3 bg-gray-100 dark:bg-gray-800 text-muted hover:bg-primary hover:text-white rounded-xl transition-all"
-                        title="Sunting Karyawan"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => setShowPassUser(u)}
-                        className="p-3 bg-gray-100 dark:bg-gray-800 text-muted hover:bg-emerald-600 hover:text-white rounded-xl transition-all"
-                        title="Lihat Kredensial"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleResetPassword(u)}
-                        disabled={resetting}
-                        className="p-3 bg-gray-100 dark:bg-gray-800 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl transition-all"
-                        title="Reset Password"
-                      >
-                        {resetting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Key className="w-5 h-5" />}
-                      </button>
-                      <button onClick={() => deleteEmployee(u.id)} className="p-3 bg-gray-100 dark:bg-gray-800 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all" title="Hapus Karyawan">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                    {u.role === 'admin' ? (
+                      // Aksi disembunyikan untuk role admin demi keamanan sistem
+                      <span className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-40">—</span>
+                    ) : (
+                      <div className="flex justify-center gap-2">
+                        <button 
+                          onClick={() => handleEditClick(u)}
+                          className="p-3 bg-gray-100 dark:bg-gray-800 text-muted hover:bg-primary hover:text-white rounded-xl transition-all"
+                          title="Sunting Karyawan"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => setShowPassUser(u)}
+                          className="p-3 bg-gray-100 dark:bg-gray-800 text-muted hover:bg-emerald-600 hover:text-white rounded-xl transition-all"
+                          title="Lihat Kredensial"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleResetPassword(u)}
+                          disabled={resetting}
+                          className="p-3 bg-gray-100 dark:bg-gray-800 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl transition-all"
+                          title="Reset Password"
+                        >
+                          {resetting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Key className="w-5 h-5" />}
+                        </button>
+                        <button onClick={() => deleteEmployee(u.id)} className="p-3 bg-gray-100 dark:bg-gray-800 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all" title="Hapus Karyawan">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -822,7 +829,7 @@ export default function AdminUsersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label htmlFor="jobTitle" className="text-xs font-black uppercase text-muted ml-1">Jabatan Spesifik</label>
-                    <input id="jobTitle" value={formData.jobTitle} onChange={e => setFormData({...formData, jobTitle: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Contoh: Kasir Senior / Supervisor" title="Jabatan Spesifik" />
+                    <input id="jobTitle" value={formData.jobTitle} onChange={e => setFormData({...formData, jobTitle: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Contoh: Staff Senior / Supervisor / Koordinator" title="Jabatan Spesifik" />
                   </div>
                   <div className="space-y-1.5">
                     <label htmlFor="division" className="text-xs font-black uppercase text-muted ml-1">Divisi</label>
@@ -875,7 +882,7 @@ export default function AdminUsersPage() {
                   <div className="space-y-1.5">
                     <label htmlFor="roleSelect" className="text-xs font-black uppercase text-muted ml-1">Role Akun Utama *</label>
                     <select id="roleSelect" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as any})} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium">
-                      <option value="cashier">Kasir (Akses Front-desk POS & Chat)</option>
+                      <option value="cashier">Karyawan (Akses Front-desk POS & Chat)</option>
                       <option value="admin">Admin (Akses Panel Pengelolaan Restoran)</option>
                     </select>
                   </div>

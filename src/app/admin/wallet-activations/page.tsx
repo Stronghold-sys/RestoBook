@@ -336,6 +336,8 @@ export default function AdminWalletActivationsPage() {
                 <button
                   onClick={() => setSelectedActivation(null)}
                   className="p-1 text-muted hover:text-text-light dark:hover:text-text-dark rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all lg:hidden"
+                  title="Tutup Detail Pengajuan"
+                  aria-label="Tutup Detail Pengajuan"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -503,6 +505,8 @@ export default function AdminWalletActivationsPage() {
                               type="button"
                               onClick={() => setZoomImage(selectedActivation.ktp_front_url)}
                               className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                              title="Zoom Foto KTP Depan"
+                              aria-label="Zoom Foto KTP Depan"
                             >
                               <ZoomIn className="w-4 h-4" />
                             </button>
@@ -512,6 +516,8 @@ export default function AdminWalletActivationsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                              title="Unduh Foto KTP Depan"
+                              aria-label="Unduh Foto KTP Depan"
                             >
                               <Download className="w-4 h-4" />
                             </a>
@@ -536,6 +542,8 @@ export default function AdminWalletActivationsPage() {
                               type="button"
                               onClick={() => setZoomImage(selectedActivation.ktp_back_url)}
                               className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                              title="Zoom Foto KTP Belakang"
+                              aria-label="Zoom Foto KTP Belakang"
                             >
                               <ZoomIn className="w-4 h-4" />
                             </button>
@@ -545,6 +553,8 @@ export default function AdminWalletActivationsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                              title="Unduh Foto KTP Belakang"
+                              aria-label="Unduh Foto KTP Belakang"
                             >
                               <Download className="w-4 h-4" />
                             </a>
@@ -576,6 +586,8 @@ export default function AdminWalletActivationsPage() {
                                 type="button"
                                 onClick={() => setZoomImage(selectedActivation.supporting_doc_url)}
                                 className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                                title="Zoom Dokumen Pendukung"
+                                aria-label="Zoom Dokumen Pendukung"
                               >
                                 <ZoomIn className="w-4 h-4" />
                               </button>
@@ -586,6 +598,8 @@ export default function AdminWalletActivationsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 bg-white/20 hover:bg-white/35 rounded-xl text-white backdrop-blur-sm"
+                              title="Unduh Dokumen Pendukung"
+                              aria-label="Unduh Dokumen Pendukung"
                             >
                               <Download className="w-4 h-4" />
                             </a>
@@ -705,6 +719,8 @@ export default function AdminWalletActivationsPage() {
               <button 
                 onClick={() => setZoomImage(null)} 
                 className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/85 rounded-xl text-white backdrop-blur-sm z-55 transition-all"
+                title="Tutup Preview Gambar"
+                aria-label="Tutup Preview Gambar"
               >
                 <X className="w-6 h-6" />
               </button>

@@ -92,13 +92,22 @@ export async function sendWalletActivationEmail(
                       <p style="margin:0;">Kami sedang memvalidasi data diri serta kecocokan foto dokumen identitas Anda.</p>`;
         break;
       case 'diterima':
-        subject = `Aktivasi Dompetku Disetujui - ${restoName}`;
-        statusHeader = 'DISETUJUI';
+      case 'selesai':
+        subject = `Dompetku Anda Telah Aktif - ${restoName}`;
+        statusHeader = 'AKTIF';
         statusBgColor = '#e8f5e9';
         statusTextColor = '#1b5e20';
         statusBorderColor = '#c8e6c9';
-        messageBody = `<p style="margin:0 0 10px 0;">Selamat, pengajuan aktivasi Dompetku Anda telah disetujui. Fitur Dompetku sekarang aktif dan dapat digunakan.</p>
-                      <p style="margin:0;">Anda sudah dapat menggunakan saldo Dompetku untuk melakukan transaksi pesanan makanan maupun reservasi meja di aplikasi kami.</p>`;
+        messageBody = `<p style="margin:0 0 15px 0; font-size: 15px; font-weight: bold; color: #1b5e20;">Selamat, Dompetku Anda sudah aktif!</p>
+                      <p style="margin:0 0 10px 0;">Proses verifikasi data diri dan dokumen identitas Anda telah berhasil disetujui oleh tim kami. Layanan dompet digital internal Anda sekarang siap digunakan sepenuhnya.</p>
+                      <p style="margin:0 0 15px 0;">Kini Anda dapat melakukan:</p>
+                      <ul style="margin:0 0 15px 0; padding-left:20px; line-height:1.6;">
+                        <li>Pengisian saldo (Top Up) secara instan dan aman.</li>
+                        <li>Pembayaran pesanan makanan langsung melalui aplikasi (Dine-in, Takeaway, maupun Delivery).</li>
+                        <li>Pembayaran untuk reservasi tempat duduk secara praktis.</li>
+                      </ul>
+                      <p style="margin:0 0 10px 0; font-weight: bold;">Demi Keamanan Akun Anda:</p>
+                      <p style="margin:0;">Silakan atur PIN transaksi Dompetku Anda terlebih dahulu melalui menu Dompetku di dalam aplikasi untuk memproteksi setiap transaksi pembayaran Anda.</p>`;
         break;
       case 'ditolak':
         subject = `Aktivasi Dompetku Belum Disetujui - ${restoName}`;
@@ -125,15 +134,6 @@ export async function sendWalletActivationEmail(
                       </div>
                       ${invalidFieldsHtml}
                       <p style="margin:15px 0 0 0;">Anda dapat memperbaiki data yang tidak valid dengan menekan tombol <strong>Perbaiki dan Ajukan Ulang</strong> pada menu Dompetku di dalam aplikasi.</p>`;
-        break;
-      case 'selesai':
-        subject = `Proses Aktivasi Dompetku Selesai - ${restoName}`;
-        statusHeader = 'SELESAI';
-        statusBgColor = '#e8f5e9';
-        statusTextColor = '#1b5e20';
-        statusBorderColor = '#c8e6c9';
-        messageBody = `<p style="margin:0 0 10px 0;">Proses aktivasi Dompetku Anda telah selesai. Terima kasih telah melengkapi data dengan benar.</p>
-                      <p style="margin:0;">Layanan Dompet digital internal Anda saat ini sudah aktif sepenuhnya dan terverifikasi secara aman.</p>`;
         break;
     }
 

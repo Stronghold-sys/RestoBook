@@ -534,13 +534,13 @@ export default function CustomerWalletPage() {
               <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 uppercase tracking-wider animate-pulse">Diproses</span>
             )}
             {walletStatus === "diterima" && (
-              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 uppercase tracking-wider">Diterima</span>
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 uppercase tracking-wider">Aktif</span>
             )}
             {walletStatus === "ditolak" && (
               <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800 uppercase tracking-wider">Ditolak</span>
             )}
             {walletStatus === "selesai" && (
-              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-450 border border-green-200 dark:border-green-800 uppercase tracking-wider">Selesai / Aktif</span>
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 uppercase tracking-wider">Aktif</span>
             )}
           </h1>
           <p className="text-muted text-sm mt-1">

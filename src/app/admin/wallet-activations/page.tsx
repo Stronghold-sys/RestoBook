@@ -294,10 +294,12 @@ export default function AdminWalletActivationsPage() {
                             item.status === "diajukan_ulang" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
                             item.status === "diajukan" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" :
                             item.status === "diproses" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400" :
-                            item.status === "selesai" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
+                            item.status === "selesai" || item.status === "diterima" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
                             "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
                           }`}>
-                            {item.status === "diajukan_ulang" ? "Pengajuan Ulang" : item.status}
+                            {item.status === "diajukan_ulang" ? "Pengajuan Ulang" :
+                             (item.status === "selesai" || item.status === "diterima") ? "Aktif" :
+                             item.status}
                           </span>
                         </div>
                         <span className="text-[10px] text-muted font-bold">
@@ -344,17 +346,21 @@ export default function AdminWalletActivationsPage() {
                 selectedActivation.status === "diajukan_ulang" ? "bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400" :
                 selectedActivation.status === "diajukan" ? "bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400" :
                 selectedActivation.status === "diproses" ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-400" :
-                selectedActivation.status === "selesai" ? "bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400" :
+                selectedActivation.status === "selesai" || selectedActivation.status === "diterima" ? "bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400" :
                 "bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400"
               }`}>
                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold uppercase tracking-wider">Status: {selectedActivation.status === "diajukan_ulang" ? "Diajukan Ulang" : selectedActivation.status}</p>
+                  <p className="font-bold uppercase tracking-wider">
+                    Status: {selectedActivation.status === "diajukan_ulang" ? "Diajukan Ulang" :
+                             (selectedActivation.status === "selesai" || selectedActivation.status === "diterima") ? "Aktif" :
+                             selectedActivation.status}
+                  </p>
                   <p className="mt-0.5 text-muted leading-relaxed">
                     {selectedActivation.status === "diajukan" ? "Pengajuan baru terdaftar dan menunggu proses verifikasi." :
                      selectedActivation.status === "diajukan_ulang" ? "Pengguna telah memperbaiki data yang salah dan mengirimkan kembali." :
                      selectedActivation.status === "diproses" ? "Pengajuan sedang ditinjau oleh tim administrator." :
-                     selectedActivation.status === "selesai" ? "Telah disetujui. Akun Dompetku pelanggan sekarang aktif." :
+                     selectedActivation.status === "selesai" || selectedActivation.status === "diterima" ? "Telah disetujui. Akun Dompetku pelanggan sekarang aktif." :
                      `Pengajuan ditolak. Alasan: ${selectedActivation.rejection_reason}`}
                   </p>
                 </div>

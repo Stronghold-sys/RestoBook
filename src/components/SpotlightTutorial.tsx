@@ -81,20 +81,37 @@ export default function SpotlightTutorial() {
 
   const activeStep = steps[currentStep];
 
-  // Compute clip-path polygon to cut out the highlighted element
-  const getClipPath = () => {
-    if (!coords) return 'polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%)';
-    const { left, top, width, height } = coords;
-    const padding = 8;
-    const x1 = left - padding;
-    const y1 = top - padding;
-    const x2 = left + width + padding;
-    const y2 = top + height + padding;
+  // Generate inline SVG mask for backdrop cutout
+  const getMaskStyle = () => {
     const w = windowSize.width;
     const h = windowSize.height;
+    if (!coords) {
+      return {
+        maskImage: 'none',
+        WebkitMaskImage: 'none',
+      };
+    }
 
-    // Outer rectangle (fullscreen) and inner rectangle (cutout hole)
-    return `polygon(0px 0px, ${w}px 0px, ${w}px ${h}px, 0px ${h}px, 0px 0px, ${x1}px ${y1}px, ${x1}px ${y2}px, ${x2}px ${y2}px, ${x2}px ${y1}px, ${x1}px ${y1}px)`;
+    const { left, top, width, height } = coords;
+    const padding = 8;
+    const x = left - padding;
+    const y = top - padding;
+    const rW = width + padding * 2;
+    const rH = height + padding * 2;
+    const radius = 12; // matching highlight border rounded-xl
+
+    // Inline SVG: White is visible (blurred/dark), Black is cutout (transparent/clear)
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="white"/><rect x="${x}" y="${y}" width="${rW}" height="${rH}" rx="${radius}" ry="${radius}" fill="black"/></svg>`;
+    const mask = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+
+    return {
+      maskImage: mask,
+      WebkitMaskImage: mask,
+      maskSize: '100% 100%',
+      WebkitMaskSize: '100% 100%',
+      maskRepeat: 'no-repeat',
+      WebkitMaskRepeat: 'no-repeat',
+    };
   };
 
   // Compute position of tooltip (Always center of the screen)
@@ -119,10 +136,7 @@ export default function SpotlightTutorial() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[99996] bg-black/65 backdrop-blur-[4px] pointer-events-auto"
-        style={{
-          clipPath: getClipPath(),
-          transition: 'clip-path 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}
+        style={getMaskStyle()}
       />
 
       {/* Spotlight highlight outline */}

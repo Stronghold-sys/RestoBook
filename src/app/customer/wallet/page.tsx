@@ -652,7 +652,7 @@ export default function CustomerWalletPage() {
           )}
 
           {/* Recommendation & Block Banners */}
-          {!wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
+          {['diterima', 'selesai'].includes(walletStatus) && !wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -663,8 +663,8 @@ export default function CustomerWalletPage() {
                   <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Amankan Transaksi Dompetku Anda!</h4>
-                  <p className="text-xs text-muted mt-0.5">Anda belum membuat PIN transaksi. Kami sangat menyarankan untuk segera membuatnya demi melindungi saldo Dompetku Anda.</p>
+                  <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark">Proteksi Akun Dompetku Anda!</h4>
+                  <p className="text-xs text-muted mt-0.5">Demi menjaga keamanan saldo Anda, silakan buat 6 digit PIN transaksi terlebih dahulu sebelum memulai pembayaran pertama.</p>
                 </div>
               </div>
               <button
@@ -675,7 +675,7 @@ export default function CustomerWalletPage() {
                 }}
                 className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
               >
-                Buat PIN Sekarang
+                Atur PIN Transaksi
               </button>
             </motion.div>
           )}
@@ -876,23 +876,21 @@ export default function CustomerWalletPage() {
 
           {/* Quick Menu Actions */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <button
-              onClick={() => {
-                if (!['diterima', 'selesai'].includes(walletStatus)) {
-                  toast.error("Aktivasi Dompetku diperlukan sebelum mengatur PIN");
-                  return;
-                }
-                setPinType(wallet.hasPin ? "change" : "create");
-                setOtpSent(false);
-                setShowPinModal(true);
-              }}
-              className={`p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group ${
-                !['diterima', 'selesai'].includes(walletStatus) ? "opacity-60 cursor-not-allowed" : ""
-              }`}
-            >
-              <Lock className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark">Keamanan PIN</span>
-            </button>
+            {['diterima', 'selesai'].includes(walletStatus) && (
+              <button
+                onClick={() => {
+                  setPinType(wallet.hasPin ? "change" : "create");
+                  setOtpSent(false);
+                  setShowPinModal(true);
+                }}
+                className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group"
+              >
+                <Lock className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark">
+                  {wallet.hasPin ? "Ubah PIN Transaksi" : "Buat PIN Transaksi"}
+                </span>
+              </button>
+            )}
             <button
               onClick={() => setShowUnpaidModal(true)}
               className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group relative"

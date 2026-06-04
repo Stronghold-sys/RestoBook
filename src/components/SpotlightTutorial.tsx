@@ -101,7 +101,7 @@ export default function SpotlightTutorial() {
     const radius = 12; // matching highlight border rounded-xl
 
     // Inline SVG: White is visible (blurred/dark), Black is cutout (transparent/clear)
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="white"/><rect x="${x}" y="${y}" width="${rW}" height="${rH}" rx="${radius}" ry="${radius}" fill="black"/></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><mask id="spotlight-mask"><rect width="${w}" height="${h}" fill="white"/><rect x="${x}" y="${y}" width="${rW}" height="${rH}" rx="${radius}" ry="${radius}" fill="black"/></mask></defs><rect width="${w}" height="${h}" fill="white" mask="url(#spotlight-mask)"/></svg>`;
     const mask = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 
     return {

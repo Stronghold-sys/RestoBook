@@ -258,6 +258,18 @@ export async function POST(req: NextRequest) {
 
       // 6. Jalankan pemotongan saldo jika metode pembayaran e-wallet
       if (paymentMethod === 'wallet') {
+        // Cek status aktivasi wallet
+        const wStatus = profile.wallet_status || 'belum_aktif';
+        if (!['diterima', 'selesai'].includes(wStatus)) {
+          if (['diajukan', 'diajukan_ulang', 'diproses'].includes(wStatus)) {
+            return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.', code: 'WALLET_INACTIVE' }, { status: 400 });
+          } else if (wStatus === 'ditolak') {
+            return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda ditolak. Silakan perbaiki data atau unggah ulang dokumen di halaman Dompetku.', code: 'WALLET_INACTIVE' }, { status: 400 });
+          } else {
+            return NextResponse.json({ error: 'Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.', code: 'WALLET_INACTIVE' }, { status: 400 });
+          }
+        }
+
         if (profile.is_wallet_blocked) {
           const blockReason = profile.wallet_block_reason || 'Dompetku Anda diblokir. Hubungi admin atau ajukan banding di halaman Dompetku.';
           return NextResponse.json({ error: blockReason, code: 'WALLET_BLOCKED' }, { status: 400 });
@@ -427,12 +439,24 @@ export async function POST(req: NextRequest) {
       // Get customer profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
-        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count')
+        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count, wallet_status')
         .eq('id', orderData.customer_id)
         .single();
 
       if (profileErr || !profile) {
         return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      // Cek status aktivasi wallet
+      const wStatus = profile.wallet_status || 'belum_aktif';
+      if (!['diterima', 'selesai'].includes(wStatus)) {
+        if (['diajukan', 'diajukan_ulang', 'diproses'].includes(wStatus)) {
+          return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        } else if (wStatus === 'ditolak') {
+          return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda ditolak. Silakan perbaiki data atau unggah ulang dokumen di halaman Dompetku.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        } else {
+          return NextResponse.json({ error: 'Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        }
       }
 
       if (profile.is_wallet_blocked) {
@@ -586,12 +610,24 @@ export async function POST(req: NextRequest) {
       // Fetch profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
-        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count')
+        .select('id, wallet_balance, is_wallet_blocked, wallet_block_reason, wallet_pin, wrong_pin_count, wallet_status')
         .eq('id', order.customer_id)
         .single();
 
       if (profileErr || !profile) {
         return NextResponse.json({ error: 'Profil pelanggan tidak ditemukan' }, { status: 404 });
+      }
+
+      // Cek status aktivasi wallet
+      const wStatus = profile.wallet_status || 'belum_aktif';
+      if (!['diterima', 'selesai'].includes(wStatus)) {
+        if (['diajukan', 'diajukan_ulang', 'diproses'].includes(wStatus)) {
+          return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        } else if (wStatus === 'ditolak') {
+          return NextResponse.json({ error: 'Pengajuan aktivasi Dompetku Anda ditolak. Silakan perbaiki data atau unggah ulang dokumen di halaman Dompetku.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        } else {
+          return NextResponse.json({ error: 'Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.', code: 'WALLET_INACTIVE' }, { status: 400 });
+        }
       }
 
       if (profile.is_wallet_blocked) {

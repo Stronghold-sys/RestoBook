@@ -77,6 +77,10 @@ export default function CustomerWalletPage() {
   const [appealLoading, setAppealLoading] = useState(false);
   const [walletAppeal, setWalletAppeal] = useState<any>(null);
 
+  // Wallet Activation states
+  const [walletStatus, setWalletStatus] = useState<string>("belum_aktif");
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+
   useEffect(() => {
     if (otpTimer > 0) {
       const t = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
@@ -101,6 +105,9 @@ export default function CustomerWalletPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchWalletData();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "wallet_activations" }, () => {
+        fetchWalletData();
+      })
       .subscribe();
 
     return () => {
@@ -121,6 +128,17 @@ export default function CustomerWalletPage() {
       setTransactions(data.transactions || []);
       setUnpaidTransactions(data.unpaidTransactions || []);
       setWalletAppeal(data.walletAppeal || null);
+      
+      // Load activation status
+      const actRes = await fetch("/api/customer/wallet/activation");
+      const actData = await actRes.json();
+      if (actRes.ok && actData.activation) {
+        setWalletStatus(actData.activation.status || "belum_aktif");
+        setRejectionReason(actData.activation.rejection_reason || "");
+      } else {
+        setWalletStatus(data.wallet?.walletStatus || "belum_aktif");
+      }
+
       if (isManual) {
         toast.success("Saldo & transaksi berhasil diperbarui!");
       }
@@ -500,8 +518,30 @@ export default function CustomerWalletPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary flex items-center gap-3">
+          <h1 className="text-3xl font-black text-primary flex flex-wrap items-center gap-3">
             <Wallet className="w-8 h-8 text-primary" /> Dompetku
+            {/* Status Badge */}
+            {walletStatus === "belum_aktif" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700 uppercase tracking-wider">Belum Aktif</span>
+            )}
+            {walletStatus === "diajukan" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 uppercase tracking-wider animate-pulse">Diajukan</span>
+            )}
+            {walletStatus === "diajukan_ulang" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-blue-100 text-blue-650 dark:bg-blue-900/30 dark:text-blue-450 border border-blue-200 dark:border-blue-800 uppercase tracking-wider animate-pulse">Diajukan Ulang</span>
+            )}
+            {walletStatus === "diproses" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 uppercase tracking-wider animate-pulse">Diproses</span>
+            )}
+            {walletStatus === "diterima" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 uppercase tracking-wider">Diterima</span>
+            )}
+            {walletStatus === "ditolak" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800 uppercase tracking-wider">Ditolak</span>
+            )}
+            {walletStatus === "selesai" && (
+              <span className="px-2.5 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-450 border border-green-200 dark:border-green-800 uppercase tracking-wider">Selesai / Aktif</span>
+            )}
           </h1>
           <p className="text-muted text-sm mt-1">
             Gunakan saldo dompet digital internal Anda untuk mempermudah transaksi pembayaran makanan & reservasi.
@@ -523,6 +563,94 @@ export default function CustomerWalletPage() {
         </div>
       ) : (
         <>
+          {/* Status Aktivasi Dompetku Banners */}
+          {walletStatus === "belum_aktif" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-orange-500/10 to-red-500/10 dark:from-orange-500/5 dark:to-red-500/5 border border-orange-500/30 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-orange-500/20 rounded-2xl text-orange-600 dark:text-orange-400 shrink-0">
+                  <Wallet className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-text-light dark:text-text-dark">Aktivasi Dompetku Diperlukan</h3>
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
+                    Demi keamanan akun dan kepatuhan regulasi, Anda wajib melakukan aktivasi akun Dompetku terlebih dahulu sebelum dapat menggunakannya untuk transaksi pembayaran makanan maupun pengisian saldo (top up).
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/customer/wallet/activation")}
+                className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
+              >
+                Aktivasi Sekarang
+              </button>
+            </motion.div>
+          )}
+
+          {["diajukan", "diajukan_ulang", "diproses"].includes(walletStatus) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/5 dark:to-orange-500/5 border border-amber-500/30 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-400 shrink-0 animate-pulse">
+                  <Clock className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-base text-text-light dark:text-text-dark">Pengajuan Aktivasi Sedang Ditinjau</h3>
+                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-amber-500 text-white uppercase tracking-wider animate-pulse">
+                      {walletStatus === "diproses" ? "Sedang Diproses" : "Diajukan"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
+                    Berkas pengajuan aktivasi Dompetku Anda telah diterima oleh sistem dan sedang diperiksa oleh tim verifikator kami. Proses validasi memakan waktu maksimal 1x24 jam. Terima kasih atas kesabaran Anda.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {walletStatus === "ditolak" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-red-500/10 to-rose-500/10 dark:from-red-500/5 dark:to-rose-500/5 border border-red-500/30 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-red-500/20 rounded-2xl text-red-650 shrink-0">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-base text-red-600 dark:text-red-400">Pengajuan Aktivasi Ditolak</h3>
+                    <span className="px-2 py-0.5 text-[9px] font-black rounded bg-red-500 text-white uppercase tracking-wider">
+                      Perlu Revisi
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Maaf, pengajuan aktivasi Dompetku Anda belum dapat disetujui karena berkas/data tidak valid. Silakan lakukan perbaikan data dan unggah kembali dokumen revisi yang diminta.
+                  </p>
+                  {rejectionReason && (
+                    <div className="p-3 bg-card-light dark:bg-card-dark border border-red-200 dark:border-red-900/50 rounded-xl text-xs">
+                      <span className="font-bold text-red-500">Catatan Admin:</span> &quot;{rejectionReason}&quot;
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/customer/wallet/activation")}
+                className="px-6 py-3 bg-red-500 hover:bg-red-650 text-white font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap self-start md:self-center uppercase tracking-wider"
+              >
+                Perbaiki & Ajukan Ulang
+              </button>
+            </motion.div>
+          )}
+
           {/* Recommendation & Block Banners */}
           {!wallet.hasPin && !wallet.isBlocked && !wallet.pinResetRequired && (
             <motion.div
@@ -679,8 +807,18 @@ export default function CustomerWalletPage() {
               </div>
               <div className="border-t border-white/20 pt-4 mt-6 flex justify-between items-center z-10">
                 <button
-                  onClick={() => setShowTopUpModal(true)}
-                  className="px-5 py-2.5 bg-white text-primary font-black text-xs rounded-xl shadow-md hover:bg-orange-50 transition-all uppercase tracking-wider"
+                  onClick={() => {
+                    if (!['diterima', 'selesai'].includes(walletStatus)) {
+                      toast.error("Aktivasi Dompetku diperlukan sebelum melakukan pengisian saldo (top up)");
+                      return;
+                    }
+                    setShowTopUpModal(true);
+                  }}
+                  className={`px-5 py-2.5 font-black text-xs rounded-xl shadow-md transition-all uppercase tracking-wider ${
+                    ['diterima', 'selesai'].includes(walletStatus)
+                      ? "bg-white text-primary hover:bg-orange-50"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+                  }`}
                 >
                   Isi Saldo
                 </button>
@@ -740,11 +878,17 @@ export default function CustomerWalletPage() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <button
               onClick={() => {
+                if (!['diterima', 'selesai'].includes(walletStatus)) {
+                  toast.error("Aktivasi Dompetku diperlukan sebelum mengatur PIN");
+                  return;
+                }
                 setPinType(wallet.hasPin ? "change" : "create");
                 setOtpSent(false);
                 setShowPinModal(true);
               }}
-              className="p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group"
+              className={`p-4 bg-card-light dark:bg-card-dark hover:border-primary/40 border border-border-light dark:border-border-dark rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all group ${
+                !['diterima', 'selesai'].includes(walletStatus) ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
               <Lock className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-black uppercase tracking-wider text-text-light dark:text-text-dark">Keamanan PIN</span>

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone, wallet_balance, wallet_pin, is_wallet_blocked, wallet_block_reason, wallet_pin_reset_required')
+      .select('id, email, full_name, phone, wallet_balance, wallet_pin, is_wallet_blocked, wallet_block_reason, wallet_pin_reset_required, wallet_status')
       .eq('user_id', user.id)
       .single();
 
@@ -184,6 +184,7 @@ export async function GET(req: NextRequest) {
         email: profile.email || '',
         phone: profile.phone || '',
         fullName: profile.full_name || '',
+        walletStatus: profile.wallet_status || 'belum_aktif',
       },
       settings: {
         minTopup: Number(settings?.min_topup || 10000),

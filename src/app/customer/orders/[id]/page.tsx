@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send, Paperclip, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, ChefHat, PackageCheck, AlertCircle, AlertTriangle, Printer, Banknote, CreditCard, Receipt as ReceiptIcon, XCircle, ShieldAlert, RotateCcw, Star, MessageSquare, ArrowRight, Globe, X, Lock, Wallet, Camera, Send, Paperclip, FileText, Trash2 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -564,7 +564,7 @@ export default function OrderTrackingPage() {
     if (session?.user) {
       const { data } = await supabase
         .from("profiles")
-        .select("id, wallet_balance, is_wallet_blocked")
+        .select("id, wallet_balance, is_wallet_blocked, wallet_status")
         .eq("user_id", session.user.id)
         .single();
       if (data) {
@@ -1475,54 +1475,86 @@ export default function OrderTrackingPage() {
                       </motion.div>
                     ) : (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                        {profileData && (
-                          <div className={`p-4 rounded-2xl border transition-all ${
-                            profileData.wallet_balance >= Number(order.total_amount)
-                              ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
-                              : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
-                          }`}>
-                            {/* Balance display and status indicator */}
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <Wallet className="w-5 h-5 shrink-0" />
-                                <div className="text-left min-w-0">
-                                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
-                                  <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
-                                </div>
+                        {profileData && !['diterima', 'selesai'].includes(profileData.wallet_status) ? (
+                          <div className="p-4 rounded-2xl border bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 space-y-3">
+                            <div className="flex items-start gap-2.5">
+                              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+                              <div className="text-left">
+                                {['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
+                                  <>
+                                    <p className="text-xs font-bold uppercase tracking-wider">Aktivasi Sedang Ditinjau</p>
+                                    <p className="text-xs mt-1 leading-relaxed text-muted">Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-xs font-bold uppercase tracking-wider">Dompetku Belum Aktif</p>
+                                    <p className="text-xs mt-1 leading-relaxed text-muted">Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.</p>
+                                  </>
+                                )}
                               </div>
-                              {profileData.wallet_balance >= Number(order.total_amount) ? (
-                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
-                              ) : (
-                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
-                              )}
                             </div>
-
-                            {/* Insufficient balance warning and top up action button nested inside same container */}
-                            {profileData.wallet_balance < Number(order.total_amount) && (
-                              <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
-                                <p className="text-xs font-semibold text-left leading-relaxed">
-                                  Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(Number(order.total_amount) - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowTopUpModal(true)}
-                                  className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
-                                >
-                                  Isi Saldo Sekarang
-                                </button>
-                              </div>
+                            {!['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) && (
+                              <button
+                                type="button"
+                                onClick={() => router.push("/customer/wallet/activation")}
+                                className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"
+                              >
+                                Aktivasi Sekarang
+                              </button>
                             )}
                           </div>
-                        )}
+                        ) : (
+                          <>
+                            {profileData && (
+                              <div className={`p-4 rounded-2xl border transition-all ${
+                                profileData.wallet_balance >= Number(order.total_amount)
+                                  ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
+                                  : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
+                              }`}>
+                                {/* Balance display and status indicator */}
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <Wallet className="w-5 h-5 shrink-0" />
+                                    <div className="text-left min-w-0">
+                                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
+                                      <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                                    </div>
+                                  </div>
+                                  {profileData.wallet_balance >= Number(order.total_amount) ? (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                                  )}
+                                </div>
 
-                        {profileData && profileData.wallet_balance >= Number(order.total_amount) && (
-                          <button
-                            onClick={() => handlePayViaWallet()}
-                            disabled={payingViaWallet}
-                            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
-                          >
-                            {payingViaWallet ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Wallet className="w-6 h-6" /> Bayar Menggunakan Dompetku</>}
-                          </button>
+                                {/* Insufficient balance warning and top up action button nested inside same container */}
+                                {profileData.wallet_balance < Number(order.total_amount) && (
+                                  <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
+                                    <p className="text-xs font-semibold text-left leading-relaxed">
+                                      Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(Number(order.total_amount) - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowTopUpModal(true)}
+                                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+                                    >
+                                      Isi Saldo Sekarang
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {profileData && profileData.wallet_balance >= Number(order.total_amount) && (
+                              <button
+                                onClick={() => handlePayViaWallet()}
+                                disabled={payingViaWallet}
+                                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+                              >
+                                {payingViaWallet ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Wallet className="w-6 h-6" /> Bayar Menggunakan Dompetku</>}
+                              </button>
+                            )}
+                          </>
                         )}
                         <p className="text-[10px] text-center text-muted font-bold uppercase tracking-widest">
                           Pembayaran aman via e-wallet internal

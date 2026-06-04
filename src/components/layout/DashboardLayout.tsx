@@ -454,6 +454,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Transaksi", href: "/admin/transactions", icon: Receipt },
           { name: "Resign", href: "/admin/resign", icon: Power },
           { name: "Refund", href: "/admin/refunds", icon: RotateCcw },
+          { name: "Aktivasi Dompetku", href: "/admin/wallet-activations", icon: Wallet },
           { name: "Reviews", href: "/admin/reviews", icon: Star },
           { name: "Reward Point", href: "/admin/rewards", icon: Gift },
           { name: "Pengaduan & Bantuan", href: "/admin/support", icon: LifeBuoy, badge: pendingTicketCount },

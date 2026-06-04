@@ -666,7 +666,7 @@ export default function CartPage() {
     if (session?.user) {
       const { data } = await supabase
         .from("profiles")
-        .select("id, full_name, email, wallet_balance")
+        .select("id, full_name, email, wallet_balance, wallet_status")
         .eq("user_id", session.user.id)
         .single();
       if (data) {
@@ -1604,40 +1604,73 @@ export default function CartPage() {
             </div>
 
             {totalAmount > 0 && paymentMethod === "wallet" && profileData && (
-              <div className={`p-4 rounded-2xl border transition-all ${
-                profileData.wallet_balance >= totalAmount
-                  ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
-                  : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
-              }`}>
-                {/* Balance display and status indicator */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Wallet className="w-5 h-5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
-                      <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+              <div className="space-y-3">
+                {!['diterima', 'selesai'].includes(profileData.wallet_status) ? (
+                  <div className="p-4 rounded-2xl border bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+                      <div>
+                        {['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
+                          <>
+                            <p className="text-xs font-bold uppercase tracking-wider">Aktivasi Sedang Ditinjau</p>
+                            <p className="text-xs mt-1 leading-relaxed text-muted">Pengajuan aktivasi Dompetku Anda sedang diproses. Mohon tunggu hasil verifikasi dari admin.</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs font-bold uppercase tracking-wider">Dompetku Belum Aktif</p>
+                            <p className="text-xs mt-1 leading-relaxed text-muted">Dompetku belum diaktifkan. Silakan lakukan aktivasi terlebih dahulu untuk menggunakan metode pembayaran ini.</p>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {/* Tombol Aktivasi */}
+                    {!['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/customer/wallet/activation")}
+                        className="w-full py-2.5 bg-red-650 hover:bg-red-750 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"
+                      >
+                        Aktivasi Sekarang
+                      </button>
+                    )}
                   </div>
-                  {profileData.wallet_balance >= totalAmount ? (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
-                  ) : (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
-                  )}
-                </div>
+                ) : (
+                  <div className={`p-4 rounded-2xl border transition-all ${
+                    profileData.wallet_balance >= totalAmount
+                      ? "bg-green-50/60 border-green-200/60 text-green-800 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400"
+                      : "bg-red-50/60 border-red-200/60 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400"
+                  }`}>
+                    {/* Balance display and status indicator */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Wallet className="w-5 h-5 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider opacity-75 leading-tight">Saldo Dompet Anda</p>
+                          <p className="text-base font-black mt-0.5">Rp {Number(profileData.wallet_balance || 0).toLocaleString("id-ID")}</p>
+                        </div>
+                      </div>
+                      {profileData.wallet_balance >= totalAmount ? (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md shrink-0 whitespace-nowrap">Saldo Cukup</span>
+                      ) : (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md animate-pulse shrink-0 whitespace-nowrap">Saldo Kurang</span>
+                      )}
+                    </div>
 
-                {/* Insufficient balance warning and top up action button nested inside same container */}
-                {profileData.wallet_balance < totalAmount && (
-                  <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
-                    <p className="text-xs font-semibold leading-relaxed">
-                      Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowTopUpModal(true)}
-                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
-                    >
-                      Isi Saldo Sekarang
-                    </button>
+                    {/* Insufficient balance warning and top up action button nested inside same container */}
+                    {profileData.wallet_balance < totalAmount && (
+                      <div className="mt-3 pt-3 border-t border-red-200/50 dark:border-red-900/30 space-y-3">
+                        <p className="text-xs font-semibold leading-relaxed">
+                          Saldo Anda kurang sebesar <span className="font-extrabold text-red-700 dark:text-red-300">Rp {(totalAmount - profileData.wallet_balance).toLocaleString("id-ID")}</span>. Isi saldo untuk melanjutkan pembayaran.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowTopUpModal(true)}
+                          className="w-full py-2.5 bg-red-650 hover:bg-red-750 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+                        >
+                          Isi Saldo Sekarang
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1649,14 +1682,14 @@ export default function CartPage() {
             </div>
 
             <motion.button 
-              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 1.02 } : {}} 
-              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 0.98 } : {}} 
+              whileHover={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 1.02 } : {}} 
+              whileTap={isOpen && !(totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) && !(orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance) ? { scale: 0.98 } : {}} 
               onClick={() => totalAmount > 0 && paymentMethod === "cash" ? setShowPaymentModal(true) : handleCheckoutClick()} 
-              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount) || (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)}
+              disabled={!isOpen || loading || (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status))) || (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)}
               className={`w-full py-4 rounded-2xl font-black text-sm lg:text-xs xl:text-sm flex justify-center items-center gap-2 transition-all mt-4 uppercase tracking-wider ${
                 !isOpen 
                   ? "bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-400/20 shadow-none"
-                  : (totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount)
+                  : (totalAmount > 0 && paymentMethod === "wallet" && profileData && (profileData.wallet_balance < totalAmount || !['diterima', 'selesai'].includes(profileData.wallet_status)))
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
                   : (orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance)
                   ? "bg-red-500/10 dark:bg-red-950/20 text-red-500 border border-red-200 dark:border-red-900/50 cursor-not-allowed shadow-none"
@@ -1664,7 +1697,13 @@ export default function CartPage() {
               }`}
             >
               {!isOpen && <Clock className="w-5 h-5 animate-pulse text-red-500" />}
-              {totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
+              {totalAmount > 0 && paymentMethod === "wallet" && profileData && !['diterima', 'selesai'].includes(profileData.wallet_status) ? (
+                ['diajukan', 'diajukan_ulang', 'diproses'].includes(profileData.wallet_status) ? (
+                  <><Clock className="w-4 h-4 shrink-0" /> Menunggu Verifikasi Admin</>
+                ) : (
+                  <><AlertTriangle className="w-4 h-4 shrink-0" /> Aktivasi Dompetku Diperlukan</>
+                )
+              ) : totalAmount > 0 && paymentMethod === "wallet" && profileData && profileData.wallet_balance < totalAmount ? (
                 <><AlertTriangle className="w-4 h-4 shrink-0" /> Saldo Dompet Kurang</>
               ) : orderType === "delivery" && distanceKm !== null && distanceKm > maxShippingDistance ? (
                 <><AlertTriangle className="w-4 h-4 shrink-0" /> Jarak Diluar Jangkauan</>

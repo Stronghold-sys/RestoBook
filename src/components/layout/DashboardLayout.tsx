@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import MaintenanceBlockPage from "@/components/MaintenanceBlockPage";
+import { useAudioStore } from "@/store/useAudioStore";
+import NotificationCenterDrawer from "@/components/layout/NotificationCenterDrawer";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -34,6 +36,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   };
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isNotifCenterOpen, setIsNotifCenterOpen] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [pendingTicketCount, setPendingTicketCount] = useState(0);
@@ -250,6 +253,8 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   };
 
   const playSingleFallbackBeep = () => {
+    const isEnabled = useAudioStore.getState().isCustomerSoundEnabled;
+    if (!isEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -268,6 +273,11 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   };
 
   const playSingleNotifSound = () => {
+    const isEnabled = useAudioStore.getState().isCustomerSoundEnabled;
+    if (!isEnabled) {
+      console.log("Customer notifications sound is muted.");
+      return;
+    }
     try {
       const notifAudio = new Audio("/notification.mp3");
       notifAudio.volume = 0.7;
@@ -317,6 +327,8 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       router.push("/login");
       return;
     }
+
+    useAudioStore.getState().initAudioSettings(session.user.id);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -510,6 +522,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           <div className="flex h-full flex-col p-6">
             <button
               onClick={handleLogoClick}
+              data-tour="logo"
               className="mb-10 flex items-center gap-3 px-2 text-left hover:opacity-80 transition-all focus:outline-none w-fit"
             >
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
@@ -523,6 +536,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 <Link
                   key={link.href}
                   href={link.href}
+                  data-tour={`nav-${link.name}`}
                   className={`group relative flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
                     pathname === link.href
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
@@ -593,13 +607,27 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
+                data-tour="theme-toggle"
                 aria-label={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
                 title={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
                 className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all"
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" /> }
               </button>
-              <div className="h-10 w-10 rounded-xl overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm">
+              <button
+                onClick={() => setIsNotifCenterOpen(true)}
+                className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all relative"
+                title="Pusat Informasi"
+                aria-label="Pusat Informasi"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotifCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-white">
+                    {unreadNotifCount}
+                  </span>
+                )}
+              </button>
+              <div data-tour="profile-avatar" className="h-10 w-10 rounded-xl overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm">
                 {userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -637,6 +665,14 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             )}
           </main>
         </div>
+
+        <NotificationCenterDrawer
+          isOpen={isNotifCenterOpen}
+          onClose={() => setIsNotifCenterOpen(false)}
+          userId={userProfile?.user_id || ""}
+          profileId={userProfile?.id || ""}
+          role={role || ""}
+        />
 
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>

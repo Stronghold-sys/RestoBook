@@ -16,6 +16,7 @@ import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 import OrderCountdown from "@/components/OrderCountdown";
+import { useAudioStore } from "@/store/useAudioStore";
 
 declare const google: any;
 
@@ -96,6 +97,8 @@ export default function OrderTrackingPage() {
   const typingTimeoutRef = useRef<any>(null);
 
   const playPingSound = () => {
+    const isGlobalEnabled = useAudioStore.getState().isCustomerSoundEnabled;
+    if (!isGlobalEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -706,6 +709,16 @@ export default function OrderTrackingPage() {
     }
   };
 
+
+  useEffect(() => {
+    const initAudio = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        useAudioStore.getState().initAudioSettings(session.user.id);
+      }
+    };
+    initAudio();
+  }, []);
 
   useEffect(() => {
     if (id) fetchOrderDetails();

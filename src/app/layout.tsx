@@ -11,6 +11,9 @@ import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
 
+import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
+import SpotlightTutorial from "@/components/SpotlightTutorial";
+
 const RestoBot = dynamic(() => import("@/components/RestoBot"), {
   ssr: false,
 });
@@ -66,6 +69,8 @@ export default function RootLayout({
         <SessionStatusListener />
         <AutoTableStatusManager />
         {children}
+        <GlobalModalContainer />
+        <SpotlightTutorial />
         <Toaster position="top-center" containerStyle={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }} />
         <RestoBot />
         <Script id="register-sw" strategy="afterInteractive">

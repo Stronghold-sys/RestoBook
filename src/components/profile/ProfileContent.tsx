@@ -2,9 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, X, MessageSquare, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, X, MessageSquare, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, Volume2, VolumeX } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import { useModalStore } from "@/store/useModalStore";
+import { useAudioStore } from "@/store/useAudioStore";
+import { useActivityStore } from "@/store/useActivityStore";
 
 function ResignCountdownWidget({ req, profile }: { req: any, profile: any }) {
   const [timeLeft, setTimeLeft] = useState<{d:number, h:number, m:number, s:number} | null>(null);
@@ -136,6 +139,14 @@ export default function ProfileContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
+  const openModal = useModalStore(state => state.openModal);
+  const closeModal = useModalStore(state => state.closeModal);
+  const isSoundEnabled = useAudioStore(state => state.isCustomerSoundEnabled);
+  const toggleCustomerSound = useAudioStore(state => state.toggleCustomerSound);
+  const initAudioSettings = useAudioStore(state => state.initAudioSettings);
+
+  const [userId, setUserId] = useState<string>("");
+
   // Tab State
   const [activeTab, setActiveTab] = useState<"profile" | "resign" | "status">("profile");
 
@@ -143,7 +154,6 @@ export default function ProfileContent() {
   const [effectiveDate, setEffectiveDate] = useState("");
   const [reason, setReason] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
-  const [showConfirmResign, setShowConfirmResign] = useState(false);
   const [submittingResign, setSubmittingResign] = useState(false);
 
   // Resign Status Check State
@@ -154,21 +164,47 @@ export default function ProfileContent() {
   const [hasChecked, setHasChecked] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  // Password state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [step, setStep] = useState<"request" | "verify">("request");
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [oldPassword, setOldPassword] = useState("");
-  const [showOldPass, setShowOldPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [otpMethod, setOtpMethod] = useState<"email" | "whatsapp">("email");
-  const [submittingPass, setSubmittingPass] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [waCountdown, setWaCountdown] = useState(0);
+  // Autosave Resign Form Draft
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const draftDate = localStorage.getItem("resign_draft_effectiveDate");
+      const draftReason = localStorage.getItem("resign_draft_reason");
+      const draftNotes = localStorage.getItem("resign_draft_additionalNotes");
+      if (draftDate) setEffectiveDate(draftDate);
+      if (draftReason) setReason(draftReason);
+      if (draftNotes) setAdditionalNotes(draftNotes);
+    }
+  }, []);
+
+  const handleEffectiveDateChange = (val: string) => {
+    setEffectiveDate(val);
+    localStorage.setItem("resign_draft_effectiveDate", val);
+  };
+
+  const handleReasonChange = (val: string) => {
+    setReason(val);
+    localStorage.setItem("resign_draft_reason", val);
+  };
+
+  const handleAdditionalNotesChange = (val: string) => {
+    setAdditionalNotes(val);
+    localStorage.setItem("resign_draft_additionalNotes", val);
+  };
+
+  // Sound toggle handler
+  const handleToggleSound = () => {
+    if (userId) {
+      toggleCustomerSound(userId);
+      const isEnabledNow = useAudioStore.getState().isCustomerSoundEnabled;
+      toast.success(
+        isEnabledNow
+          ? "Suara notifikasi pelanggan diaktifkan!"
+          : "Suara notifikasi pelanggan telah dimatikan."
+      );
+    }
+  };
 
   // Delete account state & function
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -198,25 +234,21 @@ export default function ProfileContent() {
       toast.error(e.message);
     } finally {
       setDeleting(false);
-      setShowDeleteModal(false);
+      closeModal();
     }
   };
 
+  // Load session user id to bind sound preferences
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setInterval(() => setCountdown(c => c - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (waCountdown > 0) {
-      timer = setInterval(() => setWaCountdown(c => c - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [waCountdown]);
+    const getSessionUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+        initAudioSettings(session.user.id);
+      }
+    };
+    getSessionUser();
+  }, []);
 
   useEffect(() => {
     fetchProfile();
@@ -353,6 +385,10 @@ export default function ProfileContent() {
       }
 
       toast.success("Profil diperbarui!");
+      useActivityStore.getState().addLog(
+        "Perbarui Profil",
+        "Berhasil memperbarui data profil diri."
+      );
       fetchProfile();
     } catch (e: any) {
       toast.error(e.message);
@@ -397,87 +433,15 @@ export default function ProfileContent() {
       setPreviewUrl(publicUrl);
 
       toast.success("Foto profil diperbarui!");
+      useActivityStore.getState().addLog(
+        "Unggah Foto Profil",
+        "Berhasil memperbarui foto profil utama."
+      );
     } catch (e: any) {
       console.error("Upload error:", e);
       toast.error(e.message || "Gagal mengunggah foto");
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleSendOTP = async () => {
-    if (!oldPassword.trim()) return toast.error("Masukkan password lama Anda terlebih dahulu");
-    setSubmittingPass(true);
-    try {
-      // Verify old password first via Supabase signIn
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: profile.email,
-        password: oldPassword
-      });
-      if (signInError) throw new Error("Password lama tidak sesuai. Silakan coba kembali.");
-
-      // Bypass OTP send if user is admin
-      if (profile.role === "admin") {
-        toast.success("Password lama terverifikasi! Masukkan password baru Anda.");
-        setStep("verify");
-        return;
-      }
-
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: profile.email,
-          phone: profile.phone,
-          method: otpMethod,
-          type: "change_password",
-          name: profile.full_name
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mengirim OTP");
-      
-      toast.success(`Kode OTP dikirim via ${otpMethod === 'email' ? 'Email' : 'WhatsApp'}!`);
-      setStep("verify");
-      if (otpMethod === 'email') setCountdown(60);
-      else setWaCountdown(60);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSubmittingPass(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (newPassword.length < 6) return toast.error("Password baru minimal 6 karakter");
-    if (profile.role !== "admin" && otp.length < 6) return toast.error("Masukkan kode OTP 6 digit");
-    setSubmittingPass(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/profile/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: profile.email,
-          otp: profile.role === "admin" ? undefined : otp,
-          newPassword,
-          userId: session?.user.id,
-          isAdminBypass: profile.role === "admin"
-        })
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Gagal ganti password");
-      
-      toast.success("Password berhasil diubah!");
-      setShowPasswordModal(false);
-      setStep("request");
-      setOtp("");
-      setNewPassword("");
-      setOldPassword("");
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSubmittingPass(false);
     }
   };
 
@@ -524,11 +488,17 @@ export default function ProfileContent() {
       }
 
       toast.success("Pengajuan Anda telah berhasil dikirim. Silakan tunggu konfirmasi dari admin.");
+      
+      // Clear autosave drafts
+      localStorage.removeItem("resign_draft_effectiveDate");
+      localStorage.removeItem("resign_draft_reason");
+      localStorage.removeItem("resign_draft_additionalNotes");
+
       setActiveTab("status");
       setEffectiveDate("");
       setReason("");
       setAdditionalNotes("");
-      setShowConfirmResign(false);
+      closeModal();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -594,7 +564,7 @@ export default function ProfileContent() {
           <h1 className="text-3xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">Profil Saya</h1>
           <p className="text-muted mt-1">Kelola data diri, keamanan akun, dan status keanggotaan</p>
         </div>
-        <button onClick={() => setShowPasswordModal(true)} className="flex items-center justify-center gap-2 px-5 py-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl font-black hover:bg-amber-500 hover:text-white transition-all text-sm uppercase tracking-wider shadow-lg shadow-amber-500/5">
+        <button onClick={() => openModal('profile_password', { email: profile.email, phone: profile.phone, fullName: profile.full_name, role: profile.role })} className="flex items-center justify-center gap-2 px-5 py-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl font-black hover:bg-amber-500 hover:text-white transition-all text-sm uppercase tracking-wider shadow-lg shadow-amber-500/5">
           <Key className="w-4 h-4" /> Ganti Password
         </button>
       </div>
@@ -654,6 +624,31 @@ export default function ProfileContent() {
                 <span className="font-mono text-[10px] font-bold text-muted uppercase">ID: {profile.employee_id}</span>
               )}
             </div>
+
+            {profile.role === "customer" && (
+              <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-muted">Suara Notifikasi</span>
+                <button
+                  onClick={handleToggleSound}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider transition-all shadow-sm ${
+                    isSoundEnabled
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white"
+                      : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white"
+                  }`}
+                  title={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
+                >
+                  {isSoundEnabled ? (
+                    <>
+                      <Volume2 className="w-4.5 h-4.5 animate-pulse" /> Suara ON
+                    </>
+                  ) : (
+                    <>
+                      <VolumeX className="w-4.5 h-4.5" /> Suara OFF
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -772,26 +767,26 @@ export default function ProfileContent() {
                   <label htmlFor="effectiveDate" className="text-xs font-black uppercase text-muted ml-1">Tanggal Efektif Keluar <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                    <input id="effectiveDate" type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all font-bold" />
+                    <input id="effectiveDate" type="date" value={effectiveDate} onChange={e => handleEffectiveDateChange(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all font-bold" />
                   </div>
                 </div>
 
                 {/* Input 2: Alasan Resign */}
                 <div className="space-y-2">
                   <label htmlFor="resignReason" className="text-xs font-black uppercase text-muted ml-1">Alasan Resign <span className="text-red-500">*</span></label>
-                  <textarea id="resignReason" rows={3} value={reason} onChange={e => setReason(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Sebutkan alasan utama Anda mengundurkan diri secara jelas..." />
+                  <textarea id="resignReason" rows={3} value={reason} onChange={e => handleReasonChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Sebutkan alasan utama Anda mengundurkan diri secara jelas..." />
                 </div>
 
                 {/* Input 3: Keterangan Tambahan */}
                 <div className="space-y-2">
                   <label htmlFor="additionalNotes" className="text-xs font-black uppercase text-muted ml-1">Keterangan Tambahan (Opsional)</label>
-                  <textarea id="additionalNotes" rows={2} value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Keterangan pendukung atau pesan penutup lainnya..." />
+                  <textarea id="additionalNotes" rows={2} value={additionalNotes} onChange={e => handleAdditionalNotesChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Keterangan pendukung atau pesan penutup lainnya..." />
                 </div>
 
                 <button 
                   type="button" 
                   disabled={!effectiveDate || !reason.trim()} 
-                  onClick={() => setShowConfirmResign(true)} 
+                  onClick={() => openModal('profile_confirm_resign', { onConfirm: handleSubmitResign })} 
                   className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black shadow-xl shadow-teal-600/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-5 h-5" /> Ajukan Pengunduran Diri
@@ -898,7 +893,7 @@ export default function ProfileContent() {
               <h3 className="text-lg font-black text-red-700 dark:text-red-400 uppercase tracking-wide">Zona Bahaya</h3>
               <p className="text-xs text-red-600 dark:text-red-400 mt-1">Tindakan di bawah ini bersifat permanen dan akan menghapus seluruh data Anda dari database tanpa sisa.</p>
               <button 
-                onClick={() => setShowDeleteModal(true)} 
+                onClick={() => openModal('profile_delete', { onConfirm: handleDeleteAccount })} 
                 className="mt-4 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-red-600/20"
               >
                 Hapus Akun Saya
@@ -908,209 +903,6 @@ export default function ProfileContent() {
         </div>
       </div>
 
-      {/* Confirm Resign Modal */}
-      <AnimatePresence>
-        {showConfirmResign && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowConfirmResign(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 border border-teal-500/20">
-              <button onClick={() => setShowConfirmResign(false)} aria-label="Tutup" title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark uppercase">Kirim Pengajuan?</h3>
-                <p className="text-sm text-muted mt-2">Pastikan semua data yang Anda masukkan sudah benar dan sesuai dengan kesepakatan internal.</p>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-teal-600 bg-teal-50 dark:bg-teal-950/30 p-4 rounded-2xl text-center leading-relaxed">
-                  Pengajuan akan diteruskan langsung ke Panel Manajemen Admin RestoBook secara real-time.
-                </p>
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setShowConfirmResign(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-                  <button 
-                    type="button"
-                    onClick={handleSubmitResign} 
-                    disabled={submittingResign} 
-                    className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-teal-600/20 flex items-center justify-center gap-2"
-                  >
-                    {submittingResign ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Kirim"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Account Modal */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 border border-red-500/20">
-              <button onClick={() => setShowDeleteModal(false)} aria-label="Tutup" title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Shield className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark">Hapus Akun Anda?</h3>
-                <p className="text-sm text-muted mt-2">Semua data diri, transaksi, ulasan, keranjang belanja, dan pesanan Anda akan <strong className="font-bold text-text-light dark:text-text-dark">dibersihkan sepenuhnya tanpa sisa</strong> dari database.</p>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/30 p-4 rounded-2xl text-center leading-relaxed">
-                  Tindakan ini bersifat PERMANEN dan tidak dapat dibatalkan dengan cara apa pun. Anda akan otomatis keluar dari aplikasi.
-                </p>
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setShowDeleteModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase">Batal</button>
-                  <button 
-                    type="button"
-                    onClick={handleDeleteAccount} 
-                    disabled={deleting} 
-                    className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
-                  >
-                    {deleting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ya, Hapus Permanen"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Password Modal */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowPasswordModal(false); setStep("request"); setOldPassword(""); setOtp(""); setNewPassword(""); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-card-light dark:bg-card-dark w-full max-w-md rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
-              <button onClick={() => { setShowPasswordModal(false); setStep("request"); setOldPassword(""); setOtp(""); setNewPassword(""); }} aria-label="Tutup" title="Tutup" className="absolute top-6 right-6 p-2 text-muted hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Lock className="w-8 h-8" /></div>
-                <h3 className="text-2xl font-black text-text-light dark:text-text-dark">Ganti Password</h3>
-                <p className="text-sm text-muted mt-2">
-                  {step === "request" ? "Masukkan password lama dan pilih metode OTP" : "Masukkan kode OTP yang diterima & password baru"}
-                </p>
-              </div>
-
-              {/* Step indicators */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className={`flex-1 h-1.5 rounded-full transition-all ${step === "request" ? "bg-primary" : "bg-primary"}`} />
-                <div className={`flex-1 h-1.5 rounded-full transition-all ${step === "verify" ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`} />
-              </div>
-
-              {step === "request" ? (
-                <div className="space-y-5">
-                  {/* Old Password Field */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="oldPasswordInput" className="text-xs font-black uppercase text-muted ml-1">Password Lama</label>
-                    <div className="relative">
-                      <input
-                        id="oldPasswordInput"
-                        type={showOldPass ? "text" : "password"}
-                        value={oldPassword}
-                        onChange={e => setOldPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono"
-                        placeholder="Masukkan password saat ini..."
-                        title="Password Lama"
-                      />
-                      <button type="button" onClick={() => setShowOldPass(!showOldPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text-light dark:hover:text-text-dark">
-                        {showOldPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* OTP Method Selector */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-black uppercase text-muted ml-1">Kirim OTP Ke</label>
-                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2">
-                      <button 
-                        type="button"
-                        onClick={() => setOtpMethod("email")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "email" ? "bg-white dark:bg-gray-700 shadow-sm text-primary" : "text-muted"}`}
-                      >
-                        <Mail className="w-4 h-4" /> Email
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setOtpMethod("whatsapp")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${otpMethod === "whatsapp" ? "bg-white dark:bg-gray-700 shadow-sm text-green-500" : "text-muted"}`}
-                      >
-                        <Phone className="w-4 h-4" /> WhatsApp
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <button onClick={handleSendOTP} disabled={submittingPass || !oldPassword.trim()} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50">
-                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : profile.role === "admin" ? "Verifikasi Password" : "Verifikasi & Kirim OTP"}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {profile.role !== "admin" && (
-                    <div className="space-y-1.5">
-                      <label htmlFor="otpInput" className="text-xs font-black uppercase text-muted ml-1">Kode OTP</label>
-                      <input id="otpInput" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} type="text" inputMode="numeric" className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px]" placeholder="000000" title="Masukkan Kode OTP" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <label htmlFor="newPasswordInput" className="text-xs font-black uppercase text-muted ml-1">Password Baru</label>
-                    <div className="relative">
-                      <input
-                        id="newPasswordInput"
-                        type={showNewPass ? "text" : "password"}
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono"
-                        placeholder="Minimal 6 karakter..."
-                        title="Password Baru"
-                      />
-                      <button type="button" onClick={() => setShowNewPass(!showNewPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text-light dark:hover:text-text-dark">
-                        {showNewPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <button onClick={handleChangePassword} disabled={submittingPass} className="w-full py-4 bg-green-500 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 hover:bg-green-600 transition-all flex items-center justify-center gap-2 uppercase text-xs">
-                    {submittingPass ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Ganti Password"}
-                  </button>
-                  
-                  <div className="text-center space-y-2 mt-4">
-                    {profile.role !== "admin" && (
-                      <>
-                        <p className="text-[10px] font-black uppercase text-muted">Belum menerima kode?</p>
-                        <div className="flex flex-col gap-2">
-                          <button 
-                            onClick={() => { setOtpMethod("email"); handleSendOTP(); }} 
-                            disabled={countdown > 0 || submittingPass}
-                            className="text-[11px] font-bold text-primary hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl"
-                          >
-                            <Mail className="w-3.5 h-3.5" /> {countdown > 0 ? `Kirim Ulang Email (${countdown}s)` : "Kirim Ulang via Email"}
-                          </button>
-                          <button 
-                            onClick={() => { setOtpMethod("whatsapp"); handleSendOTP(); }} 
-                            disabled={waCountdown > 0 || submittingPass}
-                            className="text-[11px] font-bold text-green-600 hover:underline disabled:text-muted flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" /> {waCountdown > 0 ? `Kirim via WhatsApp (${waCountdown}s)` : "Kirim via WhatsApp Saja"}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => { setStep("request"); setOtp(""); setNewPassword(""); }}
-                      className="text-[11px] font-bold text-muted hover:text-text-light dark:hover:text-text-dark py-2"
-                    >
-                      ← Kembali
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

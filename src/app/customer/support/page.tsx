@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAudioStore } from "@/store/useAudioStore";
 import {
   LifeBuoy, Plus, ClipboardList, Send, FileText,
   User, CheckCircle, Clock, AlertTriangle, XCircle, Info, ChevronRight, Volume2,
@@ -81,7 +82,8 @@ export default function CustomerSupportPage() {
 
   // Sound generator
   const playNotificationSound = (type: 'chat' | 'general') => {
-    if (!isAudioEnabled) return;
+    const isGlobalEnabled = useAudioStore.getState().isCustomerSoundEnabled;
+    if (!isGlobalEnabled || !isAudioEnabled) return;
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -283,6 +285,7 @@ export default function CustomerSupportPage() {
       
       if (prof) {
         setProfile(prof);
+        useAudioStore.getState().initAudioSettings(prof.user_id);
         const { data: ticketsData } = await supabase
           .from('support_tickets')
           .select('*')

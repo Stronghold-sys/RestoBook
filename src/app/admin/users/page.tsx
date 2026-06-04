@@ -729,11 +729,11 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label htmlFor="birthPlace" className="text-xs font-black uppercase text-muted ml-1">Tempat Lahir</label>
+                      <label htmlFor="birthPlace" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Tempat Lahir</label>
                       <input id="birthPlace" value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Yogyakarta" title="Tempat Lahir" />
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor="birthDate" className="text-xs font-black uppercase text-muted ml-1">Tgl Lahir</label>
+                      <label htmlFor="birthDate" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Tgl Lahir</label>
                       <input id="birthDate" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} type="date" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" title="Tanggal Lahir" />
                     </div>
                   </div>
@@ -782,34 +782,34 @@ export default function AdminUsersPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="space-y-1.5">
-                    <label htmlFor="rt" className="text-xs font-black uppercase text-muted ml-1">RT</label>
+                    <label htmlFor="rt" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">RT</label>
                     <input id="rt" value={formData.rt} onChange={e => setFormData({...formData, rt: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="001" title="RT" />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="rw" className="text-xs font-black uppercase text-muted ml-1">RW</label>
+                    <label htmlFor="rw" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">RW</label>
                     <input id="rw" value={formData.rw} onChange={e => setFormData({...formData, rw: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="002" title="RW" />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="village" className="text-xs font-black uppercase text-muted ml-1">Kelurahan / Desa</label>
+                    <label htmlFor="village" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Kelurahan / Desa</label>
                     <input id="village" value={formData.village} onChange={e => setFormData({...formData, village: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Condongcatur" title="Kelurahan" />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="district" className="text-xs font-black uppercase text-muted ml-1">Kecamatan</label>
+                    <label htmlFor="district" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Kecamatan</label>
                     <input id="district" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Depok" title="Kecamatan" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <label htmlFor="city" className="text-xs font-black uppercase text-muted ml-1">Kota / Kabupaten</label>
+                    <label htmlFor="city" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Kota / Kabupaten</label>
                     <input id="city" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="Sleman" title="Kota" />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="province" className="text-xs font-black uppercase text-muted ml-1">Provinsi</label>
+                    <label htmlFor="province" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Provinsi</label>
                     <input id="province" value={formData.province} onChange={e => setFormData({...formData, province: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="DIY" title="Provinsi" />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="postalCode" className="text-xs font-black uppercase text-muted ml-1">Kode Pos</label>
+                    <label htmlFor="postalCode" className="block text-xs font-black uppercase text-muted ml-1 whitespace-nowrap">Kode Pos</label>
                     <input id="postalCode" value={formData.postalCode} onChange={e => setFormData({...formData, postalCode: e.target.value})} type="text" className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm font-medium" placeholder="55283" title="Kode Pos" />
                   </div>
                 </div>

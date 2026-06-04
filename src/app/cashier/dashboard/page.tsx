@@ -371,11 +371,9 @@ export default function CashierDashboard() {
       setHasOpenShift(false);
       setOpenShiftData(null);
 
-      setHasOpenShift(false);
-      setOpenShiftData(null);
-
       if (!shiftData.success || !shiftData.todayShift) {
-        setShiftStatus('none');
+        setShiftStatus('none');  // ← Langsung set none jika tidak ada jadwal
+        setTodayShift(null);
         return;
       }
 

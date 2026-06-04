@@ -35,8 +35,11 @@ export async function POST(req: NextRequest) {
           (a: any) => a.substitute_date === todayStr && a.is_substitute === true
         );
         // Cek penugasan reguler (hari cocok dan tidak sedang digantikan)
+        // Cek KEDUA format: nama panjang ("Kamis") dan nama pendek ("Kam") sesuai format database
+        const todayShortName = todayIndoName.slice(0, 3);
         const regAssignment = assignments.find(
-          (a: any) => a.substitute_date === null && a.work_shifts?.days?.includes(todayIndoName)
+          (a: any) => a.substitute_date === null && 
+            (a.work_shifts?.days?.includes(todayIndoName) || a.work_shifts?.days?.includes(todayShortName))
         );
         // Cek apakah karyawan ini sedang digantikan orang lain hari ini
         const isReplaced = assignments.some(

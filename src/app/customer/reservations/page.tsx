@@ -580,15 +580,16 @@ export default function CustomerReservationsPage() {
         onClose={() => setShowModal(false)}
         showCloseButton={false}
         size="lg"
+        noPadding
       >
-        <div className="bg-primary -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex justify-between items-center mb-6">
+        <div className="bg-primary p-6 text-white flex justify-between items-center mb-6">
           <div>
             <h2 className="text-xl font-bold">Ajukan Reservasi Meja</h2>
             <p className="text-white/80 text-sm mt-1">Lengkapi informasi diri & pilih meja bebas</p>
           </div>
           <button onClick={() => setShowModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="atasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
@@ -705,8 +706,9 @@ export default function CustomerReservationsPage() {
         onClose={() => setCancellingId(null)}
         showCloseButton={false}
         size="md"
+        noPadding
       >
-        <div className="bg-gradient-to-r from-red-600 to-red-700 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex items-center gap-4 mb-6">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4 mb-6">
           <div className="p-3 bg-white/20 rounded-xl">
             <X className="w-6 h-6" />
           </div>
@@ -715,7 +717,7 @@ export default function CustomerReservationsPage() {
             <p className="text-white/80 text-sm">Berikan alasan pembatalan Anda</p>
           </div>
         </div>
-        <form onSubmit={handleCancelSubmit} className="space-y-4">
+        <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
           <div>
             <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Alasan Pembatalan</label>
             <textarea
@@ -742,8 +744,9 @@ export default function CustomerReservationsPage() {
         onClose={() => setDeletingHistoryId(null)}
         showCloseButton={false}
         size="md"
+        noPadding
       >
-        <div className="bg-gradient-to-r from-red-600 to-red-700 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 text-white flex items-center gap-4 mb-6">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4 mb-6">
           <div className="p-3 bg-white/20 rounded-xl">
             <Trash2 className="w-6 h-6" />
           </div>
@@ -752,7 +755,7 @@ export default function CustomerReservationsPage() {
             <p className="text-white/80 text-sm">Konfirmasi tindakan</p>
           </div>
         </div>
-        <div className="p-0 space-y-4">
+        <div className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
           <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
             Apakah Anda yakin ingin menghapus riwayat reservasi ini secara permanen dari akun Anda? Tindakan ini tidak dapat dibatalkan.
           </p>

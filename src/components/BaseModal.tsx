@@ -11,6 +11,7 @@ interface BaseModalProps {
   title?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
+  noPadding?: boolean;
 }
 
 export default function BaseModal({
@@ -19,7 +20,8 @@ export default function BaseModal({
   children,
   title,
   size = 'md',
-  showCloseButton = true
+  showCloseButton = true,
+  noPadding = false
 }: BaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +109,9 @@ export default function BaseModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`relative w-full ${sizeClasses[size]} bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl shadow-2xl overflow-hidden z-10 p-6 sm:p-8`}
+            className={`relative w-full ${sizeClasses[size]} bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-3xl shadow-2xl overflow-hidden z-10 ${
+              noPadding ? "" : "p-6 sm:p-8"
+            }`}
           >
             {/* Header */}
             {(title || showCloseButton) && (

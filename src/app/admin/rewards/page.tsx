@@ -678,50 +678,111 @@ export default function AdminRewardsPage() {
       return matchSearch && matchStatus;
     });
 
-    const headers = [
-      'No',
-      'ID Pelanggan',
-      'Nama Pelanggan',
-      'Email',
-      'Nomor HP',
-      'Poin Aktif',
-      'Poin Pending',
-      'Status Poin',
-      'Blokir Redeem',
+    const ExcelJS = await import("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Data Pelanggan");
+
+    // Freeze header row
+    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1, activeCell: 'A2' }];
+
+    // Set columns
+    worksheet.columns = [
+      { header: 'No', key: 'no', width: 6 },
+      { header: 'ID Pelanggan', key: 'id', width: 38 },
+      { header: 'Nama Pelanggan', key: 'full_name', width: 25 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Nomor HP', key: 'phone', width: 18 },
+      { header: 'Poin Aktif', key: 'points', width: 14 },
+      { header: 'Poin Pending', key: 'pending_points', width: 14 },
+      { header: 'Status Poin', key: 'points_status', width: 18 },
+      { header: 'Blokir Redeem', key: 'is_redeem_blocked', width: 16 }
     ];
 
-    const rows = filtered.map((c, i) => [
-      i + 1,
-      c.id,
-      c.full_name,
-      c.email || '-',
-      c.phone || '-',
-      c.points || 0,
-      c.pending_points || 0,
-      c.points_status || 'aktif',
-      c.is_redeem_blocked ? 'Ya' : 'Tidak',
-    ]);
+    // Add rows
+    filtered.forEach((c, i) => {
+      worksheet.addRow({
+        no: i + 1,
+        id: c.id,
+        full_name: c.full_name,
+        email: c.email || '-',
+        phone: c.phone || '-',
+        points: c.points || 0,
+        pending_points: c.pending_points || 0,
+        points_status: c.points_status || 'aktif',
+        is_redeem_blocked: c.is_redeem_blocked ? 'Ya' : 'Tidak'
+      });
+    });
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 6 },   // No
-      { wch: 38 },  // ID Pelanggan
-      { wch: 25 },  // Nama Pelanggan
-      { wch: 30 },  // Email
-      { wch: 18 },  // Nomor HP
-      { wch: 12 },  // Poin Aktif
-      { wch: 14 },  // Poin Pending
-      { wch: 18 },  // Status Poin
-      { wch: 16 },  // Blokir Redeem
-    ];
+    // Style Header Row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF2563EB' } // Royal Blue
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+        left: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+        bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+        right: { style: 'thin', color: { argb: 'FF1E3A8A' } }
+      };
+    });
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Data Pelanggan");
+    // Style Data Rows
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header
+
+      row.height = 20;
+
+      // Zebra striping
+      const isEven = rowNumber % 2 === 0;
+      const fillBgColor = isEven ? 'FFF9FAFB' : 'FFFFFFFF';
+
+      row.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Segoe UI', size: 9 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: fillBgColor }
+        };
+        
+        // Borders
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+        };
+
+        // Alignments & formats
+        if (colNumber === 1) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (colNumber === 2) {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        } else if (colNumber === 6 || colNumber === 7) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = '#,##0';
+        } else if (colNumber === 8 || colNumber === 9) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        }
+      });
+    });
 
     try {
-      const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+      const buffer = await workbook.xlsx.writeBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const excelBase64 = window.btoa(binary);
+
       await downloadFile({
         dataBase64: excelBase64,
         filename: `laporan_poin_pelanggan_${new Date().toISOString().split('T')[0]}.xlsx`,
@@ -747,63 +808,119 @@ export default function AdminRewardsPage() {
         return;
       }
 
-      const headers = [
-        'No',
-        'ID Transaksi',
-        'Nama Pelanggan',
-        'Email Pelanggan',
-        'Nomor HP',
-        'Poin',
-        'Poin Sebelum',
-        'Poin Sesudah',
-        'Status',
-        'Jenis Sumber',
-        'Keterangan / Alasan',
-        'Operator Admin',
-        'Waktu',
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Mutasi Poin");
+
+      // Freeze header row
+      worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1, activeCell: 'A2' }];
+
+      // Set columns
+      worksheet.columns = [
+        { header: 'No', key: 'no', width: 6 },
+        { header: 'ID Transaksi', key: 'id', width: 38 },
+        { header: 'Nama Pelanggan', key: 'customer_name', width: 25 },
+        { header: 'Email Pelanggan', key: 'customer_email', width: 30 },
+        { header: 'Nomor HP', key: 'customer_phone', width: 18 },
+        { header: 'Poin', key: 'points', width: 12 },
+        { header: 'Poin Sebelum', key: 'before_points', width: 14 },
+        { header: 'Poin Sesudah', key: 'after_points', width: 14 },
+        { header: 'Status', key: 'status', width: 14 },
+        { header: 'Jenis Sumber', key: 'source_type', width: 16 },
+        { header: 'Keterangan / Alasan', key: 'reason', width: 35 },
+        { header: 'Operator Admin', key: 'acted_by', width: 20 },
+        { header: 'Waktu', key: 'created_at', width: 22 }
       ];
 
-      const rows = txs.map((t: any, i: number) => {
+      // Add rows
+      txs.forEach((t: any, i: number) => {
         const timeStr = format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss");
-        return [
-          i + 1,
-          t.id,
-          t.customer?.full_name || 'Pelanggan',
-          t.customer?.email || '-',
-          t.customer?.phone || '-',
-          t.points,
-          t.before_points !== null && t.before_points !== undefined ? t.before_points : '-',
-          t.after_points !== null && t.after_points !== undefined ? t.after_points : '-',
-          t.status,
-          t.source_type || '-',
-          t.reason || t.description || '-',
-          t.acted_profile?.full_name || 'Sistem',
-          timeStr,
-        ];
+        worksheet.addRow({
+          no: i + 1,
+          id: t.id,
+          customer_name: t.customer?.full_name || 'Pelanggan',
+          customer_email: t.customer?.email || '-',
+          customer_phone: t.customer?.phone || '-',
+          points: t.points || 0,
+          before_points: t.before_points !== null && t.before_points !== undefined ? t.before_points : '-',
+          after_points: t.after_points !== null && t.after_points !== undefined ? t.after_points : '-',
+          status: t.status || '-',
+          source_type: t.source_type || '-',
+          reason: t.reason || t.description || '-',
+          acted_by: t.acted_profile?.full_name || 'Sistem',
+          created_at: timeStr
+        });
       });
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      
-      ws['!cols'] = [
-        { wch: 6 },   // No
-        { wch: 38 },  // ID Transaksi
-        { wch: 25 },  // Nama Pelanggan
-        { wch: 30 },  // Email Pelanggan
-        { wch: 18 },  // Nomor HP
-        { wch: 10 },  // Poin
-        { wch: 14 },  // Poin Sebelum
-        { wch: 14 },  // Poin Sesudah
-        { wch: 12 },  // Status
-        { wch: 15 },  // Jenis Sumber
-        { wch: 35 },  // Keterangan / Alasan
-        { wch: 20 },  // Operator Admin
-        { wch: 22 },  // Waktu
-      ];
+      // Style Header Row
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 26;
+      headerRow.eachCell((cell) => {
+        cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF0F766E' } // Teal background
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF115E59' } },
+          left: { style: 'thin', color: { argb: 'FF115E59' } },
+          bottom: { style: 'medium', color: { argb: 'FF115E59' } },
+          right: { style: 'thin', color: { argb: 'FF115E59' } }
+        };
+      });
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Mutasi Poin");
+      // Style Data Rows
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header
 
-      const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+        row.height = 20;
+
+        // Zebra striping
+        const isEven = rowNumber % 2 === 0;
+        const fillBgColor = isEven ? 'FFF9FAFB' : 'FFFFFFFF';
+
+        row.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Segoe UI', size: 9 };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: fillBgColor }
+          };
+          
+          // Borders
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+          };
+
+          // Alignments & formats
+          if (colNumber === 1) {
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          } else if (colNumber === 6 || colNumber === 7 || colNumber === 8) {
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            if (typeof cell.value === 'number') {
+              cell.numFmt = '#,##0';
+            }
+          } else if (colNumber === 9 || colNumber === 10 || colNumber === 13) {
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          } else {
+            cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          }
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const excelBase64 = window.btoa(binary);
+
       await downloadFile({
         dataBase64: excelBase64,
         filename: `mutasi_poin_loyalitas_${new Date().toISOString().split('T')[0]}.xlsx`,

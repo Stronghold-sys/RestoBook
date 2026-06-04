@@ -114,14 +114,69 @@ export default function SpotlightTutorial() {
     };
   };
 
-  // Compute position of tooltip (Always center of the screen)
+  // Compute position of tooltip (relative to target coords or centered fallback)
   const getTooltipStyle = () => {
-    return {
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
-      position: 'fixed' as const
-    };
+    if (!coords) {
+      return {
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        position: 'fixed' as const
+      };
+    }
+
+    const { left, top, width, height } = coords;
+    const offset = 16;
+    const padding = 8;
+
+    let tLeft = left;
+    let tTop = top;
+
+    switch (activeStep.position) {
+      case 'bottom':
+        tLeft = left + width / 2;
+        tTop = top + height + offset + padding;
+        return {
+          left: `${tLeft}px`,
+          top: `${tTop}px`,
+          transform: 'translateX(-50%)',
+          position: 'absolute' as const
+        };
+      case 'top':
+        tLeft = left + width / 2;
+        tTop = top - offset - padding;
+        return {
+          left: `${tLeft}px`,
+          top: `${tTop}px`,
+          transform: 'translate(-50%, -100%)',
+          position: 'absolute' as const
+        };
+      case 'left':
+        tLeft = left - offset - padding;
+        tTop = top + height / 2;
+        return {
+          left: `${tLeft}px`,
+          top: `${tTop}px`,
+          transform: 'translate(-100%, -50%)',
+          position: 'absolute' as const
+        };
+      case 'right':
+        tLeft = left + width + offset + padding;
+        tTop = top + height / 2;
+        return {
+          left: `${tLeft}px`,
+          top: `${tTop}px`,
+          transform: 'translateY(-50%)',
+          position: 'absolute' as const
+        };
+      default:
+        return {
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          position: 'fixed' as const
+        };
+    }
   };
 
   const handleSkip = () => {
@@ -154,7 +209,7 @@ export default function SpotlightTutorial() {
         />
       )}
 
-      {/* Floating Tooltip Panel (Always centered) */}
+      {/* Floating Tooltip Panel (Positioned contextually next to the spotlight) */}
       <AnimatePresence mode="wait">
         <motion.div
           ref={tooltipRef}
@@ -164,7 +219,7 @@ export default function SpotlightTutorial() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-80 max-w-sm pointer-events-auto z-[99999] flex flex-col gap-4 text-text-light dark:text-text-dark"
+          className="absolute bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-80 max-w-sm pointer-events-auto z-[99999] flex flex-col gap-4 text-text-light dark:text-text-dark"
         >
           {/* Tooltip Header */}
           <div className="flex justify-between items-start gap-2">

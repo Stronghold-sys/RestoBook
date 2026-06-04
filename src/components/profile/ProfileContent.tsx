@@ -142,11 +142,9 @@ export default function ProfileContent() {
 
   const openModal = useModalStore(state => state.openModal);
   const closeModal = useModalStore(state => state.closeModal);
-  const isSoundEnabled = useAudioStore(state => state.isCustomerSoundEnabled);
-  const toggleCustomerSound = useAudioStore(state => state.toggleCustomerSound);
-  const initAudioSettings = useAudioStore(state => state.initAudioSettings);
 
-  const [userId, setUserId] = useState<string>("");
+
+
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"profile" | "resign" | "status">("profile");
@@ -192,18 +190,7 @@ export default function ProfileContent() {
     localStorage.setItem("resign_draft_additionalNotes", val);
   };
 
-  // Sound toggle handler
-  const handleToggleSound = () => {
-    if (userId) {
-      toggleCustomerSound(userId);
-      const isEnabledNow = useAudioStore.getState().isCustomerSoundEnabled;
-      toast.success(
-        isEnabledNow
-          ? "Suara notifikasi pelanggan diaktifkan!"
-          : "Suara notifikasi pelanggan telah dimatikan."
-      );
-    }
-  };
+
 
   // Delete account state & function
   const [deleting, setDeleting] = useState(false);
@@ -239,17 +226,7 @@ export default function ProfileContent() {
     }
   };
 
-  // Load session user id to bind sound preferences
-  useEffect(() => {
-    const getSessionUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        setUserId(session.user.id);
-        initAudioSettings(session.user.id);
-      }
-    };
-    getSessionUser();
-  }, []);
+
 
   useEffect(() => {
     fetchProfile();
@@ -626,30 +603,7 @@ export default function ProfileContent() {
               )}
             </div>
 
-            {profile.role === "customer" && (
-              <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2 w-full">
-                <span className="text-[10px] font-black uppercase text-muted">Suara Notifikasi</span>
-                <button
-                  onClick={handleToggleSound}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider transition-all shadow-sm ${
-                    isSoundEnabled
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white"
-                      : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white"
-                  }`}
-                  title={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
-                >
-                  {isSoundEnabled ? (
-                    <>
-                      <Volume2 className="w-4 h-4 animate-pulse" /> Suara ON
-                    </>
-                  ) : (
-                    <>
-                      <VolumeX className="w-4 h-4" /> Suara OFF
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+
 
             <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2 w-full">
               <span className="text-[10px] font-black uppercase text-muted">Panduan Interaktif</span>

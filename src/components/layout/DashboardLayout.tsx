@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  Menu as MenuIcon, X, LogOut, Sun, Moon, 
+  Menu as MenuIcon, X, LogOut, Sun, Moon, Volume2, VolumeX,
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
   Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare
@@ -27,6 +27,34 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [role, setRole] = useState<string | null>(initialRole || null);
+
+  const isSoundEnabled = useAudioStore((state) => state.isCustomerSoundEnabled);
+  const toggleCustomerSound = useAudioStore((state) => state.toggleCustomerSound);
+
+  const handleToggleSound = () => {
+    const uId = userProfile?.user_id;
+    if (uId) {
+      toggleCustomerSound(uId);
+      const isEnabledNow = useAudioStore.getState().isCustomerSoundEnabled;
+      toast.success(
+        isEnabledNow
+          ? "Suara notifikasi diaktifkan!"
+          : "Suara notifikasi dimatikan."
+      );
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.id) {
+          toggleCustomerSound(session.user.id);
+          const isEnabledNow = useAudioStore.getState().isCustomerSoundEnabled;
+          toast.success(
+            isEnabledNow
+              ? "Suara notifikasi diaktifkan!"
+              : "Suara notifikasi dimatikan."
+          );
+        }
+      });
+    }
+  };
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -642,6 +670,18 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleToggleSound}
+                aria-label={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
+                title={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  isSoundEnabled
+                    ? "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-emerald-500 hover:text-emerald-600"
+                    : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-rose-500 hover:text-rose-600"
+                }`}
+              >
+                {isSoundEnabled ? <Volume2 className="h-5 w-5 animate-pulse" /> : <VolumeX className="h-5 w-5" />}
+              </button>
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 data-tour="theme-toggle"

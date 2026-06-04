@@ -50,43 +50,17 @@ export default function AdminAttendancePage() {
     if (!isSilent) setLoading(true);
     try {
       if (activeTab === "employees") {
-        // Gunakan zona waktu WIB (Asia/Jakarta) agar filter tanggal tepat
-        const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
-        const todayStr = nowWIB.getFullYear() + '-' +
-          String(nowWIB.getMonth() + 1).padStart(2, '0') + '-' +
-          String(nowWIB.getDate()).padStart(2, '0');
+        // Gunakan API server-side yang bypass RLS dengan supabaseAdmin
+        // Query langsung via client terkena RLS sehingga data kosong
+        const res = await fetch(`/api/admin/employees?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+        });
+        const result = await res.json();
 
-        // QUERY 1: Ambil semua profil karyawan aktif TANPA filter attendance
-        // (filter pada nested table bisa menyebabkan profil tanpa absensi tidak muncul)
-        const { data: profilesData, error: profileErr } = await supabase
-          .from('profiles')
-          .select(`
-            *,
-            work_shift_assignments(
-              *,
-              work_shifts(*)
-            )
-          `)
-          .in('role', ['admin', 'cashier'])
-          .order('full_name');
+        if (!res.ok) throw new Error(result.error || 'Gagal memuat data karyawan');
+        setEmployees(result.employees || []);
 
-        if (profileErr) throw profileErr;
-
-        // QUERY 2: Ambil absensi hari ini secara terpisah (filter tanggal WIB)
-        const { data: todayAttendance } = await supabase
-          .from('attendance')
-          .select('id, type, created_at, photo_url, status, profile_id')
-          .gte('created_at', `${todayStr}T00:00:00+07:00`)
-          .lt('created_at', `${todayStr}T23:59:59+07:00`)
-          .order('created_at', { ascending: false });
-
-        // MERGE: Gabungkan data attendance ke dalam profil masing-masing
-        const merged = (profilesData || []).map(emp => ({
-          ...emp,
-          attendance: (todayAttendance || []).filter(a => a.profile_id === emp.id)
-        }));
-
-        setEmployees(merged);
       } else if (activeTab === "shifts") {
         const { data } = await supabase
           .from('shifts')

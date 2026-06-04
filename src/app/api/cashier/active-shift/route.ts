@@ -52,22 +52,25 @@ export async function GET(request: Request) {
     if (fetchError) throw fetchError;
 
     // 4. Ambil daftar check_out milik user ini HARI INI untuk mem-filter shift yang sudah rampung
-    const todayObj = new Date();
-    const todayISOStr = todayObj.toLocaleDateString('sv-SE'); // Format YYYY-MM-DD handal
-    todayObj.setHours(0,0,0,0);
+    // Menggunakan timezone Asia/Jakarta (WIB)
+    const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+    const todayISOStr = nowWIB.getFullYear() + '-' +
+      String(nowWIB.getMonth() + 1).padStart(2, '0') + '-' +
+      String(nowWIB.getDate()).padStart(2, '0');
+    const todayStartWIB = `${todayISOStr}T00:00:00+07:00`;
     
     const { data: todayCheckOuts } = await supabase
       .from('attendance')
       .select('work_shift_id')
       .eq('user_id', userId)
       .eq('type', 'check_out')
-      .gte('created_at', todayObj.toISOString());
+      .gte('created_at', todayStartWIB);
       
     const completedShiftIds = (todayCheckOuts || []).map((c: any) => c.work_shift_id).filter(Boolean);
 
-    // 5. Hitung deteksi hari INI secara akurat untuk shift reguler
+    // 5. Hitung deteksi hari INI secara akurat untuk shift reguler (berbasis WIB)
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const todayIndoName = dayNames[new Date().getDay()];
+    const todayIndoName = dayNames[nowWIB.getDay()];
 
     // FILTER CERDAS: Cari semua kandidat shift HARI INI (Reguler ATAU Pengganti)
     const activeCandidates = (assignments || []).filter((a: any) => {

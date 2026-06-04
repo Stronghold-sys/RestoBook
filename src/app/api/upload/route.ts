@@ -32,8 +32,9 @@ export async function POST(req: NextRequest) {
       .from(bucketName)
       .getPublicUrl(filePath);
 
-    // 3. Update database ONLY if it is a profile photo update
-    if (userId && isProfile) {
+    // 3. Update database ONLY if it is a profile photo update and userId is a valid UUID (not temp)
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(userId);
+    if (userId && isProfile && isUuid) {
       const { error: dbError } = await supabaseAdmin
         .from('profiles')
         .update({ avatar_url: publicUrl })

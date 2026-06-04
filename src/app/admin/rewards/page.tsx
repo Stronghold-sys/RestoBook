@@ -14,6 +14,8 @@ import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import * as XLSX from "xlsx";
+import { downloadFile } from "@/utils/downloadHelper";
 
 export default function AdminRewardsPage() {
   const [loading, setLoading] = useState(true);
@@ -660,18 +662,7 @@ export default function AdminRewardsPage() {
     }
   };
 
-  // Helper: escape a single CSV cell value safely
-  const escapeCSV = (val: any): string => {
-    if (val === null || val === undefined) return '""';
-    const str = String(val)
-      .replace(/\r\n/g, ' ')   // remove carriage return + newline
-      .replace(/\r/g, ' ')      // remove carriage return
-      .replace(/\n/g, ' ')      // remove newline
-      .replace(/"/g, '""');     // escape quotes by doubling them
-    return `"${str}"`;
-  };
-
-  const handleExportCustomersCSV = () => {
+  const handleExportCustomersExcel = async () => {
     if (customers.length === 0) {
       toast.error("Tidak ada data pelanggan untuk diekspor");
       return;
@@ -711,25 +702,39 @@ export default function AdminRewardsPage() {
       c.is_redeem_blocked ? 'Ya' : 'Tidak',
     ]);
 
-    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
-    csvContent += headers.map(escapeCSV).join(',') + '\r\n';
-    rows.forEach(row => {
-      csvContent += row.map(escapeCSV).join(',') + '\r\n';
-    });
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 6 },   // No
+      { wch: 38 },  // ID Pelanggan
+      { wch: 25 },  // Nama Pelanggan
+      { wch: 30 },  // Email
+      { wch: 18 },  // Nomor HP
+      { wch: 12 },  // Poin Aktif
+      { wch: 14 },  // Poin Pending
+      { wch: 18 },  // Status Poin
+      { wch: 16 },  // Blokir Redeem
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `laporan_poin_pelanggan_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("Data pelanggan berhasil diekspor ke CSV!");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data Pelanggan");
+
+    try {
+      const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+      await downloadFile({
+        dataBase64: excelBase64,
+        filename: `laporan_poin_pelanggan_${new Date().toISOString().split('T')[0]}.xlsx`,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      toast.success("Data pelanggan berhasil diekspor ke Excel!");
+    } catch (e) {
+      toast.error("Gagal mengekspor data pelanggan ke Excel");
+      console.error(e);
+    }
   };
 
-  const handleExportMutationsCSV = async () => {
+  const handleExportMutationsExcel = async () => {
     const loadingToast = toast.loading("Mengambil seluruh log mutasi poin...");
     try {
       const res = await fetch("/api/admin/customers/points?allTransactions=true");
@@ -777,22 +782,34 @@ export default function AdminRewardsPage() {
         ];
       });
 
-      let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
-      csvContent += headers.map(escapeCSV).join(',') + '\r\n';
-      rows.forEach((row: any[]) => {
-        csvContent += row.map(escapeCSV).join(',') + '\r\n';
-      });
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      
+      ws['!cols'] = [
+        { wch: 6 },   // No
+        { wch: 38 },  // ID Transaksi
+        { wch: 25 },  // Nama Pelanggan
+        { wch: 30 },  // Email Pelanggan
+        { wch: 18 },  // Nomor HP
+        { wch: 10 },  // Poin
+        { wch: 14 },  // Poin Sebelum
+        { wch: 14 },  // Poin Sesudah
+        { wch: 12 },  // Status
+        { wch: 15 },  // Jenis Sumber
+        { wch: 35 },  // Keterangan / Alasan
+        { wch: 20 },  // Operator Admin
+        { wch: 22 },  // Waktu
+      ];
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `mutasi_poin_loyalitas_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Laporan mutasi berhasil diekspor ke CSV!", { id: loadingToast });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Mutasi Poin");
+
+      const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+      await downloadFile({
+        dataBase64: excelBase64,
+        filename: `mutasi_poin_loyalitas_${new Date().toISOString().split('T')[0]}.xlsx`,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      toast.success("Laporan mutasi berhasil diekspor ke Excel!", { id: loadingToast });
     } catch (err: any) {
       toast.error(err.message, { id: loadingToast });
     }
@@ -1289,13 +1306,13 @@ export default function AdminRewardsPage() {
                   </div>
                   <div className="flex gap-2 w-full md:w-auto shrink-0 justify-end">
                     <button
-                      onClick={handleExportCustomersCSV}
+                      onClick={handleExportCustomersExcel}
                       className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-gray-50 hover:bg-gray-100 text-muted border border-border-light dark:border-border-dark rounded-xl transition-all"
                     >
-                      Export CSV
+                      Export Pelanggan
                     </button>
                     <button
-                      onClick={handleExportMutationsCSV}
+                      onClick={handleExportMutationsExcel}
                       className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-primary/10 hover:bg-primary/25 text-primary rounded-xl transition-all"
                     >
                       Laporan Mutasi

@@ -728,7 +728,7 @@ export default function WalletActivationPage() {
                       className="flex items-center justify-center p-3 bg-primary hover:bg-primary-hover text-white rounded-xl transition-all"
                       title="Ambil dari Kamera"
                     >
-                      <Camera className="w-4.5 h-4.5" />
+                      <Camera className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -755,7 +755,7 @@ export default function WalletActivationPage() {
                   <img src={filesState.additional_doc.preview} alt="Dokumen Pendukung Preview" className="w-full h-full object-contain" />
                   {!isFieldDisabled("additional_doc_url") && (
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
-                      <button type="button" onClick={() => handleCapturePhoto("additional_doc")} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white" title="Foto Ulang"><Camera className="w-4.5 h-4.5" /></button>
+                      <button type="button" onClick={() => handleCapturePhoto("additional_doc")} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white" title="Foto Ulang"><Camera className="w-4 h-4" /></button>
                       <button type="button" onClick={() => handleRemoveFile("additional_doc")} className="p-2 bg-red-600/80 hover:bg-red-600 rounded-full text-white" title="Hapus"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   )}
@@ -780,7 +780,7 @@ export default function WalletActivationPage() {
                       className="flex items-center justify-center p-3 bg-primary hover:bg-primary-hover text-white rounded-xl transition-all"
                       title="Ambil dari Kamera"
                     >
-                      <Camera className="w-4.5 h-4.5" />
+                      <Camera className="w-4 h-4" />
                     </button>
                   )}
                 </div>

@@ -739,7 +739,7 @@ export default function CustomerSupportPage() {
                   onClick={() => startTutorial('customer')}
                   className="w-full py-3 px-4 bg-gradient-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 hover:scale-[1.02]"
                 >
-                  <HelpCircle className="w-4.5 h-4.5" /> Mulai Ulang Tour
+                  <HelpCircle className="w-4 h-4" /> Mulai Ulang Tour
                 </button>
               </div>
             </div>

@@ -640,11 +640,11 @@ export default function ProfileContent() {
                 >
                   {isSoundEnabled ? (
                     <>
-                      <Volume2 className="w-4.5 h-4.5 animate-pulse" /> Suara ON
+                      <Volume2 className="w-4 h-4 animate-pulse" /> Suara ON
                     </>
                   ) : (
                     <>
-                      <VolumeX className="w-4.5 h-4.5" /> Suara OFF
+                      <VolumeX className="w-4 h-4" /> Suara OFF
                     </>
                   )}
                 </button>

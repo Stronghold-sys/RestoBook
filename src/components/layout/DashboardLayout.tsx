@@ -660,7 +660,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               >
                 <Bell className="h-5 w-5" />
                 {unreadNotifCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-white">
+                  <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
                     {unreadNotifCount}
                   </span>
                 )}

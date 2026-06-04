@@ -98,10 +98,12 @@ export default function SpotlightTutorial() {
 
     const { left, top, width, height } = coords;
     const padding = getPadding();
-    const x = left - padding;
-    const y = top - padding;
-    const rW = width + padding * 2;
-    const rH = height + padding * 2;
+    
+    // Clamp to prevent negative coordinates and clipping at edges
+    const x = Math.max(2, left - padding);
+    const y = Math.max(2, top - padding);
+    const rW = Math.min(windowSize.width - x - 2, width + padding * 2);
+    const rH = Math.min(windowSize.height - y - 2, height + padding * 2);
     const radius = 12; // matching highlight border rounded-xl
 
     // Inline SVG: White is visible (blurred/dark), Black is cutout (transparent/clear)
@@ -130,7 +132,7 @@ export default function SpotlightTutorial() {
     }
 
     const { left, top, width, height } = coords;
-    const tooltipWidth = 320;
+    const tooltipWidth = Math.min(320, windowSize.width - 32);
     const tooltipHeight = 220; // estimated popup height
     const offset = 16;
     const padding = getPadding();
@@ -193,10 +195,10 @@ export default function SpotlightTutorial() {
         <motion.div
           initial={false}
           animate={{
-            left: coords.left - getPadding(),
-            top: coords.top - getPadding(),
-            width: coords.width + getPadding() * 2,
-            height: coords.height + getPadding() * 2
+            left: Math.max(2, coords.left - getPadding()),
+            top: Math.max(2, coords.top - getPadding()),
+            width: Math.min(windowSize.width - Math.max(2, coords.left - getPadding()) - 2, coords.width + getPadding() * 2),
+            height: Math.min(windowSize.height - Math.max(2, coords.top - getPadding()) - 2, coords.height + getPadding() * 2)
           }}
           transition={{ type: 'spring', damping: 26, stiffness: 220 }}
           className="absolute border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.4)] pointer-events-none z-[99997]"
@@ -213,21 +215,13 @@ export default function SpotlightTutorial() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-80 max-w-sm pointer-events-auto z-[99999] flex flex-col gap-4 text-text-light dark:text-text-dark"
+          className="absolute bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-6 rounded-2xl shadow-2xl w-[calc(100vw-32px)] sm:w-80 max-w-sm pointer-events-auto z-[99999] flex flex-col gap-4 text-text-light dark:text-text-dark"
         >
           {/* Tooltip Header */}
           <div className="flex justify-between items-start gap-2">
             <h4 className="font-black text-sm text-primary uppercase tracking-wider">
               {activeStep.title}
             </h4>
-            <button
-              onClick={handleSkip}
-              className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted transition-colors"
-              title="Lewati Tutorial"
-              aria-label="Tutup"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Description */}

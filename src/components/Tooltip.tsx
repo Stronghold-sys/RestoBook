@@ -49,7 +49,7 @@ export default function Tooltip({
           aria-label={`Bantuan: ${content}`}
           className="text-muted hover:text-primary transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          <HelpCircle className="w-4.5 h-4.5" />
+          <HelpCircle className="w-5 h-5" />
         </button>
       )}
 

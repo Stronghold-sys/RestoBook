@@ -131,17 +131,17 @@ export default function AdminAttendancePage() {
           <p className="text-muted mt-1">Manajemen absensi, izin, dan performa karyawan</p>
         </div>
         
-        <div className="flex flex-wrap bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl w-full md:w-auto gap-1">
-          <button onClick={() => setActiveTab("employees")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "employees" ? "bg-white dark:bg-gray-700 shadow-md text-primary" : "text-muted"}`}>
+        <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl w-full md:w-auto gap-1 overflow-x-auto whitespace-nowrap scrollbar-none pb-1.5 sm:pb-1.5">
+          <button onClick={() => setActiveTab("employees")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${activeTab === "employees" ? "bg-white dark:bg-gray-700 shadow-md text-primary" : "text-muted"}`}>
             <Users className="w-4 h-4" /> Karyawan
           </button>
-          <button onClick={() => setActiveTab("work_shifts")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "work_shifts" ? "bg-white dark:bg-gray-700 shadow-md text-emerald-600" : "text-muted"}`}>
+          <button onClick={() => setActiveTab("work_shifts")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${activeTab === "work_shifts" ? "bg-white dark:bg-gray-700 shadow-md text-emerald-600" : "text-muted"}`}>
             <Calendar className="w-4 h-4" /> Pengaturan Shift
           </button>
-          <button onClick={() => setActiveTab("requests")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "requests" ? "bg-white dark:bg-gray-700 shadow-md text-amber-500" : "text-muted"}`}>
+          <button onClick={() => setActiveTab("requests")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${activeTab === "requests" ? "bg-white dark:bg-gray-700 shadow-md text-amber-500" : "text-muted"}`}>
             <FileText className="w-4 h-4" /> Izin {requests.length > 0 && <span className="bg-red-500 text-white w-4 h-4 rounded-full text-[8px] flex items-center justify-center animate-pulse">{requests.length}</span>}
           </button>
-          <button onClick={() => setActiveTab("shifts")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "shifts" ? "bg-white dark:bg-gray-700 shadow-md text-blue-500" : "text-muted"}`}>
+          <button onClick={() => setActiveTab("shifts")} className={`px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${activeTab === "shifts" ? "bg-white dark:bg-gray-700 shadow-md text-blue-500" : "text-muted"}`}>
             <DollarSign className="w-4 h-4" /> Kasir
           </button>
         </div>

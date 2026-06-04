@@ -1290,10 +1290,10 @@ export default function AdminRewardsPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex border-b border-border-light dark:border-border-dark">
+          <div className="flex border-b border-border-light dark:border-border-dark overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5">
             <button
               onClick={() => setActiveTab("catalog")}
-              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 shrink-0 whitespace-nowrap ${
                 activeTab === "catalog"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -1303,7 +1303,7 @@ export default function AdminRewardsPage() {
             </button>
             <button
               onClick={() => setActiveTab("customers")}
-              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 shrink-0 whitespace-nowrap ${
                 activeTab === "customers"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -1313,7 +1313,7 @@ export default function AdminRewardsPage() {
             </button>
             <button
               onClick={() => setActiveTab("redemptions")}
-              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 shrink-0 whitespace-nowrap ${
                 activeTab === "redemptions"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -1323,7 +1323,7 @@ export default function AdminRewardsPage() {
             </button>
             <button
               onClick={() => setActiveTab("settings")}
-              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 ${
+              className={`px-6 py-3 font-bold text-sm transition-all border-b-2 shrink-0 whitespace-nowrap ${
                 activeTab === "settings"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -2620,11 +2620,11 @@ export default function AdminRewardsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center border-b border-border-light dark:border-border-dark pb-2">
                       <h4 className="font-bold text-xs uppercase tracking-widest text-muted">Log Riwayat</h4>
-                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px] shrink-0">
+                      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-[10px] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-none">
                         <button
                           type="button"
                           onClick={() => setActiveLogsTab("points")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
+                          className={`px-2 py-1 rounded font-bold transition-all shrink-0 whitespace-nowrap ${
                             activeLogsTab === "points" ? "bg-primary text-white" : "text-muted"
                           }`}
                         >
@@ -2633,7 +2633,7 @@ export default function AdminRewardsPage() {
                         <button
                           type="button"
                           onClick={() => setActiveLogsTab("rewards")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
+                          className={`px-2 py-1 rounded font-bold transition-all shrink-0 whitespace-nowrap ${
                             activeLogsTab === "rewards" ? "bg-primary text-white" : "text-muted"
                           }`}
                         >
@@ -2642,7 +2642,7 @@ export default function AdminRewardsPage() {
                         <button
                           type="button"
                           onClick={() => setActiveLogsTab("quota")}
-                          className={`px-2 py-1 rounded font-bold transition-all ${
+                          className={`px-2 py-1 rounded font-bold transition-all shrink-0 whitespace-nowrap ${
                             activeLogsTab === "quota" ? "bg-primary text-white" : "text-muted"
                           }`}
                         >
@@ -2662,7 +2662,7 @@ export default function AdminRewardsPage() {
                               key={tab}
                               type="button"
                               onClick={() => setActivePointsTab(tab)}
-                              className={`px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap transition-all border ${
+                              className={`px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap transition-all border shrink-0 ${
                                 activePointsTab === tab
                                   ? "bg-gray-800 text-white border-gray-800 dark:bg-white dark:text-gray-900"
                                   : "text-muted border-border-light dark:border-border-dark hover:border-gray-400"

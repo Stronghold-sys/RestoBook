@@ -1404,12 +1404,12 @@ export default function AdminSupportPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <select
                   value={filterStatus}
                   title="Filter Status"
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
+                  className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none cursor-pointer w-full"
                 >
                   <option value="">Semua Status</option>
                   <option value="pending">Menunggu Tanggapan</option>
@@ -1423,7 +1423,7 @@ export default function AdminSupportPage() {
                   value={filterUrgency}
                   title="Filter Urgensi"
                   onChange={(e) => setFilterUrgency(e.target.value)}
-                  className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
+                  className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none cursor-pointer w-full"
                 >
                   <option value="">Semua Urgensi</option>
                   <option value="low">Rendah</option>
@@ -1436,7 +1436,7 @@ export default function AdminSupportPage() {
                   value={filterCategory}
                   title="Filter Kategori"
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none"
+                  className="col-span-2 sm:col-span-1 bg-background-light dark:bg-background-dark/85 border border-border-light dark:border-border-dark rounded-xl px-2 py-1.5 text-[11px] text-text-light dark:text-text-dark font-bold focus:outline-none cursor-pointer w-full"
                 >
                   <option value="">Semua Kategori</option>
                   <option value="perubahan email">Perubahan Email</option>
@@ -1455,13 +1455,13 @@ export default function AdminSupportPage() {
             </div>
 
             {/* Tab Selector */}
-            <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark mb-4">
+            <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark mb-4 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => {
                   setTicketViewTab('aktif');
                   setActiveTicket(null);
                 }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all shrink-0 whitespace-nowrap ${
                   ticketViewTab === 'aktif'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-muted hover:text-primary'
@@ -1479,7 +1479,7 @@ export default function AdminSupportPage() {
                   setTicketViewTab('riwayat');
                   setActiveTicket(null);
                 }}
-                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                className={`flex-1 py-2 text-xs font-black rounded-lg uppercase transition-all shrink-0 whitespace-nowrap ${
                   ticketViewTab === 'riwayat'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-muted hover:text-primary'
@@ -1492,7 +1492,7 @@ export default function AdminSupportPage() {
                   setTicketViewTab('bantuan_admin');
                   setActiveTicket(null);
                 }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-black rounded-lg uppercase transition-all shrink-0 whitespace-nowrap ${
                   ticketViewTab === 'bantuan_admin'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-muted hover:text-primary'

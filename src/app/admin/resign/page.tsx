@@ -490,16 +490,16 @@ export default function AdminResignPage() {
       </div>
 
       {/* Module Selector tabs */}
-      <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2 max-w-md shadow-inner print:hidden">
+      <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2 max-w-md shadow-inner print:hidden overflow-x-auto whitespace-nowrap scrollbar-none pb-1.5 sm:pb-1.5">
         <button 
           onClick={() => setActiveTab("resign")}
-          className={`flex-1 py-3 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "resign" ? "bg-white dark:bg-gray-700 shadow text-primary" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
+          className={`flex-1 py-3 rounded-xl font-black text-xs transition-all uppercase tracking-wider shrink-0 whitespace-nowrap ${activeTab === "resign" ? "bg-white dark:bg-gray-700 shadow text-primary" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
         >
           Pengajuan Resign
         </button>
         <button 
           onClick={() => setActiveTab("pecat")}
-          className={`flex-1 py-3 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "pecat" ? "bg-white dark:bg-gray-700 shadow text-red-600" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
+          className={`flex-1 py-3 rounded-xl font-black text-xs transition-all uppercase tracking-wider shrink-0 whitespace-nowrap ${activeTab === "pecat" ? "bg-white dark:bg-gray-700 shadow text-red-600" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
         >
           Pecat / Keluarkan Karyawan
         </button>

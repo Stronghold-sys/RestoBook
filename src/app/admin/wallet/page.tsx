@@ -627,7 +627,7 @@ export default function AdminWalletPage() {
                   key={t.key}
                   type="button"
                   onClick={() => setManageTab(t.key as any)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border shrink-0 whitespace-nowrap ${
                     manageTab === t.key
                       ? "bg-primary text-white border-primary"
                       : "bg-transparent text-muted border-transparent hover:text-text-light dark:hover:text-text-dark"

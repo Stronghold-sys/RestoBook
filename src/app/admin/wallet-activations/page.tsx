@@ -176,7 +176,7 @@ export default function AdminWalletActivationsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-border-light dark:border-border-dark pb-4">
+      <div className="flex gap-2 border-b border-border-light dark:border-border-dark pb-4 overflow-x-auto whitespace-nowrap scrollbar-none">
         {[
           { key: "diajukan", label: "Pengajuan Baru", count: activations.filter(a => ["diajukan", "diajukan_ulang"].includes(a.status)).length },
           { key: "diproses", label: "Sedang Diproses", count: activations.filter(a => a.status === "diproses").length },
@@ -190,7 +190,7 @@ export default function AdminWalletActivationsPage() {
               setActiveTab(t.key as TabType);
               setSelectedActivation(null);
             }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all border ${
+            className={`shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all border ${
               activeTab === t.key
                 ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                 : "bg-card-light text-muted dark:bg-card-dark border-border-light dark:border-border-dark hover:text-text-light dark:hover:text-text-dark"

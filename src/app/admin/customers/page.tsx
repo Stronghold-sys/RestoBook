@@ -818,10 +818,10 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-4 border-b border-border-light dark:border-border-dark pb-1">
+      <div className="flex gap-4 border-b border-border-light dark:border-border-dark pb-1 overflow-x-auto whitespace-nowrap scrollbar-none">
         <button
           onClick={() => setActiveTab("customers")}
-          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "customers"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -835,7 +835,7 @@ export default function AdminCustomersPage() {
 
         <button
           onClick={() => setActiveTab("account_appeals")}
-          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "account_appeals"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -851,7 +851,7 @@ export default function AdminCustomersPage() {
 
         <button
           onClick={() => setActiveTab("wallet_appeals")}
-          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "wallet_appeals"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text-light dark:hover:text-text-dark"
@@ -928,14 +928,14 @@ export default function AdminCustomersPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+          <div className="grid grid-cols-2 gap-3 w-full lg:flex lg:w-auto lg:justify-end">
             {/* Status Filter */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
-              <Filter className="w-4 h-4 text-muted" />
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark w-full">
+              <Filter className="w-4 h-4 text-muted shrink-0" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-transparent text-xs font-bold outline-none text-text-light dark:text-text-dark"
+                className="bg-transparent text-xs font-bold outline-none text-text-light dark:text-text-dark w-full cursor-pointer"
                 title="Status Filter"
               >
                 <option value="all">Semua Status</option>
@@ -946,12 +946,12 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Warning Filter */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
-              <ShieldAlert className="w-4 h-4 text-muted" />
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark w-full">
+              <ShieldAlert className="w-4 h-4 text-muted shrink-0" />
               <select
                 value={filterWarning}
                 onChange={(e) => setFilterWarning(e.target.value)}
-                className="bg-transparent text-xs font-bold outline-none text-text-light dark:text-text-dark"
+                className="bg-transparent text-xs font-bold outline-none text-text-light dark:text-text-dark w-full cursor-pointer"
                 title="Warning Threshold Filter"
               >
                 <option value="all">Semua Peringatan</option>

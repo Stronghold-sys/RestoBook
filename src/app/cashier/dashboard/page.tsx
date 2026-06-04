@@ -406,7 +406,7 @@ export default function CashierDashboard() {
     // Buat objek Date target
     let targetTime: Date;
     if (todayShift.shiftDate) {
-      targetTime = new Date(`${todayShift.shiftDate}T${todayShift.start_time}:00+07:00`);
+      targetTime = new Date(`${todayShift.shiftDate}T${todayShift.start_time.slice(0, 5)}:00+07:00`);
     } else {
       const [targetH, targetM] = todayShift.start_time.split(':').map(Number);
       targetTime = new Date(curTime);

@@ -412,7 +412,7 @@ export default function CustomerSupportPage() {
       setFormAttachmentUrl('');
 
       // Auto-trigger confirmation alert message
-      toast.success(result.message);
+      // Already shown "Tiket pengaduan berhasil dibuat" above
 
       // Refresh list
       fetchProfileAndTickets();

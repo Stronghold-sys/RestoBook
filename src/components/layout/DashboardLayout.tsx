@@ -5,7 +5,7 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, Volume2, VolumeX,
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, Lock, ShieldAlert, TrendingUp, Zap, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, ShieldAlert, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -255,7 +255,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           osc.stop(ctx.currentTime + 0.3);
         }, i * 300);
       }
-    } catch (e) {}
+    } catch {}
   };
 
   const playNotifSound = () => {
@@ -299,13 +299,12 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
-    } catch (e) {}
+    } catch {}
   };
 
   const playSingleNotifSound = () => {
     const isEnabled = useAudioStore.getState().isCustomerSoundEnabled;
     if (!isEnabled) {
-      console.log("Customer notifications sound is muted.");
       return;
     }
     try {
@@ -314,7 +313,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       notifAudio.play().catch(() => {
         playSingleFallbackBeep();
       });
-    } catch (e) {
+    } catch {
       playSingleFallbackBeep();
     }
   };
@@ -747,9 +746,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         <NotificationCenterDrawer
           isOpen={isNotifCenterOpen}
           onClose={() => setIsNotifCenterOpen(false)}
-          userId={userProfile?.user_id || ""}
           profileId={userProfile?.id || ""}
-          role={role || ""}
         />
 
         {/* Mobile Sidebar Overlay */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { Camera, RefreshCw, CheckCircle2, DollarSign, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
@@ -116,7 +116,7 @@ export default function AttendanceModal({ onSuccess, substituteDetails, workShif
       const byteArray = new Uint8Array(byteNumbers);
       const fileBlob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(fileName, fileBlob);
       

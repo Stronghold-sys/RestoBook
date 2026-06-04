@@ -22,17 +22,13 @@ interface Notification {
 interface NotificationCenterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  userId: string;
   profileId: string;
-  role: string;
 }
 
 export default function NotificationCenterDrawer({
   isOpen,
   onClose,
-  userId,
   profileId,
-  role
 }: NotificationCenterDrawerProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<"notifications" | "activity">("notifications");
@@ -137,7 +133,7 @@ export default function NotificationCenterDrawer({
         .eq("is_read", false);
       setNotifications(notifications.map(n => ({ ...n, is_read: true })));
       toast.success("Semua notifikasi telah dibaca");
-    } catch (e) {}
+    } catch {}
   };
 
   const getIcon = (type: string) => {
@@ -153,7 +149,7 @@ export default function NotificationCenterDrawer({
   const formatTimeAgo = (isoString: string) => {
     try {
       return formatDistanceToNow(new Date(isoString), { addSuffix: true, locale: localeId });
-    } catch (e) {
+    } catch {
       return "";
     }
   };

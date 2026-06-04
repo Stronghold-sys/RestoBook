@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTutorialStore } from '@/store/useTutorialStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function SpotlightTutorial() {
-  const { isTutorialActive, currentStep, steps, nextStep, prevStep, stopTutorial, skipTutorial } = useTutorialStore();
+  const { isTutorialActive, currentStep, steps, nextStep, prevStep } = useTutorialStore();
   const [coords, setCoords] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [windowSize, setWindowSize] = useState({ width: 1200, height: 800 });
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -175,9 +175,7 @@ export default function SpotlightTutorial() {
     };
   };
 
-  const handleSkip = () => {
-    skipTutorial();
-  };
+
 
   return (
     <div className="fixed inset-0 z-[99998] overflow-hidden pointer-events-none">

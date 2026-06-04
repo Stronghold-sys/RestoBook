@@ -74,7 +74,7 @@ export function formatToIndonesianDate(dateStr: string): string {
       month: "long",
       year: "numeric"
     }).format(date);
-  } catch (e) {
+  } catch {
     return dateStr;
   }
 }

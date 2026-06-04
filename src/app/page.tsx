@@ -1,13 +1,13 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { ArrowRight, Utensils, Star, Clock, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert } from "lucide-react";
+import { ArrowRight, Utensils, Star, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useThemeStore } from "@/store/useThemeStore";
 import { createClient } from "@/lib/supabase/client";
-import { isRestaurantOpen, getOperationalStatus, getStoreStatus, getMinutesUntilClose } from "@/utils/operationalHours";
+import { getStoreStatus, getMinutesUntilClose } from "@/utils/operationalHours";
 import toast from "react-hot-toast";
 
 const CATEGORIES = [
@@ -61,7 +61,7 @@ export default function LandingPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [openingTime, setOpeningTime] = useState<string | null>(null);
   const [closingTime, setClosingTime] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+
   const [isTemporaryClosed, setIsTemporaryClosed] = useState<boolean>(false);
   const [isHoliday, setIsHoliday] = useState<boolean>(false);
   const [holidayReopenDate, setHolidayReopenDate] = useState<string>("");
@@ -247,16 +247,11 @@ export default function LandingPage() {
       })
       .subscribe();
 
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
     return () => { 
       supabase.removeChannel(channel); 
       supabase.removeChannel(reviewsChannel);
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(syncChannel);
-      clearInterval(timer);
     };
   }, [initTheme]);
 

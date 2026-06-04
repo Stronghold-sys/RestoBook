@@ -77,7 +77,7 @@ export async function sendReservationEmail(
           mejaNumbers = parsedNotes.meja_tambahan.join(', ');
         }
       }
-    } catch (e) {
+    } catch {
       catatan = resData.notes || '';
     }
 
@@ -145,7 +145,7 @@ export async function sendReservationEmail(
       statusPillBg = '#fee2e2';
       statusPillColor = '#dc2626';
       
-      let cancelReason = catatanBatal || catatanTolak || 'Alasan tidak disebutkan';
+      const cancelReason = catatanBatal || catatanTolak || 'Alasan tidak disebutkan';
       let entityName = 'Kasir';
       if (dibatalkanOleh === 'pelanggan') {
         entityName = 'Anda (Pelanggan)';

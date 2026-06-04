@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Clock, AlertTriangle, CheckCircle2, XCircle, Truck, ChefHat } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Truck, ChefHat } from "lucide-react";
 
 interface OrderCountdownProps {
   order: {

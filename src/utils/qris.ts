@@ -19,7 +19,7 @@ export function calculateCRC16(str: string): string {
       }
     }
   }
-  let hex = (crc & 0xFFFF).toString(16).toUpperCase();
+  const hex = (crc & 0xFFFF).toString(16).toUpperCase();
   return hex.padStart(4, "0");
 }
 

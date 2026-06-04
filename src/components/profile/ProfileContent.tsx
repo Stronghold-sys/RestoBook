@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, X, MessageSquare, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, Volume2, VolumeX, HelpCircle } from "lucide-react";
+import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, HelpCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { useModalStore } from "@/store/useModalStore";
-import { useAudioStore } from "@/store/useAudioStore";
 import { useActivityStore } from "@/store/useActivityStore";
 import { useTutorialStore } from "@/store/useTutorialStore";
 
@@ -153,7 +152,7 @@ export default function ProfileContent() {
   const [effectiveDate, setEffectiveDate] = useState("");
   const [reason, setReason] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
-  const [submittingResign, setSubmittingResign] = useState(false);
+
 
   // Resign Status Check State
   const [checkId, setCheckId] = useState("");
@@ -193,10 +192,9 @@ export default function ProfileContent() {
 
 
   // Delete account state & function
-  const [deleting, setDeleting] = useState(false);
+
 
   const handleDeleteAccount = async () => {
-    setDeleting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Sesi tidak ditemukan");
@@ -221,7 +219,6 @@ export default function ProfileContent() {
     } catch (e: any) {
       toast.error(e.message);
     } finally {
-      setDeleting(false);
       closeModal();
     }
   };
@@ -429,7 +426,6 @@ export default function ProfileContent() {
     if (!reason.trim()) return toast.error("Alasan Resign wajib diisi");
     if (!profile.role) return toast.error("Data jabatan tidak ditemukan. Silakan hubungi admin.");
 
-    setSubmittingResign(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Sesi tidak valid / expired. Silakan login kembali.");
@@ -479,8 +475,6 @@ export default function ProfileContent() {
       closeModal();
     } catch (e: any) {
       toast.error(e.message);
-    } finally {
-      setSubmittingResign(false);
     }
   };
 

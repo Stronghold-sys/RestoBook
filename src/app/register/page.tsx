@@ -12,7 +12,6 @@ import Script from "next/script";
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {

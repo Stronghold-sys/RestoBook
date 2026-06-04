@@ -103,7 +103,6 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
     }) + ' WIB';
 
     // 5. Generate PDF (DISABLED - Causes silent isolate crash on Cloudflare Edge)
-    let pdfBase64 = '';
     
     // 6. Send via Resend
     const apiKey = process.env.RESEND_API_KEY;

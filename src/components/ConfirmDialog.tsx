@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AlertTriangle, ShieldAlert, Info, CheckCircle, X } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Info, CheckCircle } from "lucide-react";
 import BaseModal from "@/components/BaseModal";
 
 interface ConfirmDialogProps {

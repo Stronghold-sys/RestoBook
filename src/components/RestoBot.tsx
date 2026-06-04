@@ -290,7 +290,7 @@ export default function RestoBot() {
   const [profile, setProfile] = useState<any>(null);
   const [reservations, setReservations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [sessionUser, setSessionUser] = useState<any>(null);
+
   const [settings, setSettings] = useState<any>(null);
   const [allMenuItems, setAllMenuItems] = useState<any[]>([]);
   const [dbTables, setDbTables] = useState<any[]>([]);
@@ -442,7 +442,6 @@ export default function RestoBot() {
       const localCtx = loadUserContext();
 
       if (session?.user) {
-        setSessionUser(session.user);
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('*')
@@ -581,7 +580,6 @@ export default function RestoBot() {
           }
         }
       } else {
-        setSessionUser(null);
         setProfile(null);
         setReservations([]);
         setOrders([]);
@@ -913,7 +911,7 @@ export default function RestoBot() {
         }
         return currentOpen;
       });
-    } catch (error) {
+    } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, saya sedang tidak dapat terhubung. Silakan coba beberapa saat lagi.' }]);
     } finally {
       setIsLoading(false);

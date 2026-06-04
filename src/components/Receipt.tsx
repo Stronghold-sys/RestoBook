@@ -2,8 +2,6 @@
 
 import { forwardRef, useEffect, useState } from "react";
 import { Utensils } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/client";
 
 interface ReceiptProps {

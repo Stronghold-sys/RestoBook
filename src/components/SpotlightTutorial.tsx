@@ -34,21 +34,17 @@ export default function SpotlightTutorial() {
     const element = document.querySelector(step.targetSelector);
 
     if (element) {
+      // Measure immediately so spotlight target cutout starts transitioning instantly
+      const rect = element.getBoundingClientRect();
+      setCoords({
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+      });
+
       // Auto scroll to center of element
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Small delay to let scroll animation finish, then measure
-      const timer = setTimeout(() => {
-        const rect = element.getBoundingClientRect();
-        setCoords({
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height
-        });
-      }, 300);
-
-      return () => clearTimeout(timer);
     } else {
       // If element not found, skip to next step or center spotlight
       setCoords(null);

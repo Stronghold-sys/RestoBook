@@ -116,6 +116,29 @@ export default function SecurityPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activityFilter, setActivityFilter] = useState("all");
 
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+      }
+    });
+  };
+
   const fetchStats = async () => {
     try {
       const today = new Date();
@@ -350,16 +373,16 @@ export default function SecurityPage() {
         ? null 
         : new Date(Date.now() + parseInt(ipForm.duration) * 60000).toISOString();
 
-      const { error } = await supabase.from("security_ip_rules").insert({
+      const { error } = await supabase.from("security_ip_rules").upsert({
         ip_address: ipForm.ip.trim(),
         rule_type: ipForm.type,
         reason: ipForm.reason || `Ditambahkan manual oleh admin`,
         expires_at: expiresAt
-      });
+      }, { onConflict: 'ip_address' });
 
       if (error) throw error;
 
-      toast.success(`IP ${ipForm.ip} berhasil di-${ipForm.type}!`);
+      toast.success(`Aturan untuk IP ${ipForm.ip} berhasil disimpan (${ipForm.type})!`);
       setIpForm({ ip: "", type: "blacklist", reason: "", duration: "1440" });
       fetchIpRules();
     } catch (err: any) {
@@ -368,17 +391,23 @@ export default function SecurityPage() {
   };
 
   const handleRemoveIpRule = async (id: string, ip: string) => {
-    if (!window.confirm(`Hapus aturan pemblokiran untuk IP ${ip}?`)) return;
+    showConfirm(
+      "Konfirmasi Hapus IP Rule",
+      `Apakah Anda yakin ingin menghapus aturan pemblokiran untuk IP ${ip}?`,
+      async () => {
+        try {
+          const { error } = await supabase.from("security_ip_rules").delete().eq("id", id);
+          if (error) throw error;
 
-    try {
-      const { error } = await supabase.from("security_ip_rules").delete().eq("id", id);
-      if (error) throw error;
-
-      toast.success(`Aturan IP ${ip} berhasil dihapus.`);
-      fetchIpRules();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal menghapus IP rule");
-    }
+          toast.success(`Aturan IP ${ip} berhasil dihapus.`);
+          fetchIpRules();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal menghapus IP rule");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
   };
 
   // Detail Block Rule Actions
@@ -387,11 +416,11 @@ export default function SecurityPage() {
     if (!blockForm.value) return toast.error("Nilai pencarian wajib diisi");
 
     try {
-      const { error } = await supabase.from("security_block_rules").insert({
+      const { error } = await supabase.from("security_block_rules").upsert({
         field_type: blockForm.fieldType,
         value: blockForm.value.trim().toLowerCase(),
         reason: blockForm.reason || "Diblokir manual oleh admin"
-      });
+      }, { onConflict: 'field_type,value' });
 
       if (error) throw error;
 
@@ -404,17 +433,23 @@ export default function SecurityPage() {
   };
 
   const handleRemoveBlockRule = async (id: string, value: string) => {
-    if (!window.confirm(`Hapus cekal untuk '${value}'?`)) return;
+    showConfirm(
+      "Konfirmasi Hapus Cekal Detail",
+      `Apakah Anda yakin ingin menghapus aturan cekal untuk '${value}'?`,
+      async () => {
+        try {
+          const { error } = await supabase.from("security_block_rules").delete().eq("id", id);
+          if (error) throw error;
 
-    try {
-      const { error } = await supabase.from("security_block_rules").delete().eq("id", id);
-      if (error) throw error;
-
-      toast.success(`Cekal untuk '${value}' berhasil dihapus.`);
-      fetchBlockRules();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal menghapus aturan cekal");
-    }
+          toast.success(`Cekal untuk '${value}' berhasil dihapus.`);
+          fetchBlockRules();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal menghapus aturan cekal");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
   };
 
   // Filter & Search Logic
@@ -1348,6 +1383,49 @@ export default function SecurityPage() {
         </div>
 
       </div>
+
+      {/* Custom Premium Confirm Modal */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-3xl shadow-2xl max-w-sm w-full space-y-4"
+            >
+              <div className="flex items-center gap-3 text-rose-500">
+                <AlertTriangle className="w-6 h-6 animate-pulse" />
+                <h3 className="font-black text-base text-gray-900 dark:text-white">{confirmModal.title}</h3>
+              </div>
+              
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 leading-relaxed">
+                {confirmModal.message}
+              </p>
+              
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    confirmModal.onConfirm();
+                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/25 rounded-xl transition-all"
+                >
+                  Ya, Hapus
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

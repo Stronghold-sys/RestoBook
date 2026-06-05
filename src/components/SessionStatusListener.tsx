@@ -5,6 +5,47 @@ import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
+// Global CSRF Token Fetch Wrapper untuk mutasi data (POST, PUT, DELETE)
+if (typeof window !== "undefined" && !(window as any).__fetchOverridden) {
+  (window as any).__fetchOverridden = true;
+  const originalFetch = window.fetch;
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    const method = (init?.method || "GET").toUpperCase();
+    if (["POST", "PUT", "DELETE"].includes(method)) {
+      const getCsrfToken = () => {
+        return document.cookie
+          .split("; ")
+          .find(row => row.startsWith("csrf-token="))
+          ?.split("=")[1] || "";
+      };
+      
+      const token = getCsrfToken();
+      if (token) {
+        init = init || {};
+        init.headers = init.headers || {};
+        if (init.headers instanceof Headers) {
+          if (!init.headers.has("x-csrf-token")) {
+            init.headers.set("x-csrf-token", token);
+          }
+        } else if (Array.isArray(init.headers)) {
+          if (!init.headers.some(([k]) => k.toLowerCase() === "x-csrf-token")) {
+            init.headers.push(["x-csrf-token", token]);
+          }
+        } else {
+          const headersRecord = init.headers as Record<string, string>;
+          const hasToken = Object.keys(headersRecord).some(
+            k => k.toLowerCase() === "x-csrf-token"
+          );
+          if (!hasToken) {
+            headersRecord["x-csrf-token"] = token;
+          }
+        }
+      }
+    }
+    return originalFetch.call(this, input, init);
+  };
+}
+
 export default function SessionStatusListener() {
   const router = useRouter();
   const pathname = usePathname();

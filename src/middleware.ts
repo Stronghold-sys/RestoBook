@@ -3,6 +3,15 @@ import type { NextRequest } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
 import { getSupabaseAdmin } from './lib/supabase/admin'
 import { parseUserAgent, generateCSRFToken } from './lib/security'
+import { 
+  getSecureClientIP, 
+  detectProxyOrVPN, 
+  detectHeadlessBrowser, 
+  detectSessionHijack, 
+  getEmergencySettings, 
+  logSecurityIncident,
+  hasPathTraversal
+} from './lib/securityHardening'
 
 // ── In-Memory Caches & Trackers ─────────────────────────────────────
 const ipBlacklistCache = new Map<string, { blocked: boolean; expiresAt: number; reason?: string }>();
@@ -15,12 +24,7 @@ const CACHE_TTL_MS = 30_000; // 30 Detik cache untuk IP Blacklist & Role
 
 // ── Helper: Ambil IP Klien ──────────────────────────────────────────
 function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get('cf-connecting-ip') ||
-    request.headers.get('x-real-ip') ||
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    '127.0.0.1'
-  );
+  return getSecureClientIP(request);
 }
 
 // ── Helper: Cek IP Blacklist dengan Cache ──────────────────────────
@@ -234,6 +238,73 @@ export async function middleware(request: NextRequest) {
 
   cleanupMemStore();
 
+  // A. Deteksi Path Traversal
+  if (hasPathTraversal(path)) {
+    await logSecurityIncident({
+      ipAddress: ip,
+      endpoint: path,
+      attackType: 'TRAVERSAL',
+      severity: 'high',
+      payload: { path }
+    });
+    return new NextResponse(
+      JSON.stringify({ error: 'Permintaan tidak dapat diproses.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // B. Load Emergency Settings & Terapkan Proteksi Global
+  const emergency = await getEmergencySettings();
+  if (emergency.emergency_mode) {
+    if (path === '/register' || path === '/api/register') {
+      if (emergency.block_new_registrations) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Permintaan tidak dapat diproses (Registrasi Baru Ditutup).' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    const isSensitive = path.startsWith('/api/send-otp') || path.startsWith('/api/verify-otp') || path.startsWith('/api/reset-password') || path.startsWith('/api/auth/login');
+    if (isSensitive && emergency.block_sensitive_endpoints) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Permintaan tidak dapat diproses (Layanan Ditangguhkan).' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // C. Deteksi Headless Browser & Otomasi
+  const isHeadless = detectHeadlessBrowser(request);
+  if (isHeadless && (path.startsWith('/api') || path === '/login' || path === '/register')) {
+    await logSecurityIncident({
+      ipAddress: ip,
+      endpoint: path,
+      attackType: 'HEADLESS_BROWSER',
+      severity: 'medium',
+      payload: { userAgent }
+    });
+    return new NextResponse(
+      JSON.stringify({ error: 'Aktivitas bot diblokir.' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // D. Deteksi VPN / Proxy / Tor
+  const { isProxyOrVpn, reason: proxyReason } = await detectProxyOrVPN(request, ip);
+  let rateLimitFactor = 1;
+  if (isProxyOrVpn) {
+    rateLimitFactor = 3;
+    if (path.startsWith('/api/auth') || path.startsWith('/api/send-otp')) {
+      await logSecurityIncident({
+        ipAddress: ip,
+        endpoint: path,
+        attackType: 'VPN_ACCESS',
+        severity: 'low',
+        payload: { reason: proxyReason }
+      });
+    }
+  }
+
   // 1. Abaikan aset statis dan media
   const isStaticAsset = path.startsWith('/_next') || 
     /\.(ico|png|jpg|jpeg|gif|webp|svg|css|js|woff|woff2|ttf|mp3)$/.test(path);
@@ -300,6 +371,34 @@ export async function middleware(request: NextRequest) {
   const { supabase, user, supabaseResponse } = await updateSession(request);
   let finalResponse = supabaseResponse;
 
+  // 6.5. Deteksi Session Hijacking & Sesi Terikat
+  if (user) {
+    const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
+    const sessionId = authCookie ? authCookie.value.slice(0, 100) : null;
+    
+    if (sessionId) {
+      const hijackCheck = await detectSessionHijack(sessionId, user.id, request, ip);
+      if (hijackCheck.hijacked) {
+        await supabase.auth.signOut();
+        await logSecurityIncident({
+          ipAddress: ip,
+          endpoint: path,
+          attackType: 'SESSION_HIJACK',
+          severity: 'critical',
+          payload: { reason: hijackCheck.reason, userId: user.id }
+        });
+
+        const res = NextResponse.redirect(new URL('/login?session_expired=true&hijack=true', request.url));
+        res.cookies.delete('last_active_timestamp');
+        res.cookies.delete('csrf-token');
+        if (authCookie) {
+          res.cookies.delete(authCookie.name);
+        }
+        return res;
+      }
+    }
+  }
+
   // 7. Auto Logout Inactivity (Server-Side)
   if (user) {
     const lastActiveStr = request.cookies.get('last_active_timestamp')?.value;
@@ -361,6 +460,13 @@ export async function middleware(request: NextRequest) {
         limit = 300; // Auth User rate limit (300/min)
         rateLimitKey = `rate:user:${user.id}`;
       }
+    }
+
+    // Terapkan emergency mode & proxy factor
+    if (emergency.tightened_rate_limits) {
+      limit = Math.max(5, Math.floor(limit / 5)); // Perketat 5x lipat
+    } else if (isProxyOrVpn) {
+      limit = Math.max(10, Math.floor(limit / 3)); // Perketat 3x lipat
     }
 
     const { allowed, retryAfter } = checkApiRateLimit(rateLimitKey, limit);
@@ -448,6 +554,7 @@ export async function middleware(request: NextRequest) {
   // Tambahkan Header Keamanan Dasar
   finalResponse.headers.set('X-Content-Type-Options', 'nosniff');
   finalResponse.headers.set('X-Frame-Options', 'DENY');
+  finalResponse.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
   finalResponse.headers.set('X-XSS-Protection', '1; mode=block');
   finalResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 

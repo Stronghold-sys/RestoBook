@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
 import { logSecurity, parseUserAgent } from '@/lib/security';
+import { getEmergencySettings, isDisposableEmail, logSecurityIncident } from '../../../lib/securityHardening';
 
 function getClientIP(request: Request): string {
   return (
@@ -20,6 +21,12 @@ export async function POST(req: NextRequest) {
   const endpoint = '/api/register';
 
   try {
+    // Check Emergency Mode
+    const emergency = await getEmergencySettings();
+    if (emergency.emergency_mode && emergency.block_new_registrations) {
+      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { email, password, fullName, phone, code, website } = body;
 
@@ -30,6 +37,18 @@ export async function POST(req: NextRequest) {
         activity: 'REGISTER_HONEYPOT_TRIGGERED', endpoint, status: 'blocked'
       });
       return NextResponse.json({ error: 'Aktivitas mencurigakan terdeteksi (Bot Trap).' }, { status: 403 });
+    }
+
+    // 1.5 Cek disposable email
+    if (email && isDisposableEmail(email)) {
+      await logSecurityIncident({
+        ipAddress,
+        endpoint,
+        attackType: 'DISPOSABLE_EMAIL_REGISTRATION',
+        severity: 'medium',
+        payload: { email }
+      });
+      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 400 });
     }
 
     // 2. Bot detection via User Agent

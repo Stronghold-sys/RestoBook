@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logSecurity, parseUserAgent } from '@/lib/security';
+import { getEmergencySettings, logSecurityIncident } from '../../../lib/securityHardening';
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -43,7 +44,13 @@ export async function POST(req: NextRequest) {
 
     let { email, phone, type, method = 'email', name } = body;
 
-    // 1. Enforce OTP Rate Limiting
+    // 1. Check Emergency Mode
+    const emergency = await getEmergencySettings();
+    if (emergency.emergency_mode && emergency.block_sensitive_endpoints) {
+      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 403 });
+    }
+
+    // 1.5 Enforce OTP Rate Limiting
     const tenMinutesAgo = new Date(Date.now() - 10 * 60000).toISOString();
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60000).toISOString();
 
@@ -77,6 +84,41 @@ export async function POST(req: NextRequest) {
         activity: 'OTP_RATE_LIMIT_EXCEEDED_24H', endpoint, status: 'blocked'
       });
       return NextResponse.json({ error: 'Permintaan OTP harian terlampaui. Silakan coba lagi besok.' }, { status: 429 });
+    }
+
+    // Limit 3: Mass OTP Request dari ASN yang sama
+    const cfAsn = req.headers.get('x-vercel-ip-asn') || req.headers.get('cf-asn') || 'Unknown';
+    if (cfAsn !== 'Unknown') {
+      const { count: asnIncidentCount } = await supabaseAdmin
+        .from('security_incidents')
+        .select('*', { count: 'exact', head: true })
+        .eq('asn', cfAsn)
+        .eq('attack_type', 'MASS_OTP_REQUEST')
+        .gt('created_at', tenMinutesAgo);
+
+      if (asnIncidentCount && asnIncidentCount >= 5) {
+        return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 429 });
+      }
+    }
+
+    // Limit 4: IP ini melakukan permintaan OTP untuk email/phone yang berbeda (Mass OTP)
+    const { count: diffOtpsFromIp } = await supabaseAdmin
+      .from('security_logs')
+      .select('endpoint', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'OTP_REQUEST')
+      .gt('created_at', tenMinutesAgo);
+
+    if (diffOtpsFromIp && diffOtpsFromIp >= 3) {
+      await logSecurityIncident({
+        ipAddress,
+        asn: cfAsn !== 'Unknown' ? cfAsn : undefined,
+        endpoint,
+        attackType: 'MASS_OTP_REQUEST',
+        severity: 'high',
+        payload: { email, phone }
+      });
+      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 429 });
     }
 
     // Log the OTP Request attempt

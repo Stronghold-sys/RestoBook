@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 import { getPaidNotification } from '@/utils/notificationHelper';
 import { updateOrderEstimation } from '@/lib/order-estimation';
+import { consumeNonce, logSecurityIncident } from '../../../lib/securityHardening';
 
 function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // km
@@ -77,6 +78,34 @@ export async function POST(req: NextRequest) {
     
     const body = await req.json();
     const { orderId, action, paymentStatus, status, reason, orderData, itemsData } = body;
+
+    // Anti Replay Attack: Nonce & Timestamp Verification
+    const isSensitiveAction = ['create_walkin', 'create_customer_order', 'create_wallet_order', 'pay_order_via_wallet'].includes(action);
+    if (isSensitiveAction) {
+      const nonce = req.headers.get('x-nonce');
+      const timestamp = req.headers.get('x-timestamp');
+      
+      const now = Date.now();
+      const reqTime = Number(timestamp || 0);
+      const isExpired = !reqTime || Math.abs(now - reqTime) > 5 * 60_000;
+      
+      let isValidNonce = false;
+      if (nonce && !isExpired) {
+        isValidNonce = await consumeNonce(nonce, 5);
+      }
+      
+      if (!isValidNonce) {
+        const clientIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '127.0.0.1';
+        await logSecurityIncident({
+          ipAddress: clientIp,
+          endpoint: '/api/orders',
+          attackType: 'REPLAY_ATTEMPT',
+          severity: 'high',
+          payload: { action, nonce, timestamp }
+        });
+        return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 400 });
+      }
+    }
 
     if (action === 'create_walkin') {
       const { data: newOrder, error: orderError } = await supabaseAdmin

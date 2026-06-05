@@ -52,10 +52,33 @@ interface GeoLocationRecord {
   last_detected_at: string;
 }
 
+interface SecurityIncident {
+  id: string;
+  ip_address: string;
+  fingerprint: string | null;
+  asn: string | null;
+  country: string | null;
+  city: string | null;
+  endpoint: string | null;
+  payload: string | null;
+  attack_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  created_at: string;
+}
+
+interface SecuritySettings {
+  id: string;
+  emergency_mode: boolean;
+  global_captcha_required: boolean;
+  block_new_registrations: boolean;
+  block_sensitive_endpoints: boolean;
+  tightened_rate_limits: boolean;
+}
+
 export default function SecurityPage() {
   const supabase = createClient();
   
-  const [activeTab, setActiveTab] = useState<'logs' | 'ip' | 'detail' | 'geo'>('logs');
+  const [activeTab, setActiveTab] = useState<'logs' | 'ip' | 'detail' | 'geo' | 'incidents'>('logs');
   const [loading, setLoading] = useState(true);
   
   // Data States
@@ -63,6 +86,15 @@ export default function SecurityPage() {
   const [ipRules, setIpRules] = useState<IPRule[]>([]);
   const [blockRules, setBlockRules] = useState<BlockRule[]>([]);
   const [geoRecords, setGeoRecords] = useState<GeoLocationRecord[]>([]);
+  const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
+  const [securityConfig, setSecurityConfig] = useState<SecuritySettings>({
+    id: "",
+    emergency_mode: false,
+    global_captcha_required: false,
+    block_new_registrations: false,
+    block_sensitive_endpoints: false,
+    tightened_rate_limits: false
+  });
   
   // Stats States
   const [stats, setStats] = useState({
@@ -197,6 +229,35 @@ export default function SecurityPage() {
     }
   };
 
+  const fetchIncidents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("security_incidents")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      setIncidents(data || []);
+    } catch (err) {
+      console.error("Error fetching incidents:", err);
+    }
+  };
+
+  const fetchSecurityConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("security_settings")
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSecurityConfig(data);
+      }
+    } catch (err) {
+      console.error("Error fetching security settings:", err);
+    }
+  };
+
   const initData = async () => {
     setLoading(true);
     await Promise.all([
@@ -204,7 +265,9 @@ export default function SecurityPage() {
       fetchLogs(),
       fetchIpRules(),
       fetchBlockRules(),
-      fetchGeoRecords()
+      fetchGeoRecords(),
+      fetchIncidents(),
+      fetchSecurityConfig()
     ]);
     setLoading(false);
   };
@@ -226,6 +289,13 @@ export default function SecurityPage() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "security_block_rules" }, () => {
         fetchBlockRules();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "security_incidents" }, () => {
+        fetchIncidents();
+        fetchStats();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "security_settings" }, () => {
+        fetchSecurityConfig();
       })
       .subscribe();
 
@@ -460,7 +530,102 @@ export default function SecurityPage() {
             <span className="text-[10px] bg-white/20 dark:bg-gray-800 px-2 py-0.5 rounded-full font-black text-xs">{geoRecords.length}</span>
           </button>
 
+          <button 
+            onClick={() => setActiveTab('incidents')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeTab === 'incidents' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-primary/5 hover:text-primary text-muted'}`}
+          >
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="w-5 h-5 text-rose-500" />
+              <span>Insiden & Serangan</span>
+            </div>
+            <span className="text-[10px] bg-white/20 dark:bg-gray-800 px-2 py-0.5 rounded-full font-black text-xs">{incidents.length}</span>
+          </button>
+
           <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3 px-3">
+            <p className="text-[10px] font-black uppercase text-muted tracking-wider">Mode Darurat (Emergency Mode)</p>
+            
+            <div className={`p-4 rounded-2xl border ${securityConfig.emergency_mode ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-gray-50 dark:bg-gray-900/60 border-border-light dark:border-border-dark'} space-y-3`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black">Emergency Mode</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={securityConfig.emergency_mode} 
+                    onChange={async (e) => {
+                      const val = e.target.checked;
+                      const { error } = await supabase.from('security_settings').update({ 
+                        emergency_mode: val,
+                        global_captcha_required: val,
+                        block_new_registrations: val,
+                        block_sensitive_endpoints: val,
+                        tightened_rate_limits: val
+                      }).eq('id', securityConfig.id);
+                      if (error) toast.error("Gagal mengubah mode darurat");
+                      else {
+                        toast.success(val ? "Emergency Mode AKTIF! Seluruh sistem diperketat." : "Emergency Mode dinonaktifkan.");
+                        fetchSecurityConfig();
+                      }
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+
+              {securityConfig.emergency_mode && (
+                <div className="space-y-2 pt-2 border-t border-rose-500/20 text-[11px] font-semibold">
+                  <div className="flex justify-between items-center">
+                    <span>Captcha Global</span>
+                    <input 
+                      type="checkbox" 
+                      checked={securityConfig.global_captcha_required}
+                      onChange={async (e) => {
+                        await supabase.from('security_settings').update({ global_captcha_required: e.target.checked }).eq('id', securityConfig.id);
+                        fetchSecurityConfig();
+                      }}
+                      className="rounded accent-rose-500"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Blokir Registrasi</span>
+                    <input 
+                      type="checkbox" 
+                      checked={securityConfig.block_new_registrations}
+                      onChange={async (e) => {
+                        await supabase.from('security_settings').update({ block_new_registrations: e.target.checked }).eq('id', securityConfig.id);
+                        fetchSecurityConfig();
+                      }}
+                      className="rounded accent-rose-500"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Blokir API OTP / Login</span>
+                    <input 
+                      type="checkbox" 
+                      checked={securityConfig.block_sensitive_endpoints}
+                      onChange={async (e) => {
+                        await supabase.from('security_settings').update({ block_sensitive_endpoints: e.target.checked }).eq('id', securityConfig.id);
+                        fetchSecurityConfig();
+                      }}
+                      className="rounded accent-rose-500"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Perketat Rate Limits (5x)</span>
+                    <input 
+                      type="checkbox" 
+                      checked={securityConfig.tightened_rate_limits}
+                      onChange={async (e) => {
+                        await supabase.from('security_settings').update({ tightened_rate_limits: e.target.checked }).eq('id', securityConfig.id);
+                        fetchSecurityConfig();
+                      }}
+                      className="rounded accent-rose-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <p className="text-[10px] font-black uppercase text-muted tracking-wider">Status Server Keamanan</p>
             <div className="flex items-center justify-between text-xs font-bold text-muted">
               <span>SSL/TLS Enforcement</span>
@@ -897,6 +1062,88 @@ export default function SecurityPage() {
                             </td>
                           </tr>
                         ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* INCIDENTS INVESTIGATION TAB */}
+            {activeTab === 'incidents' && (
+              <motion.div
+                key="incidents"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                className="space-y-6"
+              >
+                <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black">Investigasi Insiden Keamanan</h2>
+                    <p className="text-xs text-muted">Bukti forensik serangan terdeteksi (SSRF, traversal, replay, VPN, brute force, dll).</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] bg-rose-500/10 text-rose-500 border border-rose-500/20 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 animate-pulse">
+                      <AlertTriangle className="w-4 h-4" /> Telemetri Aktif
+                    </span>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-2xl">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-border-light dark:border-border-dark font-bold text-muted text-[10px] uppercase tracking-wider">
+                        <th className="py-3 px-4">Waktu</th>
+                        <th className="py-3 px-4">Tipe Serangan</th>
+                        <th className="py-3 px-4">Klien IP / Detail</th>
+                        <th className="py-3 px-4">Endpoint</th>
+                        <th className="py-3 px-4">Tingkat</th>
+                        <th className="py-3 px-4">Payload/Detail</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {incidents.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-muted font-bold text-xs italic">
+                            Tidak ada rekaman insiden keamanan terdeteksi.
+                          </td>
+                        </tr>
+                      ) : (
+                        incidents.map((incident) => {
+                          const getSeverityColor = (sev: string) => {
+                            if (sev === 'critical') return 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30';
+                            if (sev === 'high') return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+                            if (sev === 'medium') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+                            return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+                          };
+                          
+                          return (
+                            <tr key={incident.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
+                              <td className="py-3.5 px-4 text-muted font-mono text-[10px]" title={new Date(incident.created_at).toLocaleString()}>
+                                {new Date(incident.created_at).toLocaleTimeString('id-ID')}
+                              </td>
+                              <td className="py-3.5 px-4 font-bold">
+                                <span className="text-rose-500 font-mono tracking-wider">{incident.attack_type}</span>
+                              </td>
+                              <td className="py-3.5 px-4 font-mono">
+                                <div className="font-bold text-text-light dark:text-text-dark">{incident.ip_address}</div>
+                                <div className="text-[9px] text-muted">{incident.city}, {incident.country} • ASN: {incident.asn || '-'}</div>
+                              </td>
+                              <td className="py-3.5 px-4 text-muted font-mono font-semibold">
+                                {incident.endpoint || '-'}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider ${getSeverityColor(incident.severity)}`}>
+                                  {incident.severity}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-muted max-w-[200px] truncate" title={incident.payload || ''}>
+                                <code className="bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded text-[10px]">{incident.payload || '-'}</code>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>

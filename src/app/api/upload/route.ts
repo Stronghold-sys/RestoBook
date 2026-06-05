@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isSafePath } from '@/lib/security';
+import { validateFileUpload, logSecurityIncident } from '../../../lib/securityHardening';
 
 const DANGEROUS_EXTENSIONS = ['exe', 'bat', 'cmd', 'php', 'js', 'sh', 'html', 'htm', 'jar', 'com', 'scr', 'vbs', 'wsf', 'dll', 'cgi', 'pl', 'py'];
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -28,6 +29,22 @@ export async function POST(req: NextRequest) {
     // 2. Sanitasi Nama File & Path (Cegah Path Traversal)
     if (!isSafePath(file.name) || !isSafePath(userId || '')) {
       return NextResponse.json({ error: 'Nama file atau User ID terdeteksi mengandung karakter berbahaya.' }, { status: 400 });
+    }
+
+    // 2.5 Validasi File Upload (Magic Numbers, Double Extensions, Embedded Scripts)
+    const fileBuffer = await file.arrayBuffer();
+    const validation = await validateFileUpload(file.name, file.type, fileBuffer);
+    
+    if (!validation.valid) {
+      const clientIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '127.0.0.1';
+      await logSecurityIncident({
+        ipAddress: clientIp,
+        endpoint: '/api/upload',
+        attackType: 'FILE_UPLOAD_ABUSE',
+        severity: 'high',
+        payload: { fileName: file.name, reason: validation.reason }
+      });
+      return NextResponse.json({ error: validation.reason || 'Berkas tidak aman.' }, { status: 400 });
     }
 
     // 3. Validasi Tipe MIME & Batasan Ukuran
@@ -64,10 +81,10 @@ export async function POST(req: NextRequest) {
     
     const filePath = customFileName ? customFileName : (isProfile ? `avatars/${cleanUserId}/${randomName}` : `attachments/${cleanUserId}/${randomName}`);
     
-    // 5. Upload ke Supabase Storage
+    // 5. Upload ke Supabase Storage (menggunakan buffer yang sudah divalidasi)
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(bucketName)
-      .upload(filePath, file, { upsert: true, contentType: mimeType });
+      .upload(filePath, fileBuffer, { upsert: true, contentType: mimeType });
 
     if (uploadError) throw uploadError;
 

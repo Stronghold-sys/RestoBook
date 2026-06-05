@@ -46,6 +46,8 @@ function getClientIP(request: NextRequest): string {
   );
 }
 
+import { logSecurityIncident } from '../../../../lib/securityHardening';
+
 export async function POST(request: NextRequest) {
   const ipAddress = getClientIP(request);
   const userAgent = request.headers.get('user-agent') || '';
@@ -63,6 +65,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Akses ditolak: ${reason}` }, { status: 403 });
     }
 
+    // 1.5. Cek Credential Stuffing dari IP ini (5+ gagal dalam 5 menit)
+    const supabaseAdmin = getSupabaseAdmin();
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count: diffEmailsCount } = await supabaseAdmin
+      .from('security_logs')
+      .select('activity', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'LOGIN_FAILED')
+      .gt('created_at', fiveMinsAgo);
+
+    if (diffEmailsCount && diffEmailsCount >= 5) {
+      await logSecurityIncident({
+        ipAddress,
+        endpoint,
+        attackType: 'CREDENTIAL_STUFFING',
+        severity: 'high',
+        payload: { attemptsCount: diffEmailsCount }
+      });
+      
+      // Blacklist IP selama 1 jam
+      const blacklistExpire = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await supabaseAdmin.from('security_ip_rules').upsert({
+        ip_address: ipAddress,
+        rule_type: 'blacklist',
+        reason: 'Terdeteksi pola Credential Stuffing (5+ login gagal dalam 5 menit)',
+        expires_at: blacklistExpire
+      }, { onConflict: 'ip_address' });
+
+      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const { identifier, password } = body;
 
@@ -70,7 +103,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email/ID Karyawan dan password wajib diisi' }, { status: 400 });
     }
 
-    const supabaseAdmin = getSupabaseAdmin();
     let emailToLogin = identifier;
     let profile: any = null;
 
@@ -135,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Penanganan Login Gagal
     if (authError) {
-      let errorMessage = 'Email atau password salah';
+      let errorMessage = 'Permintaan tidak dapat diproses.';
       
       if (profile) {
         const attempts = (profile.failed_login_attempts || 0) + 1;
@@ -175,11 +207,6 @@ export async function POST(request: NextRequest) {
           userId: profile.id, fullName: profile.full_name, ipAddress, browser, device, userAgent,
           activity, endpoint, status: 'failed'
         });
-
-        if (lockedUntil) {
-          const lockedMin = attempts >= 20 ? 1440 : (attempts >= 10 ? 60 : 15);
-          errorMessage = `Terlalu banyak percobaan login. Silakan coba kembali dalam ${lockedMin} menit.`;
-        }
       } else {
         // Log login gagal tanpa profil terkait
         await logSecurity({
@@ -193,6 +220,16 @@ export async function POST(request: NextRequest) {
 
     // 6. Penanganan Login Sukses
     if (authData.user && profile) {
+      // Cek apakah akun aktif / diblokir
+      if (profile.is_active === false || profile.is_blocked === true || (profile.status_karyawan && profile.status_karyawan !== 'aktif') || (profile.status && profile.status !== 'active')) {
+        await supabaseClient.auth.signOut();
+        await logSecurity({
+          userId: profile.id, fullName: profile.full_name, ipAddress, browser, device, userAgent,
+          activity: 'LOGIN_FAILED_INACTIVE_ACCOUNT', endpoint, status: 'failed'
+        });
+        return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 400 });
+      }
+
       // Reset counter gagal login
       await supabaseAdmin.from('profiles').update({
         failed_login_attempts: 0,
@@ -236,10 +273,26 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      await logSecurity({
-        userId: profile.id, fullName: profile.full_name, ipAddress, browser, device, userAgent,
-        activity: 'LOGIN_SUCCESS', endpoint, status: 'success'
-      });
+      // Bind session fingerprint ke security_user_sessions
+      const authCookie = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
+      const sessionId = authCookie ? authCookie.value.slice(0, 100) : null;
+      if (sessionId) {
+        const cfCountry = request.headers.get('cf-ipcountry') || location.country || 'Unknown';
+        const cfTimezone = request.headers.get('x-vercel-ip-timezone') || 'Unknown';
+        const cfAsn = request.headers.get('x-vercel-ip-asn') || 'Unknown';
+        
+        await supabaseAdmin.from('security_user_sessions').upsert({
+          profile_id: profile.id,
+          session_id: sessionId,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          country: cfCountry,
+          city: location.city || 'Unknown',
+          asn: cfAsn,
+          timezone: cfTimezone,
+          last_active_at: new Date().toISOString()
+        }, { onConflict: 'session_id' });
+      }
 
       return NextResponse.json({ success: true, user: authData.user, session: authData.session });
     }

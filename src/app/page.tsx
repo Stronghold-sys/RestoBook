@@ -21,7 +21,57 @@ const CATEGORY_STYLE_MAP: Record<string, { icon: any; color: string }> = {
 
 const getCategoryStyle = (name: string) => {
   const key = name.toLowerCase().trim();
-  return CATEGORY_STYLE_MAP[key] || { icon: Tag, color: "from-emerald-500 to-teal-600" };
+  
+  // 1. Direct match first
+  if (CATEGORY_STYLE_MAP[key]) {
+    return CATEGORY_STYLE_MAP[key];
+  }
+
+  // 2. Keyword-based matching helper
+  const matches = (keywords: string[]) => keywords.some(kw => key.includes(kw));
+
+  if (matches(["nasi", "goreng", "mie", "sate", "ayam", "daging", "steak", "pasta", "pizza", "burger", "roti", "makanan", "food", "lauk", "sayur", "soup", "sup", "bakso", "seafood", "utama", "main"])) {
+    return { icon: Utensils, color: "from-orange-500 to-red-500" };
+  }
+
+  if (matches(["minum", "jus", "juice", "kopi", "coffee", "teh", "tea", "susu", "milk", "boba", "drink", "beverage", "es", "ice", "soda"])) {
+    return { icon: Coffee, color: "from-cyan-500 to-blue-500" };
+  }
+
+  if (matches(["dessert", "kue", "cake", "ice cream", "es krim", "manis", "sweet", "puding", "pudding", "donat", "donut", "pastry", "buah"])) {
+    return { icon: IceCream, color: "from-pink-500 to-rose-500" };
+  }
+
+  if (matches(["appetizer", "pembuka", "snack", "cemilan", "gorengan", "kentang", "french fries", "ring"])) {
+    return { icon: Flame, color: "from-amber-400 to-orange-500" };
+  }
+
+  if (matches(["promo", "spesial", "special", "diskon", "murah", "hemat", "grand", "opening", "baru", "new"])) {
+    return { icon: Sparkles, color: "from-purple-500 to-violet-600" };
+  }
+
+  // 3. Fallback pseudo-random gradient & icon using string hashing
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  hash = Math.abs(hash);
+
+  const fallbackIcons = [Utensils, Flame, Coffee, IceCream, Sparkles, Tag];
+  const fallbackGradients = [
+    "from-emerald-500 to-teal-600",
+    "from-teal-400 to-cyan-500",
+    "from-blue-600 to-indigo-700",
+    "from-fuchsia-500 to-pink-600",
+    "from-red-400 to-orange-500",
+    "from-violet-500 to-purple-600",
+    "from-pink-500 to-indigo-500"
+  ];
+
+  const selectedIcon = fallbackIcons[hash % fallbackIcons.length];
+  const selectedGradient = fallbackGradients[hash % fallbackGradients.length];
+
+  return { icon: selectedIcon, color: selectedGradient };
 };
 
 // Menu di-fetch dari database secara realtime

@@ -38,80 +38,80 @@ interface TutorialStore {
 const CUSTOMER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Selamat datang di RestoBook',
+    title: 'Selamat Datang di RestoBook',
     description: 'Kami akan memandu Anda mengenal semua fitur penting agar Anda lebih mudah memesan makanan, membayar, dan melihat detail reservasi meja.',
     position: 'bottom'
   },
   {
     targetSelector: '[data-tour="nav-Home"]',
-    title: 'Halaman Utama',
-    description: 'Ini adalah pusat aktivitas Anda. Dari sini Anda bisa melihat ringkasan pesanan, notifikasi, dan akses cepat ke fitur utama.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Profil"]',
-    title: 'Profil Akun',
-    description: 'Di sini Anda dapat melihat dan mengubah data diri, email, nomor kontak, serta pengaturan akun Anda.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Pesanan Saya"]',
-    title: 'Data Pesanan',
-    description: 'Menu ini menampilkan semua pesanan makanan yang sedang diproses, sudah dibayar, atau menunggu tindakan Anda.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Dompetku"]',
-    title: 'Riwayat Transaksi',
-    description: 'Semua transaksi yang pernah Anda lakukan akan tersimpan di sini agar mudah dicek kembali kapan saja.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Dompetku"]',
-    title: 'Pembayaran',
-    description: 'Gunakan menu ini untuk menyelesaikan pembayaran pesanan makanan Anda dengan aman dan cepat.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Reservasi"]',
-    title: 'Detail Reservasi Meja',
-    description: 'Setelah pembayaran berhasil, detail reservasi meja Anda akan muncul di sini lengkap dengan pesanan hidangan dan kode QR untuk digunakan saat masuk restoran.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Reservasi"]',
-    title: 'Kode QR Reservasi',
-    description: 'Tunjukkan kode QR ini saat masuk. Kode ini berisi data reservasi Anda dan akan diverifikasi oleh petugas.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="header-notifications"]',
-    title: 'Notifikasi Penting',
-    description: 'Semua pemberitahuan seperti status pembayaran, pesanan siap, atau informasi terbaru akan tampil di sini.',
-    position: 'bottom'
-  },
-  {
-    targetSelector: '[data-tour="nav-Pengaduan & Bantuan"]',
-    title: 'Pusat Bantuan',
-    description: 'Jika ada yang belum jelas, buka menu ini untuk melihat panduan, FAQ, atau cara menggunakan setiap fitur.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Profil"]',
-    title: 'Pengaturan',
-    description: 'Di sini Anda bisa mengatur preferensi akun, keamanan, bahasa, dan tampilan aplikasi.',
+    title: 'Menu: Home',
+    description: 'Halaman utama aktivitas Anda. Dari sini Anda bisa melihat ringkasan pesanan, notifikasi, dan akses cepat ke fitur utama aplikasi.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Menu"]',
-    title: 'Mulai Pesanan',
-    description: 'Klik tombol ini untuk memulai pemesanan hidangan baru dan memilih menu makanan, jadwal makan, serta meja.',
+    title: 'Menu: Menu Makanan',
+    description: 'Klik menu ini untuk menelusuri semua pilihan hidangan yang tersedia, kemudian tambahkan ke keranjang dan lakukan pemesanan.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Keranjang"]',
+    title: 'Menu: Keranjang',
+    description: 'Semua makanan yang Anda pilih akan tersimpan di sini sebelum dikonfirmasi dan dibayar. Anda bisa mengubah jumlah pesanan di keranjang.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Dompetku"]',
+    title: 'Menu: Dompetku',
+    description: 'Dompet digital Anda. Gunakan saldo Dompetku untuk membayar pesanan makanan dengan cepat dan aman tanpa perlu uang tunai.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Voucher Saya"]',
+    title: 'Menu: Voucher Saya',
+    description: 'Koleksi voucher diskon dan promo yang Anda miliki. Gunakan voucher ini saat checkout untuk mendapatkan potongan harga.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Tukar Point"]',
+    title: 'Menu: Tukar Point',
+    description: 'Tukarkan poin reward yang Anda kumpulkan dari setiap transaksi dengan hadiah menarik, diskon, atau cashback eksklusif.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Pesanan Saya"]',
-    title: 'Pantau Status',
-    description: 'Bagian ini membantu Anda mengetahui apakah pesanan masih menunggu, sudah dibayar, atau sudah selesai.',
+    title: 'Menu: Pesanan Saya',
+    description: 'Lacak status semua pesanan Anda — mulai dari yang sedang diproses, menunggu pembayaran, hingga pesanan yang sudah selesai.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Favorit"]',
+    title: 'Menu: Favorit',
+    description: 'Simpan menu makanan favorit Anda di sini agar mudah ditemukan dan dipesan kembali tanpa perlu mencari dari awal.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Reservasi"]',
+    title: 'Menu: Reservasi',
+    description: 'Kelola reservasi meja Anda. Di sini tersimpan detail meja, waktu makan, dan kode QR yang perlu ditunjukkan saat tiba di restoran.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="header-notifications"]',
+    title: 'Pusat Notifikasi',
+    description: 'Semua pemberitahuan penting seperti konfirmasi pesanan, status pembayaran, dan promo terbaru akan muncul di sini.',
+    position: 'bottom'
+  },
+  {
+    targetSelector: '[data-tour="nav-Pengaduan & Bantuan"]',
+    title: 'Menu: Pengaduan & Bantuan',
+    description: 'Temukan panduan penggunaan, FAQ, atau ajukan pengaduan jika ada kendala. Tim kami siap membantu Anda melalui menu ini.',
+    position: 'right'
+  },
+  {
+    targetSelector: '[data-tour="nav-Profil"]',
+    title: 'Menu: Profil',
+    description: 'Lihat dan ubah data diri Anda: nama, email, nomor HP, foto profil, serta pengaturan keamanan akun.',
     position: 'right'
   },
   {
@@ -122,8 +122,8 @@ const CUSTOMER_STEPS: TutorialStep[] = [
   },
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Tutorial Selesai',
-    description: 'Anda sudah mengenal fitur utama aplikasi. Anda bisa membuka panduan ini lagi kapan saja melalui menu bantuan.',
+    title: 'Tutorial Selesai!',
+    description: 'Anda sudah mengenal semua fitur utama RestoBook. Selamat menikmati pengalaman makan yang lebih mudah dan menyenangkan!',
     position: 'bottom'
   }
 ];
@@ -131,38 +131,38 @@ const CUSTOMER_STEPS: TutorialStep[] = [
 const ADMIN_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Selamat Datang Admin',
-    description: 'Selamat datang di Panel Admin RestoBook. Di sini Anda memiliki akses penuh ke manajemen restoran.',
+    title: 'Selamat Datang, Admin!',
+    description: 'Selamat datang di Panel Admin RestoBook. Di sini Anda memiliki akses penuh ke manajemen operasional restoran.',
     position: 'bottom'
   },
   {
     targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Statistik Harian',
-    description: 'Lihat ringkasan laba kotor, jumlah pesanan, dan grafik performa penjualan harian.',
+    title: 'Menu: Dashboard',
+    description: 'Pantau performa harian restoran — lihat ringkasan laba kotor, jumlah pesanan masuk, dan grafik tren penjualan.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Menu Makanan"]',
-    title: 'Kelola Menu Makanan',
-    description: 'Tambahkan menu baru, atur ketersediaan porsi, harga, foto, dan kategori makanan.',
+    title: 'Menu: Menu Makanan',
+    description: 'Tambahkan hidangan baru, atur ketersediaan stok dan porsi, ubah harga, foto, serta kategori makanan yang ditampilkan ke pelanggan.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Pesanan"]',
-    title: 'Daftar Semua Pesanan',
-    description: 'Pantau pesanan aktif, pesanan selesai, cetak laporan, dan update status transaksi.',
+    title: 'Menu: Pesanan',
+    description: 'Pantau seluruh pesanan aktif dan yang sudah selesai, perbarui status transaksi, dan cetak laporan pesanan harian.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Fitur Dompetku"]',
-    title: 'Kelola Dompetku',
-    description: 'Halaman audit saldo Dompetku pelanggan, reset status, blokir, dan rekap penyesuaian manual.',
+    title: 'Menu: Fitur Dompetku',
+    description: 'Halaman audit saldo Dompetku pelanggan — kelola status wallet, blokir akun bermasalah, dan rekap penyesuaian saldo manual.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Pengaturan Restoran',
-    description: 'Ganti tema warna, atur jam buka, aktifkan mode pemeliharaan (maintenance), dan sinkronisasi data.',
+    title: 'Menu: Settings',
+    description: 'Atur konfigurasi restoran: tema warna, jam operasional, aktifkan mode maintenance, dan pengaturan global sistem.',
     position: 'right'
   }
 ];
@@ -170,26 +170,26 @@ const ADMIN_STEPS: TutorialStep[] = [
 const CASHIER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Selamat Datang Kasir',
-    description: 'Selamat datang di Layanan Kasir RestoBook. Layani pelanggan dan verifikasi meja makan dengan mudah.',
+    title: 'Selamat Datang, Kasir!',
+    description: 'Selamat datang di Layanan Kasir RestoBook. Gunakan panel ini untuk melayani pelanggan dan memproses transaksi di tempat.',
     position: 'bottom'
   },
   {
     targetSelector: '[data-tour="nav-Point of Sale"]',
-    title: 'Point of Sale (POS)',
-    description: 'Gunakan antarmuka ini untuk memesan makanan langsung dari meja makan di tempat.',
+    title: 'Menu: Point of Sale (POS)',
+    description: 'Antarmuka kasir untuk memasukkan pesanan langsung dari meja, memilih menu, menghitung total, dan memproses pembayaran di tempat.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Pesanan Online"]',
-    title: 'Pesanan Online Masuk',
-    description: 'Terima dan konfirmasi pesanan takeaway atau delivery pelanggan eksternal.',
+    title: 'Menu: Pesanan Online',
+    description: 'Terima, konfirmasi, dan proses pesanan takeaway atau delivery yang masuk dari pelanggan eksternal melalui aplikasi.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Live Chat"]',
-    title: 'Live Chat Bantuan',
-    description: 'Berkomunikasi langsung secara real-time dengan pelanggan yang mengalami kendala.',
+    title: 'Menu: Live Chat',
+    description: 'Komunikasikan secara langsung dan real-time dengan pelanggan yang membutuhkan bantuan atau klarifikasi pesanan.',
     position: 'right'
   }
 ];
@@ -197,116 +197,74 @@ const CASHIER_STEPS: TutorialStep[] = [
 const OWNER_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Selamat Datang di Panel Owner',
-    description: 'Selamat datang di Panel Pemilik/Owner RestoBook. Pantau performa bisnis dan kelola konfigurasi global restoran Anda.',
+    title: 'Selamat Datang, Owner!',
+    description: 'Selamat datang di Panel Pemilik RestoBook. Pantau performa bisnis, kelola konfigurasi, dan awasi seluruh operasional restoran dari sini.',
     position: 'bottom'
   },
   {
     targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Dashboard Eksekutif',
-    description: 'Lihat ringkasan keuntungan, penjualan harian, dan grafik performa bisnis secara real-time.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Statistik Pendapatan Restoran',
-    description: 'Pantau total pendapatan bersih, pajak restoran, serta laporan transaksi keuangan harian.',
+    title: 'Menu: Dashboard',
+    description: 'Pusat kendali utama Owner. Lihat ringkasan keuntungan bersih, volume pesanan, tren pendapatan, dan grafik performa bisnis secara real-time.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Menu Makanan"]',
-    title: 'Statistik Penjualan Menu',
-    description: 'Analisis hidangan terlaris dan performa menu masakan terpopuler.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Monitoring Transaksi Keuangan',
-    description: 'Pantau seluruh mutasi pembayaran, pengembalian dana, dan saldo Dompetku.',
+    title: 'Menu: Menu Makanan',
+    description: 'Analisis performa menu — lihat hidangan terlaris, menu yang jarang dipesan, dan rekomendasi penyesuaian harga atau stok.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Pelanggan"]',
-    title: 'Monitoring Akun Pelanggan',
-    description: 'Lihat total pelanggan terdaftar, tingkat keaktifan, dan ulasan restoran.',
+    title: 'Menu: Pelanggan',
+    description: 'Monitor akun pelanggan terdaftar: tingkat keaktifan, histori transaksi, saldo Dompetku, dan ulasan yang diberikan ke restoran.',
     position: 'right'
   },
   {
-    targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Monitoring Kinerja Kasir',
-    description: 'Pantau shift kerja, laporan pos harian, dan pembukuan kasir.',
+    targetSelector: '[data-tour="nav-Transaksi"]',
+    title: 'Menu: Transaksi',
+    description: 'Pantau seluruh riwayat transaksi keuangan — mutasi pembayaran, pengembalian dana, dan rekap omset untuk keperluan audit.',
     position: 'right'
   },
   {
-    targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Monitoring Aktivitas Admin',
-    description: 'Awasi riwayat pengelolaan menu dan pengaturan restoran oleh admin staf.',
+    targetSelector: '[data-tour="nav-Payroll"]',
+    title: 'Menu: Payroll (Penggajian)',
+    description: 'Kelola slip gaji karyawan, lihat rekap tunjangan dan potongan, serta ekspor laporan penggajian bulanan.',
     position: 'right'
   },
   {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Monitoring Keamanan Sistem',
-    description: 'Tinjau keamanan sistem, deteksi bot rate limiter, dan status server.',
+    targetSelector: '[data-tour="nav-Absensi"]',
+    title: 'Menu: Absensi',
+    description: 'Pantau kehadiran seluruh karyawan secara real-time — lihat rekap hadir, izin, lembur, dan keterlambatan setiap harinya.',
     position: 'right'
   },
   {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Audit Log Aktivitas',
-    description: 'Catat setiap aksi penting yang dilakukan oleh seluruh pengguna sistem.',
+    targetSelector: '[data-tour="nav-Resign"]',
+    title: 'Menu: Resign',
+    description: 'Kelola pengajuan pengunduran diri karyawan, tinjau alasan resign, dan atur proses serah terima sebelum akun ditangguhkan.',
     position: 'right'
   },
   {
-    targetSelector: '[data-tour="nav-Dashboard"]',
-    title: 'Rekap Laporan Bulanan',
-    description: 'Unduh laporan rekap omset dan penjualan untuk audit berkala.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Pembagian Hak Akses',
-    description: 'Atur wewenang khusus untuk kasir, admin, supervisor, dan staf operasional.',
+    targetSelector: '[data-tour="nav-Keamanan Sistem"]',
+    title: 'Menu: Keamanan Sistem',
+    description: 'Tinjau log keamanan, deteksi aktivitas mencurigakan, rate limiter bot, dan status keamanan server secara menyeluruh.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Backup Database',
-    description: 'Ekspor cadangan data restoran secara aman untuk mengamankan riwayat transaksi.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Restore Database',
-    description: 'Pulihkan data dari file cadangan jika terjadi pemeliharaan darurat.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Pengaturan Tarif & Pajak',
-    description: 'Sesuaikan persentase pajak PB1, service charge, serta biaya admin secara terpusat.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Monitoring Tutorial User',
-    description: 'Lihat analitik penyelesaian tutorial onboarding oleh semua pengguna baru.',
-    position: 'right'
-  },
-  {
-    targetSelector: '[data-tour="nav-Settings"]',
-    title: 'Reset Tutorial User',
-    description: 'Reset status onboarding agar pengguna baru wajib mengulangi panduan ini.',
+    title: 'Menu: Settings',
+    description: 'Konfigurasi global restoran: tarif pajak, jam operasional, hak akses role, tema tampilan, dan pengaturan sistem.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="logout-button"]',
     title: 'Keluar Akun',
-    description: 'Gunakan tombol ini untuk keluar dari akun owner dengan aman setelah selesai memantau sistem.',
+    description: 'Gunakan tombol ini untuk keluar dari akun Owner dengan aman setelah selesai memantau sistem.',
     position: 'right'
   },
   {
     targetSelector: '[data-tour="logo"]',
-    title: 'Tutorial Selesai',
-    description: 'Selamat. Anda telah menyelesaikan tutorial penggunaan Panel Owner RestoBook.',
+    title: 'Tutorial Selesai!',
+    description: 'Anda telah menyelesaikan tutorial Panel Owner RestoBook. Pantau bisnis Anda kapan saja dan di mana saja.',
     position: 'bottom'
   }
 ];

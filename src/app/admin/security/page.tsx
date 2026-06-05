@@ -412,6 +412,34 @@ export default function SecurityPage() {
     );
   };
 
+  const handleQuickBlockIP = async (ip: string, attackType: string) => {
+    showConfirm(
+      "Cekal IP Cepat",
+      `Apakah Anda yakin ingin memblokir IP ${ip} selama 24 jam karena aktivitas ${attackType}?`,
+      async () => {
+        try {
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          const { error } = await supabase.from("security_ip_rules").upsert({
+            ip_address: ip.trim(),
+            rule_type: 'blacklist',
+            reason: `Diblokir cepat via telemetri insiden: ${attackType}`,
+            expires_at: expiresAt
+          }, { onConflict: 'ip_address' });
+
+          if (error) throw error;
+
+          toast.success(`IP ${ip} berhasil diblokir selama 24 jam!`);
+          fetchIpRules();
+          fetchStats();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal memblokir IP");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
   // Detail Block Rule Actions
   const handleAddBlockRule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1204,68 +1232,111 @@ export default function SecurityPage() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-2xl">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-border-light dark:border-border-dark font-bold text-muted text-[10px] uppercase tracking-wider">
-                        <th className="py-3 px-4">Waktu</th>
-                        <th className="py-3 px-4">Tipe Serangan</th>
-                        <th className="py-3 px-4">Klien IP / Detail</th>
-                        <th className="py-3 px-4">Endpoint</th>
-                        <th className="py-3 px-4">Tingkat</th>
-                        <th className="py-3 px-4">Payload/Detail</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {incidents.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="py-8 text-center text-muted font-bold text-xs italic">
-                            Tidak ada rekaman insiden keamanan terdeteksi.
-                          </td>
-                        </tr>
-                      ) : (
-                        incidents.map((incident) => {
-                          const getSeverityColor = (sev: string) => {
-                            if (sev === 'critical') return 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30';
-                            if (sev === 'high') return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
-                            if (sev === 'medium') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-                            return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-                          };
-                          
-                          return (
-                            <tr key={incident.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
-                              <td className="py-3.5 px-4 text-muted font-mono text-[10px]" title={new Date(incident.created_at).toLocaleString()}>
-                                {new Date(incident.created_at).toLocaleTimeString('id-ID')}
-                              </td>
-                              <td className="py-3.5 px-4 font-bold">
-                                <span className="text-rose-500 font-mono tracking-wider">{incident.attack_type}</span>
-                              </td>
-                              <td className="py-3.5 px-4 font-mono">
-                                <div className="font-bold text-text-light dark:text-text-dark">{incident.ip_address}</div>
-                                <div className="text-[9px] text-muted">{incident.city}, {incident.country} • ASN: {incident.asn || '-'}</div>
-                              </td>
-                              <td className="py-3.5 px-4 text-muted font-mono font-semibold">
-                                {incident.endpoint || '-'}
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider ${getSeverityColor(incident.severity)}`}>
-                                  {incident.severity}
+                {incidents.length === 0 ? (
+                  <div className="p-8 text-center text-muted font-bold text-xs italic border border-border-light dark:border-border-dark rounded-2xl bg-white dark:bg-gray-800/10">
+                    Tidak ada deteksi insiden keamanan terbaru.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {incidents.map((inc) => {
+                      const isAlreadyBlocked = ipRules.some(
+                        (rule) => rule.ip_address === inc.ip_address && rule.rule_type === 'blacklist'
+                      );
+                      return (
+                        <div
+                          key={inc.id}
+                          className="p-5 border border-border-light dark:border-border-dark rounded-3xl bg-card-light dark:bg-card-dark hover:border-rose-500/30 hover:shadow-md dark:hover:bg-gray-800/10 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                        >
+                          <div className="space-y-3">
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[9px] font-black rounded-lg uppercase tracking-wider">
+                                  {inc.attack_type}
                                 </span>
-                              </td>
-                              <td 
-                                className="py-3.5 px-4 text-muted max-w-[200px] truncate cursor-pointer hover:text-primary transition-all font-mono" 
-                                onClick={() => setSelectedPayload(incident.payload)}
-                                title="Klik untuk melihat detail lengkap"
+                                <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider ${
+                                  inc.severity === 'critical' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/25 animate-pulse' :
+                                  inc.severity === 'high' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25' :
+                                  inc.severity === 'medium' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25' :
+                                  'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25'
+                                }`}>
+                                  {inc.severity}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-muted font-mono font-bold">
+                                {new Date(inc.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
+                            </div>
+
+                            {/* IP & Geolocation Details */}
+                            <div className="space-y-1">
+                              <div className="text-sm font-mono font-black text-text-light dark:text-text-dark flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                                {inc.ip_address}
+                              </div>
+                              <div className="text-[11px] text-muted font-semibold flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                <span>
+                                  {inc.city || 'Kota Tidak Diketahui'}, {inc.country || 'Negara Tidak Diketahui'}
+                                </span>
+                              </div>
+                              {inc.asn && (
+                                <div className="text-[10px] text-muted/80 font-mono flex items-center gap-1">
+                                  <Server className="w-3.5 h-3.5 text-muted shrink-0" />
+                                  <span>ASN: {inc.asn}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Targeted Endpoint */}
+                            <div className="pt-2 border-t border-border-light/60 dark:border-border-dark/60 space-y-1">
+                              <span className="text-[9px] font-black text-muted uppercase tracking-wider">Target Endpoint</span>
+                              <div className="py-1.5 px-2.5 bg-gray-50 dark:bg-gray-900/40 rounded-xl font-mono text-[10px] text-text-light dark:text-text-dark break-all border border-border-light/20 dark:border-border-dark/20">
+                                {inc.endpoint || '/'}
+                              </div>
+                            </div>
+
+                            {/* Payload Preview */}
+                            {inc.payload && (
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-black text-muted uppercase tracking-wider">Payload Preview</span>
+                                <div className="py-1.5 px-2.5 bg-gray-50 dark:bg-gray-900/40 rounded-xl font-mono text-[10px] text-muted truncate border border-border-light/20 dark:border-border-dark/20" title={inc.payload}>
+                                  {inc.payload}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-border-light/40 dark:border-border-dark/40">
+                            <button
+                              onClick={() => setSelectedPayload(inc.payload)}
+                              className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-xs font-bold text-text-light dark:text-text-dark rounded-xl border border-border-light dark:border-border-dark transition-all text-center"
+                            >
+                              Lihat Payload
+                            </button>
+                            
+                            {isAlreadyBlocked ? (
+                              <span className="px-3 py-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-black rounded-xl flex items-center gap-1 border border-rose-500/20 shrink-0">
+                                <CheckCircle className="w-3.5 h-3.5 text-rose-500" />
+                                <span>Dicekal</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleQuickBlockIP(inc.ip_address, inc.attack_type)}
+                                className="px-3 py-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-950/30 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1 shrink-0"
+                                title="Cekal IP 24 Jam"
                               >
-                                <code className="bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded text-[10px] select-none">{incident.payload || '-'}</code>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                                <Ban className="w-3.5 h-3.5" />
+                                <span>Cekal</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             )}
 

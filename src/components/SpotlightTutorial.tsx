@@ -50,34 +50,21 @@ export default function SpotlightTutorial() {
     if (!isTutorialActive || steps.length === 0) { setCoords(null); return; }
 
     const step = steps[currentStep];
-    const isMobileW = window.innerWidth < 1024;
-    const isSidebarStep =
-      step.targetSelector.startsWith('[data-tour="nav-') ||
-      step.targetSelector === '[data-tour="logout-button"]';
-
     let element: Element | null = null;
 
-    if (isMobileW && isSidebarStep) {
-      // Pick the visible element among all matches (mobile drawer vs hidden desktop sidebar)
-      const all = Array.from(document.querySelectorAll(step.targetSelector));
-      for (const el of all) {
-        const r = el.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0 && r.top >= 0 && r.top < window.innerHeight) {
-          element = el;
-          break;
-        }
+    // Pick the visible element among all matches (e.g. mobile drawer vs hidden desktop sidebar)
+    const all = Array.from(document.querySelectorAll(step.targetSelector));
+    for (const el of all) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        element = el;
+        break;
       }
-    } else {
-      element = document.querySelector(step.targetSelector);
     }
 
     if (element) {
       const r = element.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        setCoords({ left: r.left, top: r.top, width: r.width, height: r.height });
-      } else {
-        setCoords(null);
-      }
+      setCoords({ left: r.left, top: r.top, width: r.width, height: r.height });
     } else {
       setCoords(null);
     }
@@ -101,24 +88,14 @@ export default function SpotlightTutorial() {
     const step = steps[currentStep];
 
     const scrollIntoViewWithRetry = () => {
-      const isMobile = window.innerWidth < 1024;
-      const isSidebarStep =
-        step.targetSelector.startsWith('[data-tour="nav-') ||
-        step.targetSelector === '[data-tour="logout-button"]';
-
       let element: Element | null = null;
-      if (isMobile && isSidebarStep) {
-        // Find visible element among all matches (mobile drawer vs desktop sidebar)
-        const all = Array.from(document.querySelectorAll(step.targetSelector));
-        for (const el of all) {
-          const r = el.getBoundingClientRect();
-          if (r.width > 0 || r.height > 0) {
-            element = el;
-            break;
-          }
+      const all = Array.from(document.querySelectorAll(step.targetSelector));
+      for (const el of all) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          element = el;
+          break;
         }
-      } else {
-        element = document.querySelector(step.targetSelector);
       }
 
       if (element) {

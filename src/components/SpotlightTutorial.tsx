@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function SpotlightTutorial() {
-  const { isTutorialActive, currentStep, steps, nextStep, prevStep } = useTutorialStore();
+  const { isTutorialActive, currentStep, steps, nextStep, prevStep, skipTutorial } = useTutorialStore();
   const [coords, setCoords] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   // Use actual window dimensions from the start
   const [vw, setVw] = useState(0);
@@ -137,50 +137,61 @@ export default function SpotlightTutorial() {
 
   // ── Tooltip position ────────────────────────────────────────────────────────
   // Tooltip follows the highlighted element on ALL screen sizes.
-  // - On mobile: uses left/right anchors (no fixed width) so never overflows right
-  // - Placed BELOW the element when there's space, otherwise ABOVE
-  // - Desktop also supports left/right placement
+  // - Uses a compact 290px card that centers below/above the element.
+  // - Automatically flips to above the element if there is no space below.
+  // - Prevents overflow on screen boundaries.
   const getTooltipStyle = (): React.CSSProperties => {
-    const margin = 8;    // minimum gap from screen edges
-    const off = 12;      // gap between element and tooltip
+    const margin = 12;   // minimum gap from screen edges
+    const off = 10;      // gap between element and tooltip
+    const TW = Math.min(290, W - 24); // Compact card width: 290px max
 
-    // Fallback: no element found yet → show at bottom center
+    // Fallback: no element found or coordinates missing → show at center of screen
     if (!coords) {
-      if (isMobileScreen) {
-        return { position: 'fixed', bottom: margin, left: margin, right: margin };
-      }
-      const TW = Math.min(320, W - 32);
-      return { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: TW };
+      return {
+        position: 'fixed',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: TW,
+      };
     }
 
     const { left, top, width, height } = coords;
 
-    // ── MOBILE ──────────────────────────────────────────────────────────────
-    if (isMobileScreen) {
-      // Tooltip width: full width minus margins on both sides
-      // Use left + right anchors — avoids any right overflow
-      const tLeft = margin;
-      const tRight = margin;
+    // ── MOBILE & DRAWER ACTIVE STATE (< 1024px) ─────────────────────────────
+    const isMobileW = W < 1024;
+    if (isMobileW) {
+      // 1. Center relative to the highlighted element
+      let tL = left + width / 2 - TW / 2;
+      tL = Math.max(margin, Math.min(tL, W - TW - margin));
 
-      // Preferred: below the element
+      // 2. Place below by default. If not enough space, place above.
       const belowTop = top + height + off + pad;
-      // Estimated tooltip height ~180px
       const spaceBelow = H - belowTop - margin;
+      
+      const estHeight = 200; // Estimated height for compact card
 
-      if (spaceBelow >= 160) {
-        // Enough space below → place below the element
-        return { position: 'fixed', top: belowTop, left: tLeft, right: tRight };
+      if (spaceBelow >= estHeight || top < estHeight) {
+        return {
+          position: 'fixed',
+          left: tL,
+          top: belowTop,
+          width: TW,
+        };
       } else {
-        // Not enough space below → place above the element
         const aboveBottom = H - (top - off - pad);
-        const aboveBottomClamped = Math.max(margin, Math.min(aboveBottom, H - margin));
-        return { position: 'fixed', bottom: aboveBottomClamped, left: tLeft, right: tRight };
+        return {
+          position: 'fixed',
+          left: tL,
+          bottom: aboveBottom,
+          width: TW,
+        };
       }
     }
 
-    // ── DESKTOP ──────────────────────────────────────────────────────────────
-    const TW = Math.min(320, W - 32);
-    const TH = 220;
+    // ── DESKTOP (>= 1024px) ──────────────────────────────────────────────────
+    // Keep side-anchoring supporting right/left/top/bottom, but with TW = 290
+    const TH = 200;
     let pos = activeStep.position;
 
     // Auto-flip if it would overflow horizontally
@@ -191,23 +202,35 @@ export default function SpotlightTutorial() {
     }
 
     let tL = 0, tT = 0;
-    if (pos === 'bottom') { tL = left + width / 2 - TW / 2; tT = top + height + off + pad; }
-    else if (pos === 'top') { tL = left + width / 2 - TW / 2; tT = top - TH - off - pad; }
-    else if (pos === 'left') { tL = left - TW - off - pad; tT = top + height / 2 - TH / 2; }
-    else if (pos === 'right') { tL = left + width + off + pad; tT = top + height / 2 - TH / 2; }
+    if (pos === 'bottom') { 
+      tL = left + width / 2 - TW / 2; 
+      tT = top + height + off + pad; 
+    } else if (pos === 'top') { 
+      tL = left + width / 2 - TW / 2; 
+      tT = top - TH - off - pad; 
+    } else if (pos === 'left') { 
+      tL = left - TW - off - pad; 
+      tT = top + height / 2 - TH / 2; 
+    } else if (pos === 'right') { 
+      tL = left + width + off + pad; 
+      tT = top + height / 2 - TH / 2; 
+    }
 
     tL = Math.max(margin, Math.min(tL, W - TW - margin));
     tT = Math.max(margin, Math.min(tT, H - TH - margin));
 
-    return { position: 'fixed', left: tL, top: tT, width: TW };
+    return { 
+      position: 'fixed', 
+      left: tL, 
+      top: tT, 
+      width: TW 
+    };
   };
 
 
   return (
     <>
-      {/* Layer 1 — Dark blurred overlay with spotlight cutout
-          NOTE: Keep this as a SEPARATE root element, NOT wrapping the tooltip,
-          so framer-motion transforms don't affect tooltip's fixed positioning */}
+      {/* Layer 1 — Dark blurred overlay with spotlight cutout */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -224,7 +247,7 @@ export default function SpotlightTutorial() {
         />
       )}
 
-      {/* Layer 3 — Tooltip panel (separate root element — no overflow-hidden parent) */}
+      {/* Layer 3 — Redesigned Compact Tooltip Panel */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -233,41 +256,60 @@ export default function SpotlightTutorial() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="z-[99999] pointer-events-auto bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-2xl p-5 flex flex-col gap-3 text-text-light dark:text-text-dark overflow-hidden"
+          className="z-[99999] pointer-events-auto bg-card-light/95 dark:bg-card-dark/95 backdrop-blur-md border border-border-light/80 dark:border-border-dark/80 rounded-2xl shadow-2xl p-4 flex flex-col gap-3 text-text-light dark:text-text-dark select-none"
         >
+          {/* Header Progress indicator */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-[10px] font-black text-primary uppercase tracking-widest">
+              <span>Panduan Fitur</span>
+              <span>{currentStep + 1} / {steps.length}</span>
+            </div>
+            <div className="w-full h-1 bg-gray-200/55 dark:bg-gray-800/55 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300 rounded-full" 
+                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
           {/* Title */}
-          <h4 className="font-black text-sm text-primary uppercase tracking-wide leading-snug break-words">
+          <h4 className="font-extrabold text-sm text-text-light dark:text-text-dark mt-0.5 leading-snug break-words">
             {activeStep.title}
           </h4>
 
           {/* Description */}
-          <p className="text-xs text-muted leading-relaxed">
+          <p className="text-xs text-muted leading-relaxed font-medium">
             {activeStep.description}
           </p>
 
-          {/* Footer */}
-          <div className="flex justify-between items-center pt-2 border-t border-border-light/60 dark:border-border-dark/60">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-wide">
-              Langkah {currentStep + 1} dari {steps.length}
-            </span>
-            <div className="flex items-center gap-2">
-              {currentStep > 0 && (
-                <button
-                  onClick={prevStep}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 text-muted rounded-xl transition-all"
-                  title="Kembali"
-                  aria-label="Langkah sebelumnya"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              )}
+          {/* Footer controls */}
+          <div className="flex justify-between items-center pt-2.5 mt-0.5 border-t border-border-light/60 dark:border-border-dark/60">
+            {currentStep > 0 ? (
               <button
-                onClick={nextStep}
-                className="flex items-center gap-1 bg-primary hover:bg-primary-hover text-white px-3 py-2 rounded-xl text-xs font-black uppercase transition-all shadow-md shadow-primary/10"
+                onClick={prevStep}
+                className="flex items-center gap-0.5 text-[11px] font-bold text-muted hover:text-text-light dark:hover:text-text-dark transition-all px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5"
+                title="Kembali"
+                aria-label="Langkah sebelumnya"
               >
-                {currentStep === steps.length - 1 ? 'Selesai' : <> Lanjut <ChevronRight className="w-3.5 h-3.5" /></>}
+                <ChevronLeft className="w-3.5 h-3.5" /> Kembali
               </button>
-            </div>
+            ) : (
+              <button
+                onClick={skipTutorial}
+                className="text-[11px] font-bold text-rose-500/80 hover:text-rose-500 transition-all px-2.5 py-1.5 rounded-xl hover:bg-rose-500/10"
+                title="Lewati"
+                aria-label="Lewati tutorial"
+              >
+                Lewati
+              </button>
+            )}
+
+            <button
+              onClick={nextStep}
+              className="flex items-center gap-1 bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {currentStep === steps.length - 1 ? 'Selesai' : <> Lanjut <ChevronRight className="w-3.5 h-3.5" /></>}
+            </button>
           </div>
         </motion.div>
       </AnimatePresence>

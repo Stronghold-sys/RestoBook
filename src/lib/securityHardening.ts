@@ -360,6 +360,36 @@ export async function getEmergencySettings(): Promise<{
   }
 }
 
+// ── 10. resolveIPDetails Helper ──────────────────────────────────────
+export async function resolveIPDetails(ip: string): Promise<{ country: string; city: string; asn: string }> {
+  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return { country: 'Localhost', city: 'Localhost', asn: 'AS0 (Localhost)' };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200); // 1.2s timeout
+
+    const res = await fetch(`http://ip-api.com/json/${ip}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.status === 'success') {
+        return {
+          country: data.countryCode || 'Unknown',
+          city: data.city || 'Unknown',
+          asn: data.as || 'Unknown'
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Failed to resolve IP details from ip-api:', err);
+  }
+
+  return { country: 'Unknown', city: 'Unknown', asn: 'Unknown' };
+}
+
 // ── 10. Audit Incident Logger ─────────────────────────────────────────
 export async function logSecurityIncident(event: {
   ipAddress: string;
@@ -375,13 +405,24 @@ export async function logSecurityIncident(event: {
   try {
     const supabase = getSupabaseAdmin();
     
+    let resolvedAsn = event.asn || 'Unknown';
+    let resolvedCountry = event.country || 'Unknown';
+    let resolvedCity = event.city || 'Unknown';
+
+    if (resolvedAsn === 'Unknown' || resolvedCountry === 'Unknown' || resolvedCity === 'Unknown') {
+      const resolved = await resolveIPDetails(event.ipAddress);
+      if (resolved.asn && resolved.asn !== 'Unknown') resolvedAsn = resolved.asn;
+      if (resolved.country && resolved.country !== 'Unknown') resolvedCountry = resolved.country;
+      if (resolved.city && resolved.city !== 'Unknown') resolvedCity = resolved.city;
+    }
+
     // Log insiden detil
     await supabase.from('security_incidents').insert({
       ip_address: event.ipAddress,
       fingerprint: event.fingerprint || null,
-      asn: event.asn || null,
-      country: event.country || null,
-      city: event.city || null,
+      asn: resolvedAsn,
+      country: resolvedCountry,
+      city: resolvedCity,
       endpoint: event.endpoint,
       payload: event.payload ? JSON.stringify(event.payload) : null,
       attack_type: event.attackType,
@@ -495,12 +536,23 @@ export async function trackAndDetectRotatingIP(
       .maybeSingle();
 
     if (!existingIp) {
+      let resolvedAsn = currentAsn || 'Unknown';
+      let resolvedCountry = currentCountry || 'Unknown';
+      let resolvedCity = currentCity || 'Unknown';
+
+      if (resolvedAsn === 'Unknown' || resolvedCountry === 'Unknown' || resolvedCity === 'Unknown') {
+        const resolved = await resolveIPDetails(currentIp);
+        if (resolved.asn && resolved.asn !== 'Unknown') resolvedAsn = resolved.asn;
+        if (resolved.country && resolved.country !== 'Unknown') resolvedCountry = resolved.country;
+        if (resolved.city && resolved.city !== 'Unknown') resolvedCity = resolved.city;
+      }
+
       await supabase.from('security_fingerprint_ips').insert({
         fingerprint,
         ip_address: currentIp,
-        country: currentCountry || 'Unknown',
-        city: currentCity || 'Unknown',
-        asn: currentAsn || 'Unknown'
+        country: resolvedCountry,
+        city: resolvedCity,
+        asn: resolvedAsn
       });
     }
 

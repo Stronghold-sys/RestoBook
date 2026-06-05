@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, ShieldCheck, Flame, UserX, Ban, Cpu, Server, 
-  MapPin, Globe, RefreshCw, Plus, Trash2, Search, Filter, AlertTriangle, CheckCircle, Info 
+  MapPin, Globe, RefreshCw, Plus, Trash2, Search, Filter, AlertTriangle, CheckCircle, Info, X 
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
@@ -115,6 +115,7 @@ export default function SecurityPage() {
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [activityFilter, setActivityFilter] = useState("all");
+  const [selectedPayload, setSelectedPayload] = useState<string | null>(null);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -1250,8 +1251,12 @@ export default function SecurityPage() {
                                   {incident.severity}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-muted max-w-[200px] truncate" title={incident.payload || ''}>
-                                <code className="bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded text-[10px]">{incident.payload || '-'}</code>
+                              <td 
+                                className="py-3.5 px-4 text-muted max-w-[200px] truncate cursor-pointer hover:text-primary transition-all font-mono" 
+                                onClick={() => setSelectedPayload(incident.payload)}
+                                title="Klik untuk melihat detail lengkap"
+                              >
+                                <code className="bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded text-[10px] select-none">{incident.payload || '-'}</code>
                               </td>
                             </tr>
                           );
@@ -1420,6 +1425,65 @@ export default function SecurityPage() {
                   className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/25 rounded-xl transition-all"
                 >
                   Ya, Hapus
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Premium Payload Detail Modal */}
+      <AnimatePresence>
+        {selectedPayload && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-850 p-6 rounded-3xl shadow-2xl max-w-2xl w-full space-y-4 max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                <div className="flex items-center gap-2.5 text-primary">
+                  <Info className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-black text-base text-gray-900 dark:text-white">Detail Payload Insiden</h3>
+                </div>
+                <button
+                  onClick={() => setSelectedPayload(null)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted transition-all"
+                  title="Tutup"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 font-mono text-[11px] text-text-light dark:text-text-dark whitespace-pre-wrap break-all custom-scrollbar">
+                {(() => {
+                  try {
+                    const parsed = JSON.parse(selectedPayload);
+                    return JSON.stringify(parsed, null, 2);
+                  } catch {
+                    return selectedPayload;
+                  }
+                })()}
+              </div>
+              
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedPayload);
+                    toast.success("Payload berhasil disalin!");
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-md shadow-primary/15"
+                >
+                  Salin Detail
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPayload(null)}
+                  className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                >
+                  Tutup
                 </button>
               </div>
             </motion.div>

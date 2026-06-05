@@ -423,3 +423,344 @@ export function isDisposableEmail(email: string): boolean {
   const domain = email.split('@')[1].toLowerCase().trim();
   return DISPOSABLE_EMAIL_DOMAINS.includes(domain);
 }
+
+// ── 12. FNV-1a Fast Hash Helper ───────────────────────────────────────
+function fnv1a(str: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) | 0;
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+// ── 13. Generate Security Fingerprint (Multi-layer Identity) ──────────
+export function generateSecurityFingerprint(request: NextRequest, deviceUuid: string): string {
+  const ua = request.headers.get('user-agent') || '';
+  const lang = request.headers.get('accept-language') || '';
+  const tz = request.headers.get('x-vercel-ip-timezone') || request.headers.get('cf-timezone') || '';
+  const country = request.headers.get('cf-ipcountry') || request.headers.get('x-vercel-ip-country') || '';
+  const city = request.headers.get('x-vercel-ip-city') || '';
+  const asn = request.headers.get('x-vercel-ip-asn') || request.headers.get('cf-asn') || '';
+  const screenRes = request.cookies.get('sec_screen_res')?.value || '';
+  const chPlatform = request.headers.get('sec-ch-ua-platform') || '';
+  const chMobile = request.headers.get('sec-ch-ua-mobile') || '';
+  
+  const rawString = `${deviceUuid}|${ua}|${lang}|${tz}|${country}|${city}|${asn}|${screenRes}|${chPlatform}|${chMobile}`;
+  return fnv1a(rawString);
+}
+
+// ── 14. Subnet Extractor ──────────────────────────────────────────────
+export function extractSubnet(ip: string): string {
+  if (ip.includes('.')) {
+    const parts = ip.split('.');
+    if (parts.length >= 3) {
+      return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+    }
+  } else if (ip.includes(':')) {
+    const parts = ip.split(':');
+    if (parts.length >= 4) {
+      return `${parts[0]}:${parts[1]}:${parts[2]}:${parts[3]}::/64`;
+    }
+  }
+  return ip;
+}
+
+// ── 15. Track and Detect Rotating IP ──────────────────────────────────
+export async function trackAndDetectRotatingIP(
+  fingerprint: string,
+  currentIp: string,
+  currentCountry: string,
+  currentCity: string,
+  currentAsn: string
+): Promise<{
+  riskScoreAddition: number;
+  isRotating: boolean;
+  ipCount30m: number;
+  isCountryHop: boolean;
+}> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const nowIso = new Date().toISOString();
+    
+    // Cek apakah IP ini sudah tercatat untuk fingerprint ini dalam 5 menit terakhir
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: existingIp } = await supabase
+      .from('security_fingerprint_ips')
+      .select('id')
+      .eq('fingerprint', fingerprint)
+      .eq('ip_address', currentIp)
+      .gt('created_at', fiveMinsAgo)
+      .limit(1)
+      .maybeSingle();
+
+    if (!existingIp) {
+      await supabase.from('security_fingerprint_ips').insert({
+        fingerprint,
+        ip_address: currentIp,
+        country: currentCountry || 'Unknown',
+        city: currentCity || 'Unknown',
+        asn: currentAsn || 'Unknown'
+      });
+    }
+
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: records, error } = await supabase
+      .from('security_fingerprint_ips')
+      .select('ip_address, country, created_at')
+      .eq('fingerprint', fingerprint)
+      .gt('created_at', oneDayAgo);
+
+    if (error || !records) {
+      return { riskScoreAddition: 0, isRotating: false, ipCount30m: 0, isCountryHop: false };
+    }
+
+    const nowTime = Date.now();
+    const ips30m = new Set<string>();
+    const ips1h = new Set<string>();
+    const ips24h = new Set<string>();
+    const countries30m = new Set<string>();
+
+    for (const rec of records) {
+      const recTime = new Date(rec.created_at).getTime();
+      const diffMs = nowTime - recTime;
+
+      ips24h.add(rec.ip_address);
+
+      if (diffMs <= 60 * 60 * 1000) {
+        ips1h.add(rec.ip_address);
+      }
+      if (diffMs <= 30 * 60 * 1000) {
+        ips30m.add(rec.ip_address);
+        if (rec.country && rec.country !== 'Unknown') {
+          countries30m.add(rec.country);
+        }
+      }
+    }
+
+    let riskScoreAddition = 0;
+    let isRotating = false;
+
+    if (ips30m.size >= 5) {
+      riskScoreAddition += 20;
+      isRotating = true;
+    }
+    if (ips1h.size >= 10) {
+      riskScoreAddition += 50;
+      isRotating = true;
+    }
+    if (ips24h.size >= 20) {
+      riskScoreAddition += 80;
+      isRotating = true;
+    }
+
+    const isCountryHop = countries30m.size >= 3;
+    if (isCountryHop) {
+      riskScoreAddition += 30;
+    }
+
+    return {
+      riskScoreAddition,
+      isRotating,
+      ipCount30m: ips30m.size,
+      isCountryHop
+    };
+  } catch (err) {
+    console.error('trackAndDetectRotatingIP error:', err);
+    return { riskScoreAddition: 0, isRotating: false, ipCount30m: 0, isCountryHop: false };
+  }
+}
+
+// ── 16. Check Impossible Travel (Physically Impossible Country Hop) ───
+export async function checkImpossibleTravel(
+  profileId: string,
+  currentCountry: string,
+  currentCity: string
+): Promise<{
+  impossibleTravel: boolean;
+  lastCountry?: string;
+  lastActiveAt?: string;
+}> {
+  if (!profileId || !currentCountry || currentCountry === 'Unknown') {
+    return { impossibleTravel: false };
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data: lastSession, error } = await supabase
+      .from('security_user_sessions')
+      .select('country, city, last_active_at')
+      .eq('profile_id', profileId)
+      .order('last_active_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !lastSession || !lastSession.country || lastSession.country === 'Unknown') {
+      return { impossibleTravel: false };
+    }
+
+    if (lastSession.country !== currentCountry) {
+      const lastActiveTime = new Date(lastSession.last_active_at).getTime();
+      const timeDiffMins = (Date.now() - lastActiveTime) / 60000;
+
+      // Physically impossible travel if changing countries in under 3 hours (180 mins)
+      if (timeDiffMins < 180) {
+        return {
+          impossibleTravel: true,
+          lastCountry: lastSession.country,
+          lastActiveAt: lastSession.last_active_at
+        };
+      }
+    }
+
+    return { impossibleTravel: false };
+  } catch (err) {
+    console.error('checkImpossibleTravel error:', err);
+    return { impossibleTravel: false };
+  }
+}
+
+// ── 17. Detect Coordinated ASN/Subnet Attacks & Botnets ────────────────
+export async function detectCoordinatedAsnSubnetAttack(
+  currentIp: string,
+  currentAsn: string,
+  endpoint: string,
+  fingerprint: string
+): Promise<{
+  subnetBlocked: boolean;
+  coordinatedAsn: boolean;
+  highProtectionAsn: boolean;
+  botnetDetected: boolean;
+  subnet: string;
+}> {
+  const subnet = extractSubnet(currentIp);
+  
+  try {
+    const supabase = getSupabaseAdmin();
+    const now = Date.now();
+
+    // Simpan request signature
+    await supabase.from('security_request_signatures').insert({
+      fingerprint,
+      ip_address: currentIp,
+      subnet,
+      asn: currentAsn || 'Unknown',
+      endpoint
+    });
+
+    // Hapus signatures lama (> 10 menit) secara fire-and-forget
+    const tenMinsAgo = new Date(now - 10 * 60 * 1000).toISOString();
+    supabase.from('security_request_signatures').delete().lt('created_at', tenMinsAgo).then(() => {});
+
+    // Cek apakah subnet diblokir
+    const nowIso = new Date().toISOString();
+    const { data: subnetBlock } = await supabase
+      .from('security_subnet_blocks')
+      .select('id')
+      .eq('subnet', subnet)
+      .gt('blocked_until', nowIso)
+      .limit(1)
+      .maybeSingle();
+
+    if (subnetBlock) {
+      return { subnetBlocked: true, coordinatedAsn: false, highProtectionAsn: false, botnetDetected: false, subnet };
+    }
+
+    // Ambil signatures dalam 5 menit terakhir untuk subnet & ASN ini
+    const fiveMinsAgo = new Date(now - 5 * 60 * 1000).toISOString();
+    const { data: signatures, error } = await supabase
+      .from('security_request_signatures')
+      .select('ip_address, subnet, asn, endpoint, fingerprint')
+      .gt('created_at', fiveMinsAgo);
+
+    if (error || !signatures) {
+      return { subnetBlocked: false, coordinatedAsn: false, highProtectionAsn: false, botnetDetected: false, subnet };
+    }
+
+    const uniqueIpsSubnet = new Set<string>();
+    const uniqueIpsAsn = new Set<string>();
+    const fingerprintsByEndpoint = new Set<string>();
+
+    for (const sig of signatures) {
+      if (sig.subnet === subnet && sig.endpoint === endpoint) {
+        uniqueIpsSubnet.add(sig.ip_address);
+      }
+      if (sig.asn === currentAsn && sig.endpoint === endpoint) {
+        uniqueIpsAsn.add(sig.ip_address);
+      }
+      if (sig.endpoint === endpoint) {
+        fingerprintsByEndpoint.add(sig.fingerprint);
+      }
+    }
+
+    let subnetBlocked = false;
+    let coordinatedAsn = false;
+    let highProtectionAsn = false;
+    let botnetDetected = false;
+
+    // Subnet: Jika >= 10 IP berbeda dari subnet yang sama mengakses endpoint yang sama
+    if (uniqueIpsSubnet.size >= 10) {
+      subnetBlocked = true;
+      const blockedUntil = new Date(now + 30 * 60 * 1000).toISOString();
+      await supabase.from('security_subnet_blocks').upsert({
+        subnet,
+        reason: `Subnet flooding: ${uniqueIpsSubnet.size} IPs in 5 mins on ${endpoint}`,
+        blocked_until: blockedUntil
+      }, { onConflict: 'subnet' });
+    }
+
+    // ASN: 50 IP -> Coordinated, 100 IP -> High Protection
+    if (uniqueIpsAsn.size >= 100) {
+      highProtectionAsn = true;
+    } else if (uniqueIpsAsn.size >= 50) {
+      coordinatedAsn = true;
+    }
+
+    // Botnet: Jika ada >= 100 IP berbeda dengan jumlah fingerprint unik homogen (<= 5)
+    if (uniqueIpsAsn.size >= 100 && fingerprintsByEndpoint.size <= 5) {
+      botnetDetected = true;
+    }
+
+    return {
+      subnetBlocked,
+      coordinatedAsn,
+      highProtectionAsn,
+      botnetDetected,
+      subnet
+    };
+  } catch (err) {
+    console.error('detectCoordinatedAsnSubnetAttack error:', err);
+    return { subnetBlocked: false, coordinatedAsn: false, highProtectionAsn: false, botnetDetected: false, subnet };
+  }
+}
+
+// ── 18. Calculate Security Score ──────────────────────────────────────
+export function calculateSecurityScore(context: {
+  isNewIp: boolean;
+  isSameAsnDiffIp: boolean;
+  isCountryHop: boolean;
+  isRotatingIp: boolean;
+  isProxy: boolean;
+  isVpn: boolean;
+  isTor: boolean;
+  isBotnet: boolean;
+  isMassAttack: boolean;
+}): number {
+  let score = 0;
+  
+  if (context.isNewIp) score += 10;
+  if (context.isSameAsnDiffIp) score += 20;
+  if (context.isCountryHop) score += 30;
+  if (context.isRotatingIp) score += 40;
+  if (context.isProxy) score += 50;
+  if (context.isVpn) score += 60;
+  if (context.isTor) score += 70;
+  if (context.isBotnet) score += 80;
+  if (context.isMassAttack) score += 90;
+
+  return score;
+}
+

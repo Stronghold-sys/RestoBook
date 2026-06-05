@@ -10,7 +10,13 @@ import {
   detectSessionHijack, 
   getEmergencySettings, 
   logSecurityIncident,
-  hasPathTraversal
+  hasPathTraversal,
+  generateSecurityFingerprint,
+  trackAndDetectRotatingIP,
+  checkImpossibleTravel,
+  detectCoordinatedAsnSubnetAttack,
+  calculateSecurityScore,
+  extractSubnet
 } from './lib/securityHardening'
 
 // ── In-Memory Caches & Trackers ─────────────────────────────────────
@@ -253,7 +259,40 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // B. Load Emergency Settings & Terapkan Proteksi Global
+  // B. Inisialisasi Cookie UUID Sidik Jari Klien
+  let deviceUuid = request.cookies.get('sec_device_uuid')?.value;
+  let isNewDevice = false;
+  if (!deviceUuid) {
+    deviceUuid = crypto.randomUUID();
+    isNewDevice = true;
+  }
+
+  // Hitung Unique Security Fingerprint (Multi-layer Identity)
+  const fingerprint = generateSecurityFingerprint(request, deviceUuid);
+  const cfCountry = request.headers.get('cf-ipcountry') || request.headers.get('x-vercel-ip-country') || 'Unknown';
+  const cfCity = request.headers.get('x-vercel-ip-city') || 'Unknown';
+  const cfAsn = request.headers.get('x-vercel-ip-asn') || request.headers.get('cf-asn') || 'Unknown';
+  const subnet = extractSubnet(ip);
+
+  // C. Deteksi Coordinated ASN/Subnet Attacks & Botnets
+  const { subnetBlocked, coordinatedAsn, highProtectionAsn, botnetDetected } = await detectCoordinatedAsnSubnetAttack(ip, cfAsn, path, fingerprint);
+  if (subnetBlocked) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Permintaan tidak dapat diproses (Akses Subnet Ditangguhkan).' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // D. Cek IP Blacklist
+  const { blocked, reason } = await checkIPBlacklist(ip);
+  if (blocked) {
+    return new NextResponse(
+      JSON.stringify({ error: `Akses IP ditolak oleh sistem keamanan: ${reason}` }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // E. Load Emergency Settings & Terapkan Proteksi Global
   const emergency = await getEmergencySettings();
   if (emergency.emergency_mode) {
     if (path === '/register' || path === '/api/register') {
@@ -273,11 +312,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // C. Deteksi Headless Browser & Otomasi
+  // F. Deteksi Headless Browser & Otomasi
   const isHeadless = detectHeadlessBrowser(request);
   if (isHeadless && (path.startsWith('/api') || path === '/login' || path === '/register')) {
     await logSecurityIncident({
       ipAddress: ip,
+      fingerprint,
+      asn: cfAsn,
+      country: cfCountry,
+      city: cfCity,
       endpoint: path,
       attackType: 'HEADLESS_BROWSER',
       severity: 'medium',
@@ -289,7 +332,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // D. Deteksi VPN / Proxy / Tor
+  // G. Deteksi VPN / Proxy / Tor
   const { isProxyOrVpn, reason: proxyReason } = await detectProxyOrVPN(request, ip);
   let rateLimitFactor = 1;
   if (isProxyOrVpn) {
@@ -297,6 +340,10 @@ export async function middleware(request: NextRequest) {
     if (path.startsWith('/api/auth') || path.startsWith('/api/send-otp')) {
       await logSecurityIncident({
         ipAddress: ip,
+        fingerprint,
+        asn: cfAsn,
+        country: cfCountry,
+        city: cfCity,
         endpoint: path,
         attackType: 'VPN_ACCESS',
         severity: 'low',
@@ -305,21 +352,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // H. Track & Detect Rotating IP / Country Hop
+  const { riskScoreAddition, isRotating, ipCount30m, isCountryHop } = await trackAndDetectRotatingIP(fingerprint, ip, cfCountry, cfCity, cfAsn);
+
   // 1. Abaikan aset statis dan media
   const isStaticAsset = path.startsWith('/_next') || 
     /\.(ico|png|jpg|jpeg|gif|webp|svg|css|js|woff|woff2|ttf|mp3)$/.test(path);
 
   if (isStaticAsset) {
     return NextResponse.next();
-  }
-
-  // 2. Cek IP Blacklist
-  const { blocked, reason } = await checkIPBlacklist(ip);
-  if (blocked) {
-    return new NextResponse(
-      JSON.stringify({ error: `Akses IP ditolak oleh sistem keamanan: ${reason}` }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
   }
 
   // 3. Deteksi Bot Palsu / Headless Browser
@@ -346,14 +387,12 @@ export async function middleware(request: NextRequest) {
   // 5. Verifikasi CSRF Token
   const method = request.method;
   const isMutation = ['POST', 'PUT', 'DELETE'].includes(method);
-  // Bypass CSRF untuk Webhook Duitku & Auth Callback / OTP Send luar
   const isBypassedPath = path.startsWith('/api/payment') || path === '/api/auth/callback';
 
   if (isMutation && !isBypassedPath) {
     const csrfCookie = request.cookies.get('csrf-token')?.value;
     const csrfHeader = request.headers.get('x-csrf-token');
     
-    // Verifikasi jika cookie session terpasang (jika user punya session)
     const hasSession = request.cookies.getAll().some(c => c.name.startsWith('sb-'));
 
     if (hasSession && (!csrfCookie || csrfCookie !== csrfHeader)) {
@@ -370,6 +409,133 @@ export async function middleware(request: NextRequest) {
   // 6. Supabase Session Sync
   const { supabase, user, supabaseResponse } = await updateSession(request);
   let finalResponse = supabaseResponse;
+
+  // Set Cookie UUID Sidik Jari Klien ke response utama jika baru
+  if (isNewDevice && finalResponse) {
+    finalResponse.cookies.set('sec_device_uuid', deviceUuid, {
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 365 * 24 * 60 * 60 // 1 year
+    });
+  }
+
+  // 6.2. Deteksi Impossible Travel & Account Sharing (Server-Side)
+  if (user) {
+    // A. Impossible Travel
+    const travelCheck = await checkImpossibleTravel(user.id, cfCountry, cfCity);
+    if (travelCheck.impossibleTravel) {
+      await supabase.auth.signOut();
+      await logSecurityIncident({
+        ipAddress: ip,
+        fingerprint,
+        asn: cfAsn,
+        country: cfCountry,
+        city: cfCity,
+        endpoint: path,
+        attackType: 'IMPOSSIBLE_TRAVEL',
+        severity: 'critical',
+        payload: { lastCountry: travelCheck.lastCountry, currentCountry: cfCountry, lastActive: travelCheck.lastActiveAt }
+      });
+
+      const res = NextResponse.redirect(new URL(`/login?session_expired=true&impossible_travel=true&last=${travelCheck.lastCountry}&curr=${cfCountry}`, request.url));
+      res.cookies.delete('last_active_timestamp');
+      res.cookies.delete('csrf-token');
+      const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
+      if (authCookie) {
+        res.cookies.delete(authCookie.name);
+      }
+      return res;
+    }
+
+    // B. Account Sharing Detection (Aktif dari 2+ negara atau 3+ IP bersamaan dalam 15 menit)
+    const { data: activeSessions } = await supabase
+      .from('security_user_sessions')
+      .select('ip_address, country, last_active_at')
+      .eq('profile_id', user.id)
+      .gt('last_active_at', new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+    if (activeSessions && activeSessions.length > 1) {
+      const uniqueCountries = new Set(activeSessions.map(s => s.country));
+      const uniqueIps = new Set(activeSessions.map(s => s.ip_address));
+      
+      if (uniqueCountries.size >= 2 || uniqueIps.size >= 3) {
+        await supabase.auth.signOut();
+        await logSecurityIncident({
+          ipAddress: ip,
+          fingerprint,
+          asn: cfAsn,
+          country: cfCountry,
+          city: cfCity,
+          endpoint: path,
+          attackType: 'ACCOUNT_SHARING',
+          severity: 'high',
+          payload: { activeSessions }
+        });
+
+        const res = NextResponse.redirect(new URL('/login?session_expired=true&account_sharing=true', request.url));
+        res.cookies.delete('last_active_timestamp');
+        res.cookies.delete('csrf-token');
+        return res;
+      }
+    }
+  }
+
+  // 6.3. Kalkulasi Security Score & Blacklist Otomatis (> 100)
+  // Cek apakah IP baru untuk fingerprint ini
+  const { data: prevIpRecord } = await supabase
+    .from('security_fingerprint_ips')
+    .select('id')
+    .eq('fingerprint', fingerprint)
+    .neq('ip_address', ip)
+    .limit(1)
+    .maybeSingle();
+  const isNewIp = !prevIpRecord;
+
+  // Cek IP berbeda dalam ASN sama
+  const { data: prevAsnRecord } = await supabase
+    .from('security_fingerprint_ips')
+    .select('id')
+    .eq('fingerprint', fingerprint)
+    .eq('asn', cfAsn)
+    .neq('ip_address', ip)
+    .limit(1)
+    .maybeSingle();
+  const isSameAsnDiffIp = !!prevAsnRecord;
+
+  const scoreContext = {
+    isNewIp,
+    isSameAsnDiffIp,
+    isCountryHop,
+    isRotatingIp: isRotating,
+    isProxy: isProxyOrVpn && (proxyReason?.toLowerCase().includes('proxy') || false),
+    isVpn: isProxyOrVpn && (proxyReason?.toLowerCase().includes('vpn') || false),
+    isTor: cfCountry === 'T1' || cfCountry === 'TOR',
+    isBotnet: botnetDetected,
+    isMassAttack: highProtectionAsn
+  };
+
+  const securityScore = calculateSecurityScore(scoreContext);
+
+  if (securityScore > 100) {
+    await addIPToBlacklist(ip, 1440, `Security Score Exceeded: ${securityScore}`);
+    await logSecurityIncident({
+      ipAddress: ip,
+      fingerprint,
+      asn: cfAsn,
+      country: cfCountry,
+      city: cfCity,
+      endpoint: path,
+      attackType: 'SECURITY_SCORE_EXCEEDED',
+      severity: 'critical',
+      payload: { scoreContext, securityScore }
+    });
+    return new NextResponse(
+      JSON.stringify({ error: 'Permintaan tidak dapat diproses (Akses ditangguhkan sementara karena terindikasi serangan).' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 
   // 6.5. Deteksi Session Hijacking & Sesi Terikat
   if (user) {
@@ -405,8 +571,6 @@ export async function middleware(request: NextRequest) {
     const userRole = await getUserRole(user.id);
     const now = Date.now();
 
-    // Batasan ketidakaktifan berdasarkan peran (dalam ms)
-    // Pelanggan (30 menit), Kasir (20 menit), Admin (15 menit)
     const inactivityLimits: Record<string, number> = {
       customer: 30 * 60_000,
       cashier: 20 * 60_000,
@@ -417,7 +581,6 @@ export async function middleware(request: NextRequest) {
     if (lastActiveStr) {
       const lastActive = parseInt(lastActiveStr, 10);
       if (now - lastActive > limit) {
-        // Sesi kedaluwarsa karena tidak aktif
         await supabase.auth.signOut();
         const res = NextResponse.redirect(new URL('/login?session_expired=true', request.url));
         res.cookies.delete('last_active_timestamp');
@@ -426,11 +589,10 @@ export async function middleware(request: NextRequest) {
       }
     }
     
-    // Perbarui timestamp keaktifan di cookie
     finalResponse.cookies.set('last_active_timestamp', String(now), {
       path: '/',
       secure: true,
-      httpOnly: false, // agar bisa disinkronkan dari client
+      httpOnly: false,
       sameSite: 'strict'
     });
   }
@@ -441,12 +603,12 @@ export async function middleware(request: NextRequest) {
     finalResponse.cookies.set('csrf-token', newToken, {
       path: '/',
       secure: true,
-      httpOnly: false, // dibaca client JS untuk dipasang ke header x-csrf-token
+      httpOnly: false,
       sameSite: 'strict'
     });
   }
 
-  // 9. API Rate Limiting
+  // 9. API Rate Limiting Multi-Layer
   if (path.startsWith('/api')) {
     let limit = 60; // Public API rate limit (60/min)
     let rateLimitKey = `rate:pub:${ip}`;
@@ -454,32 +616,43 @@ export async function middleware(request: NextRequest) {
     if (user) {
       const role = await getUserRole(user.id);
       if (role === 'admin') {
-        limit = 1000; // Admin rate limit (1000/min)
+        limit = 1000;
         rateLimitKey = `rate:admin:${user.id}`;
       } else {
-        limit = 300; // Auth User rate limit (300/min)
+        limit = 300;
         rateLimitKey = `rate:user:${user.id}`;
       }
     }
 
-    // Terapkan emergency mode & proxy factor
     if (emergency.tightened_rate_limits) {
-      limit = Math.max(5, Math.floor(limit / 5)); // Perketat 5x lipat
+      limit = Math.max(2, Math.floor(limit / 10)); // Emergency Level 1: perketat 10x
     } else if (isProxyOrVpn) {
-      limit = Math.max(10, Math.floor(limit / 3)); // Perketat 3x lipat
+      limit = Math.max(10, Math.floor(limit / 3));
     }
 
-    const { allowed, retryAfter } = checkApiRateLimit(rateLimitKey, limit);
-    if (!allowed) {
+    // Multi-layer rate checks
+    const ipCheck = checkApiRateLimit(`rate:ip:${ip}`, limit);
+    const fpCheck = checkApiRateLimit(`rate:fp:${fingerprint}`, limit);
+    const subnetCheck = checkApiRateLimit(`rate:subnet:${subnet}`, limit * 5);
+    const asnCheck = checkApiRateLimit(`rate:asn:${cfAsn}`, limit * 15);
+
+    if (!ipCheck.allowed || !fpCheck.allowed || !subnetCheck.allowed || !asnCheck.allowed) {
+      const activeKey = !ipCheck.allowed ? 'IP' : (!fpCheck.allowed ? 'Fingerprint' : (!subnetCheck.allowed ? 'Subnet' : 'ASN'));
+      
       await logMiddlewareSecurity({
         userId: user?.id,
-        ipAddress: ip, activity: 'RATE_LIMIT_EXCEEDED', endpoint: path, status: 'blocked', userAgent
+        ipAddress: ip,
+        activity: 'RATE_LIMIT_EXCEEDED',
+        endpoint: path,
+        status: 'blocked',
+        userAgent
       });
 
+      const retryAfter = Math.max(ipCheck.retryAfter, fpCheck.retryAfter, subnetCheck.retryAfter, asnCheck.retryAfter);
       const rateLimitRes = new NextResponse(
         JSON.stringify({
           status: false,
-          message: 'Rate limit exceeded',
+          message: `Rate limit exceeded (Layer: ${activeKey})`,
           retry_after: retryAfter
         }),
         { 
@@ -491,7 +664,6 @@ export async function middleware(request: NextRequest) {
         }
       );
       
-      // Salin headers keamanan dasar
       rateLimitRes.headers.set('X-Content-Type-Options', 'nosniff');
       rateLimitRes.headers.set('X-Frame-Options', 'DENY');
       return rateLimitRes;

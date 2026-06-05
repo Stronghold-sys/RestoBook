@@ -77,8 +77,7 @@ interface SecuritySettings {
 
 export default function SecurityPage() {
   const supabase = createClient();
-  
-  const [activeTab, setActiveTab] = useState<'logs' | 'ip' | 'detail' | 'geo' | 'incidents'>('logs');
+  const [activeTab, setActiveTab] = useState<'logs' | 'ip' | 'detail' | 'geo' | 'incidents' | 'rotating'>('logs');
   const [loading, setLoading] = useState(true);
   
   // Data States
@@ -87,6 +86,8 @@ export default function SecurityPage() {
   const [blockRules, setBlockRules] = useState<BlockRule[]>([]);
   const [geoRecords, setGeoRecords] = useState<GeoLocationRecord[]>([]);
   const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
+  const [fingerprintIps, setFingerprintIps] = useState<any[]>([]);
+  const [subnetBlocks, setSubnetBlocks] = useState<any[]>([]);
   const [securityConfig, setSecurityConfig] = useState<SecuritySettings>({
     id: "",
     emergency_mode: false,
@@ -243,6 +244,33 @@ export default function SecurityPage() {
     }
   };
 
+  const fetchFingerprintIps = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("security_fingerprint_ips")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      setFingerprintIps(data || []);
+    } catch (err) {
+      console.error("Error fetching fingerprint IPs:", err);
+    }
+  };
+
+  const fetchSubnetBlocks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("security_subnet_blocks")
+        .select("*")
+        .order("blocked_until", { ascending: false });
+      if (error) throw error;
+      setSubnetBlocks(data || []);
+    } catch (err) {
+      console.error("Error fetching subnet blocks:", err);
+    }
+  };
+
   const fetchSecurityConfig = async () => {
     try {
       const { data, error } = await supabase
@@ -267,7 +295,9 @@ export default function SecurityPage() {
       fetchBlockRules(),
       fetchGeoRecords(),
       fetchIncidents(),
-      fetchSecurityConfig()
+      fetchSecurityConfig(),
+      fetchFingerprintIps(),
+      fetchSubnetBlocks()
     ]);
     setLoading(false);
   };
@@ -296,6 +326,12 @@ export default function SecurityPage() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "security_settings" }, () => {
         fetchSecurityConfig();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "security_fingerprint_ips" }, () => {
+        fetchFingerprintIps();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "security_subnet_blocks" }, () => {
+        fetchSubnetBlocks();
       })
       .subscribe();
 
@@ -539,6 +575,19 @@ export default function SecurityPage() {
               <span>Insiden & Serangan</span>
             </div>
             <span className="text-[10px] bg-white/20 dark:bg-gray-800 px-2 py-0.5 rounded-full font-black text-xs">{incidents.length}</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('rotating')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeTab === 'rotating' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-primary/5 hover:text-primary text-muted'}`}
+            title="Rotating IP & Botnet"
+            aria-label="Rotating IP & Botnet"
+          >
+            <div className="flex items-center gap-3">
+              <RefreshCw className="w-5 h-5 text-amber-500" />
+              <span>Rotating IP & Botnets</span>
+            </div>
+            <span className="text-[10px] bg-white/20 dark:bg-gray-800 px-2 py-0.5 rounded-full font-black text-xs">{subnetBlocks.length} Blocked</span>
           </button>
 
           <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-3 px-3">
@@ -1175,6 +1224,122 @@ export default function SecurityPage() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'rotating' && (
+              <motion.div
+                key="rotating"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                className="space-y-6"
+              >
+                <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black">Deteksi IP Rotating & Koordinasi Botnet</h2>
+                    <p className="text-xs text-muted">Pelacakan sidik jari unik (Unique Fingerprint) klien yang berganti-ganti IP Address serta pemblokiran subnet otomatis.</p>
+                  </div>
+                </div>
+
+                {/* Subnet Blocks Table */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-black text-rose-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Flame className="w-4 h-4" /> Subnet IP Blocked (/24 atau /64)
+                  </h3>
+                  <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-2xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-border-light dark:border-border-dark font-bold text-muted text-[10px] uppercase tracking-wider">
+                          <th className="py-3 px-4">Subnet</th>
+                          <th className="py-3 px-4">Alasan Pemblokiran</th>
+                          <th className="py-3 px-4">Diblokir Sampai</th>
+                          <th className="py-3 px-4 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subnetBlocks.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-6 text-center text-muted font-bold text-xs italic">
+                              Tidak ada subnet IP yang sedang diblokir saat ini.
+                            </td>
+                          </tr>
+                        ) : (
+                          subnetBlocks.map((block: any) => {
+                            const isExpired = new Date(block.blocked_until) < new Date();
+                            return (
+                              <tr key={block.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                                <td className="py-3 px-4 font-mono font-bold text-sm text-rose-500">
+                                  {block.subnet}
+                                </td>
+                                <td className="py-3 px-4 text-muted">
+                                  {block.reason || '-'}
+                                </td>
+                                <td className="py-3 px-4 font-mono text-muted text-[10px]">
+                                  {new Date(block.blocked_until).toLocaleString('id-ID')}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isExpired ? 'bg-gray-100 text-gray-500' : 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'}`}>
+                                    {isExpired ? 'Expired' : 'Blocked'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Fingerprint Client IPs Mapping */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Cpu className="w-4 h-4" /> Pemetaan Fingerprint ke IP Address (Multi-layer Identity)
+                  </h3>
+                  <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-2xl max-h-[350px] custom-scrollbar">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-border-light dark:border-border-dark font-bold text-muted text-[10px] uppercase tracking-wider">
+                          <th className="py-3 px-4">Fingerprint</th>
+                          <th className="py-3 px-4">IP Address</th>
+                          <th className="py-3 px-4">Geolokasi</th>
+                          <th className="py-3 px-4">ASN / ISP</th>
+                          <th className="py-3 px-4">Terakhir Digunakan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fingerprintIps.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-6 text-center text-muted font-bold text-xs italic">
+                              Belum ada riwayat pemetaan sidik jari terekam.
+                            </td>
+                          </tr>
+                        ) : (
+                          fingerprintIps.map((rec: any) => (
+                            <tr key={rec.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                              <td className="py-3 px-4 font-mono text-[11px] font-bold text-primary truncate max-w-[120px]" title={rec.fingerprint}>
+                                {rec.fingerprint}
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
+                                {rec.ip_address}
+                              </td>
+                              <td className="py-3 px-4 font-semibold">
+                                {rec.city}, {rec.country}
+                              </td>
+                              <td className="py-3 px-4 text-muted">
+                                {rec.asn || '-'}
+                              </td>
+                              <td className="py-3 px-4 font-mono text-muted text-[10px]">
+                                {new Date(rec.created_at).toLocaleString('id-ID')}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </motion.div>
             )}

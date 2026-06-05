@@ -703,13 +703,27 @@ export async function middleware(request: NextRequest) {
     const status = profile?.status;
 
     if (statusKaryawan && statusKaryawan !== 'aktif') {
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL(`/login?suspended=${statusKaryawan}&pid=${profile?.id || ''}`, request.url));
+      const res = NextResponse.redirect(new URL(`/login?suspended=${statusKaryawan}&pid=${profile?.id || ''}`, request.url));
+      res.cookies.delete('last_active_timestamp');
+      res.cookies.delete('csrf-token');
+      request.cookies.getAll().forEach(c => {
+        if (c.name.startsWith('sb-')) {
+          res.cookies.delete(c.name);
+        }
+      });
+      return res;
     }
 
     if (status && status !== 'active') {
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL(`/login?suspended=${status}&pid=${profile?.id || ''}`, request.url));
+      const res = NextResponse.redirect(new URL(`/login?suspended=${status}&pid=${profile?.id || ''}`, request.url));
+      res.cookies.delete('last_active_timestamp');
+      res.cookies.delete('csrf-token');
+      request.cookies.getAll().forEach(c => {
+        if (c.name.startsWith('sb-')) {
+          res.cookies.delete(c.name);
+        }
+      });
+      return res;
     }
 
     if (path.startsWith('/customer') && role !== 'customer') {

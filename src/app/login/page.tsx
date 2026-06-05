@@ -421,7 +421,26 @@ export default function LoginPage() {
       const resData = await res.json();
 
       if (!res.ok) {
-        toast.error(resData.error || "Login gagal");
+        if (resData.suspended && resData.pid) {
+          setSuspendedParam(resData.status);
+          setProfileIdParam(resData.pid);
+          
+          if (resData.status === "suspended" || resData.status === "banned") {
+            const { data: profileData, error: profileErr } = await supabase
+              .from("profiles")
+              .select("id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at, email, full_name, employee_id")
+              .eq("id", resData.pid)
+              .single();
+              
+            if (!profileErr && profileData) {
+              setSuspendData(profileData);
+              setShowSuspendModal(true);
+            }
+          }
+          toast.error(resData.error || "Akses akun ditangguhkan.");
+        } else {
+          toast.error(resData.error || "Login gagal");
+        }
         setLoading(false);
         return;
       }

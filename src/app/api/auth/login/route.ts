@@ -227,7 +227,23 @@ export async function POST(request: NextRequest) {
           userId: profile.id, fullName: profile.full_name, ipAddress, browser, device, userAgent,
           activity: 'LOGIN_FAILED_INACTIVE_ACCOUNT', endpoint, status: 'failed'
         });
-        return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 400 });
+        
+        const statusType = (profile.status_karyawan && profile.status_karyawan !== 'aktif') 
+          ? profile.status_karyawan 
+          : (profile.status || 'suspended');
+          
+        const errorMessage = statusType === 'resign' 
+          ? 'LOGIN DITANGGUHKAN: Status akun Anda tidak aktif di RestoBook.'
+          : statusType === 'dipecat'
+          ? 'LOGIN DITOLAK: Akun dinonaktifkan oleh manajemen.'
+          : 'LOGIN DITOLAK: Akun Anda sedang ditangguhkan atau diblokir.';
+
+        return NextResponse.json({ 
+          error: errorMessage,
+          suspended: true,
+          status: statusType,
+          pid: profile.id
+        }, { status: 400 });
       }
 
       // Reset counter gagal login

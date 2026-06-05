@@ -138,7 +138,7 @@ export default function BaseModal({
             )}
 
             {/* Content body */}
-            <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="max-h-[70vh] overflow-y-auto custom-scrollbar pt-3 pb-2 px-1">
               {children}
             </div>
           </motion.div>

@@ -734,7 +734,7 @@ export default function LoginPage() {
                 <X className="w-5 h-5 text-muted" />
               </button>
 
-              <div className="flex-1 overflow-y-auto pr-1 text-center scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 space-y-6 hide-scrollbar">
+              <div className="flex-1 overflow-y-auto pr-1 pt-2 text-center scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 space-y-6 hide-scrollbar">
                 
                 <div className="text-center space-y-4">
                   <div className={`w-16 h-16 ${suspendData.status === 'banned' ? 'bg-red-100 dark:bg-red-950/20 text-red-600' : 'bg-amber-100 dark:bg-amber-950/20 text-amber-600'} rounded-full flex items-center justify-center mx-auto shadow-md`}>

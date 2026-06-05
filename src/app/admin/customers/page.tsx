@@ -1557,7 +1557,7 @@ export default function AdminCustomersPage() {
             className="space-y-5"
           >
             {activeModal.customer && (
-              <p className="text-xs text-muted font-bold -mt-2 mb-4 bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-border-light dark:border-border-dark">
+              <p className="text-xs text-muted font-bold mb-4 bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-border-light dark:border-border-dark">
                 Target: {activeModal.customer.full_name || activeModal.customer.email}
               </p>
             )}
@@ -1809,7 +1809,7 @@ export default function AdminCustomersPage() {
       >
         {reviewAppeal && (
           <div className="flex flex-col">
-            <p className="text-muted text-xs font-medium text-center -mt-2 mb-6">
+            <p className="text-muted text-xs font-medium text-center mb-6">
               Harap periksa detail akun di bawah sebelum mengambil keputusan.
             </p>
 

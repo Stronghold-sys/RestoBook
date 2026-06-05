@@ -56,7 +56,10 @@ export default function AdminCategories() {
       });
     } else {
       setEditingId(null);
-      setFormData({ name: "", description: "", is_active: true, sort_order: categories.length + 1 });
+      const nextSortOrder = categories.length > 0
+        ? Math.max(...categories.map(c => c.sort_order || 0), 0) + 1
+        : 1;
+      setFormData({ name: "", description: "", is_active: true, sort_order: nextSortOrder });
     }
     setIsModalOpen(true);
   };
@@ -67,12 +70,27 @@ export default function AdminCategories() {
 
     setSaving(true);
     try {
+      const parsedSortOrder = parseInt(String(formData.sort_order));
+      const nextSortOrder = categories.length > 0
+        ? Math.max(...categories.map(c => c.sort_order || 0), 0) + 1
+        : 1;
+      const cleanSortOrder = !isNaN(parsedSortOrder) && parsedSortOrder > 0
+        ? parsedSortOrder
+        : nextSortOrder;
+
+      const payload = {
+        name: formData.name,
+        description: formData.description,
+        is_active: formData.is_active,
+        sort_order: cleanSortOrder
+      };
+
       if (editingId) {
-        const { error } = await supabase.from('categories').update(formData).eq('id', editingId);
+        const { error } = await supabase.from('categories').update(payload).eq('id', editingId);
         if (error) throw error;
         toast.success("Kategori berhasil diperbarui");
       } else {
-        const { error } = await supabase.from('categories').insert([formData]);
+        const { error } = await supabase.from('categories').insert([payload]);
         if (error) throw error;
         toast.success("Kategori berhasil ditambahkan");
       }
@@ -181,7 +199,7 @@ export default function AdminCategories() {
           <div className="flex gap-4">
             <div className="flex-1">
               <label htmlFor="sortOrder" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Urutan Tampil</label>
-              <input id="sortOrder" title="Urutan Tampil" type="number" min={1} value={formData.sort_order} onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value)})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark" />
+              <input id="sortOrder" title="Urutan Tampil" type="number" min={1} value={formData.sort_order || ""} onChange={e => setFormData({...formData, sort_order: e.target.value ? parseInt(e.target.value) : 0})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark" />
             </div>
             <div className="flex-1">
               <label htmlFor="isActive" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Status Aktif</label>

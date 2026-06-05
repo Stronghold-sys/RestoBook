@@ -245,10 +245,12 @@ export default function POSPage() {
     const categoriesChannel = supabase.channel("pos_categories")
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, (payload) => {
         setCategories(prev => {
-          if (payload.eventType === "INSERT") return [...prev, payload.new].sort((a,b)=>a.name.localeCompare(b.name));
-          if (payload.eventType === "UPDATE") return prev.map(c => c.id === payload.new.id ? payload.new : c);
-          if (payload.eventType === "DELETE") return prev.filter(c => c.id !== payload.old.id);
-          return prev;
+          let next;
+          if (payload.eventType === "INSERT") next = [...prev, payload.new];
+          else if (payload.eventType === "UPDATE") next = prev.map(c => c.id === payload.new.id ? payload.new : c);
+          else if (payload.eventType === "DELETE") next = prev.filter(c => c.id !== payload.old.id);
+          else next = prev;
+          return next.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         });
       })
       .subscribe();
@@ -329,7 +331,7 @@ export default function POSPage() {
 
       // Fetch Categories, Menu, Tables, Settings, and Vouchers
       const [catRes, menuRes, tableRes, settingsRes, vouchersRes] = await Promise.all([
-        supabase.from("categories").select("*").order("name"),
+        supabase.from("categories").select("*").order("sort_order", { ascending: true }),
         supabase.from("menu_items").select("*").order("name"),
         supabase.from("tables").select("*").order("table_number"),
         supabase.from("restaurant_settings").select("*").single(),

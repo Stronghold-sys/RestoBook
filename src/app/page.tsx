@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { ArrowRight, Utensils, Star, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert } from "lucide-react";
+import { ArrowRight, Utensils, Star, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert, Tag } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -10,13 +10,19 @@ import { createClient } from "@/lib/supabase/client";
 import { getStoreStatus, getMinutesUntilClose } from "@/utils/operationalHours";
 import toast from "react-hot-toast";
 
-const CATEGORIES = [
-  { name: "Makanan Utama", icon: Utensils, color: "from-orange-500 to-red-500", count: 8 },
-  { name: "Appetizer", icon: Flame, color: "from-amber-400 to-orange-500", count: 4 },
-  { name: "Minuman", icon: Coffee, color: "from-cyan-500 to-blue-500", count: 5 },
-  { name: "Dessert", icon: IceCream, color: "from-pink-500 to-rose-500", count: 3 },
-  { name: "Promo Spesial", icon: Sparkles, color: "from-purple-500 to-violet-600", count: 2 },
-];
+const CATEGORY_STYLE_MAP: Record<string, { icon: any; color: string }> = {
+  "makanan utama": { icon: Utensils, color: "from-orange-500 to-red-500" },
+  "appetizer": { icon: Flame, color: "from-amber-400 to-orange-500" },
+  "minuman": { icon: Coffee, color: "from-cyan-500 to-blue-500" },
+  "dessert": { icon: IceCream, color: "from-pink-500 to-rose-500" },
+  "promo spesial": { icon: Sparkles, color: "from-purple-500 to-violet-600" },
+  "promo grand opening": { icon: Sparkles, color: "from-rose-500 to-orange-600" },
+};
+
+const getCategoryStyle = (name: string) => {
+  const key = name.toLowerCase().trim();
+  return CATEGORY_STYLE_MAP[key] || { icon: Tag, color: "from-emerald-500 to-teal-600" };
+};
 
 // Menu di-fetch dari database secara realtime
 // export const MENU_ITEMS = [ ... ]
@@ -57,6 +63,7 @@ const DUMMY_REVIEWS = [
 export default function LandingPage() {
   const initTheme = useThemeStore(state => state.initTheme);
   const [activeCat, setActiveCat] = useState("all");
+  const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [openingTime, setOpeningTime] = useState<string | null>(null);
@@ -99,6 +106,11 @@ export default function LandingPage() {
       cat: item.categories?.name || "Lainnya",
       is_active: item.is_active
     })));
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true });
+    if (data) setCategories(data);
   };
 
   const fetchSettings = async () => {
@@ -171,6 +183,7 @@ export default function LandingPage() {
       try {
         await Promise.all([
           fetchMenu(),
+          fetchCategories(),
           fetchSettings(),
           fetchPublishedReviews()
         ]);
@@ -202,6 +215,7 @@ export default function LandingPage() {
     checkSession();
     
     fetchMenu();
+    fetchCategories();
     fetchSettings();
     fetchPublishedReviews();
 
@@ -209,6 +223,12 @@ export default function LandingPage() {
     const channel = supabase.channel("public_menu")
       .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => {
         fetchMenu();
+      })
+      .subscribe();
+
+    const categoriesChannel = supabase.channel("public_categories")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
+        fetchCategories();
       })
       .subscribe();
 
@@ -249,6 +269,7 @@ export default function LandingPage() {
 
     return () => { 
       supabase.removeChannel(channel); 
+      supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(reviewsChannel);
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(syncChannel);
@@ -496,18 +517,28 @@ export default function LandingPage() {
             <p className="text-muted mt-3">Pilih kategori untuk melihat hidangan favorit Anda</p>
           </motion.div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {CATEGORIES.map((cat, i) => {
-              const Icon = cat.icon;
-              const count = menuItems.filter(item => item.cat === cat.name).length;
-              return (
-                <motion.div key={cat.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -8, scale: 1.03 }} onClick={() => { setActiveCat(cat.name === activeCat ? "all" : cat.name); document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" }); }} className={`relative bg-gradient-to-br ${cat.color} rounded-2xl p-6 text-white cursor-pointer shadow-lg overflow-hidden group ${activeCat === cat.name ? "ring-4 ring-white/60 scale-105" : ""}`}>
-                  <div className="absolute -right-3 -bottom-3 opacity-10 group-hover:opacity-20 transition-opacity"><Icon className="w-24 h-24" /></div>
-                  <Icon className="w-8 h-8 mb-3" />
-                  <h3 className="font-bold text-lg">{cat.name}</h3>
-                  <p className="text-white/80 text-sm mt-1">{count} Menu</p>
-                </motion.div>
-              );
-            })}
+            {categories.length === 0 ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <div key={`cat-skeleton-${idx}`} className="bg-gray-200/10 dark:bg-gray-800/10 rounded-2xl p-6 h-32 animate-pulse flex flex-col justify-between border border-border-light dark:border-border-dark">
+                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  <div className="w-3/4 h-5 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                  <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                </div>
+              ))
+            ) : (
+              categories.map((cat, i) => {
+                const { icon: Icon, color } = getCategoryStyle(cat.name);
+                const count = menuItems.filter(item => item.cat === cat.name).length;
+                return (
+                  <motion.div key={cat.id || cat.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -8, scale: 1.03 }} onClick={() => { setActiveCat(cat.name === activeCat ? "all" : cat.name); document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" }); }} className={`relative bg-gradient-to-br ${color} rounded-2xl p-6 text-white cursor-pointer shadow-lg overflow-hidden group ${activeCat === cat.name ? "ring-4 ring-white/60 scale-105" : ""}`}>
+                    <div className="absolute -right-3 -bottom-3 opacity-10 group-hover:opacity-20 transition-opacity"><Icon className="w-24 h-24" /></div>
+                    <Icon className="w-8 h-8 mb-3" />
+                    <h3 className="font-bold text-lg">{cat.name}</h3>
+                    <p className="text-white/80 text-sm mt-1">{count} Menu</p>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
       </section>

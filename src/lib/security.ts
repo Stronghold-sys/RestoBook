@@ -1,28 +1,62 @@
 /**
  * RESTOBOOK SECURITY UTILITIES
- * Validasi input, sanitasi, dan proteksi API server-side
- * Digunakan di semua API Route handlers
+ * Validasi input, sanitasi, proteksi CSRF, deteksi bot, dan audit logging.
  */
+import { getSupabaseAdmin } from './supabase/admin';
 
-// ── Validasi & Sanitasi Input ───────────────────────────────────────
+// ── 1. CSRF Protection ───────────────────────────────────────────────
+
+/**
+ * Generate cryptographically secure random token
+ */
+export function generateCSRFToken(): string {
+  const array = new Uint8Array(24);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(array);
+  } else {
+    // Fallback if crypto not available (unlikely in modern runtime)
+    for (let i = 0; i < 24; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// ── 2. Validasi & Sanitasi Input ───────────────────────────────────────
 
 /**
  * Hapus karakter berbahaya dari string input
  * Mencegah XSS dan injeksi dasar
  */
-export function sanitizeString(input: string, maxLength = 1000): string {
+export function sanitizeString(input: string, maxLength = 2000): string {
   if (typeof input !== 'string') return '';
-  return input
+  let sanitized = input
     .trim()
     .slice(0, maxLength)
-    // Hapus karakter kontrol
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-    // Escape HTML entities
+    // Hapus karakter kontrol null bytes
+    .replace(/\0/g, '')
+    // Escape HTML entities dasar
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+
+  return sanitized;
+}
+
+/**
+ * HTML Purifier Sederhana untuk input Chat/Komentar yang lebih aman
+ */
+export function purifyHTML(html: string): string {
+  if (typeof html !== 'string') return '';
+  return html
+    .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '') // Hapus tag script
+    .replace(/on\w+\s*=\s*"[^"]*"/gi, '')              // Hapus event listener inline
+    .replace(/on\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/javascript:\s*[^"']*/gi, '')             // Hapus link javascript
+    .replace(/<iframe[^>]*>([\s\S]*?)<\/iframe>/gi, ''); // Hapus iframe
 }
 
 /**
@@ -64,59 +98,112 @@ export function isSafePath(input: string): boolean {
   return !/(\.\.[\\/]|[\\/]\.\.|\.\.|%2e%2e|%252e)/i.test(input);
 }
 
-// ── Rate Limiter Sisi Server (untuk API Route handlers) ─────────────
+// ── 3. User Agent Parser & Bot Detection ────────────────────────────
 
-const apiRateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
-/**
- * Rate limiter ringan untuk API Route handlers (Edge/Node)
- * Gunakan sebagai lapisan kedua setelah middleware
- */
-export function apiRateLimit(
-  key: string,
-  maxRequests = 20,
-  windowMs = 60_000
-): { allowed: boolean; remaining: number; resetAt: number } {
-  const now = Date.now();
-  const entry = apiRateLimitStore.get(key);
-
-  if (!entry || entry.resetAt <= now) {
-    const resetAt = now + windowMs;
-    apiRateLimitStore.set(key, { count: 1, resetAt });
-    return { allowed: true, remaining: maxRequests - 1, resetAt };
-  }
-
-  entry.count++;
-  if (entry.count > maxRequests) {
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
-  }
-
-  apiRateLimitStore.set(key, entry);
-  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt };
+export interface ParsedUA {
+  browser: string;
+  os: string;
+  device: string;
+  isBot: boolean;
 }
 
-// ── Standard API Error Responses ────────────────────────────────────
+/**
+ * Mengubah User Agent menjadi informasi perangkat & mendeteksi bot
+ */
+export function parseUserAgent(ua: string | null): ParsedUA {
+  if (!ua) {
+    return { browser: 'Unknown', os: 'Unknown', device: 'Unknown', isBot: true };
+  }
+
+  let browser = 'Browser tidak diketahui';
+  let os = 'OS tidak diketahui';
+  let device = 'Desktop';
+  let isBot = false;
+
+  // Bot User Agent Signatures
+  const botKeywords = [
+    'bot', 'spider', 'crawler', 'headless', 'scraper', 'curl', 'wget', 'python-requests',
+    'postman', 'insomnia', 'http-client', 'playwright', 'puppeteer', 'selenium',
+    'axios', 'go-http-client', 'nikto', 'sqlmap', 'nmap', 'masscan', 'zgrab'
+  ];
+  if (botKeywords.some(keyword => ua.toLowerCase().includes(keyword))) {
+    isBot = true;
+  }
+
+  // Detect OS
+  if (/windows nt/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os x/i.test(ua)) os = 'macOS';
+  else if (/android/i.test(ua)) {
+    os = 'Android';
+    device = 'Mobile';
+  } else if (/iphone|ipad/i.test(ua)) {
+    os = 'iOS';
+    device = /ipad/i.test(ua) ? 'Tablet' : 'Mobile';
+  } else if (/linux/i.test(ua)) os = 'Linux';
+
+  // Detect Browser
+  if (/edg\//i.test(ua)) browser = 'Microsoft Edge';
+  else if (/opr\//i.test(ua) || /opera/i.test(ua)) browser = 'Opera';
+  else if (/chrome/i.test(ua)) browser = 'Google Chrome';
+  else if (/safari/i.test(ua)) browser = 'Safari';
+  else if (/firefox/i.test(ua)) browser = 'Firefox';
+
+  return { browser, os, device, isBot };
+}
+
+// ── 4. IP reputation check ──────────────────────────────────────────
+
+/**
+ * Cek apakah IP Address diblokir di database (blacklist)
+ */
+export async function isIPBlacklisted(ip: string): Promise<{ blocked: boolean; reason?: string }> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('security_ip_rules')
+      .select('reason, expires_at')
+      .eq('ip_address', ip)
+      .eq('rule_type', 'blacklist')
+      .or(`expires_at.gt.${now},expires_at.is.null`)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking IP blacklist:', error.message);
+      return { blocked: false };
+    }
+
+    if (data) {
+      return { blocked: true, reason: data.reason || 'IP masuk daftar cekal admin.' };
+    }
+
+    return { blocked: false };
+  } catch (err) {
+    console.error('IP Blacklist exception:', err);
+    return { blocked: false };
+  }
+}
+
+// ── 5. Standard API Error Responses ────────────────────────────────────
 
 export const ApiErrors = {
-  unauthorized: () => Response.json({ error: 'Tidak diizinkan. Silakan login kembali.' }, { status: 401 }),
-  forbidden: () => Response.json({ error: 'Akses ditolak.' }, { status: 403 }),
-  notFound: (resource = 'Data') => Response.json({ error: `${resource} tidak ditemukan.` }, { status: 404 }),
-  badRequest: (message: string) => Response.json({ error: message }, { status: 400 }),
-  tooManyRequests: (retryAfter = 60) => Response.json(
-    { error: 'Terlalu banyak permintaan. Coba lagi nanti.', retryAfter },
+  unauthorized: () => Response.json({ status: false, error: 'Tidak diizinkan. Silakan login kembali.' }, { status: 401 }),
+  forbidden: (msg = 'Akses ditolak.') => Response.json({ status: false, error: msg }, { status: 403 }),
+  notFound: (resource = 'Data') => Response.json({ status: false, error: `${resource} tidak ditemukan.` }, { status: 404 }),
+  badRequest: (message: string) => Response.json({ status: false, error: message }, { status: 400 }),
+  tooManyRequests: (retryAfter = 60, message = 'Rate limit exceeded') => Response.json(
+    { status: false, message: message, retry_after: retryAfter },
     { status: 429, headers: { 'Retry-After': String(retryAfter) } }
   ),
   serverError: () => Response.json(
-    { error: 'Terjadi kesalahan server. Tim kami telah diberitahu.' },
+    { status: false, error: 'Terjadi kesalahan server. Tim kami telah diberitahu.' },
     { status: 500 }
   ),
 };
 
-// ── Input Validation Helpers ─────────────────────────────────────────
+// ── 6. Input Validation Helpers ─────────────────────────────────────────
 
-/**
- * Validasi body request JSON dengan schema sederhana
- */
 export function validateBody<T extends Record<string, unknown>>(
   body: unknown,
   requiredFields: (keyof T)[]
@@ -159,32 +246,58 @@ export function hasXSS(input: string): boolean {
   return patterns.some(p => p.test(input));
 }
 
-// ── Audit Logger ─────────────────────────────────────────────────────
+// ── 7. Security Log & Audit Logger ───────────────────────────────────
 
-interface AuditEvent {
-  action: string;
+interface SecurityLogEvent {
   userId?: string;
-  ip?: string;
-  resource?: string;
-  details?: Record<string, unknown>;
-  severity: 'info' | 'warning' | 'critical';
+  fullName?: string;
+  ipAddress: string;
+  browser?: string;
+  device?: string;
+  userAgent?: string;
+  activity: string;
+  endpoint?: string;
+  status: 'success' | 'failed' | 'blocked';
 }
 
 /**
- * Log aktivitas penting untuk audit trail
- * Di produksi, kirim ke logging service (Sentry, DataDog, dll)
+ * Menyimpan aktivitas keamanan penting ke tabel security_logs
  */
-export function auditLog(event: AuditEvent): void {
-  const logEntry = {
-    timestamp: new Date().toISOString(),
-    ...event,
-  };
+export async function logSecurity(event: SecurityLogEvent): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.from('security_logs').insert({
+      user_id: event.userId || null,
+      full_name: event.fullName || null,
+      ip_address: event.ipAddress,
+      browser: event.browser || null,
+      device: event.device || null,
+      user_agent: event.userAgent || null,
+      activity: event.activity,
+      endpoint: event.endpoint || null,
+      status: event.status
+    });
 
-  if (event.severity === 'critical') {
-    console.error('[AUDIT:CRITICAL]', JSON.stringify(logEntry));
-  } else if (event.severity === 'warning') {
-    console.warn('[AUDIT:WARNING]', JSON.stringify(logEntry));
-  } else {
-    console.log('[AUDIT:INFO]', JSON.stringify(logEntry));
+    if (error) {
+      console.error('[SECURITY LOG ERROR]:', error.message);
+    }
+  } catch (err) {
+    console.error('[SECURITY LOG EXCEPTION]:', err);
+  }
+}
+
+/**
+ * Broadcast keamanan realtime via Supabase Realtime Channel
+ */
+export async function broadcastSecurityAlert(channel: string, event: string, data: any) {
+  try {
+    const supabase = getSupabaseAdmin();
+    await supabase.channel(channel).send({
+      type: 'broadcast',
+      event: event,
+      payload: data
+    });
+  } catch (e) {
+    console.error('Failed to broadcast security alert:', e);
   }
 }

@@ -16,6 +16,7 @@ import MaintenanceBlockPage from "@/components/MaintenanceBlockPage";
 import { useAudioStore } from "@/store/useAudioStore";
 import NotificationCenterDrawer from "@/components/layout/NotificationCenterDrawer";
 import { useTutorialStore } from "@/store/useTutorialStore";
+import { useActivityTimeout } from "@/hooks/useActivityTimeout";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -74,6 +75,12 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { warningActive, secondsLeft } = useActivityTimeout({
+    role: userProfile?.role || role,
+    onLogout: () => {
+      handleLogout();
+    }
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [maintenanceSettings, setMaintenanceSettings] = useState({
@@ -535,6 +542,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Reviews", href: "/admin/reviews", icon: Star },
           { name: "Reward Point", href: "/admin/rewards", icon: Gift },
           { name: "Pengaduan & Bantuan", href: "/admin/support", icon: LifeBuoy, badge: pendingTicketCount },
+          { name: "Keamanan Sistem", href: "/admin/security", icon: ShieldAlert },
           { name: "Settings", href: "/admin/settings", icon: Settings },
           { name: "Profil", href: "/admin/profile", icon: UserIcon },
         ];
@@ -742,6 +750,57 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             )}
           </main>
         </div>
+
+        {/* Activity Warning Timeout Modal */}
+        <AnimatePresence>
+          {warningActive && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-card-light dark:bg-card-dark rounded-[2rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6 text-text-light dark:text-text-dark"
+              >
+                <div className="w-16 h-16 bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+                  <Clock className="w-8 h-8 animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black tracking-tight">
+                    Sesi Anda Akan Berakhir
+                  </h3>
+                  <p className="text-muted text-sm leading-relaxed">
+                    Karena tidak ada aktivitas selama beberapa waktu, sistem akan mengeluarkan Anda secara otomatis demi keamanan data.
+                  </p>
+                </div>
+                <div className="bg-rose-50 dark:bg-rose-950/10 border border-rose-200/50 dark:border-rose-800/30 rounded-2xl p-4">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-500 block mb-1">
+                    Sisa Waktu
+                  </span>
+                  <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">
+                    00:{secondsLeft < 10 ? `0${secondsLeft}` : secondsLeft}
+                  </span>
+                </div>
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      const now = Date.now();
+                      document.cookie = `last_active_timestamp=${now}; path=/; secure; samesite=strict`;
+                      toast.success("Sesi Anda diperpanjang!");
+                    }}
+                    className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
+                  >
+                    Lanjutkan Sesi Saya
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <NotificationCenterDrawer
           isOpen={isNotifCenterOpen}

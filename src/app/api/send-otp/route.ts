@@ -1,7 +1,8 @@
 export const runtime = 'edge';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logSecurity, parseUserAgent } from '@/lib/security';
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -15,7 +16,21 @@ function formatPhone(phone: string) {
   return clean;
 }
 
-export async function POST(req: Request) {
+function getClientIP(request: NextRequest): string {
+  return (
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    '127.0.0.1'
+  );
+}
+
+export async function POST(req: NextRequest) {
+  const ipAddress = getClientIP(req);
+  const userAgent = req.headers.get('user-agent') || '';
+  const { browser, os, device } = parseUserAgent(userAgent);
+  const endpoint = '/api/send-otp';
+
   try {
     const resendKey = process.env.RESEND_API_KEY;
 
@@ -27,6 +42,48 @@ export async function POST(req: Request) {
     }
 
     let { email, phone, type, method = 'email', name } = body;
+
+    // 1. Enforce OTP Rate Limiting
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60000).toISOString();
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60000).toISOString();
+
+    // Limit 1: 3 kali per 10 menit
+    const { count: count10m, error: err10m } = await supabaseAdmin
+      .from('security_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'OTP_REQUEST')
+      .gt('created_at', tenMinutesAgo);
+
+    if (!err10m && count10m && count10m >= 3) {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'OTP_RATE_LIMIT_EXCEEDED_10M', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Permintaan OTP terlalu sering. Silakan tunggu.' }, { status: 429 });
+    }
+
+    // Limit 2: 10 kali per 24 jam (hari)
+    const { count: count24h, error: err24h } = await supabaseAdmin
+      .from('security_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'OTP_REQUEST')
+      .gt('created_at', twentyFourHoursAgo);
+
+    if (!err24h && count24h && count24h >= 10) {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'OTP_RATE_LIMIT_EXCEEDED_24H', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Permintaan OTP harian terlampaui. Silakan coba lagi besok.' }, { status: 429 });
+    }
+
+    // Log the OTP Request attempt
+    await logSecurity({
+      ipAddress, browser, device, userAgent,
+      activity: 'OTP_REQUEST', endpoint, status: 'success'
+    });
 
     const extractNameFromEmail = (mail: string) => {
       if (!mail || !mail.includes('@')) return 'Pelanggan';
@@ -147,4 +204,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-

@@ -117,11 +117,32 @@ export default function RegisterPage() {
     confirmPassword: "",
     phone: "",
     code: "",
+    website: "", // Honeypot
   });
   const [otpMethod, setOtpMethod] = useState<"email" | "whatsapp">("email");
 
   const [countdown, setCountdown] = useState(0);
   const [waCountdown, setWaCountdown] = useState(0);
+
+  // States untuk Proteksi Bot & CAPTCHA otomatis
+  const [pageLoadTime] = useState(typeof window !== "undefined" ? Date.now() : 0);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaChallenge, setCaptchaChallenge] = useState({ num1: 0, num2: 0, answer: 0 });
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [otpRequestsCount, setOtpRequestsCount] = useState(0);
+
+  const generateCaptcha = () => {
+    const num1 = Math.floor(Math.random() * 9) + 1;
+    const num2 = Math.floor(Math.random() * 9) + 1;
+    setCaptchaChallenge({ num1, num2, answer: num1 + num2 });
+    setCaptchaInput("");
+  };
+
+  useEffect(() => {
+    if (showCaptcha) {
+      generateCaptcha();
+    }
+  }, [showCaptcha]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -143,24 +164,62 @@ export default function RegisterPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const getCsrfToken = () => {
+    if (typeof window === "undefined") return "";
+    return document.cookie
+      .split("; ")
+      .find(row => row.startsWith("csrf-token="))
+      ?.split("=")[1] || "";
+  };
+
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    // 1. Cek Honeypot
+    if (formData.website && formData.website.trim() !== "") {
+      toast.error("Registrasi ditolak (Bot detected).");
+      return;
+    }
+
     if (!formData.fullName) return toast.error("Nama lengkap tidak boleh kosong");
     if (!formData.email) return toast.error("Email tidak boleh kosong");
     if (!formData.password || formData.password.length < 6) return toast.error("Password minimal 6 karakter");
     if (formData.password !== formData.confirmPassword) return toast.error("Password dan konfirmasi password tidak cocok");
 
+    // 2. Cek apakah CAPTCHA wajib diselesaikan
+    if (showCaptcha) {
+      if (parseInt(captchaInput, 10) !== captchaChallenge.answer) {
+        toast.error("Jawaban CAPTCHA salah. Silakan coba lagi.");
+        generateCaptcha();
+        return;
+      }
+    }
+
+    // 3. Deteksi aktivitas mencurigakan secara otomatis
+    const elapsedSeconds = (Date.now() - pageLoadTime) / 1000;
+    const isSuspicious = elapsedSeconds < 4.0 || otpRequestsCount >= 1;
+
+    if (isSuspicious && !showCaptcha) {
+      setShowCaptcha(true);
+      toast.error("Terdeteksi aktivitas mencurigakan. Silakan selesaikan verifikasi CAPTCHA di bawah.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify({ 
           email: formData.email, 
           phone: formData.phone,
           method: otpMethod,
           type: "registration", 
-          name: formData.fullName 
+          name: formData.fullName,
+          website: formData.website // Honeypot
         }),
       });
       const data = await res.json();
@@ -169,6 +228,7 @@ export default function RegisterPage() {
 
       toast.success(`Kode OTP telah dikirim via ${otpMethod === 'email' ? 'Email' : 'WhatsApp'}!`);
       setStep(2);
+      setOtpRequestsCount(prev => prev + 1);
       if (otpMethod === 'email') setCountdown(60);
       else setWaCountdown(60);
     } catch (err: any) {
@@ -187,7 +247,10 @@ export default function RegisterPage() {
       // Verify OTP
       const resVerify = await fetch("/api/verify-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify({ email: formData.email, code: formData.code, type: "registration" }),
       });
       const dataVerify = await resVerify.json();
@@ -197,7 +260,10 @@ export default function RegisterPage() {
       // Register User
       const resReg = await fetch("/api/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify(formData),
       });
       const dataReg = await resReg.json();
@@ -291,6 +357,18 @@ export default function RegisterPage() {
                     <input id="regPhone" title="No Telepon" type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="08123456789" />
                   </div>
                 </div>
+                {/* Honeypot Field */}
+                <div className="hidden" aria-hidden="true">
+                  <input
+                    type="text"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <label className="text-xs font-black uppercase text-muted ml-1">Kirim OTP Via:</label>
                   <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2">
@@ -310,6 +388,41 @@ export default function RegisterPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* CAPTCHA Otomatis */}
+                {showCaptcha && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-gray-50 dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-xl space-y-3"
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary block">
+                      Verifikasi Keamanan (Anti-Bot)
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white dark:bg-gray-700 px-4 py-2 rounded-lg font-mono font-bold text-lg border border-border-light dark:border-border-dark select-none text-text-light dark:text-text-dark">
+                        {captchaChallenge.num1} + {captchaChallenge.num2} = ?
+                      </div>
+                      <input
+                        type="number"
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value)}
+                        className="flex-1 py-2 px-3 bg-white dark:bg-gray-850 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-center font-bold text-lg text-text-light dark:text-text-dark"
+                        placeholder="Jawaban"
+                      />
+                      <button
+                        type="button"
+                        onClick={generateCaptcha}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-muted hover:text-primary transition-all flex items-center justify-center"
+                        title="Segarkan Captcha"
+                      >
+                        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3 3 3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
 
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} type="submit" className="w-full mt-4 py-3 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium flex justify-center items-center gap-2">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Lanjutkan & Kirim OTP"}

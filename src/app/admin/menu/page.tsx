@@ -20,7 +20,7 @@ export default function AdminMenu() {
     category_id: "", 
     name: "", 
     description: "", 
-    price: 0, 
+    price: "" as string | number, 
     image_url: "", 
     is_active: true 
   });
@@ -79,7 +79,7 @@ export default function AdminMenu() {
         category_id: item.category_id, 
         name: item.name, 
         description: item.description || "", 
-        price: item.price,
+        price: item.price !== undefined && item.price !== null ? String(item.price) : "",
         image_url: item.image_url || "",
         is_active: item.is_active
       });
@@ -90,7 +90,7 @@ export default function AdminMenu() {
         category_id: categories.length > 0 ? categories[0].id : "", 
         name: "", 
         description: "", 
-        price: 0, 
+        price: "",
         image_url: "", 
         is_active: true 
       });
@@ -129,18 +129,24 @@ export default function AdminMenu() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.category_id || formData.price <= 0) {
+    const parsedPrice = parseFloat(String(formData.price)) || 0;
+    if (!formData.name || !formData.category_id || parsedPrice <= 0) {
       return toast.error("Nama, Kategori, dan Harga (lebih dari 0) wajib diisi!");
     }
 
     setSaving(true);
     try {
+      const dataToSave = {
+        ...formData,
+        price: parsedPrice
+      };
+
       if (editingId) {
-        const { error } = await supabase.from('menu_items').update(formData).eq('id', editingId);
+        const { error } = await supabase.from('menu_items').update(dataToSave).eq('id', editingId);
         if (error) throw error;
         toast.success("Menu berhasil diperbarui");
       } else {
-        const { error } = await supabase.from('menu_items').insert([formData]);
+        const { error } = await supabase.from('menu_items').insert([dataToSave]);
         if (error) throw error;
         toast.success("Menu berhasil ditambahkan");
       }
@@ -284,7 +290,7 @@ export default function AdminMenu() {
             
             <div>
               <label htmlFor="menuPrice" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Harga (Rp)</label>
-              <input id="menuPrice" title="Harga Menu" required type="number" min={0} value={formData.price} onChange={e => setFormData({...formData, price: parseInt(e.target.value) || 0})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark" placeholder="Contoh: 25000" />
+              <input id="menuPrice" title="Harga Menu" required type="text" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none focus:border-primary text-text-light dark:text-text-dark" placeholder="Contoh: 25000" />
             </div>
 
             <div className="sm:col-span-2">

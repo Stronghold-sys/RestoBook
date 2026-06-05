@@ -399,41 +399,47 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      let emailToLogin = identifier;
+      // Dapatkan CSRF token dari cookie
+      const getCsrfToken = () => {
+        if (typeof window === "undefined") return "";
+        return document.cookie
+          .split("; ")
+          .find(row => row.startsWith("csrf-token="))
+          ?.split("=")[1] || "";
+      };
 
-      // Check if it's an Employee ID (RB- format)
-      if (identifier.startsWith('RB-')) {
-        const { data: profile, error: findError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('employee_id', identifier)
-          .single();
-        
-        if (findError || !profile?.email) {
-          toast.error("ID Karyawan tidak ditemukan");
-          setLoading(false);
-          return;
-        }
-        emailToLogin = profile.email;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailToLogin,
-        password,
+      // Panggil API Login internal
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
+        body: JSON.stringify({ identifier, password })
       });
 
-      if (error) {
-        toast.error(error.message === "Invalid login credentials" ? "Email atau password salah" : error.message);
+      const resData = await res.json();
+
+      if (!res.ok) {
+        toast.error(resData.error || "Login gagal");
         setLoading(false);
         return;
       }
 
+      // Sinkronisasikan sesi ke client Supabase SDK
+      if (resData.session) {
+        const { error: sessionError } = await supabase.auth.setSession(resData.session);
+        if (sessionError) throw sessionError;
+      }
+
+      const user = resData.user;
+
       // Ambil detail profil lengkap
-      if (data.user) {
+      if (user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id, role, status_karyawan, status, suspend_reason, suspend_message, suspend_until, suspend_type, just_restored, scheduled_suspend_at, email, full_name, employee_id')
-          .eq('user_id', data.user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (profileError) throw profileError;

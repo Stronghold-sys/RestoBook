@@ -40,6 +40,14 @@ export default function ForgotPasswordPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const getCsrfToken = () => {
+    if (typeof window === "undefined") return "";
+    return document.cookie
+      .split("; ")
+      .find(row => row.startsWith("csrf-token="))
+      ?.split("=")[1] || "";
+  };
+
   const handleSendOTP = async (targetMethod?: "email" | "whatsapp") => {
     if (!formData.identifier) return toast.error("Email atau No. HP tidak boleh kosong");
 
@@ -67,7 +75,10 @@ export default function ForgotPasswordPage() {
 
       const res = await fetch("/api/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -99,7 +110,10 @@ export default function ForgotPasswordPage() {
       // Verify OTP
       const resVerify = await fetch("/api/verify-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify({ email: formData.identifier, code: formData.code, type: "forgot_password" }),
       });
       const dataVerify = await resVerify.json();
@@ -109,7 +123,10 @@ export default function ForgotPasswordPage() {
       // Reset Password
       const resReset = await fetch("/api/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
         body: JSON.stringify({ email: formData.identifier, code: formData.code, password: formData.password }),
       });
       const dataReset = await resReset.json();

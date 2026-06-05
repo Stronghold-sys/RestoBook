@@ -1,0 +1,51 @@
+# =========================================================================
+# RESTOBOOK ENTERPRISE FAIL2BAN JAIL CONFIGURATION
+# Salin snippet ini ke /etc/fail2ban/jail.d/restobook.local di Linux Server
+# =========================================================================
+
+# ── 1. Proteksi Brute Force Login Next.js / Nginx ───────────────────────
+[restobook-auth]
+enabled  = true
+port     = http,https
+filter   = restobook-auth
+logpath  = /var/log/nginx/access.log
+# Maksimal percobaan gagal 5 kali
+maxretry = 5
+# Rentang waktu pencarian log: 15 menit (900 detik)
+findtime = 900
+# Durasi blokir: 15 menit (900 detik) untuk pelanggaran pertama
+bantime  = 900
+action   = iptables-multiport[name=restobook-auth, port="http,https", protocol=tcp]
+
+# ── 2. Proteksi DDoS Ringan (Burst Requests) ──────────────────────────
+[restobook-ddos]
+enabled  = true
+port     = http,https
+filter   = restobook-ddos
+logpath  = /var/log/nginx/access.log
+# Jika IP meminta > 60 kali dalam 10 detik
+maxretry = 60
+findtime = 10
+# Blokir IP selama 1 jam (3600 detik)
+bantime  = 3600
+action   = iptables-multiport[name=restobook-ddos, port="http,https", protocol=tcp]
+
+# =========================================================================
+# FILTERS CONFIGURATION
+# Simpan snippet di bawah ini sebagai file filter terpisah
+# =========================================================================
+
+# A. File: /etc/fail2ban/filter.d/restobook-auth.conf
+# ----------------------------------------------------
+# [Definition]
+# # Deteksi kegagalan login dari logs API route dengan respon HTTP 400/429
+# failregex = ^<HOST> - - \[.*\] "POST /api/auth/login HTTP/.*" (400|429)
+# ignoreregex =
+
+# B. File: /etc/fail2ban/filter.d/restobook-ddos.conf
+# ----------------------------------------------------
+# [Definition]
+# # Deteksi request beruntun dalam jumlah sangat tinggi dari host yang sama
+# failregex = ^<HOST> - - \[.*\] "GET /.* HTTP/.*" (200|301|429)
+#             ^<HOST> - - \[.*\] "POST /.* HTTP/.*" (200|403|429)
+# ignoreregex =

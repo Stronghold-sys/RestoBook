@@ -1,16 +1,94 @@
 export const runtime = 'edge';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
+import { logSecurity, parseUserAgent } from '@/lib/security';
 
-export async function POST(req: Request) {
+function getClientIP(request: Request): string {
+  return (
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    '127.0.0.1'
+  );
+}
+
+export async function POST(req: NextRequest) {
+  const ipAddress = getClientIP(req);
+  const userAgent = req.headers.get('user-agent') || '';
+  const { browser, os, device, isBot } = parseUserAgent(userAgent);
+  const endpoint = '/api/register';
+
   try {
-    const { email, password, fullName, phone, code } = await req.json();
+    const body = await req.json();
+    const { email, password, fullName, phone, code, website } = body;
+
+    // 1. Honeypot check: jika bot mengisi field tersembunyi 'website'
+    if (website && website.trim() !== '') {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'REGISTER_HONEYPOT_TRIGGERED', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Aktivitas mencurigakan terdeteksi (Bot Trap).' }, { status: 403 });
+    }
+
+    // 2. Bot detection via User Agent
+    if (isBot) {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'REGISTER_BOT_DETECTED', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Aktivitas otomatisasi terdeteksi (Bot Rejection).' }, { status: 403 });
+    }
+
     console.log('[Register] Starting registration for:', email);
 
     if (!email || !password || !fullName || !code) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
     }
+
+    // 3. Registrasi Rate Limiting
+    const nowStr = new Date().toISOString();
+    const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
+    const twentyFourHoursAgo = new Date(Date.now() - 86400_000).toISOString();
+
+    // Limit 1: Max 3 pendaftaran per IP per 1 jam
+    const { count: regCount1h, error: countErr1h } = await supabaseAdmin
+      .from('security_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'REGISTER_SUCCESS')
+      .gt('created_at', oneHourAgo);
+
+    if (!countErr1h && regCount1h && regCount1h >= 3) {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'REGISTER_RATE_LIMIT_EXCEEDED_1H', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Terlalu banyak pendaftaran akun dari IP Anda dalam 1 jam terakhir. Silakan coba kembali nanti.' }, { status: 429 });
+    }
+
+    // Limit 2: Max 10 pendaftaran per IP per 24 jam
+    const { count: regCount24h, error: countErr24h } = await supabaseAdmin
+      .from('security_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .eq('activity', 'REGISTER_SUCCESS')
+      .gt('created_at', twentyFourHoursAgo);
+
+    if (!countErr24h && regCount24h && regCount24h >= 10) {
+      await logSecurity({
+        ipAddress, browser, device, userAgent,
+        activity: 'REGISTER_RATE_LIMIT_EXCEEDED_24H', endpoint, status: 'blocked'
+      });
+      return NextResponse.json({ error: 'Terlalu banyak pendaftaran akun dari IP Anda dalam 24 jam terakhir. Pendaftaran diblokir sementara.' }, { status: 429 });
+    }
+
+    // Log attempt
+    await logSecurity({
+      ipAddress, browser, device, userAgent,
+      activity: 'REGISTER_ATTEMPT', endpoint, status: 'success'
+    });
 
     // Double check OTP
     const { data: otpData, error: otpError } = await supabaseAdmin
@@ -97,6 +175,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: profileError.message }, { status: 400 });
     }
 
+    // Ambil profile id yang dibuat
+    const { data: createdProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    // Log Register Success
+    await logSecurity({
+      userId: createdProfile?.id,
+      fullName,
+      ipAddress, browser, device, userAgent,
+      activity: 'REGISTER_SUCCESS', endpoint, status: 'success'
+    });
+
     // Send Welcome Gift notification and email notice
     try {
       const { data: settings } = await supabaseAdmin
@@ -107,16 +200,9 @@ export async function POST(req: Request) {
       if (settings && settings.welcome_gift_enabled) {
         const points = settings.welcome_gift_points || 1000;
         
-        // Fetch created profile id
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-          
-        if (profile) {
+        if (createdProfile) {
           await supabaseAdmin.from('notifications').insert({
-            user_id: profile.id,
+            user_id: createdProfile.id,
             title: 'Hadiah Selamat Datang Menanti!',
             message: `Selamat bergabung! Anda mendapatkan Hadiah Selamat Datang sebesar ${points.toLocaleString('id-ID')} Poin Reward yang siap diklaim di halaman dashboard utama Anda.`,
             type: 'point',

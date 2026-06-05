@@ -567,6 +567,8 @@ export default function SecurityPage() {
                       }
                     }}
                     className="sr-only peer"
+                    title="Emergency Mode"
+                    aria-label="Emergency Mode"
                   />
                   <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
                 </label>
@@ -575,8 +577,9 @@ export default function SecurityPage() {
               {securityConfig.emergency_mode && (
                 <div className="space-y-2 pt-2 border-t border-rose-500/20 text-[11px] font-semibold">
                   <div className="flex justify-between items-center">
-                    <span>Captcha Global</span>
+                    <label htmlFor="global-captcha-opt" className="cursor-pointer">Captcha Global</label>
                     <input 
+                      id="global-captcha-opt"
                       type="checkbox" 
                       checked={securityConfig.global_captcha_required}
                       onChange={async (e) => {
@@ -584,11 +587,14 @@ export default function SecurityPage() {
                         fetchSecurityConfig();
                       }}
                       className="rounded accent-rose-500"
+                      title="Captcha Global"
+                      aria-label="Captcha Global"
                     />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Blokir Registrasi</span>
+                    <label htmlFor="block-reg-opt" className="cursor-pointer">Blokir Registrasi</label>
                     <input 
+                      id="block-reg-opt"
                       type="checkbox" 
                       checked={securityConfig.block_new_registrations}
                       onChange={async (e) => {
@@ -596,11 +602,14 @@ export default function SecurityPage() {
                         fetchSecurityConfig();
                       }}
                       className="rounded accent-rose-500"
+                      title="Blokir Registrasi"
+                      aria-label="Blokir Registrasi"
                     />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Blokir API OTP / Login</span>
+                    <label htmlFor="block-sensitive-opt" className="cursor-pointer">Blokir API OTP / Login</label>
                     <input 
+                      id="block-sensitive-opt"
                       type="checkbox" 
                       checked={securityConfig.block_sensitive_endpoints}
                       onChange={async (e) => {
@@ -608,11 +617,14 @@ export default function SecurityPage() {
                         fetchSecurityConfig();
                       }}
                       className="rounded accent-rose-500"
+                      title="Blokir API OTP / Login"
+                      aria-label="Blokir API OTP / Login"
                     />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Perketat Rate Limits (5x)</span>
+                    <label htmlFor="tighten-limits-opt" className="cursor-pointer">Perketat Rate Limits (5x)</label>
                     <input 
+                      id="tighten-limits-opt"
                       type="checkbox" 
                       checked={securityConfig.tightened_rate_limits}
                       onChange={async (e) => {
@@ -620,6 +632,8 @@ export default function SecurityPage() {
                         fetchSecurityConfig();
                       }}
                       className="rounded accent-rose-500"
+                      title="Perketat Rate Limits"
+                      aria-label="Perketat Rate Limits"
                     />
                   </div>
                 </div>
@@ -669,6 +683,8 @@ export default function SecurityPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Cari IP / Nama / Activity..."
                         className="pl-9 pr-4 py-2 text-xs bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none w-full"
+                        title="Cari Log Keamanan"
+                        aria-label="Cari Log Keamanan"
                       />
                     </div>
                     <select
@@ -781,13 +797,16 @@ export default function SecurityPage() {
                   </div>
 
                   <div className="sm:col-span-1 space-y-1">
-                    <label className="text-[10px] font-black uppercase text-muted">IP Address</label>
+                    <label htmlFor="ip-rule-address" className="text-[10px] font-black uppercase text-muted">IP Address</label>
                     <input 
+                      id="ip-rule-address"
                       type="text" 
                       value={ipForm.ip}
                       onChange={(e) => setIpForm(prev => ({ ...prev, ip: e.target.value }))}
                       placeholder="e.g. 114.122.10.15"
                       className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="IP Address"
+                      aria-label="IP Address"
                     />
                   </div>
 
@@ -818,13 +837,16 @@ export default function SecurityPage() {
                   </div>
 
                   <div className="sm:col-span-4 space-y-1">
-                    <label className="text-[10px] font-black uppercase text-muted">Alasan Pencekalan / Whitelist</label>
+                    <label htmlFor="ip-rule-reason" className="text-[10px] font-black uppercase text-muted">Alasan Pencekalan / Whitelist</label>
                     <input 
+                      id="ip-rule-reason"
                       type="text" 
                       value={ipForm.reason}
                       onChange={(e) => setIpForm(prev => ({ ...prev, reason: e.target.value }))}
                       placeholder="Contoh: Spam bruteforce login berulang kali"
                       className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Alasan Pencekalan / Whitelist"
+                      aria-label="Alasan Pencekalan / Whitelist"
                     />
                   </div>
                 </form>
@@ -918,13 +940,16 @@ export default function SecurityPage() {
                   </div>
 
                   <div className="sm:col-span-2 space-y-1">
-                    <label className="text-[10px] font-black uppercase text-muted">Nilai Yang Dicekal</label>
+                    <label htmlFor="block-rule-value" className="text-[10px] font-black uppercase text-muted">Nilai Yang Dicekal</label>
                     <input 
+                      id="block-rule-value"
                       type="text" 
                       value={blockForm.value}
                       onChange={(e) => setBlockForm(prev => ({ ...prev, value: e.target.value }))}
                       placeholder={blockForm.fieldType === 'email' ? 'e.g. spammer@email.com' : (blockForm.fieldType === 'browser' ? 'e.g. Firefox' : 'e.g. Mobile')}
                       className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Nilai Yang Dicekal"
+                      aria-label="Nilai Yang Dicekal"
                     />
                   </div>
 
@@ -938,13 +963,16 @@ export default function SecurityPage() {
                   </div>
 
                   <div className="sm:col-span-4 space-y-1">
-                    <label className="text-[10px] font-black uppercase text-muted">Alasan Pemblokiran</label>
+                    <label htmlFor="block-rule-reason" className="text-[10px] font-black uppercase text-muted">Alasan Pemblokiran</label>
                     <input 
+                      id="block-rule-reason"
                       type="text" 
                       value={blockForm.reason}
                       onChange={(e) => setBlockForm(prev => ({ ...prev, reason: e.target.value }))}
                       placeholder="Alasan cekal detail"
                       className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Alasan Pemblokiran"
+                      aria-label="Alasan Pemblokiran"
                     />
                   </div>
                 </form>

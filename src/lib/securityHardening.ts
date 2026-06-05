@@ -465,6 +465,35 @@ export async function logSecurityIncident(event: {
 }
 
 // ── 11. Cek Email Sekali Pakai (Disposable Email Check) ───────────────
+let cachedDisposableDomains: Set<string> | null = null;
+let lastFetchTime = 0;
+
+async function getDisposableDomainsFromGitHub(): Promise<Set<string>> {
+  const now = Date.now();
+  if (cachedDisposableDomains && (now - lastFetchTime < 3600000)) {
+    return cachedDisposableDomains;
+  }
+
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf', {
+      signal: AbortSignal.timeout(3000)
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const domains = text.split('\n')
+        .map(line => line.trim().toLowerCase())
+        .filter(line => line && !line.startsWith('#'));
+      cachedDisposableDomains = new Set(domains);
+      lastFetchTime = now;
+      return cachedDisposableDomains;
+    }
+  } catch (err) {
+    console.error('Failed to fetch disposable email domains from GitHub:', err);
+  }
+
+  return new Set();
+}
+
 export async function isDisposableEmail(email: string): Promise<boolean> {
   if (!email || !email.includes('@')) return false;
   
@@ -476,7 +505,14 @@ export async function isDisposableEmail(email: string): Promise<boolean> {
     return true;
   }
 
-  // B. DNS MX Check via Cloudflare DNS over HTTPS (DoH) API
+  // B. Pengecekan terhadap live blacklist dari GitHub
+  const githubDomains = await getDisposableDomainsFromGitHub();
+  if (githubDomains.has(domain)) {
+    console.warn(`[SECURITY] Blocked domain ${domain} found in GitHub live blacklist.`);
+    return true;
+  }
+
+  // C. DNS MX Check via Cloudflare DNS over HTTPS (DoH) API
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
@@ -501,7 +537,29 @@ export async function isDisposableEmail(email: string): Promise<boolean> {
     console.error('DNS DoH MX check failed:', dnsErr);
   }
 
-  // C. Pengecekan Pihak Ketiga via Kickbox Disposable Email API
+  // D. Pengecekan via DeBounce API (Gratis & Cepat)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+    
+    const debounceRes = await fetch(`https://disposable.debounce.io/?email=${encodeURIComponent(cleanEmail)}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (debounceRes.ok) {
+      const dbData = await debounceRes.json();
+      if (dbData.disposable === 'true' || dbData.disposable === true) {
+        console.warn(`[SECURITY] Blocked domain ${domain} identified as disposable by DeBounce API.`);
+        return true;
+      }
+    }
+  } catch (apiErr) {
+    console.error('DeBounce API check failed:', apiErr);
+  }
+
+  // E. Pengecekan Pihak Ketiga via Kickbox Disposable Email API
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout

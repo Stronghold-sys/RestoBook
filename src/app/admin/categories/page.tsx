@@ -68,16 +68,22 @@ export default function AdminCategories() {
     e.preventDefault();
     if (!formData.name) return toast.error("Nama kategori wajib diisi");
 
+    const parsedSortOrder = parseInt(String(formData.sort_order));
+    const nextSortOrder = categories.length > 0
+      ? Math.max(...categories.map(c => c.sort_order || 0), 0) + 1
+      : 1;
+    const cleanSortOrder = !isNaN(parsedSortOrder) && parsedSortOrder > 0
+      ? parsedSortOrder
+      : nextSortOrder;
+
+    // Deteksi nomor urutan tampil yang sudah terpakai
+    const isDuplicate = categories.some(c => c.sort_order === cleanSortOrder && c.id !== editingId);
+    if (isDuplicate) {
+      return toast.error(`Urutan Tampil ${cleanSortOrder} sudah digunakan oleh kategori lain! Silakan pilih nomor urutan yang berbeda.`);
+    }
+
     setSaving(true);
     try {
-      const parsedSortOrder = parseInt(String(formData.sort_order));
-      const nextSortOrder = categories.length > 0
-        ? Math.max(...categories.map(c => c.sort_order || 0), 0) + 1
-        : 1;
-      const cleanSortOrder = !isNaN(parsedSortOrder) && parsedSortOrder > 0
-        ? parsedSortOrder
-        : nextSortOrder;
-
       const payload = {
         name: formData.name,
         description: formData.description,

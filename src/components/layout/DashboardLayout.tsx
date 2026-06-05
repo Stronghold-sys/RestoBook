@@ -505,10 +505,20 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [userProfile?.id, role]);
+
+  useEffect(() => {
+    const handleOpen = () => setIsSidebarOpen(true);
+    const handleClose = () => setIsSidebarOpen(false);
+
+    window.addEventListener('open-mobile-sidebar', handleOpen);
+    window.addEventListener('close-mobile-sidebar', handleClose);
+
+    return () => {
+      window.removeEventListener('open-mobile-sidebar', handleOpen);
+      window.removeEventListener('close-mobile-sidebar', handleClose);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -656,6 +666,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             <div className="flex items-center gap-4 lg:hidden">
               <button
                 onClick={() => setIsSidebarOpen(true)}
+                data-tour="mobile-hamburger"
                 aria-label="Buka Menu"
                 title="Buka Menu"
                 className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted"
@@ -664,6 +675,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               </button>
               <button
                 onClick={handleLogoClick}
+                data-tour="logo"
                 className="text-xl font-black text-primary hover:opacity-80 transition-all focus:outline-none"
               >
                 RestoBook
@@ -829,6 +841,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 <div className="mb-10 flex items-center justify-between px-2">
                   <button
                     onClick={handleLogoClick}
+                    data-tour="logo"
                     className="flex items-center gap-3 text-left hover:opacity-80 transition-all focus:outline-none"
                   >
                     <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
@@ -851,6 +864,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                     <Link
                       key={link.href}
                       href={link.href}
+                      data-tour={`nav-${link.name}`}
                       onClick={() => setIsSidebarOpen(false)}
                       className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
                         pathname === link.href

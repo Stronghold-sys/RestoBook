@@ -23,55 +23,74 @@ export default function SpotlightTutorial() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update spotlight coordinates when step or window size changes
+  // Programmatic mobile sidebar opening/closing
+  useEffect(() => {
+    if (!isTutorialActive || steps.length === 0) return;
+
+    const step = steps[currentStep];
+    const isMobile = window.innerWidth < 1024;
+
+    if (isMobile) {
+      const isSidebarStep = step.targetSelector.startsWith('[data-tour="nav-') || 
+                            step.targetSelector === '[data-tour="logout-button"]';
+      
+      if (isSidebarStep) {
+        window.dispatchEvent(new CustomEvent('open-mobile-sidebar'));
+      } else {
+        window.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
+      }
+    }
+  }, [isTutorialActive, currentStep, steps]);
+
+  useEffect(() => {
+    if (!isTutorialActive) {
+      window.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
+    }
+  }, [isTutorialActive]);
+
+  // Update spotlight coordinates when step, window size, or scroll changes
   useEffect(() => {
     if (!isTutorialActive || steps.length === 0) {
       setCoords(null);
       return;
     }
 
-    const step = steps[currentStep];
-    const element = document.querySelector(step.targetSelector);
-
-    if (element) {
-      // Measure immediately so spotlight target cutout starts transitioning instantly
-      const rect = element.getBoundingClientRect();
-      setCoords({
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height
-      });
-
-      // Auto scroll to center of element
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      // If element not found, skip to next step or center spotlight
-      setCoords(null);
-    }
-  }, [isTutorialActive, currentStep, steps, windowSize]);
-
-  // Handle window scroll updates to coords
-  useEffect(() => {
-    if (!isTutorialActive || steps.length === 0) return;
-
-    const handleScroll = () => {
+    const updateCoords = () => {
       const step = steps[currentStep];
       const element = document.querySelector(step.targetSelector);
+
       if (element) {
         const rect = element.getBoundingClientRect();
-        setCoords({
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height
-        });
+        // Check if element is visible (has width and height)
+        if (rect.width > 0 && rect.height > 0) {
+          setCoords({
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+          });
+        } else {
+          setCoords(null);
+        }
+      } else {
+        setCoords(null);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isTutorialActive, currentStep, steps]);
+    updateCoords();
+
+    // Auto scroll to center of element
+    const step = steps[currentStep];
+    const element = document.querySelector(step.targetSelector);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Set up interval for smooth tracking during animations/transitions
+    const intervalId = setInterval(updateCoords, 100);
+
+    return () => clearInterval(intervalId);
+  }, [isTutorialActive, currentStep, steps, windowSize]);
 
   if (!isTutorialActive || steps.length === 0) return null;
 

@@ -537,29 +537,59 @@ export async function isDisposableEmail(email: string): Promise<boolean> {
     console.error('DNS DoH MX check failed:', dnsErr);
   }
 
-  // D. Pengecekan via DeBounce API (Gratis & Cepat)
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
-    
-    const debounceRes = await fetch(`https://disposable.debounce.io/?email=${encodeURIComponent(cleanEmail)}`, {
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (debounceRes.ok) {
-      const dbData = await debounceRes.json();
-      if (dbData.disposable === 'true' || dbData.disposable === true) {
-        console.warn(`[SECURITY] Blocked domain ${domain} identified as disposable by DeBounce API.`);
-        return true;
+  // D. Pengecekan via DeBounce API (Official API Key / Fallback ke Free API)
+  const debounceApiKey = process.env.DEBOUNCE_API_KEY;
+  if (debounceApiKey) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s timeout
+      
+      const debounceUrl = `https://api.debounce.io/v1?api=${debounceApiKey}&email=${encodeURIComponent(cleanEmail)}`;
+      const debounceRes = await fetch(debounceUrl, { signal: controller.signal });
+      
+      clearTimeout(timeoutId);
+      
+      if (debounceRes.ok) {
+        const dbData = await debounceRes.json();
+        if (dbData.success === '1' && dbData.debounce) {
+          const result = dbData.debounce.result?.toLowerCase();
+          const reason = dbData.debounce.reason?.toLowerCase() || '';
+          
+          // Blokir jika disposable atau jika email Invalid (undeliverable)
+          if (reason.includes('disposable') || result === 'disposable' || result === 'invalid') {
+            console.warn(`[SECURITY] Blocked email ${cleanEmail} via Official DeBounce API (Result: ${result}, Reason: ${reason}).`);
+            return true;
+          }
+        }
       }
+    } catch (apiErr) {
+      console.error('Official DeBounce API check failed:', apiErr);
     }
-  } catch (apiErr) {
-    console.error('DeBounce API check failed:', apiErr);
+  } else {
+    // Fallback ke DeBounce Free API
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+      
+      const debounceRes = await fetch(`https://disposable.debounce.io/?email=${encodeURIComponent(cleanEmail)}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (debounceRes.ok) {
+        const dbData = await debounceRes.json();
+        if (dbData.disposable === 'true' || dbData.disposable === true) {
+          console.warn(`[SECURITY] Blocked domain ${domain} identified as disposable by Free DeBounce API.`);
+          return true;
+        }
+      }
+    } catch (apiErr) {
+      console.error('Free DeBounce API check failed:', apiErr);
+    }
   }
 
-  // E. Pengecekan Pihak Ketiga via Kickbox Disposable Email API
+  // E. Pengecekan Pihak Ketiga via Kickbox Disposable Email API (Backup)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout

@@ -73,10 +73,10 @@ async function processAutoAlpha() {
     return NextResponse.json({ success: true, message: 'Tidak ada karyawan aktif untuk diperiksa.', marked_alpha: [] });
   }
 
-  // 4. Tarik data penugasan shift kerja
+  // 4. Tarik data penugasan shift kerja (sertakan created_at untuk validasi retroaktif)
   const { data: assignments, error: assignErr } = await supabaseAdmin
     .from('work_shift_assignments')
-    .select('*, work_shifts(*)');
+    .select('*, work_shifts(*), created_at');
 
   if (assignErr) throw assignErr;
 
@@ -144,14 +144,33 @@ async function processAutoAlpha() {
       );
 
       let scheduledShift = null;
+      let activeAssignment = null;
       if (subAssignment) {
         scheduledShift = subAssignment.work_shifts;
+        activeAssignment = subAssignment;
       } else if (regAssignment && !isReplaced) {
         scheduledShift = regAssignment.work_shifts;
+        activeAssignment = regAssignment;
       }
 
       // Jika tidak ada jadwal kerja pada tanggal tersebut, lanjut
-      if (!scheduledShift) continue;
+      if (!scheduledShift || !activeAssignment) continue;
+
+      // PROTEKSI RETROAKTIF: Jangan tandai ALPHA untuk tanggal SEBELUM karyawan/assignment dibuat.
+      // Ini mencegah karyawan baru mendapat ALPHA untuk hari-hari sebelum mereka bergabung.
+      const assignmentCreatedDate = activeAssignment.created_at
+        ? activeAssignment.created_at.split('T')[0]
+        : null;
+      const profileCreatedDate = profile.created_at
+        ? profile.created_at.split('T')[0]
+        : null;
+
+      // Ambil tanggal terbaru antara assignment dibuat dan profil dibuat
+      const earliestValidDate = assignmentCreatedDate && profileCreatedDate
+        ? (assignmentCreatedDate > profileCreatedDate ? assignmentCreatedDate : profileCreatedDate)
+        : (assignmentCreatedDate || profileCreatedDate || '2000-01-01');
+
+      if (dateStr < earliestValidDate) continue; // Lewati jika tanggal lebih awal dari bergabung
 
       // b. Cek rekaman absensi pada tanggal dateStr
       const key = `${profile.id}_${dateStr}`;

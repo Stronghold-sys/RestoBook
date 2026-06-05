@@ -22,7 +22,16 @@ export default function AdminTransactions() {
   
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("all"); // 'today', 'week', 'month', '6months', 'all'
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [selectedOrder, setSelectedOrder] = useState<any>(null); // For detail modal
+
+  // Reset page to 1 when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateFilter, typeFilter, paymentFilter]);
 
   const supabase = createClient();
 
@@ -116,72 +125,83 @@ export default function AdminTransactions() {
     if (!matchesSearch) return false;
 
     // 2. Date Filter
-    if (dateFilter === "all") return true;
-    
-    const orderDate = new Date(o.created_at);
-    const today = startOfDay(new Date());
+    if (dateFilter !== "all") {
+      const orderDate = new Date(o.created_at);
+      const today = startOfDay(new Date());
 
-    if (dateFilter === "today") return isAfter(orderDate, today);
-    if (dateFilter === "week") return isAfter(orderDate, subDays(today, 7));
-    if (dateFilter === "month") return isAfter(orderDate, subMonths(today, 1));
-    if (dateFilter === "6months") return isAfter(orderDate, subMonths(today, 6));
+      if (dateFilter === "today" && !isAfter(orderDate, today)) return false;
+      if (dateFilter === "week" && !isAfter(orderDate, subDays(today, 7))) return false;
+      if (dateFilter === "month" && !isAfter(orderDate, subMonths(today, 1))) return false;
+      if (dateFilter === "6months" && !isAfter(orderDate, subMonths(today, 6))) return false;
+    }
+
+    // 3. Tipe Pesanan Filter
+    if (typeFilter !== "all" && o.order_type !== typeFilter) return false;
+
+    // 4. Metode Pembayaran Filter
+    if (paymentFilter !== "all") {
+      if (paymentFilter === "cash" && o.payment_method !== "cash") return false;
+      if (paymentFilter === "non_cash" && o.payment_method === "cash") return false;
+    }
     
     return true;
   });
 
-  const handleExportExcel = async () => {
+  // Pagination Helper Calculations
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTransactions = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleExportExcel = () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
     
-    const reportData = [];
-    reportData.push(["LAPORAN TRANSAKSI RESTORAN (ADMIN)"]);
-    reportData.push(["Dicetak oleh:", adminName || "Admin"]);
-    reportData.push(["Tanggal Cetak:", format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId }) + " WIB"]);
-    reportData.push(["Filter Waktu:", dateFilter === 'all' ? 'Semua Waktu' : dateFilter === 'today' ? 'Hari Ini' : dateFilter === 'week' ? '7 Hari Terakhir' : dateFilter === 'month' ? '1 Bulan Terakhir' : '6 Bulan Terakhir']);
-    reportData.push([]);
+    const periodTitle = (dateFilter === 'all' ? 'Semua Waktu' : dateFilter === 'today' ? 'Hari Ini' : dateFilter === 'week' ? '7 Hari Terakhir' : dateFilter === 'month' ? '1 Bulan Terakhir' : '6 Bulan Terakhir').toUpperCase();
     
-    reportData.push(["No. Pesanan", "Pelanggan", "Tipe Pesanan", "Pesanan", "Metode Pembayaran", "Total (Rp)", "Tanggal Waktu"]);
-    
+    let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
+       <tr style="height: 40px;"><td colspan="7" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN TRANSAKSI RESTORAN (TANGGAL: ${periodTitle})</td></tr>
+       <tr style="height: 25px;"><td colspan="7" align="left" style="font-size: 11px;">Dicetak oleh: ${adminName || "Admin"} | Tanggal: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB</td></tr>
+       <tr style="background-color: #e85d04; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">No. Pesanan</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Pelanggan</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Tipe Pesanan</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Pesanan</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Metode Pembayaran</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Total (Rp)</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px;">Tanggal Waktu</th>
+       </tr>`;
+
     filtered.forEach(order => {
-      reportData.push([
-        `#${order.id.split("-")[0]}`,
-        order.profiles?.full_name || "Guest",
-        order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway",
-        formatOrderItems(order.order_items),
-        order.payment_method === "cash" ? "Cash" : "Non-Cash",
-        Number(order.total_amount),
-        format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })
-      ]);
+       tableHtml += `<tr style="height: 25px;">
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px; font-family: monospace;">#${order.id.split("-")[0]}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 5px;">${order.profiles?.full_name || "Guest"}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 5px;">${formatOrderItems(order.order_items)}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${order.payment_method === "cash" ? "Cash" : "Non-Cash"}</td>
+          <td align="right" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold;">${Number(order.total_amount).toLocaleString("id-ID")}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}</td>
+       </tr>`;
     });
 
-    const worksheet = XLSX.utils.aoa_to_sheet(reportData);
-    
-    // Auto-size columns perfectly for maximum neatness in Excel
-    const wscols = [
-      { wch: 15 }, // No. Pesanan
-      { wch: 25 }, // Pelanggan
-      { wch: 15 }, // Tipe Pesanan
-      { wch: 50 }, // Pesanan (widened to 50 for full readability)
-      { wch: 20 }, // Metode Pembayaran
-      { wch: 18 }, // Total (Rp)
-      { wch: 25 }  // Tanggal Waktu
-    ];
-    worksheet['!cols'] = wscols;
+    const totalSum = filtered.reduce((sum, order) => sum + Number(order.total_amount), 0);
+    tableHtml += `<tr style="background-color: #f1f5f9; font-weight: bold; height: 30px;">
+       <td colspan="5" align="center" style="border: 1px solid #cbd5e1; padding: 5px;">TOTAL PENDAPATAN</td>
+       <td align="right" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold; color: #e85d04;">${totalSum.toLocaleString("id-ID")}</td>
+       <td style="border: 1px solid #cbd5e1; padding: 5px;"></td>
+    </tr>`;
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
-    
-    try {
-      const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-      await downloadFile({
-        dataBase64: excelBase64,
-        filename: `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.xlsx`,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-      toast.success("Berhasil mengekspor ke Excel!");
-    } catch (e) {
-      toast.error("Gagal mengekspor ke Excel");
-      console.error(e);
-    }
+    tableHtml += `</table>`;
+
+    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Transaksi</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+
+    const blob = new Blob([template], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Berhasil mengekspor ke Excel!");
   };
 
   // Export PDF
@@ -327,8 +347,61 @@ export default function AdminTransactions() {
               </button>
             ))}
           </div>
+
+          <div className="mt-6 border-t border-border-light/50 dark:border-border-dark/50 pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-text-light dark:text-text-dark">Tipe Pesanan</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: 'all', label: 'Semua Tipe' },
+                { id: 'dine_in', label: 'Dine In' },
+                { id: 'takeaway', label: 'Takeaway' },
+                { id: 'delivery', label: 'Delivery' }
+              ].map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => setTypeFilter(type.id)}
+                  className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${
+                    typeFilter === type.id 
+                      ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                      : 'bg-gray-50 text-muted hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-border-light/50 dark:border-border-dark/50 pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-text-light dark:text-text-dark">Metode Pembayaran</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: 'all', label: 'Semua Metode' },
+                { id: 'cash', label: 'Cash' },
+                { id: 'non_cash', label: 'Non-Cash' }
+              ].map(pm => (
+                <button
+                  key={pm.id}
+                  onClick={() => setPaymentFilter(pm.id)}
+                  className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${
+                    paymentFilter === pm.id 
+                      ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                      : 'bg-gray-50 text-muted hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {pm.label}
+                </button>
+              ))}
+            </div>
+          </div>
           
-          <div className="mt-8">
+          <div className="mt-8 border-t border-border-light/50 dark:border-border-dark/50 pt-6">
             <h3 className="font-bold text-text-light dark:text-text-dark mb-4 text-sm uppercase tracking-widest text-muted">Ringkasan Statistik</h3>
             <div className="space-y-4">
               <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20">
@@ -393,7 +466,7 @@ export default function AdminTransactions() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                  {filtered.map((order, i) => {
+                  {paginatedTransactions.map((order, i) => {
                     const itemsStr = formatOrderItems(order.order_items);
                     const truncItems = itemsStr.length > 30 ? itemsStr.substring(0, 30) + "..." : itemsStr;
                     return (
@@ -428,6 +501,53 @@ export default function AdminTransactions() {
               <div className="text-center py-16 flex flex-col items-center justify-center">
                 <Receipt className="w-16 h-16 text-muted mb-4 opacity-50" />
                 <p className="text-muted font-medium">Belum ada transaksi yang sesuai filter Anda.</p>
+              </div>
+            )}
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border-light dark:border-border-dark bg-gray-50/30 dark:bg-gray-800/10">
+                <span className="text-xs text-muted font-bold">
+                  Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filtered.length)} dari {filtered.length} transaksi
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 text-xs font-bold rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Sebelumnya
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, idx) => {
+                      const pageNum = idx + 1;
+                      if (pageNum === 1 || pageNum === totalPages || Math.abs(pageNum - currentPage) <= 1) {
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-8 h-8 text-xs font-bold rounded-xl transition-all ${
+                              currentPage === pageNum
+                                ? 'bg-primary text-white'
+                                : 'bg-transparent text-muted hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      }
+                      if (pageNum === 2 || pageNum === totalPages - 1) {
+                        return <span key={pageNum} className="text-xs text-muted">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 text-xs font-bold rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
               </div>
             )}
           </div>

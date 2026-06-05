@@ -61,6 +61,9 @@ export async function GET(request: Request) {
   const isIdToken = searchParams.get('idtoken') === 'true';
   const userIdParam = searchParams.get('userId');
   const next = searchParams.get('next') ?? '/customer/dashboard';
+  
+  // Track cookies to propagate them to NextResponse.redirect
+  const responseCookies: { name: string; value: string; options: any }[] = [];
 
   // Silently collect IP & device info
   const ipAddress = getClientIp(request);
@@ -134,9 +137,10 @@ export async function GET(request: Request) {
           },
           setAll(cookiesToSet) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+                responseCookies.push({ name, value, options });
+              });
             } catch {
               // The setAll method was called from a Server Component.
             }
@@ -175,7 +179,11 @@ export async function GET(request: Request) {
               await sendWelcomeEmail(resendKey, userEmail, fullName, ipAddress, deviceInfo);
             }
             
-            return NextResponse.redirect(`${originUrl}/customer/dashboard`);
+            const response = NextResponse.redirect(`${originUrl}/customer/dashboard`);
+            responseCookies.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+            return response;
           } else {
             const role = profile.role || 'customer';
 
@@ -183,7 +191,11 @@ export async function GET(request: Request) {
               await sendLoginNotificationEmail(resendKey, userEmail, profile.full_name || fullName, ipAddress, deviceInfo, 'Google OAuth');
             }
 
-            return NextResponse.redirect(`${originUrl}/${role}/dashboard`);
+            const response = NextResponse.redirect(`${originUrl}/${role}/dashboard`);
+            responseCookies.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+            return response;
           }
         }
       }
@@ -193,7 +205,11 @@ export async function GET(request: Request) {
   }
 
   // Return the user to an error page or home if something goes wrong
-  return NextResponse.redirect(`${originUrl}/login?error=OAuthCallbackError`);
+  const response = NextResponse.redirect(`${originUrl}/login?error=OAuthCallbackError`);
+  responseCookies.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options);
+  });
+  return response;
 }
 
 // ── Helper: Send Welcome Email ──

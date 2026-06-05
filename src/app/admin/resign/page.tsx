@@ -451,6 +451,19 @@ export default function AdminResignPage() {
   return (
     <div className="p-8 pb-24 max-w-7xl mx-auto space-y-8 print:p-0 print:pb-0">
       
+      {/* Print Only Header */}
+      <div className="hidden print:block mb-8 border-b-2 border-slate-800 pb-4">
+        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-wide">
+          Laporan Manajemen Resign & Pemecatan
+        </h1>
+        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
+          RestoBook - Sistem Pemesanan Restoran
+        </p>
+        <p className="text-[10px] text-slate-400 mt-2">
+          Tanggal Cetak: {format(new Date(), "dd MMMM yyyy, HH:mm", { locale: id })} WIB
+        </p>
+      </div>
+
       {/* Title Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 print:hidden">
         <div>
@@ -1051,19 +1064,89 @@ export default function AdminResignPage() {
       {/* PRINT STYLING */}
       <style jsx global>{`
         @media print {
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          .print\\:hidden {
+          /* Sembunyikan chrome pembungkus dashboard */
+          aside,
+          header,
+          nav,
+          .print\\:hidden,
+          button {
             display: none !important;
           }
-          table {
-            border: 1px solid #ddd !important;
+
+          /* Hilangkan banner maintenance jika ada */
+          .bg-gradient-to-r.from-amber-500.to-orange-600 {
+            display: none !important;
           }
-          th, td {
-            border-bottom: 1px solid #ddd !important;
-            padding: 8px !important;
+
+          /* Hilangkan padding kiri layout utama agar laporan penuh */
+          .lg\\:pl-72 {
+            padding-left: 0 !important;
+          }
+          
+          /* Atur normalisasi halaman cetak */
+          body, html {
+            background: white !important;
+            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          /* Hilangkan efek bayangan dan warna latar gelap */
+          .bg-card-light, .dark\\:bg-card-dark, .bg-white, .dark\\:bg-gray-900, .bg-card-dark {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+
+          /* Pastikan tabel tidak terpotong (overflow visible) */
+          .overflow-x-auto, .overflow-hidden {
+            overflow: visible !important;
+            max-width: 100% !important;
+          }
+
+          /* Desain tabel yang rapi dan tegas */
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: 1.5px solid #000000 !important;
+            margin-top: 20px !important;
+          }
+          th {
+            background-color: #f1f5f9 !important;
+            color: #000000 !important;
+            font-weight: bold !important;
+            border: 1px solid #000000 !important;
+            padding: 10px 8px !important;
+            font-size: 11px !important;
+            text-transform: uppercase !important;
+          }
+          td {
+            border: 1px solid #64748b !important;
+            padding: 10px 8px !important;
+            font-size: 11px !important;
+            color: #000000 !important;
+          }
+
+          /* Layout kartu statistik khusus cetak */
+          .grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 15px !important;
+            margin-bottom: 20px !important;
+          }
+          .grid > div {
+            border: 1.5px solid #000000 !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            background-color: #f8fafc !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+          }
+          /* Sembunyikan ikon lingkaran di dalam kartu statistik saat cetak */
+          .grid > div > div:first-child {
+            display: none !important;
           }
         }
       `}</style>

@@ -1034,37 +1034,56 @@ export default function AdminSupportPage() {
     setNewMessage(text);
   };
 
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     try {
       if (tickets.length === 0) {
         toast.error("Tidak ada tiket untuk diekspor");
         return;
       }
 
-      // Prepare headers
-      const headers = ['Nomor Tiket', 'Pelanggan', 'Kategori', 'Urgensi', 'Sumber', 'Status', 'Tanggal Dibuat', 'SLA Deadline'];
-      const rows = tickets.map(t => [
-        t.ticket_number,
-        t.profiles?.full_name || 'Pelanggan',
-        t.category,
-        t.urgency,
-        t.source,
-        t.status,
-        format(new Date(t.created_at), "yyyy-MM-dd HH:mm"),
-        t.sla_deadline ? format(new Date(t.sla_deadline), "yyyy-MM-dd HH:mm") : '-'
-      ]);
+      const periodTitle = format(new Date(), "dd MMMM yyyy", { locale: localeId }).toUpperCase();
 
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
+      let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
+         <tr style="height: 40px;"><td colspan="9" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN TIKET PENGADUAN PELANGGAN RESTOBOOK (TANGGAL: ${periodTitle})</td></tr>
+         <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
+            <th style="border: 1px solid #d1d5db; padding: 5px;">No</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Nomor Tiket</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Pelanggan</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Kategori</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Urgensi</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Sumber</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Status</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Dibuat</th>
+            <th style="border: 1px solid #d1d5db; padding: 5px;">SLA Deadline</th>
+         </tr>`;
 
-      const encodedUri = encodeURI(csvContent);
+      tickets.forEach((t, idx) => {
+         tableHtml += `<tr style="height: 25px;">
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px;">${idx + 1}</td>
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px; font-family: monospace; font-weight: bold;">${t.ticket_number}</td>
+            <td style="border: 1px solid #d1d5db; padding: 5px;">${t.profiles?.full_name || "Pelanggan"}</td>
+            <td style="border: 1px solid #d1d5db; padding: 5px; text-transform: capitalize;">${t.category}</td>
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px; text-transform: uppercase; font-weight: bold;">${t.urgency}</td>
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px; text-transform: uppercase;">${t.source}</td>
+            <td style="border: 1px solid #d1d5db; padding: 5px;">${getStatusLabel(t.status)}</td>
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px;">${format(new Date(t.created_at), "yyyy-MM-dd HH:mm")}</td>
+            <td align="center" style="border: 1px solid #d1d5db; padding: 5px;">${t.sla_deadline ? format(new Date(t.sla_deadline), "yyyy-MM-dd HH:mm") : "-"}</td>
+         </tr>`;
+      });
+
+      tableHtml += `</table>`;
+
+      const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Tiket</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+
+      const blob = new Blob([template], { type: "application/vnd.ms-excel" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `laporan_pengaduan_restobook_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.href = url;
+      link.download = `laporan_pengaduan_restobook_${format(new Date(), "yyyyMMdd_HHmmss")}.xls`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Laporan berhasil diunduh dalam format CSV");
+      toast.success("Laporan berhasil diunduh dalam format Excel");
     } catch (e) {
       toast.error("Gagal mengekspor laporan");
     }
@@ -1135,10 +1154,10 @@ export default function AdminSupportPage() {
             <Settings className="w-4 h-4" /> {activeTab === 'settings' ? 'Lihat Tiket' : 'Pengaturan'}
           </button>
           <button
-            onClick={handleExportCSV}
+            onClick={handleExportExcel}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all text-sm shadow-md"
           >
-            <Download className="w-4 h-4" /> Ekspor CSV
+            <Download className="w-4 h-4" /> Ekspor Excel
           </button>
         </div>
       </div>

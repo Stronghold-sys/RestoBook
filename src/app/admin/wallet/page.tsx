@@ -288,33 +288,49 @@ export default function AdminWalletPage() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (customers.length === 0) {
       toast.error("Tidak ada data untuk diekspor");
       return;
     }
 
-    const headers = ["Nama Lengkap", "Email", "Nomor HP", "Status Dompet", "Status Blokir", "Saldo (Rp)", "Tanggal Registrasi"];
-    const rows = customers.map(c => [
-      c.full_name,
-      c.email || "-",
-      c.phone || "-",
-      c.wallet_status || "belum_aktif",
-      c.is_wallet_blocked ? "YA" : "TIDAK",
-      c.wallet_balance || 0,
-      c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm:ss") : "-"
-    ]);
+    const periodTitle = format(new Date(), "dd MMMM yyyy", { locale: localeId }).toUpperCase();
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(e => e.map(val => `"${val.toString().replace(/"/g, '""')}"`).join(","))
-    ].join("\n");
+    let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
+       <tr style="height: 40px;"><td colspan="8" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN DOMPETKU CUSTOMER (TANGGAL: ${periodTitle})</td></tr>
+       <tr style="background-color: #10b981; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
+          <th style="border: 1px solid #d1d5db; padding: 5px;">No</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Nama Lengkap</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Email</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Nomor HP</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Status Dompet</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Status Blokir</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Saldo Dompetku (Rp)</th>
+          <th style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Registrasi</th>
+       </tr>`;
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    customers.forEach((c, idx) => {
+       tableHtml += `<tr style="height: 25px;">
+          <td align="center" style="border: 1px solid #d1d5db; padding: 5px;">${idx + 1}</td>
+          <td style="border: 1px solid #d1d5db; padding: 5px;">${c.full_name}</td>
+          <td style="border: 1px solid #d1d5db; padding: 5px;">${c.email || "-"}</td>
+          <td style="border: 1px solid #d1d5db; padding: 5px;">${c.phone || "-"}</td>
+          <td align="center" style="border: 1px solid #d1d5db; padding: 5px; font-weight: bold; text-transform: uppercase;">${c.wallet_status || "belum_aktif"}</td>
+          <td align="center" style="border: 1px solid #d1d5db; padding: 5px; color: ${c.is_wallet_blocked ? "#dc2626" : "#16a34a"}; font-weight: bold;">${c.is_wallet_blocked ? "TERBLOKIR" : "AKTIF"}</td>
+          <td align="right" style="border: 1px solid #d1d5db; padding: 5px; font-weight: bold;">${Number(c.wallet_balance || 0).toLocaleString("id-ID")}</td>
+          <td align="center" style="border: 1px solid #d1d5db; padding: 5px;">${c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm:ss") : "-"}</td>
+       </tr>`;
+    });
+
+    tableHtml += `</table>`;
+
+    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Dompetku</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+    
+    const blob = new Blob([template], { type: "application/vnd.ms-excel" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `laporan_dompetku_${format(new Date(), "yyyyMMdd_HHmmss")}.csv`);
+    link.href = url;
+    link.download = `laporan_dompetku_${format(new Date(), "yyyyMMdd_HHmmss")}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -334,10 +350,10 @@ export default function AdminWalletPage() {
         </div>
         <div className="flex gap-3 self-start md:self-auto">
           <button
-            onClick={exportToCSV}
+            onClick={exportToExcel}
             className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition-all hover:scale-105"
           >
-            <FileSpreadsheet className="w-4 h-4" /> Ekspor CSV
+            <FileSpreadsheet className="w-4 h-4" /> Ekspor Excel
           </button>
           <button
             onClick={fetchWalletData}

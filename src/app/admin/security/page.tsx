@@ -112,6 +112,7 @@ export default function SecurityPage() {
   // Form States
   const [ipForm, setIpForm] = useState({ ip: "", type: "blacklist" as 'blacklist' | 'whitelist', reason: "", duration: "1440" });
   const [blockForm, setBlockForm] = useState({ fieldType: "email" as 'email' | 'browser' | 'device', value: "", reason: "" });
+  const [subnetForm, setSubnetForm] = useState({ subnet: "", reason: "", duration: "30" });
   
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -482,6 +483,140 @@ export default function SecurityPage() {
     );
   };
 
+  // Subnet & Fingerprint Manual/Quick Block Handlers
+  const handleManualSubnetBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subnetForm.subnet) return toast.error("Subnet wajib diisi");
+
+    try {
+      const durationMins = parseInt(subnetForm.duration);
+      const blockedUntil = isNaN(durationMins)
+        ? new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString()
+        : new Date(Date.now() + durationMins * 60 * 1000).toISOString();
+
+      const { error } = await supabase.from("security_subnet_blocks").upsert({
+        subnet: subnetForm.subnet.trim(),
+        reason: subnetForm.reason || "Diblokir manual oleh admin",
+        blocked_until: blockedUntil
+      }, { onConflict: 'subnet' });
+
+      if (error) throw error;
+
+      toast.success(`Subnet ${subnetForm.subnet} berhasil diblokir!`);
+      setSubnetForm({ subnet: "", reason: "", duration: "30" });
+      fetchSubnetBlocks();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memblokir subnet");
+    }
+  };
+
+  const handleRemoveSubnetBlock = async (id: string, subnet: string) => {
+    showConfirm(
+      "Konfirmasi Buka Cekal Subnet",
+      `Apakah Anda yakin ingin menghapus pencekalan untuk subnet ${subnet}?`,
+      async () => {
+        try {
+          const { error } = await supabase.from("security_subnet_blocks").delete().eq("id", id);
+          if (error) throw error;
+
+          toast.success(`Cekal subnet ${subnet} berhasil dihapus.`);
+          fetchSubnetBlocks();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal menghapus cekal subnet");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
+  const handleQuickBlockFingerprint = async (fingerprint: string) => {
+    showConfirm(
+      "Cekal Perangkat (Fingerprint)",
+      `Apakah Anda yakin ingin memblokir perangkat dengan fingerprint: ${fingerprint}?`,
+      async () => {
+        try {
+          const { error } = await supabase.from("security_block_rules").upsert({
+            field_type: 'device',
+            value: fingerprint.trim().toLowerCase(),
+            reason: `Cekal cepat perangkat (fingerprint)`
+          }, { onConflict: 'field_type,value' });
+
+          if (error) throw error;
+
+          toast.success(`Perangkat ${fingerprint} berhasil diblokir!`);
+          fetchBlockRules();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal memblokir perangkat");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
+  const handleRemoveFingerprintBlock = async (fingerprint: string) => {
+    const rule = blockRules.find(r => r.field_type === 'device' && r.value === fingerprint.trim().toLowerCase());
+    if (!rule) return toast.error("Aturan cekal tidak ditemukan");
+
+    showConfirm(
+      "Konfirmasi Buka Cekal Perangkat",
+      `Apakah Anda yakin ingin membuka cekal perangkat ${fingerprint}?`,
+      async () => {
+        try {
+          const { error } = await supabase.from("security_block_rules").delete().eq("id", rule.id);
+          if (error) throw error;
+
+          toast.success(`Cekal perangkat ${fingerprint} berhasil dibuka.`);
+          fetchBlockRules();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal menghapus cekal perangkat");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
+  const handleQuickBlockSubnet = async (ip: string) => {
+    let subnet = ip;
+    if (ip.includes('.')) {
+      const parts = ip.split('.');
+      if (parts.length >= 3) {
+        subnet = `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+      }
+    } else if (ip.includes(':')) {
+      const parts = ip.split(':');
+      if (parts.length >= 4) {
+        subnet = `${parts[0]}:${parts[1]}:${parts[2]}:${parts[3]}::/64`;
+      }
+    }
+
+    showConfirm(
+      "Cekal Subnet Cepat",
+      `Apakah Anda yakin ingin memblokir seluruh subnet ${subnet} selama 24 jam?`,
+      async () => {
+        try {
+          const blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          const { error } = await supabase.from("security_subnet_blocks").upsert({
+            subnet,
+            reason: `Cekal cepat subnet dari IP: ${ip}`,
+            blocked_until: blockedUntil
+          }, { onConflict: 'subnet' });
+
+          if (error) throw error;
+
+          toast.success(`Subnet ${subnet} berhasil diblokir selama 24 jam!`);
+          fetchSubnetBlocks();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal memblokir subnet");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
   // Filter & Search Logic
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
@@ -833,46 +968,92 @@ export default function SecurityPage() {
                         <th className="py-3 px-4">Pengguna</th>
                         <th className="py-3 px-4">Detail Perangkat</th>
                         <th className="py-3 px-4 text-center">Status</th>
+                        <th className="py-3 px-4 text-center">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredLogs.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-muted font-bold text-xs italic">
+                          <td colSpan={7} className="py-8 text-center text-muted font-bold text-xs italic">
                             Tidak ada log keamanan yang cocok.
                           </td>
                         </tr>
                       ) : (
-                        filteredLogs.map((log) => (
-                          <tr key={log.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
-                            <td className="py-3 px-4 font-mono text-muted text-[10px]" title={new Date(log.created_at).toLocaleString()}>
-                              {new Date(log.created_at).toLocaleTimeString('id-ID')}
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-0.5 rounded border text-[9px] font-black tracking-wide uppercase ${getActivityBadgeColor(log.activity)}`}>
-                                {log.activity}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
-                              {log.ip_address}
-                            </td>
-                            <td className="py-3 px-4 font-semibold">
-                              {log.full_name || <span className="text-muted italic">Guest</span>}
-                            </td>
-                            <td className="py-3 px-4 text-muted text-[11px]" title={log.user_agent || ''}>
-                              {log.device} • {log.browser}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                                log.status === 'success' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
-                                log.status === 'blocked' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400' :
-                                'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
-                              }`}>
-                                {log.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
+                        filteredLogs.map((log) => {
+                          const isIpBlocked = ipRules.some(r => r.ip_address === log.ip_address && r.rule_type === 'blacklist' && (!r.expires_at || new Date(r.expires_at) > new Date()));
+                          
+                          let logSubnet = log.ip_address;
+                          if (log.ip_address.includes('.')) {
+                            const p = log.ip_address.split('.');
+                            if (p.length >= 3) logSubnet = `${p[0]}.${p[1]}.${p[2]}.0/24`;
+                          } else if (log.ip_address.includes(':')) {
+                            const p = log.ip_address.split(':');
+                            if (p.length >= 4) logSubnet = `${p[0]}:${p[1]}:${p[2]}:${p[3]}::/64`;
+                          }
+                          const isSubnetBlocked = subnetBlocks.some(s => s.subnet === logSubnet && new Date(s.blocked_until) > new Date());
+
+                          return (
+                            <tr key={log.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
+                              <td className="py-3 px-4 font-mono text-muted text-[10px]" title={new Date(log.created_at).toLocaleString()}>
+                                {new Date(log.created_at).toLocaleTimeString('id-ID')}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-0.5 rounded border text-[9px] font-black tracking-wide uppercase ${getActivityBadgeColor(log.activity)}`}>
+                                  {log.activity}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
+                                {log.ip_address}
+                              </td>
+                              <td className="py-3 px-4 font-semibold">
+                                {log.full_name || <span className="text-muted italic">Guest</span>}
+                              </td>
+                              <td className="py-3 px-4 text-muted text-[11px]" title={log.user_agent || ''}>
+                                {log.device} • {log.browser}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                  log.status === 'success' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
+                                  log.status === 'blocked' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400' :
+                                  'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
+                                }`}>
+                                  {log.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  {isIpBlocked ? (
+                                    <span className="px-2 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black rounded-lg border border-rose-500/20">
+                                      IP Dicekal
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleQuickBlockIP(log.ip_address, log.activity || "Manual")}
+                                      className="px-2 py-1 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-950/30 text-[10px] font-black rounded-lg transition-all"
+                                      title="Cekal IP 24 Jam"
+                                    >
+                                      Cekal IP
+                                    </button>
+                                  )}
+
+                                  {isSubnetBlocked ? (
+                                    <span className="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black rounded-lg border border-amber-500/20">
+                                      Subnet Dicekal
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleQuickBlockSubnet(log.ip_address)}
+                                      className="px-2 py-1 border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-950/30 text-[10px] font-black rounded-lg transition-all"
+                                      title="Cekal Subnet 24 Jam"
+                                    >
+                                      Cekal Subnet
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -1357,6 +1538,63 @@ export default function SecurityPage() {
                   </div>
                 </div>
 
+                {/* Form Add Subnet Block */}
+                <form onSubmit={handleManualSubnetBlock} className="grid grid-cols-1 sm:grid-cols-4 gap-4 p-5 bg-gray-50 dark:bg-gray-900/60 border border-border-light dark:border-border-dark rounded-2xl">
+                  <div className="sm:col-span-1 space-y-1">
+                    <label htmlFor="subnet-address" className="text-[10px] font-black uppercase text-muted">Subnet IP Address</label>
+                    <input 
+                      id="subnet-address"
+                      type="text" 
+                      value={subnetForm.subnet}
+                      onChange={(e) => setSubnetForm(prev => ({ ...prev, subnet: e.target.value }))}
+                      placeholder="e.g. 175.158.55.0/24"
+                      className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Subnet Address"
+                      aria-label="Subnet Address"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1 space-y-1">
+                    <label htmlFor="subnet-duration" className="text-[10px] font-black uppercase text-muted">Masa Cekal</label>
+                    <select
+                      id="subnet-duration"
+                      value={subnetForm.duration}
+                      onChange={(e) => setSubnetForm(prev => ({ ...prev, duration: e.target.value }))}
+                      className="w-full py-2.5 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Pilih Durasi Masa Cekal Subnet"
+                    >
+                      <option value="30">30 Menit</option>
+                      <option value="120">2 Jam</option>
+                      <option value="1440">24 Jam</option>
+                      <option value="10080">7 Hari</option>
+                      <option value="permanent">Permanen</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-1 flex flex-col justify-end">
+                    <button 
+                      type="submit"
+                      className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/15"
+                    >
+                      <Plus className="w-4 h-4" /> Blokir Subnet
+                    </button>
+                  </div>
+
+                  <div className="sm:col-span-4 space-y-1">
+                    <label htmlFor="subnet-reason" className="text-[10px] font-black uppercase text-muted">Alasan Pemblokiran</label>
+                    <input 
+                      id="subnet-reason"
+                      type="text" 
+                      value={subnetForm.reason}
+                      onChange={(e) => setSubnetForm(prev => ({ ...prev, reason: e.target.value }))}
+                      placeholder="Contoh: DDoS flood attack dari ISP/subnet yang sama"
+                      className="w-full py-2 px-3 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none"
+                      title="Alasan Pemblokiran Subnet"
+                      aria-label="Alasan Pemblokiran Subnet"
+                    />
+                  </div>
+                </form>
+
                 {/* Subnet Blocks Table */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-black text-rose-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -1370,12 +1608,13 @@ export default function SecurityPage() {
                           <th className="py-3 px-4">Alasan Pemblokiran</th>
                           <th className="py-3 px-4">Diblokir Sampai</th>
                           <th className="py-3 px-4 text-center">Status</th>
+                          <th className="py-3 px-4 text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {subnetBlocks.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="py-6 text-center text-muted font-bold text-xs italic">
+                            <td colSpan={5} className="py-6 text-center text-muted font-bold text-xs italic">
                               Tidak ada subnet IP yang sedang diblokir saat ini.
                             </td>
                           </tr>
@@ -1398,6 +1637,15 @@ export default function SecurityPage() {
                                     {isExpired ? 'Expired' : 'Blocked'}
                                   </span>
                                 </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button 
+                                    onClick={() => handleRemoveSubnetBlock(block.id, block.subnet)}
+                                    className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 hover:text-rose-600 rounded-lg transition-all"
+                                    title="Buka Cekal Subnet"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
                               </tr>
                             );
                           })
@@ -1418,15 +1666,21 @@ export default function SecurityPage() {
                         <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-border-light dark:border-border-dark font-bold text-muted text-[10px] uppercase tracking-wider">
                           <th className="py-3 px-4">Fingerprint</th>
                           <th className="py-3 px-4">IP Address</th>
+                          <th className="py-3 px-4">
+                            <span className="flex items-center gap-1" title="Alamat MAC fisik tidak dapat diakses dari browser web karena alasan privasi dan keamanan sandbox. Sistem menggunakan Browser/Device Fingerprint sebagai alternatif pengenal perangkat yang unik.">
+                              MAC Address <Info className="w-3.5 h-3.5 text-muted" />
+                            </span>
+                          </th>
                           <th className="py-3 px-4">Geolokasi</th>
                           <th className="py-3 px-4">ASN / ISP</th>
                           <th className="py-3 px-4">Terakhir Digunakan</th>
+                          <th className="py-3 px-4 text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {fingerprintIps.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="py-6 text-center text-muted font-bold text-xs italic">
+                            <td colSpan={7} className="py-6 text-center text-muted font-bold text-xs italic">
                               Belum ada riwayat pemetaan sidik jari terekam.
                             </td>
                           </tr>
@@ -1439,6 +1693,9 @@ export default function SecurityPage() {
                               <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
                                 {rec.ip_address}
                               </td>
+                              <td className="py-3 px-4 font-semibold text-muted text-[10px] italic" title="Batasan Keamanan Sandbox: Browser tidak dapat membaca alamat MAC fisik.">
+                                N/A (Sandbox)
+                              </td>
                               <td className="py-3 px-4 font-semibold">
                                 {rec.city}, {rec.country}
                               </td>
@@ -1447,6 +1704,25 @@ export default function SecurityPage() {
                               </td>
                               <td className="py-3 px-4 font-mono text-muted text-[10px]">
                                 {new Date(rec.created_at).toLocaleString('id-ID')}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                {blockRules.some(r => r.field_type === 'device' && r.value === rec.fingerprint?.trim().toLowerCase()) ? (
+                                  <button 
+                                    onClick={() => handleRemoveFingerprintBlock(rec.fingerprint)}
+                                    className="px-2.5 py-1.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black rounded-lg border border-rose-500/20 transition-all hover:bg-rose-500/20"
+                                    title="Buka Cekal Perangkat"
+                                  >
+                                    Buka Cekal
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => handleQuickBlockFingerprint(rec.fingerprint)}
+                                    className="px-2.5 py-1.5 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-950/30 text-[10px] font-black rounded-lg transition-all"
+                                    title="Cekal Perangkat"
+                                  >
+                                    Cekal Perangkat
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))

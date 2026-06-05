@@ -22,6 +22,7 @@ import {
 // ── In-Memory Caches & Trackers ─────────────────────────────────────
 const ipBlacklistCache = new Map<string, { blocked: boolean; expiresAt: number; reason?: string }>();
 const roleCache = new Map<string, { role: string; expiresAt: number }>();
+const blockRulesCache = new Map<string, { blocked: boolean; expiresAt: number; reason?: string }>();
 const requestTracker = new Map<string, number[]>(); // DDoS tracking: ip -> timestamps
 const generalRateLimiter = new Map<string, { count: number; resetAt: number }>();
 
@@ -63,6 +64,47 @@ async function checkIPBlacklist(ip: string): Promise<{ blocked: boolean; reason?
     const reason = data?.reason || undefined;
 
     ipBlacklistCache.set(ip, {
+      blocked,
+      reason,
+      expiresAt: now + CACHE_TTL_MS
+    });
+
+    return { blocked, reason };
+  } catch {
+    return { blocked: false };
+  }
+}
+
+// ── Helper: Cek Block Rules (Fingerprint / Browser) dengan Cache ────
+async function checkBlockRules(fingerprint: string, browser: string): Promise<{ blocked: boolean; reason?: string }> {
+  const now = Date.now();
+  const cacheKey = `${fingerprint}:${browser}`;
+  const cached = blockRulesCache.get(cacheKey);
+  
+  if (cached && cached.expiresAt > now) {
+    return { blocked: cached.blocked, reason: cached.reason };
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+    
+    // Cek apakah ada record di security_block_rules yang memblokir fingerprint (device) atau browser
+    const { data, error } = await supabase
+      .from('security_block_rules')
+      .select('reason, field_type, value')
+      .in('field_type', ['device', 'browser'])
+      .in('value', [fingerprint, browser])
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return { blocked: false };
+    }
+
+    const blocked = !!data;
+    const reason = data?.reason || undefined;
+
+    blockRulesCache.set(cacheKey, {
       blocked,
       reason,
       expiresAt: now + CACHE_TTL_MS
@@ -230,6 +272,15 @@ function cleanupMemStore() {
       if (filtered.length === 0) requestTracker.delete(key);
       else requestTracker.set(key, filtered);
     });
+    Array.from(ipBlacklistCache.entries()).forEach(([key, entry]) => {
+      if (entry.expiresAt <= now) ipBlacklistCache.delete(key);
+    });
+    Array.from(roleCache.entries()).forEach(([key, entry]) => {
+      if (entry.expiresAt <= now) roleCache.delete(key);
+    });
+    Array.from(blockRulesCache.entries()).forEach(([key, entry]) => {
+      if (entry.expiresAt <= now) blockRulesCache.delete(key);
+    });
     lastCleanup = now;
   }
 }
@@ -288,6 +339,16 @@ export async function middleware(request: NextRequest) {
   if (blocked) {
     return new NextResponse(
       JSON.stringify({ error: `Akses IP ditolak oleh sistem keamanan: ${reason}` }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // D.2. Cek Fingerprint & Browser Blacklist
+  const { browser: clientBrowser } = parseUserAgent(userAgent);
+  const { blocked: isFpBlocked, reason: fpBlockReason } = await checkBlockRules(fingerprint, clientBrowser);
+  if (isFpBlocked) {
+    return new NextResponse(
+      JSON.stringify({ error: `Akses perangkat/browser Anda ditangguhkan oleh sistem keamanan: ${fpBlockReason || 'Pencekalan perangkat'}` }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
     );
   }

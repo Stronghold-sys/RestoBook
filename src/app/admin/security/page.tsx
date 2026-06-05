@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, ShieldCheck, Flame, UserX, Ban, Cpu, Server, 
-  MapPin, Globe, RefreshCw, Plus, Trash2, Search, Filter, AlertTriangle, CheckCircle, Info, X 
+  MapPin, Globe, RefreshCw, Plus, Trash2, Search, Filter, AlertTriangle, CheckCircle, Info, X,
+  Eye, EyeOff
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
@@ -113,6 +114,16 @@ export default function SecurityPage() {
   const [ipForm, setIpForm] = useState({ ip: "", type: "blacklist" as 'blacklist' | 'whitelist', reason: "", duration: "1440" });
   const [blockForm, setBlockForm] = useState({ fieldType: "email" as 'email' | 'browser' | 'device', value: "", reason: "" });
   const [subnetForm, setSubnetForm] = useState({ subnet: "", reason: "", duration: "30" });
+
+  // Visibility toggle state for sensitive data
+  const [visibility, setVisibility] = useState({
+    logs: false,
+    ip: false,
+    detail: false,
+    geo: false,
+    incidents: false,
+    rotating: false
+  });
   
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -920,7 +931,17 @@ export default function SecurityPage() {
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border-light dark:border-border-dark pb-4">
                   <div>
-                    <h2 className="text-lg font-black">Audit Log Keamanan Terkini</h2>
+                    <h2 className="text-lg font-black flex items-center gap-2">
+                      Audit Log Keamanan Terkini
+                      <button 
+                        type="button"
+                        onClick={() => setVisibility(prev => ({ ...prev, logs: !prev.logs }))}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                        title={visibility.logs ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                      >
+                        {visibility.logs ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                    </h2>
                     <p className="text-xs text-muted">Aktivitas terdeteksi oleh middleware dan didelegasikan secara otomatis.</p>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -1003,7 +1024,7 @@ export default function SecurityPage() {
                                 </span>
                               </td>
                               <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
-                                {log.ip_address}
+                                {visibility.logs ? log.ip_address : "*******"}
                               </td>
                               <td className="py-3 px-4 font-semibold">
                                 {log.full_name || <span className="text-muted italic">Guest</span>}
@@ -1071,7 +1092,17 @@ export default function SecurityPage() {
                 className="space-y-6"
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black">Manajemen Aturan IP Firewall</h2>
+                  <h2 className="text-lg font-black flex items-center gap-2">
+                    Manajemen Aturan IP Firewall
+                    <button 
+                      type="button"
+                      onClick={() => setVisibility(prev => ({ ...prev, ip: !prev.ip }))}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                      title={visibility.ip ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                    >
+                      {visibility.ip ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                  </h2>
                   <p className="text-xs text-muted">Tambahkan IP Address ke dalam blacklist (cekal akses) atau whitelist (izinkan bypass limit).</p>
                 </div>
 
@@ -1171,7 +1202,7 @@ export default function SecurityPage() {
                           return (
                             <tr key={rule.id} className={`border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all ${isExpired ? 'opacity-40 line-through' : ''}`}>
                               <td className="py-3.5 px-4 font-mono font-bold text-sm">
-                                {rule.ip_address}
+                                {visibility.ip ? rule.ip_address : "*******"}
                               </td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${rule.rule_type === 'blacklist' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-500/10' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-500/10'}`}>
@@ -1213,7 +1244,17 @@ export default function SecurityPage() {
                 className="space-y-6"
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black">Manajemen Pencekalan Detail</h2>
+                  <h2 className="text-lg font-black flex items-center gap-2">
+                    Manajemen Pencekalan Detail
+                    <button 
+                      type="button"
+                      onClick={() => setVisibility(prev => ({ ...prev, detail: !prev.detail }))}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                      title={visibility.detail ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                    >
+                      {visibility.detail ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                  </h2>
                   <p className="text-xs text-muted">Karantina akun atau bot secara spesifik berdasarkan email terdaftar, browser penyerang, atau merk perangkat.</p>
                 </div>
 
@@ -1298,7 +1339,7 @@ export default function SecurityPage() {
                               {rule.field_type}
                             </td>
                             <td className="py-3 px-4 font-bold text-sm text-rose-500 font-mono">
-                              {rule.value}
+                              {visibility.detail ? rule.value : "*******"}
                             </td>
                             <td className="py-3 px-4 text-muted">
                               {rule.reason || '-'}
@@ -1334,7 +1375,17 @@ export default function SecurityPage() {
                 className="space-y-6"
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black">Histori Geolokasi & Lokasi Login</h2>
+                  <h2 className="text-lg font-black flex items-center gap-2">
+                    Histori Geolokasi & Lokasi Login
+                    <button 
+                      type="button"
+                      onClick={() => setVisibility(prev => ({ ...prev, geo: !prev.geo }))}
+                      className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                      title={visibility.geo ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                    >
+                      {visibility.geo ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                  </h2>
                   <p className="text-xs text-muted">Daftar lokasi login terverifikasi per akun. Kombinasi kota/negara baru otomatis memicu notifikasi email.</p>
                 </div>
 
@@ -1361,9 +1412,11 @@ export default function SecurityPage() {
                           <tr key={rec.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
                             <td className="py-3 px-4">
                               <div className="font-bold text-text-light dark:text-text-dark">
-                                {rec.profiles?.full_name || 'Pengguna Tidak Diketahui'}
+                                {visibility.geo ? (rec.profiles?.full_name || 'Pengguna Tidak Diketahui') : "*******"}
                               </div>
-                              <div className="text-[10px] text-muted font-mono">{rec.profiles?.email || '-'}</div>
+                              <div className="text-[10px] text-muted font-mono">
+                                {visibility.geo ? (rec.profiles?.email || '-') : "*******"}
+                              </div>
                             </td>
                             <td className="py-3 px-4 font-semibold">
                               <span className="flex items-center gap-1.5">
@@ -1403,7 +1456,17 @@ export default function SecurityPage() {
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-black">Investigasi Insiden Keamanan</h2>
+                    <h2 className="text-lg font-black flex items-center gap-2">
+                      Investigasi Insiden Keamanan
+                      <button 
+                        type="button"
+                        onClick={() => setVisibility(prev => ({ ...prev, incidents: !prev.incidents }))}
+                        className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                        title={visibility.incidents ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                      >
+                        {visibility.incidents ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                    </h2>
                     <p className="text-xs text-muted">Bukti forensik serangan terdeteksi (SSRF, traversal, replay, VPN, brute force, dll).</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1454,7 +1517,7 @@ export default function SecurityPage() {
                               <div className="space-y-1">
                                 <div className="text-sm font-mono font-black text-text-light dark:text-text-dark flex items-center gap-1.5">
                                   <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-                                  {inc.ip_address}
+                                  {visibility.incidents ? inc.ip_address : "*******"}
                                 </div>
                                 <div className="text-[11px] text-muted font-semibold flex items-center gap-1">
                                   <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
@@ -1533,7 +1596,17 @@ export default function SecurityPage() {
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-black">Deteksi IP Rotating & Koordinasi Botnet</h2>
+                    <h2 className="text-lg font-black flex items-center gap-2">
+                      Deteksi IP Rotating & Koordinasi Botnet
+                      <button 
+                        type="button"
+                        onClick={() => setVisibility(prev => ({ ...prev, rotating: !prev.rotating }))}
+                        className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
+                        title={visibility.rotating ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                      >
+                        {visibility.rotating ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                    </h2>
                     <p className="text-xs text-muted">Pelacakan sidik jari unik (Unique Fingerprint) klien yang berganti-ganti IP Address serta pemblokiran subnet otomatis.</p>
                   </div>
                 </div>
@@ -1624,7 +1697,7 @@ export default function SecurityPage() {
                             return (
                               <tr key={block.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                                 <td className="py-3 px-4 font-mono font-bold text-sm text-rose-500">
-                                  {block.subnet}
+                                  {visibility.rotating ? block.subnet : "*******"}
                                 </td>
                                 <td className="py-3 px-4 text-muted">
                                   {block.reason || '-'}
@@ -1688,10 +1761,10 @@ export default function SecurityPage() {
                           fingerprintIps.map((rec: any) => (
                             <tr key={rec.id} className="border-b border-border-light dark:border-border-dark hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                               <td className="py-3 px-4 font-mono text-[11px] font-bold text-primary truncate max-w-[120px]" title={rec.fingerprint}>
-                                {rec.fingerprint}
+                                {visibility.rotating ? rec.fingerprint : "*******"}
                               </td>
                               <td className="py-3 px-4 font-mono font-bold text-text-light dark:text-text-dark">
-                                {rec.ip_address}
+                                {visibility.rotating ? rec.ip_address : "*******"}
                               </td>
                               <td className="py-3 px-4 font-semibold text-muted text-[10px] italic" title="Batasan Keamanan Sandbox: Browser tidak dapat membaca alamat MAC fisik.">
                                 N/A (Sandbox)

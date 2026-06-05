@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     // 1. Ambil Profil Karyawan untuk mendapatkan Profile ID-nya
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, role')
+      .select('id, role, created_at')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -99,8 +99,14 @@ export async function GET(request: Request) {
       const endTimeWIB = new Date(nowWIB);
       endTimeWIB.setHours(endH, endM, 0, 0);
 
-      // Jika sekarang sudah lewat jam selesai shift hari ini
-      if (nowWIB.getTime() > endTimeWIB.getTime()) {
+      // Proteksi real-time: Jangan tandai ALPHA jika shift berakhir sebelum akun dibuat atau shift ditugaskan
+      const profileCreatedTime = new Date(profile.created_at);
+      const assignmentCreatedTime = new Date(nextActiveCandidate.created_at);
+      const earliestValidTime = assignmentCreatedTime > profileCreatedTime ? assignmentCreatedTime : profileCreatedTime;
+      const earliestValidWIB = new Date(earliestValidTime.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+
+      // Jika sekarang sudah lewat jam selesai shift hari ini, dan shift selesai setelah waktu bergabung/ditugaskan
+      if (endTimeWIB.getTime() >= earliestValidWIB.getTime() && nowWIB.getTime() > endTimeWIB.getTime()) {
         const { data: attendanceRecs } = await supabase
           .from('attendance')
           .select('id, type')

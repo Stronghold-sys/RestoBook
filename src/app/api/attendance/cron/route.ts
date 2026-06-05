@@ -302,10 +302,40 @@ async function processAutoAlpha() {
              a.substitute_date === alphaDateStr
       );
 
-      const hasValidSchedule = !!(subAssignmentCheck || (regAssignmentCheck && !isReplacedCheck));
+      let hasValidSchedule = !!(subAssignmentCheck || (regAssignmentCheck && !isReplacedCheck));
+      let activeAssignment = null;
+      if (subAssignmentCheck) {
+        activeAssignment = subAssignmentCheck;
+      } else if (regAssignmentCheck && !isReplacedCheck) {
+        activeAssignment = regAssignmentCheck;
+      }
 
-      // Jika tidak ada jadwal valid pada tanggal itu → alpha ini adalah ORPHAN → hapus!
-      if (!hasValidSchedule) {
+      let isBeforeEarliestDate = false;
+      let earliestDateReason = '';
+      if (activeAssignment) {
+        const assignmentCreatedDate = activeAssignment.created_at
+          ? activeAssignment.created_at.split('T')[0]
+          : null;
+        const profileCreatedDate = alphaProfile.created_at
+          ? alphaProfile.created_at.split('T')[0]
+          : null;
+
+        const earliestValidDate = assignmentCreatedDate && profileCreatedDate
+          ? (assignmentCreatedDate > profileCreatedDate ? assignmentCreatedDate : profileCreatedDate)
+          : (assignmentCreatedDate || profileCreatedDate || '2000-01-01');
+
+        if (alphaDateStr < earliestValidDate) {
+          isBeforeEarliestDate = true;
+          earliestDateReason = `Tanggal alpha (${alphaDateStr}) sebelum bergabung/mulai penugasan terawal (${earliestValidDate})`;
+        }
+      }
+
+      // Jika tidak ada jadwal valid pada tanggal itu ATAU tanggal alpha mendahului shift/profil dibuat → alpha ini adalah ORPHAN → hapus!
+      if (!hasValidSchedule || isBeforeEarliestDate) {
+        const deleteReason = isBeforeEarliestDate 
+          ? earliestDateReason 
+          : 'Jadwal kerja dihapus oleh admin atau karyawan tidak lagi ditugaskan';
+
         const { error: delAlphaErr } = await supabaseAdmin
           .from('attendance')
           .delete()
@@ -322,7 +352,7 @@ async function processAutoAlpha() {
             data_before: {
               attendance_id: alphaRecord.id,
               date: alphaDateStr,
-              reason: 'Jadwal kerja dihapus oleh admin atau karyawan tidak lagi ditugaskan'
+              reason: deleteReason
             },
             data_after: null,
             ip_address: '127.0.0.1',
@@ -333,7 +363,7 @@ async function processAutoAlpha() {
           deletedAlphaList.push({
             employee_name: alphaProfile.full_name,
             date: alphaDateStr,
-            reason: 'no_valid_schedule'
+            reason: isBeforeEarliestDate ? 'before_earliest_date' : 'no_valid_schedule'
           });
         } else {
           console.error(`Gagal menghapus alpha orphan ID ${alphaRecord.id}:`, delAlphaErr);

@@ -270,6 +270,62 @@ export async function POST(req: NextRequest) {
             const profileId = customer.id;
             const userId = customer.user_id;
 
+            // Hapus data penukaran hadiah & transaksi poin loyalitas
+            await supabaseAdmin.from('reward_redemptions').delete().eq('customer_id', profileId);
+            await supabaseAdmin.from('point_transactions').delete().eq('customer_id', profileId);
+
+            // Hapus data klaim voucher pelanggan
+            await supabaseAdmin.from('customer_vouchers').delete().eq('customer_id', profileId);
+
+            // Hapus pengajuan aktivasi Dompetku & log terkait
+            await supabaseAdmin.from('wallet_activation_logs').delete().eq('profile_id', profileId);
+            await supabaseAdmin.from('wallet_activations').delete().eq('profile_id', profileId);
+            await supabaseAdmin.from('wallet_audit_logs').delete().eq('customer_id', profileId);
+
+            // Hapus tiket pengaduan (support tickets) beserta pesannya
+            const { data: tickets } = await supabaseAdmin
+              .from('support_tickets')
+              .select('id')
+              .eq('customer_id', profileId);
+            
+            if (tickets && tickets.length > 0) {
+              const ticketIds = tickets.map((t: any) => t.id);
+              await supabaseAdmin.from('ticket_messages').delete().in('ticket_id', ticketIds);
+            }
+            await supabaseAdmin.from('ticket_messages').delete().eq('sender_id', profileId);
+            await supabaseAdmin.from('support_tickets').delete().eq('customer_id', profileId);
+
+            // Hapus chat pesanan (order_chats) beserta pesannya & orders/items
+            const { data: orders } = await supabaseAdmin
+              .from('orders')
+              .select('id')
+              .eq('customer_id', profileId);
+
+            if (orders && orders.length > 0) {
+              const orderIds = orders.map((o: any) => o.id);
+              
+              // Dapatkan chat pesanan terkait orders tersebut
+              const { data: orderChats } = await supabaseAdmin
+                .from('order_chats')
+                .select('id')
+                .in('order_id', orderIds);
+
+              if (orderChats && orderChats.length > 0) {
+                const chatIds = orderChats.map((c: any) => c.id);
+                await supabaseAdmin.from('order_chat_messages').delete().in('chat_id', chatIds);
+              }
+              
+              await supabaseAdmin.from('order_chat_messages').delete().eq('sender_id', profileId);
+              await supabaseAdmin.from('order_chats').delete().in('order_id', orderIds);
+              
+              // Hapus order_items
+              await supabaseAdmin.from('order_items').delete().in('order_id', orderIds);
+            }
+            
+            // Hapus sisa chat pesanan yang merujuk langsung ke customer_id
+            await supabaseAdmin.from('order_chats').delete().eq('customer_id', profileId);
+            await supabaseAdmin.from('orders').delete().eq('customer_id', profileId);
+
             // Hapus ulasan
             await supabaseAdmin.from('reviews').delete().eq('customer_id', profileId);
 
@@ -286,18 +342,6 @@ export async function POST(req: NextRequest) {
             if (userId) {
               await supabaseAdmin.from('security_user_sessions').delete().eq('user_id', userId);
             }
-
-            // Hapus order items & orders
-            const { data: orders } = await supabaseAdmin
-              .from('orders')
-              .select('id')
-              .eq('customer_id', profileId);
-
-            if (orders && orders.length > 0) {
-              const orderIds = orders.map((o: any) => o.id);
-              await supabaseAdmin.from('order_items').delete().in('order_id', orderIds);
-            }
-            await supabaseAdmin.from('orders').delete().eq('customer_id', profileId);
 
             // Hapus reservasi
             await supabaseAdmin.from('reservations').delete().eq('customer_id', profileId);

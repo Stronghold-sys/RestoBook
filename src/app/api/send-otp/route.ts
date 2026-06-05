@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logSecurity, parseUserAgent } from '@/lib/security';
-import { getEmergencySettings, logSecurityIncident } from '../../../lib/securityHardening';
+import { getEmergencySettings, isDisposableEmail, logSecurityIncident } from '../../../lib/securityHardening';
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -43,6 +43,20 @@ export async function POST(req: NextRequest) {
     }
 
     let { email, phone, type, method = 'email', name } = body;
+
+    // 1.2 Cek disposable email (untuk pendaftaran baru)
+    if (type === 'registration' && email && (await isDisposableEmail(email))) {
+      await logSecurityIncident({
+        ipAddress,
+        endpoint,
+        attackType: 'DISPOSABLE_EMAIL_OTP_BLOCKED',
+        severity: 'medium',
+        payload: { email }
+      });
+      return NextResponse.json({
+        error: 'Email yang Anda gunakan terdeteksi sebagai email sementara / sekali pakai. Demi keamanan, pendaftaran tidak dapat diproses. Silakan gunakan email aktif pribadi Anda.'
+      }, { status: 400 });
+    }
 
     // 1. Check Emergency Mode
     const emergency = await getEmergencySettings();

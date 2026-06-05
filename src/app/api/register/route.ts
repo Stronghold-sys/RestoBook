@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1.5 Cek disposable email
-    if (email && isDisposableEmail(email)) {
+    if (email && (await isDisposableEmail(email))) {
       await logSecurityIncident({
         ipAddress,
         endpoint,
@@ -48,7 +48,9 @@ export async function POST(req: NextRequest) {
         severity: 'medium',
         payload: { email }
       });
-      return NextResponse.json({ error: 'Permintaan tidak dapat diproses.' }, { status: 400 });
+      return NextResponse.json({
+        error: 'Email yang Anda gunakan terdeteksi sebagai email sementara / sekali pakai. Demi keamanan, pendaftaran tidak dapat diproses. Silakan gunakan email aktif pribadi Anda.'
+      }, { status: 400 });
     }
 
     // 2. Bot detection via User Agent

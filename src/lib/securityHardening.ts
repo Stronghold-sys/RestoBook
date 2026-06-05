@@ -5,7 +5,13 @@ import { getSupabaseAdmin } from './supabase/admin';
 const DISPOSABLE_EMAIL_DOMAINS = [
   'mailinator.com', 'yopmail.com', 'tempmail.com', 'temp-mail.org', 
   'dispostable.com', 'sharklasers.com', 'guerrillamail.com', '10minutemail.com',
-  'getairmail.com', 'throwawaymail.com', 'tempmailaddress.com', 'maildrop.cc'
+  'getairmail.com', 'throwawaymail.com', 'tempmailaddress.com', 'maildrop.cc',
+  'mailnesia.com', 'mailcatch.com', 'burncmail.com', 'trashmail.com',
+  'spam4.me', 'grr.la', 'pokemail.net', 'duck.com', 'generator.email',
+  'temp-mail.com', 'temp-mail.ru', 'tempmail.de', 'disposable.com',
+  'mytempemail.com', 'boun.cr', 'mailinator2.com', 'sogetthis.com',
+  'mailinatorshitty.com', 'spamherelots.com', 'thisisnotmyrealemail.com',
+  'spambob.com', 'trbvm.com', 'guerrillamailblock.com', 'guerrillamail.biz'
 ];
 
 // ── 2. Real Client IP Detection & Spoofing Prevention ─────────────────
@@ -459,10 +465,64 @@ export async function logSecurityIncident(event: {
 }
 
 // ── 11. Cek Email Sekali Pakai (Disposable Email Check) ───────────────
-export function isDisposableEmail(email: string): boolean {
+export async function isDisposableEmail(email: string): Promise<boolean> {
   if (!email || !email.includes('@')) return false;
-  const domain = email.split('@')[1].toLowerCase().trim();
-  return DISPOSABLE_EMAIL_DOMAINS.includes(domain);
+  
+  const cleanEmail = email.trim().toLowerCase();
+  const domain = cleanEmail.split('@')[1];
+
+  // A. Pengecekan terhadap local blacklist
+  if (DISPOSABLE_EMAIL_DOMAINS.includes(domain)) {
+    return true;
+  }
+
+  // B. DNS MX Check via Cloudflare DNS over HTTPS (DoH) API
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+    
+    const dohUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`;
+    const dohRes = await fetch(dohUrl, {
+      headers: { 'Accept': 'application/dns-json' },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (dohRes.ok) {
+      const dnsData = await dohRes.json();
+      const hasMx = dnsData.Answer && dnsData.Answer.some((ans: any) => ans.type === 15);
+      if (!hasMx) {
+        console.warn(`[SECURITY] Blocked domain ${domain} due to missing MX record.`);
+        return true; 
+      }
+    }
+  } catch (dnsErr) {
+    console.error('DNS DoH MX check failed:', dnsErr);
+  }
+
+  // C. Pengecekan Pihak Ketiga via Kickbox Disposable Email API
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+    
+    const kickboxUrl = `https://open.kickbox.com/v1/disposable/${encodeURIComponent(domain)}`;
+    const kickboxRes = await fetch(kickboxUrl, { signal: controller.signal });
+    
+    clearTimeout(timeoutId);
+    
+    if (kickboxRes.ok) {
+      const kbData = await kickboxRes.json();
+      if (kbData.disposable === true) {
+        console.warn(`[SECURITY] Blocked domain ${domain} identified as disposable by Kickbox API.`);
+        return true;
+      }
+    }
+  } catch (apiErr) {
+    console.error('Kickbox API check failed:', apiErr);
+  }
+
+  return false;
 }
 
 // ── 12. FNV-1a Fast Hash Helper ───────────────────────────────────────

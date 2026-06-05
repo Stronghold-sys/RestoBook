@@ -136,6 +136,9 @@ export async function POST(req: NextRequest) {
     // Hapus notifikasi pelanggan
     await supabaseAdmin.from('notifications').delete().eq('user_id', profileId);
 
+    // Set cashier_id to null on orders processed by this user
+    await supabaseAdmin.from('orders').update({ cashier_id: null }).eq('cashier_id', profileId);
+
     // 9. Kirim email perpisahan SEBELUM menghapus akun auth
     if (userEmail) {
       await sendFarewellEmail(userEmail, userName || 'Pengguna', loginMethod);

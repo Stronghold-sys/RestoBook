@@ -350,6 +350,9 @@ export async function POST(req: NextRequest) {
             // Hapus notifikasi
             await supabaseAdmin.from('notifications').delete().eq('user_id', profileId);
 
+            // Set cashier_id to null on orders processed by this user
+            await supabaseAdmin.from('orders').update({ cashier_id: null }).eq('cashier_id', profileId);
+
             // Kirim email perpisahan
             if (emailToSend) {
               try {
@@ -402,6 +405,16 @@ export async function POST(req: NextRequest) {
         }
       })
     );
+
+    const failures = results.filter(r => !r.success);
+    if (failures.length > 0) {
+      const errorMsg = failures.map(f => `${f.id}: ${f.error}`).join(', ');
+      return NextResponse.json({
+        success: false,
+        error: `Gagal memproses beberapa pelanggan: ${errorMsg}`,
+        results
+      }, { status: 400 });
+    }
 
     return NextResponse.json({ success: true, results });
   } catch (error: any) {

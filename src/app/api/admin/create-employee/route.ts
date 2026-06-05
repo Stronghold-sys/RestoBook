@@ -97,7 +97,13 @@ async function generatePDFBase64(emp: any) {
   doc.text("*Password wajib diganti saat login pertama demi keamanan akun.", 14, 195);
   doc.text("*Gunakan No. ID Karyawan, Username atau Email Anda untuk masuk ke sistem.", 14, 202);
 
-  return doc.output('datauristring').split(',')[1];
+  const pdfBuffer = doc.output('arraybuffer');
+  const uint8 = new Uint8Array(pdfBuffer);
+  let pdfBinary = '';
+  for (let i = 0; i < uint8.byteLength; i++) {
+    pdfBinary += String.fromCharCode(uint8[i]);
+  }
+  return btoa(pdfBinary);
 }
 
 export async function POST(req: Request) {

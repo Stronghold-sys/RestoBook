@@ -95,6 +95,48 @@ export default function SpotlightTutorial() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isTutorialActive, currentStep, steps, vw, vh, updateCoords]);
 
+  // Scroll target element into view when currentStep changes (handles overflow-y scroll container)
+  useEffect(() => {
+    if (!isTutorialActive || steps.length === 0) return;
+    const step = steps[currentStep];
+
+    const scrollIntoViewWithRetry = () => {
+      const isMobile = window.innerWidth < 1024;
+      const isSidebarStep =
+        step.targetSelector.startsWith('[data-tour="nav-') ||
+        step.targetSelector === '[data-tour="logout-button"]';
+
+      let element: Element | null = null;
+      if (isMobile && isSidebarStep) {
+        // Find visible element among all matches (mobile drawer vs desktop sidebar)
+        const all = Array.from(document.querySelectorAll(step.targetSelector));
+        for (const el of all) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 || r.height > 0) {
+            element = el;
+            break;
+          }
+        }
+      } else {
+        element = document.querySelector(step.targetSelector);
+      }
+
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    };
+
+    // Run immediately and again with short delays to account for animation & render lag
+    scrollIntoViewWithRetry();
+    const timer = setTimeout(scrollIntoViewWithRetry, 100);
+    const timer2 = setTimeout(scrollIntoViewWithRetry, 300);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(timer2);
+    };
+  }, [isTutorialActive, currentStep, steps]);
+
   if (!isTutorialActive || steps.length === 0) return null;
 
   const activeStep = steps[currentStep];

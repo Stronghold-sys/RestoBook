@@ -6,3 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[vars]
+DEBOUNCE_API_KEY = "6a234d17735c9"

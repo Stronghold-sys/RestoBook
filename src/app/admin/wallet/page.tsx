@@ -298,15 +298,15 @@ export default function AdminWalletPage() {
 
     let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
        <tr style="height: 40px;"><td colspan="8" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN DOMPETKU CUSTOMER (TANGGAL: ${periodTitle})</td></tr>
-       <tr style="background-color: #10b981; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
-          <th style="border: 1px solid #d1d5db; padding: 5px;">No</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Nama Lengkap</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Email</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Nomor HP</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Status Dompet</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Status Blokir</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Saldo Dompetku (Rp)</th>
-          <th style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Registrasi</th>
+       <tr style="height: 30px; text-align: center;">
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">No</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Nama Lengkap</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Email</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Nomor HP</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Status Dompet</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Status Blokir</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Saldo Dompetku (Rp)</th>
+          <th class="wallet-header" style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Registrasi</th>
        </tr>`;
 
     customers.forEach((c, idx) => {
@@ -324,7 +324,7 @@ export default function AdminWalletPage() {
 
     tableHtml += `</table>`;
 
-    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Dompetku</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>.wallet-header { background-color: #10b981; color: #ffffff; font-weight: bold; }</style><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Dompetku</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
     
     const blob = new Blob([template], { type: "application/vnd.ms-excel" });
     const url = URL.createObjectURL(blob);

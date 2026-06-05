@@ -1112,7 +1112,7 @@ export default function AdvancedPayrollPage() {
 
       let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
          <tr style="height: 35px;"><td colspan="24" align="center" style="font-size: 16px; font-weight: bold;">REKAP GAJI ${periodTitle}</td></tr>
-         <tr style="background-color: #d1d5db; color: #000000; font-weight: bold; height: 30px;">
+         <tr class="header-row">
             <th>No</th>
             <th>Nama Karyawan</th>
             <th>NIK</th>
@@ -1128,14 +1128,14 @@ export default function AdvancedPayrollPage() {
             <th>Bonus Kinerja</th>
             <th>Insentif Khusus</th>
             <th>Ket. Insentif</th>
-            <th style="border: 2px solid black;">Gaji Kotor</th>
+            <th class="border-bold">Gaji Kotor</th>
             <th>Kasbon</th>
             <th>Denda</th>
             <th>Denda Telat</th>
             <th>Potongan Lainnya</th>
             <th>Ket. Potongan</th>
-            <th style="background-color: #d1d5db; border: 2px solid black;">Total Potongan</th>
-            <th style="background-color: #d1d5db; border: 2px solid black;">Gaji Bersih</th>
+            <th class="summary-bg border-bold">Total Potongan</th>
+            <th class="summary-bg border-bold">Gaji Bersih</th>
             <th>Status</th>
          </tr>`;
 
@@ -1168,7 +1168,7 @@ export default function AdvancedPayrollPage() {
          </tr>`;
       });
 
-      tableHtml += `<tr style="background-color: #d1d5db; font-weight: bold; height: 30px;">
+      tableHtml += `<tr class="total-row">
          <td colspan="7" align="center">TOTAL</td>
          <td>${sP.toLocaleString('id-ID')}</td>
          <td>${sL.toLocaleString('id-ID')}</td>
@@ -1178,20 +1178,20 @@ export default function AdvancedPayrollPage() {
          <td>${sB.toLocaleString('id-ID')}</td>
          <td>${sI.toLocaleString('id-ID')}</td>
          <td></td>
-         <td style="border: 2px solid black;">${sBr.toLocaleString('id-ID')}</td>
+         <td class="border-bold">${sBr.toLocaleString('id-ID')}</td>
          <td>${sK.toLocaleString('id-ID')}</td>
          <td>${sD.toLocaleString('id-ID')}</td>
          <td>${sDt.toLocaleString('id-ID')}</td>
          <td>${sPl.toLocaleString('id-ID')}</td>
          <td></td>
-         <td style="border: 2px solid black;">${sPo.toLocaleString('id-ID')}</td>
-         <td style="border: 2px solid black;">${sN.toLocaleString('id-ID')}</td>
+         <td class="border-bold">${sPo.toLocaleString('id-ID')}</td>
+         <td class="border-bold">${sN.toLocaleString('id-ID')}</td>
          <td></td>
       </tr>`;
 
       tableHtml += `</table>`;
 
-      const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+      const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>.header-row { height: 30px; } .header-row th { background-color: #d1d5db; color: #000000; font-weight: bold; } th { padding: 5px; border: 1px solid #cbd5e1; } .summary-bg { background-color: #d1d5db; } .border-bold { border: 2px solid black !important; } .total-row { font-weight: bold; height: 30px; } .total-row td { background-color: #d1d5db; border: 1px solid black; }</style><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
       const blob = new Blob([template], { type: 'application/vnd.ms-excel' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1267,7 +1267,7 @@ export default function AdvancedPayrollPage() {
 
          let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
             <tr style="height: 35px;"><td colspan="24" align="center" style="font-size: 16px; font-weight: bold;">LAPORAN KESELURUHAN SEJARAH GAJI RESTOBOOK</td></tr>
-            <tr style="background-color: #d1d5db; color: #000000; font-weight: bold; height: 30px;">
+            <tr class="header-row">
                <th>No</th>
                <th>Nama Karyawan</th>
                <th>NIK</th>
@@ -1283,14 +1283,14 @@ export default function AdvancedPayrollPage() {
                <th>Bonus Kinerja</th>
                <th>Insentif Khusus</th>
                <th>Ket. Insentif</th>
-               <th style="border: 2px solid black;">Gaji Kotor</th>
+               <th class="border-bold">Gaji Kotor</th>
                <th>Kasbon</th>
                <th>Denda</th>
                <th>Denda Telat</th>
                <th>Potongan Lainnya</th>
                <th>Ket. Potongan</th>
-               <th style="background-color: #d1d5db; border: 2px solid black;">Total Potongan</th>
-               <th style="background-color: #d1d5db; border: 2px solid black;">Gaji Bersih</th>
+               <th class="summary-bg border-bold">Total Potongan</th>
+               <th class="summary-bg border-bold">Gaji Bersih</th>
                <th>Status</th>
             </tr>`;
 
@@ -1323,7 +1323,7 @@ export default function AdvancedPayrollPage() {
             </tr>`;
          });
 
-         tableHtml += `<tr style="background-color: #d1d5db; font-weight: bold; height: 30px;">
+         tableHtml += `<tr class="total-row">
             <td colspan="7" align="center">TOTAL</td>
             <td>${sP.toLocaleString('id-ID')}</td>
             <td>${sL.toLocaleString('id-ID')}</td>
@@ -1333,20 +1333,20 @@ export default function AdvancedPayrollPage() {
             <td>${sB.toLocaleString('id-ID')}</td>
             <td>${sI.toLocaleString('id-ID')}</td>
             <td></td>
-            <td style="border: 2px solid black;">${sBr.toLocaleString('id-ID')}</td>
+            <td class="border-bold">${sBr.toLocaleString('id-ID')}</td>
             <td>${sK.toLocaleString('id-ID')}</td>
             <td>${sD.toLocaleString('id-ID')}</td>
             <td>${sDt.toLocaleString('id-ID')}</td>
             <td>${sPl.toLocaleString('id-ID')}</td>
             <td></td>
-            <td style="border: 2px solid black;">${sPo.toLocaleString('id-ID')}</td>
-            <td style="border: 2px solid black;">${sN.toLocaleString('id-ID')}</td>
+            <td class="border-bold">${sPo.toLocaleString('id-ID')}</td>
+            <td class="border-bold">${sN.toLocaleString('id-ID')}</td>
             <td></td>
          </tr>`;
 
          tableHtml += `</table>`;
 
-         const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Riwayat</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+         const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>.header-row { height: 30px; } .header-row th { background-color: #d1d5db; color: #000000; font-weight: bold; } th { padding: 5px; border: 1px solid #cbd5e1; } .summary-bg { background-color: #d1d5db; } .border-bold { border: 2px solid black !important; } .total-row { font-weight: bold; height: 30px; } .total-row td { background-color: #d1d5db; border: 1px solid black; }</style><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Riwayat</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
          
          const blob = new Blob([template], { type: 'application/vnd.ms-excel' });
          const url = URL.createObjectURL(blob);

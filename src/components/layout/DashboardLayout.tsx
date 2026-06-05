@@ -599,7 +599,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       <div className="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen transition-colors duration-300">
         
         {/* Desktop Sidebar */}
-        <aside className="fixed left-0 top-0 hidden h-full w-72 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark lg:block z-40">
+        <aside className="fixed left-0 top-0 hidden h-full w-72 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark lg:block z-40 print:hidden">
           <div className="flex h-full flex-col p-6">
             <button
               onClick={handleLogoClick}
@@ -660,9 +660,9 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         </aside>
 
         {/* Main Content */}
-        <div className="lg:pl-72 min-h-screen flex flex-col">
+        <div className="lg:pl-72 print:pl-0 min-h-screen flex flex-col">
           {/* Header */}
-          <header className={`sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl ${isTutorialActive ? "pointer-events-none" : ""}`}>
+          <header className={`sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl print:hidden ${isTutorialActive ? "pointer-events-none" : ""}`}>
             <div className="flex items-center gap-4 lg:hidden">
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -735,7 +735,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           </header>
 
           {maintenanceSettings.is_maintenance_active && (
-            <div className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 px-6 font-bold text-xs sm:text-sm flex items-center justify-between gap-4 shadow-md border-b border-orange-500/25 z-20">
+            <div className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 px-6 font-bold text-xs sm:text-sm flex items-center justify-between gap-4 shadow-md border-b border-orange-500/25 z-20 print:hidden">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 animate-pulse flex-shrink-0" />
                 <span>
@@ -836,7 +836,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden"
+                className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden print:hidden"
               >
                 <div className="mb-10 flex items-center justify-between px-2">
                   <button

@@ -1045,16 +1045,16 @@ export default function AdminSupportPage() {
 
       let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
          <tr style="height: 40px;"><td colspan="9" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN TIKET PENGADUAN PELANGGAN RESTOBOOK (TANGGAL: ${periodTitle})</td></tr>
-         <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
-            <th style="border: 1px solid #d1d5db; padding: 5px;">No</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Nomor Tiket</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Pelanggan</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Kategori</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Urgensi</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Sumber</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Status</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Dibuat</th>
-            <th style="border: 1px solid #d1d5db; padding: 5px;">SLA Deadline</th>
+         <tr style="height: 30px; text-align: center;">
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">No</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Nomor Tiket</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Pelanggan</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Kategori</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Urgensi</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Sumber</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Status</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">Tanggal Dibuat</th>
+            <th class="support-header" style="border: 1px solid #d1d5db; padding: 5px;">SLA Deadline</th>
          </tr>`;
 
       tickets.forEach((t, idx) => {
@@ -1073,7 +1073,7 @@ export default function AdminSupportPage() {
 
       tableHtml += `</table>`;
 
-      const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Tiket</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+      const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>.support-header { background-color: #4f46e5; color: #ffffff; font-weight: bold; }</style><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Tiket</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
 
       const blob = new Blob([template], { type: "application/vnd.ms-excel" });
       const url = URL.createObjectURL(blob);

@@ -160,14 +160,14 @@ export default function AdminTransactions() {
     let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
        <tr style="height: 40px;"><td colspan="7" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">LAPORAN TRANSAKSI RESTORAN (TANGGAL: ${periodTitle})</td></tr>
        <tr style="height: 25px;"><td colspan="7" align="left" style="font-size: 11px;">Dicetak oleh: ${adminName || "Admin"} | Tanggal: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB</td></tr>
-       <tr style="background-color: #e85d04; color: #ffffff; font-weight: bold; height: 30px; text-align: center;">
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">No. Pesanan</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Pelanggan</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Tipe Pesanan</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Pesanan</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Metode Pembayaran</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Total (Rp)</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px;">Tanggal Waktu</th>
+       <tr style="height: 30px; text-align: center;">
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">No. Pesanan</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Pelanggan</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Tipe Pesanan</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Pesanan</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Metode Pembayaran</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Total (Rp)</th>
+          <th class="th-header" style="border: 1px solid #cbd5e1; padding: 5px;">Tanggal Waktu</th>
        </tr>`;
 
     filtered.forEach(order => {
@@ -183,15 +183,15 @@ export default function AdminTransactions() {
     });
 
     const totalSum = filtered.reduce((sum, order) => sum + Number(order.total_amount), 0);
-    tableHtml += `<tr style="background-color: #f1f5f9; font-weight: bold; height: 30px;">
-       <td colspan="5" align="center" style="border: 1px solid #cbd5e1; padding: 5px;">TOTAL PENDAPATAN</td>
-       <td align="right" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold; color: #e85d04;">${totalSum.toLocaleString("id-ID")}</td>
-       <td style="border: 1px solid #cbd5e1; padding: 5px;"></td>
+    tableHtml += `<tr style="font-weight: bold; height: 30px;">
+       <td colspan="5" align="center" class="total-bg" style="border: 1px solid #cbd5e1; padding: 5px;">TOTAL PENDAPATAN</td>
+       <td align="right" class="total-bg" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold; color: #e85d04;">${totalSum.toLocaleString("id-ID")}</td>
+       <td class="total-bg" style="border: 1px solid #cbd5e1; padding: 5px;"></td>
     </tr>`;
 
     tableHtml += `</table>`;
 
-    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Transaksi</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>.th-header { background-color: #e85d04; color: #ffffff; font-weight: bold; } .total-bg { background-color: #f1f5f9; }</style><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Transaksi</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
 
     const blob = new Blob([template], { type: "application/vnd.ms-excel" });
     const url = URL.createObjectURL(blob);

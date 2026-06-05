@@ -865,7 +865,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                       key={link.href}
                       href={link.href}
                       data-tour={`nav-${link.name}`}
-                      onClick={() => setIsSidebarOpen(false)}
+                      onClick={() => !isTutorialActive && setIsSidebarOpen(false)}
                       className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
                         pathname === link.href
                           ? "bg-primary text-white shadow-lg shadow-primary/20"

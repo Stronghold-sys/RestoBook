@@ -409,6 +409,8 @@ export default function AdminRefundsPage() {
             value={periodFilter} 
             onChange={e => setPeriodFilter(e.target.value as any)} 
             className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-3 outline-none text-xs font-bold text-text-light dark:text-text-dark w-full md:w-auto"
+            title="Filter Periode Refund"
+            aria-label="Filter Periode Refund"
           >
             <option value="all">Semua Periode</option>
             <option value="today">Hari Ini</option>

@@ -136,33 +136,54 @@ export default function SpotlightTutorial() {
   };
 
   // ── Tooltip position ────────────────────────────────────────────────────────
-  // On MOBILE: always anchor to bottom of screen — no coordinate math needed
-  // On DESKTOP: position relative to the highlighted element
+  // Tooltip follows the highlighted element on ALL screen sizes.
+  // - On mobile: uses left/right anchors (no fixed width) so never overflows right
+  // - Placed BELOW the element when there's space, otherwise ABOVE
+  // - Desktop also supports left/right placement
   const getTooltipStyle = (): React.CSSProperties => {
-    if (isMobileScreen) {
-      // Bottom-sheet style: always fully visible, never overflows
-      return {
-        position: 'fixed',
-        bottom: 16,
-        left: 8,
-        right: 8,
-      };
-    }
+    const margin = 8;    // minimum gap from screen edges
+    const off = 12;      // gap between element and tooltip
 
-    // ── Desktop positioning ──
-    const TW = Math.min(320, W - 32);
-    const TH = 220;
-    const off = 14;
-    const margin = 12;
-
+    // Fallback: no element found yet → show at bottom center
     if (!coords) {
+      if (isMobileScreen) {
+        return { position: 'fixed', bottom: margin, left: margin, right: margin };
+      }
+      const TW = Math.min(320, W - 32);
       return { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: TW };
     }
 
     const { left, top, width, height } = coords;
+
+    // ── MOBILE ──────────────────────────────────────────────────────────────
+    if (isMobileScreen) {
+      // Tooltip width: full width minus margins on both sides
+      // Use left + right anchors — avoids any right overflow
+      const tLeft = margin;
+      const tRight = margin;
+
+      // Preferred: below the element
+      const belowTop = top + height + off + pad;
+      // Estimated tooltip height ~180px
+      const spaceBelow = H - belowTop - margin;
+
+      if (spaceBelow >= 160) {
+        // Enough space below → place below the element
+        return { position: 'fixed', top: belowTop, left: tLeft, right: tRight };
+      } else {
+        // Not enough space below → place above the element
+        const aboveBottom = H - (top - off - pad);
+        const aboveBottomClamped = Math.max(margin, Math.min(aboveBottom, H - margin));
+        return { position: 'fixed', bottom: aboveBottomClamped, left: tLeft, right: tRight };
+      }
+    }
+
+    // ── DESKTOP ──────────────────────────────────────────────────────────────
+    const TW = Math.min(320, W - 32);
+    const TH = 220;
     let pos = activeStep.position;
 
-    // Auto-flip if overflow
+    // Auto-flip if it would overflow horizontally
     if (pos === 'right' && left + width + off + pad + TW > W - margin) {
       pos = left - off - pad - TW > margin ? 'left' : 'bottom';
     } else if (pos === 'left' && left - off - pad - TW < margin) {
@@ -180,6 +201,7 @@ export default function SpotlightTutorial() {
 
     return { position: 'fixed', left: tL, top: tT, width: TW };
   };
+
 
   return (
     <>

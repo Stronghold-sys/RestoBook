@@ -147,11 +147,13 @@ export default function SpotlightTutorial() {
 
     // Fallback: no element found or coordinates missing → show at center of screen
     if (!coords) {
+      // Calculate exact pixel coordinates for centering to prevent conflicts with Framer Motion's transform animation
+      const tL = W / 2 - TW / 2;
+      const tT = H / 2 - 120; // 120px is approximately half of the card height
       return {
         position: 'fixed',
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
+        left: tL,
+        top: Math.max(margin, tT),
         width: TW,
       };
     }

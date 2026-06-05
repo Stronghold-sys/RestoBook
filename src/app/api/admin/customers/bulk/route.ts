@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
           // Fetch user profile info
           const { data: customer } = await supabaseAdmin
             .from('profiles')
-            .select('email, full_name')
+            .select('email, full_name, user_id, id')
             .eq('id', customer_id)
             .single();
 
@@ -263,6 +263,93 @@ export async function POST(req: NextRequest) {
                 console.error('Failed to send restoration email in bulk:', e);
               }
             }
+            return { id: customer_id, success: true };
+          }
+
+          if (action === 'delete') {
+            const profileId = customer.id;
+            const userId = customer.user_id;
+
+            // Hapus ulasan
+            await supabaseAdmin.from('reviews').delete().eq('customer_id', profileId);
+
+            // Hapus transaksi dompet
+            await supabaseAdmin.from('wallet_transactions').delete().eq('customer_id', profileId);
+
+            // Hapus log suspend
+            await supabaseAdmin.from('suspend_logs').delete().eq('user_id', profileId);
+
+            // Hapus banding
+            await supabaseAdmin.from('appeals').delete().eq('user_id', profileId);
+
+            // Hapus sesi keamanan
+            if (userId) {
+              await supabaseAdmin.from('security_user_sessions').delete().eq('user_id', userId);
+            }
+
+            // Hapus order items & orders
+            const { data: orders } = await supabaseAdmin
+              .from('orders')
+              .select('id')
+              .eq('customer_id', profileId);
+
+            if (orders && orders.length > 0) {
+              const orderIds = orders.map((o: any) => o.id);
+              await supabaseAdmin.from('order_items').delete().in('order_id', orderIds);
+            }
+            await supabaseAdmin.from('orders').delete().eq('customer_id', profileId);
+
+            // Hapus reservasi
+            await supabaseAdmin.from('reservations').delete().eq('customer_id', profileId);
+
+            // Hapus favorit
+            await supabaseAdmin.from('favorites').delete().eq('customer_id', profileId);
+
+            // Hapus notifikasi
+            await supabaseAdmin.from('notifications').delete().eq('user_id', profileId);
+
+            // Kirim email perpisahan
+            if (emailToSend) {
+              try {
+                const resend = new Resend(resendKey);
+                const deletionTime = new Date().toLocaleString('id-ID', {
+                  timeZone: 'Asia/Jakarta',
+                  dateStyle: 'full',
+                  timeStyle: 'short'
+                });
+                await resend.emails.send({
+                  from: 'RestoBook <noreply@restobookid.my.id>',
+                  to: emailToSend,
+                  subject: 'Akun Anda Telah Dihapus — Sampai Jumpa Lagi ',
+                  html: `
+                    <div style="font-family: sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+                      <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Sampai Jumpa, ${name}!</h2>
+                      <p style="line-height: 1.6; color: #4b5563; font-size: 15px;">
+                        Akun RestoBook Anda telah dihapus secara permanen dari sistem kami oleh administrator.
+                      </p>
+                      <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin: 24px 0; font-size: 14px;">
+                        <strong>Detail Penghapusan:</strong><br/>
+                        Email: ${emailToSend}<br/>
+                        Waktu: ${deletionTime} WIB
+                      </div>
+                      <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 30px 0 20px 0;" />
+                      <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+                        Email ini dikirim secara otomatis oleh sistem RestoBook. Harap jangan membalas email ini.
+                      </p>
+                    </div>
+                  `
+                });
+              } catch (emailErr) {
+                console.error('Farewell email error in bulk:', emailErr);
+              }
+            }
+
+            // Hapus auth user
+            if (userId) {
+              const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+              if (authError) throw authError;
+            }
+
             return { id: customer_id, success: true };
           }
 

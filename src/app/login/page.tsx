@@ -748,11 +748,12 @@ export default function LoginPage() {
                 onClick={() => {
                   setShowSuspendModal(false);
                   setSuspendData(null);
+                  setAppealData(null);
                 }}
-                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors z-10"
+                className="absolute top-4 right-4 p-2.5 bg-gray-100 dark:bg-gray-750 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-gray-500 hover:text-rose-600 dark:text-gray-400 dark:hover:text-rose-400 rounded-full border border-gray-250/60 dark:border-gray-700/60 transition-all z-20 shadow-sm flex items-center justify-center"
                 title="Tutup"
               >
-                <X className="w-5 h-5 text-muted" />
+                <X className="w-4 h-4" />
               </button>
 
               <div className="flex-1 overflow-y-auto pr-1 pt-2 text-center scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 space-y-6 hide-scrollbar">

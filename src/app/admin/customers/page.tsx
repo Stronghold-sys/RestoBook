@@ -769,6 +769,39 @@ export default function AdminCustomersPage() {
     });
   };
 
+  const handleBulkDelete = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Pelanggan Massal",
+      message: `Yakin ingin menghapus secara permanen seluruh data ${selectedIds.length} pelanggan terpilih beserta transaksi dan riwayatnya? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.`,
+      hasInput: false,
+      confirmText: "Hapus Semua",
+      type: "danger",
+      onConfirm: async () => {
+        const toastId = toast.loading("Sedang menghapus data pelanggan...");
+        try {
+          const res = await fetch("/api/admin/customers/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "delete",
+              customer_ids: selectedIds
+            })
+          });
+
+          const resData = await res.json();
+          if (!res.ok) throw new Error(resData.error || "Gagal menghapus pelanggan terpilih");
+
+          toast.success(`Berhasil menghapus ${selectedIds.length} pelanggan secara bersih`, { id: toastId });
+          setSelectedIds([]);
+          fetchCustomers();
+        } catch (err: any) {
+          toast.error(err.message, { id: toastId });
+        }
+      }
+    });
+  };
+
   // Helper stats values
   const totalCount = customers.length;
   const suspendedCount = customers.filter(c => c.status === "suspended").length;
@@ -901,6 +934,12 @@ export default function AdminCustomersPage() {
                 className="flex-1 sm:flex-initial px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center justify-center gap-1"
               >
                 <CheckCircle className="w-3.5 h-3.5" /> Pulihkan Massal
+              </button>
+              <button
+                onClick={() => handleBulkDelete()}
+                className="flex-1 sm:flex-initial px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center justify-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Hapus Massal
               </button>
               <button
                 onClick={() => setSelectedIds([])}

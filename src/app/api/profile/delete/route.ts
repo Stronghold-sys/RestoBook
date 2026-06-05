@@ -59,6 +59,18 @@ export async function POST(req: NextRequest) {
     // 3. Hapus ulasan dari pelanggan ini
     await supabaseAdmin.from('reviews').delete().eq('customer_id', profileId);
 
+    // Hapus transaksi dompet (wallet transactions)
+    await supabaseAdmin.from('wallet_transactions').delete().eq('customer_id', profileId);
+
+    // Hapus log suspend/ban
+    await supabaseAdmin.from('suspend_logs').delete().eq('user_id', profileId);
+
+    // Hapus pengajuan banding
+    await supabaseAdmin.from('appeals').delete().eq('user_id', profileId);
+
+    // Hapus sesi keamanan
+    await supabaseAdmin.from('security_user_sessions').delete().eq('user_id', userId);
+
     // 4. Dapatkan daftar pesanan pelanggan untuk menghapus detail pesanan (order_items) terlebih dahulu
     const { data: orders } = await supabaseAdmin
       .from('orders')

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import BaseModal from "@/components/BaseModal";
 
 interface SecurityLog {
   id: string;
@@ -1390,106 +1391,89 @@ export default function SecurityPage() {
       </div>
 
       {/* Custom Premium Confirm Modal */}
-      <AnimatePresence>
-        {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-3xl shadow-2xl max-w-sm w-full space-y-4"
-            >
-              <div className="flex items-center gap-3 text-rose-500">
-                <AlertTriangle className="w-6 h-6 animate-pulse" />
-                <h3 className="font-black text-base text-gray-900 dark:text-white">{confirmModal.title}</h3>
-              </div>
-              
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 leading-relaxed">
-                {confirmModal.message}
-              </p>
-              
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    confirmModal.onConfirm();
-                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                  }}
-                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/25 rounded-xl transition-all"
-                >
-                  Ya, Hapus
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="space-y-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center mx-auto shadow-inner">
+            <AlertTriangle className="w-8 h-8 animate-pulse" />
           </div>
-        )}
-      </AnimatePresence>
+          
+          <h3 className="font-black text-lg text-gray-900 dark:text-white uppercase tracking-wide">
+            {confirmModal.title}
+          </h3>
+          
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 leading-relaxed px-1">
+            {confirmModal.message}
+          </p>
+          
+          <div className="flex items-center gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+              className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all rounded-xl text-xs uppercase"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                confirmModal.onConfirm();
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+              }}
+              className="flex-1 py-3 text-white bg-rose-600 hover:bg-rose-700 font-bold shadow-lg shadow-rose-600/25 rounded-xl text-xs uppercase transition-all"
+            >
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* Custom Premium Payload Detail Modal */}
-      <AnimatePresence>
-        {selectedPayload && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-850 p-6 rounded-3xl shadow-2xl max-w-2xl w-full space-y-4 max-h-[85vh] flex flex-col"
-            >
-              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
-                <div className="flex items-center gap-2.5 text-primary">
-                  <Info className="w-5 h-5 text-blue-500" />
-                  <h3 className="font-black text-base text-gray-900 dark:text-white">Detail Payload Insiden</h3>
-                </div>
-                <button
-                  onClick={() => setSelectedPayload(null)}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted transition-all"
-                  title="Tutup"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 font-mono text-[11px] text-text-light dark:text-text-dark whitespace-pre-wrap break-all custom-scrollbar">
-                {(() => {
-                  try {
-                    const parsed = JSON.parse(selectedPayload);
-                    return JSON.stringify(parsed, null, 2);
-                  } catch {
-                    return selectedPayload;
-                  }
-                })()}
-              </div>
-              
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(selectedPayload);
-                    toast.success("Payload berhasil disalin!");
-                  }}
-                  className="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-md shadow-primary/15"
-                >
-                  Salin Detail
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPayload(null)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-                >
-                  Tutup
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={!!selectedPayload}
+        onClose={() => setSelectedPayload(null)}
+        size="2xl"
+        title="Detail Payload Insiden"
+      >
+        <div className="space-y-4 flex flex-col">
+          <div className="max-h-[60vh] overflow-y-auto bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-border-light dark:border-border-dark font-mono text-[11px] text-text-light dark:text-text-dark whitespace-pre-wrap break-all custom-scrollbar">
+            {(() => {
+              try {
+                const parsed = JSON.parse(selectedPayload || "");
+                return JSON.stringify(parsed, null, 2);
+              } catch {
+                return selectedPayload || "";
+              }
+            })()}
           </div>
-        )}
-      </AnimatePresence>
+          
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedPayload) {
+                  navigator.clipboard.writeText(selectedPayload);
+                  toast.success("Payload berhasil disalin!");
+                }
+              }}
+              className="px-5 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-md shadow-primary/15"
+            >
+              Salin Detail
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedPayload(null)}
+              className="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
     </div>
   );

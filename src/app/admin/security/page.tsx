@@ -931,20 +931,23 @@ export default function SecurityPage() {
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border-light dark:border-border-dark pb-4">
                   <div>
-                    <h2 className="text-lg font-black flex items-center gap-2">
-                      Audit Log Keamanan Terkini
-                      <button 
-                        type="button"
-                        onClick={() => setVisibility(prev => ({ ...prev, logs: !prev.logs }))}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                        title={visibility.logs ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                      >
-                        {visibility.logs ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                    </h2>
+                    <h2 className="text-lg font-black">Audit Log Keamanan Terkini</h2>
                     <p className="text-xs text-muted">Aktivitas terdeteksi oleh middleware dan didelegasikan secara otomatis.</p>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => setVisibility(prev => ({ ...prev, logs: !prev.logs }))}
+                      className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                        visibility.logs 
+                          ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                          : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                      }`}
+                      title={visibility.logs ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                    >
+                      {visibility.logs ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span>{visibility.logs ? "Sembunyikan" : "Tampilkan"}</span>
+                    </button>
                     <div className="relative flex-1 sm:flex-none">
                       <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted" />
                       <input 
@@ -1091,19 +1094,24 @@ export default function SecurityPage() {
                 exit={{ opacity: 0, y: -15 }}
                 className="space-y-6"
               >
-                <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black flex items-center gap-2">
-                    Manajemen Aturan IP Firewall
-                    <button 
-                      type="button"
-                      onClick={() => setVisibility(prev => ({ ...prev, ip: !prev.ip }))}
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                      title={visibility.ip ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                    >
-                      {visibility.ip ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                  </h2>
-                  <p className="text-xs text-muted">Tambahkan IP Address ke dalam blacklist (cekal akses) atau whitelist (izinkan bypass limit).</p>
+                <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black">Manajemen Aturan IP Firewall</h2>
+                    <p className="text-xs text-muted">Tambahkan IP Address ke dalam blacklist (cekal akses) atau whitelist (izinkan bypass limit).</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVisibility(prev => ({ ...prev, ip: !prev.ip }))}
+                    className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                      visibility.ip 
+                        ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                        : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                    }`}
+                    title={visibility.ip ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                  >
+                    {visibility.ip ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>{visibility.ip ? "Sembunyikan" : "Tampilkan"}</span>
+                  </button>
                 </div>
 
                 {/* Form Add IP Rule */}
@@ -1243,19 +1251,24 @@ export default function SecurityPage() {
                 exit={{ opacity: 0, y: -15 }}
                 className="space-y-6"
               >
-                <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black flex items-center gap-2">
-                    Manajemen Pencekalan Detail
-                    <button 
-                      type="button"
-                      onClick={() => setVisibility(prev => ({ ...prev, detail: !prev.detail }))}
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                      title={visibility.detail ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                    >
-                      {visibility.detail ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                  </h2>
-                  <p className="text-xs text-muted">Karantina akun atau bot secara spesifik berdasarkan email terdaftar, browser penyerang, atau merk perangkat.</p>
+                <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black">Manajemen Pencekalan Detail</h2>
+                    <p className="text-xs text-muted">Karantina akun atau bot secara spesifik berdasarkan email terdaftar, browser penyerang, atau merk perangkat.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVisibility(prev => ({ ...prev, detail: !prev.detail }))}
+                    className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                      visibility.detail 
+                        ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                        : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                    }`}
+                    title={visibility.detail ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                  >
+                    {visibility.detail ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>{visibility.detail ? "Sembunyikan" : "Tampilkan"}</span>
+                  </button>
                 </div>
 
                 {/* Form Add Detail Rule */}
@@ -1374,19 +1387,24 @@ export default function SecurityPage() {
                 exit={{ opacity: 0, y: -15 }}
                 className="space-y-6"
               >
-                <div className="border-b border-border-light dark:border-border-dark pb-4">
-                  <h2 className="text-lg font-black flex items-center gap-2">
-                    Histori Geolokasi & Lokasi Login
-                    <button 
-                      type="button"
-                      onClick={() => setVisibility(prev => ({ ...prev, geo: !prev.geo }))}
-                      className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                      title={visibility.geo ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                    >
-                      {visibility.geo ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                  </h2>
-                  <p className="text-xs text-muted">Daftar lokasi login terverifikasi per akun. Kombinasi kota/negara baru otomatis memicu notifikasi email.</p>
+                <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black">Histori Geolokasi & Lokasi Login</h2>
+                    <p className="text-xs text-muted">Daftar lokasi login terverifikasi per akun. Kombinasi kota/negara baru otomatis memicu notifikasi email.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVisibility(prev => ({ ...prev, geo: !prev.geo }))}
+                    className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                      visibility.geo 
+                        ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                        : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                    }`}
+                    title={visibility.geo ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                  >
+                    {visibility.geo ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>{visibility.geo ? "Sembunyikan" : "Tampilkan"}</span>
+                  </button>
                 </div>
 
                 <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-2xl">
@@ -1456,20 +1474,23 @@ export default function SecurityPage() {
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-black flex items-center gap-2">
-                      Investigasi Insiden Keamanan
-                      <button 
-                        type="button"
-                        onClick={() => setVisibility(prev => ({ ...prev, incidents: !prev.incidents }))}
-                        className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                        title={visibility.incidents ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                      >
-                        {visibility.incidents ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                    </h2>
+                    <h2 className="text-lg font-black">Investigasi Insiden Keamanan</h2>
                     <p className="text-xs text-muted">Bukti forensik serangan terdeteksi (SSRF, traversal, replay, VPN, brute force, dll).</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setVisibility(prev => ({ ...prev, incidents: !prev.incidents }))}
+                      className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                        visibility.incidents 
+                          ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                          : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                      }`}
+                      title={visibility.incidents ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                    >
+                      {visibility.incidents ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span>{visibility.incidents ? "Sembunyikan" : "Tampilkan"}</span>
+                    </button>
                     <span className="text-[10px] bg-rose-500/10 text-rose-500 border border-rose-500/20 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 animate-pulse">
                       <AlertTriangle className="w-4 h-4" /> Telemetri Aktif
                     </span>
@@ -1596,19 +1617,22 @@ export default function SecurityPage() {
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-black flex items-center gap-2">
-                      Deteksi IP Rotating & Koordinasi Botnet
-                      <button 
-                        type="button"
-                        onClick={() => setVisibility(prev => ({ ...prev, rotating: !prev.rotating }))}
-                        className="p-1 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-lg text-muted hover:text-text-light dark:hover:text-text-dark transition-all"
-                        title={visibility.rotating ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
-                      >
-                        {visibility.rotating ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                    </h2>
+                    <h2 className="text-lg font-black">Deteksi IP Rotating & Koordinasi Botnet</h2>
                     <p className="text-xs text-muted">Pelacakan sidik jari unik (Unique Fingerprint) klien yang berganti-ganti IP Address serta pemblokiran subnet otomatis.</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setVisibility(prev => ({ ...prev, rotating: !prev.rotating }))}
+                    className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm border shrink-0 ${
+                      visibility.rotating 
+                        ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-primary/10" 
+                        : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted border-border-light dark:border-border-dark"
+                    }`}
+                    title={visibility.rotating ? "Sembunyikan data sensitif" : "Tampilkan data sensitif"}
+                  >
+                    {visibility.rotating ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>{visibility.rotating ? "Sembunyikan" : "Tampilkan"}</span>
+                  </button>
                 </div>
 
                 {/* Form Add Subnet Block */}

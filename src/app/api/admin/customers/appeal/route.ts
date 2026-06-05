@@ -12,17 +12,41 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
+    // 1. Fetch profile to get suspended_at
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .select('suspended_at')
+      .eq('id', user_id)
+      .single();
+
+    if (profileErr) throw profileErr;
+
+    // 2. Fetch the latest suspension appeal
     const { data: appeal, error } = await supabaseAdmin
       .from('appeals')
       .select('*')
       .eq('user_id', user_id)
+      .eq('type', 'suspension')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, appeal });
+    let activeAppeal = appeal;
+    if (appeal) {
+      if (!profile?.suspended_at) {
+        activeAppeal = null;
+      } else {
+        const appealTime = new Date(appeal.created_at).getTime();
+        const suspendTime = new Date(profile.suspended_at).getTime();
+        if (appealTime < suspendTime) {
+          activeAppeal = null;
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true, appeal: activeAppeal });
   } catch (error: any) {
     console.error('Fetch appeal error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

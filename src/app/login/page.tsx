@@ -381,6 +381,8 @@ export default function LoginPage() {
           if (payload.new.status === 'active' || payload.new.status_karyawan === 'aktif') {
              setIsReactivated(true);
              toast.success("Akun Anda berhasil diaktifkan kembali.", { duration: 5000 });
+             setShowSuspendModal(false);
+             setSuspendData(null);
           }
         }
       )

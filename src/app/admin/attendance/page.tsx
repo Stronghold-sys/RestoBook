@@ -526,77 +526,83 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate, onV
                <h3 className="font-black uppercase text-xs tracking-widest flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Riwayat Absensi</h3>
              </div>
              <div className="divide-y divide-border-light dark:divide-border-dark">
-                {stats.map(s => (
-                  <div key={s.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-all">
-                    <div>
-                      <p className="text-sm font-black">{format(new Date(s.created_at), 'eeee, d MMMM yyyy', { locale: id })}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[10px] text-muted font-bold uppercase whitespace-nowrap">{format(new Date(s.created_at), 'HH:mm')} - {s.type}</p>
-                        {s.type === 'check_in' && s.late_minutes > 0 && (
-                          <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-widest animate-pulse border border-red-200 dark:border-red-900 whitespace-nowrap">
-                            Terlambat {s.late_minutes} Menit
-                          </span>
-                        )}
-                        {s.type === 'check_in' && (!s.late_minutes || s.late_minutes === 0) && (
-                          <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[8px] font-black uppercase tracking-widest border border-green-200 dark:border-green-900 whitespace-nowrap">
-                            Tepat Waktu
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 justify-start sm:justify-end w-full sm:w-auto flex-wrap">
-                      {(s.type === 'izin' || s.type === 'sakit') && (
-                        <div className="flex gap-2 items-center mr-4">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            s.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                            s.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {s.status}
-                          </span>
-                          {s.status === 'pending' && (
-                            <>
-                              <button onClick={() => handleApproveLeave(s.id, 'approved', fetchStats)} className="px-3 py-1 bg-green-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform" title="Terima Izin">Terima</button>
-                              <button onClick={() => handleApproveLeave(s.id, 'rejected', fetchStats)} className="px-3 py-1 bg-red-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform" title="Tolak Izin">Tolak</button>
-                            </>
+                {stats.length === 0 ? (
+                  <div className="p-8 text-center text-muted font-bold text-sm bg-gray-50/50 dark:bg-gray-800/20">
+                    Belum ada riwayat absensi untuk karyawan ini.
+                  </div>
+                ) : (
+                  stats.map(s => (
+                    <div key={s.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-all">
+                      <div>
+                        <p className="text-sm font-black">{format(new Date(s.created_at), 'eeee, d MMMM yyyy', { locale: id })}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-[10px] text-muted font-bold uppercase whitespace-nowrap">{format(new Date(s.created_at), 'HH:mm')} - {s.type}</p>
+                          {s.type === 'check_in' && s.late_minutes > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-widest animate-pulse border border-red-200 dark:border-red-900 whitespace-nowrap">
+                              Terlambat {s.late_minutes} Menit
+                            </span>
                           )}
-                          {s.status === 'approved' && (
-                            <button 
-                              onClick={() => handleApproveLeave(s.id, 'completed', fetchStats)} 
-                              className="px-3 py-1 bg-blue-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform shadow-lg shadow-blue-500/20"
-                              title="Akhiri masa izin karyawan ini agar bisa kembali bekerja"
-                            >
-                              Akhiri Masa Izin
-                            </button>
+                          {s.type === 'check_in' && (!s.late_minutes || s.late_minutes === 0) && (
+                            <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[8px] font-black uppercase tracking-widest border border-green-200 dark:border-green-900 whitespace-nowrap">
+                              Tepat Waktu
+                            </span>
                           )}
                         </div>
-                      )}
-                      
-                      {s.photo_url && (
-                        <button 
-                          onClick={() => setActivePhotoUrl(s.photo_url)} 
-                          className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary hover:text-white transition-all"
-                          title="Lihat Bukti Foto"
+                      </div>
+                      <div className="flex items-center gap-3 justify-start sm:justify-end w-full sm:w-auto flex-wrap">
+                        {(s.type === 'izin' || s.type === 'sakit') && (
+                          <div className="flex gap-2 items-center mr-4">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              s.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                              s.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {s.status}
+                            </span>
+                            {s.status === 'pending' && (
+                              <>
+                                <button onClick={() => handleApproveLeave(s.id, 'approved', fetchStats)} className="px-3 py-1 bg-green-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform" title="Terima Izin">Terima</button>
+                                <button onClick={() => handleApproveLeave(s.id, 'rejected', fetchStats)} className="px-3 py-1 bg-red-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform" title="Tolak Izin">Tolak</button>
+                              </>
+                            )}
+                            {s.status === 'approved' && (
+                              <button 
+                                onClick={() => handleApproveLeave(s.id, 'completed', fetchStats)} 
+                                className="px-3 py-1 bg-blue-500 text-white rounded-full text-[10px] font-black uppercase hover:scale-105 transition-transform shadow-lg shadow-blue-500/20"
+                                title="Akhiri masa izin karyawan ini agar bisa kembali bekerja"
+                              >
+                                Akhiri Masa Izin
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {s.photo_url && (
+                          <button 
+                            onClick={() => setActivePhotoUrl(s.photo_url)} 
+                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary hover:text-white transition-all"
+                            title="Lihat Bukti Foto"
+                          >
+                            <Camera className="w-3.5 h-3.5" /> Bukti Foto
+                          </button>
+                        )}
+                        <select 
+                          value={s.type} 
+                          onChange={(e) => updateAttendanceType(s.id, e.target.value)}
+                          className="bg-transparent text-[10px] font-black uppercase outline-none cursor-pointer text-primary border-b-2 border-primary/20 pb-1"
+                          title="Ubah Status Absensi"
+                          aria-label="Ubah Status Absensi"
                         >
-                          <Camera className="w-3.5 h-3.5" /> Bukti Foto
-                        </button>
-                      )}
-                      <select 
-                        value={s.type} 
-                        onChange={(e) => updateAttendanceType(s.id, e.target.value)}
-                        className="bg-transparent text-[10px] font-black uppercase outline-none cursor-pointer text-primary border-b-2 border-primary/20 pb-1"
-                        title="Ubah Status Absensi"
-                        aria-label="Ubah Status Absensi"
-                      >
-                        <option value="check_in">Masuk</option>
-                        <option value="check_out">Pulang</option>
-                        <option value="sakit">Sakit</option>
-                        <option value="izin">Izin</option>
-                        <option value="alpha">Alpha</option>
-                      </select>
+                          <option value="check_in">Masuk</option>
+                          <option value="check_out">Pulang</option>
+                          <option value="sakit">Sakit</option>
+                          <option value="izin">Izin</option>
+                          <option value="alpha">Alpha</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
              </div>
           </div>
         </div>
@@ -633,36 +639,44 @@ function ShiftsTable({ shifts }: { shifts: any[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-light dark:divide-border-dark text-sm">
-            {shifts.map(s => (
-              <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
-                <td className="px-6 py-4 font-bold whitespace-nowrap">{s.profiles?.full_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
-                </td>
-                <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
-                  {s.status === 'closed' && s.end_time ? (
-                    (() => {
-                      const diff = new Date(s.end_time).getTime() - new Date(s.start_time).getTime();
-                      const h = Math.floor(diff / 3600000);
-                      const m = Math.floor((diff % 3600000) / 60000);
-                      return `${h} jam ${m} menit`;
-                    })()
-                  ) : (
-                    <span className="text-green-500 animate-pulse font-bold whitespace-nowrap">Sedang Berjalan...</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">Rp {s.initial_cash.toLocaleString('id-ID')}</td>
-                <td className="px-6 py-4 whitespace-nowrap">Rp {s.final_cash_system?.toLocaleString('id-ID') || '0'}</td>
-                <td className="px-6 py-4 font-black whitespace-nowrap">Rp {s.final_cash_actual?.toLocaleString('id-ID') || '0'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {s.status === 'closed' && (
-                    <span className={`font-black whitespace-nowrap ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                      {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
-                    </span>
-                  )}
+            {shifts.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center text-muted font-bold bg-gray-50/50 dark:bg-gray-800/10">
+                  Belum ada riwayat penutupan kasir / shift.
                 </td>
               </tr>
-            ))}
+            ) : (
+              shifts.map(s => (
+                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                  <td className="px-6 py-4 font-bold whitespace-nowrap">{s.profiles?.full_name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
+                    {s.status === 'closed' && s.end_time ? (
+                      (() => {
+                        const diff = new Date(s.end_time).getTime() - new Date(s.start_time).getTime();
+                        const h = Math.floor(diff / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        return `${h} jam ${m} menit`;
+                      })()
+                    ) : (
+                      <span className="text-green-500 animate-pulse font-bold whitespace-nowrap">Sedang Berjalan...</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">Rp {s.initial_cash.toLocaleString('id-ID')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">Rp {s.final_cash_system?.toLocaleString('id-ID') || '0'}</td>
+                  <td className="px-6 py-4 font-black whitespace-nowrap">Rp {s.final_cash_actual?.toLocaleString('id-ID') || '0'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {s.status === 'closed' && (
+                      <span className={`font-black whitespace-nowrap ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                        {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -744,11 +744,11 @@ export default function LoginPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-lg shadow-2xl border border-border-light dark:border-border-dark flex flex-col relative max-h-[85vh] overflow-hidden"
             >
-              {/* Modern Gradient Header */}
+              {/* Premium Gradient Header */}
               <div className={`p-6 text-center text-white relative ${
                 suspendData.status === 'banned' 
-                  ? 'bg-gradient-to-r from-red-650 to-rose-650' 
-                  : 'bg-gradient-to-r from-amber-500 to-orange-550'
+                  ? 'bg-gradient-to-r from-slate-950 via-red-950 to-slate-950 border-b border-red-900/20' 
+                  : 'bg-gradient-to-r from-slate-900 via-slate-950 to-zinc-900 border-b border-indigo-950/20'
               }`}>
                 <button 
                   onClick={() => {
@@ -756,24 +756,24 @@ export default function LoginPage() {
                     setSuspendData(null);
                     setAppealData(null);
                   }}
-                  className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-20 shadow-sm flex items-center justify-center border border-white/5"
+                  className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full transition-all z-20 shadow-lg flex items-center justify-center border border-white/20"
                   title="Tutup"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
 
-                <div className="w-14 h-14 bg-white/15 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
                   {suspendData.status === 'banned' ? (
-                    <Ban className="w-7 h-7 text-white" />
+                    <Ban className="w-7 h-7 text-red-400" />
                   ) : (
-                    <Clock className="w-7 h-7 text-white animate-pulse" />
+                    <Clock className="w-7 h-7 text-indigo-400 animate-pulse" />
                   )}
                 </div>
                 
                 <h2 className="text-xl font-extrabold uppercase tracking-tight">
                   {suspendData.status === 'banned' ? 'Akun Diblokir Permanen' : 'Akun Ditangguhkan'}
                 </h2>
-                <p className="text-white/85 text-xs font-medium mt-1">
+                <p className="text-white/80 text-xs font-medium mt-1">
                   {suspendData.status === 'banned' 
                     ? 'Akses ke platform dinonaktifkan secara permanen' 
                     : 'Akses akun Anda dibatasi untuk sementara waktu'
@@ -786,13 +786,13 @@ export default function LoginPage() {
                 
                 {/* Countdown timer for temporary suspensions */}
                 {suspendData.status === 'suspended' && countdown && (
-                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4 flex items-center gap-4 animate-pulse">
-                    <div className="p-2.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl">
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="p-2.5 bg-slate-100 dark:bg-slate-850 text-indigo-650 dark:text-indigo-400 rounded-xl">
                       <Clock className="w-5 h-5 animate-spin-slow" />
                     </div>
                     <div className="flex-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500 block">Sisa Waktu Penangguhan</span>
-                      <div className="text-sm font-black text-amber-800 dark:text-amber-400 font-mono mt-0.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Sisa Waktu Penangguhan</span>
+                      <div className="text-sm font-black text-slate-800 dark:text-slate-350 font-mono mt-0.5">
                         {formatCountdown(countdown)}
                       </div>
                     </div>
@@ -805,8 +805,8 @@ export default function LoginPage() {
                     <span className="text-[10px] font-black uppercase text-muted tracking-wider">Detail Akun</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                       suspendData.status === 'banned' 
-                        ? 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400' 
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+                        ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                        : 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-550/10 dark:text-indigo-400 border border-indigo-500/20'
                     }`}>
                       {suspendData.status === 'banned' ? 'Banned' : 'Suspended'}
                     </span>
@@ -905,7 +905,7 @@ export default function LoginPage() {
                         <div>
                           <h4 className="text-sm font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wide">Banding Ditolak</h4>
                           <p className="text-xs text-rose-700 dark:text-rose-400 mt-1 leading-relaxed">
-                            Pengajuan banding Anda ditolak oleh tim manajemen. Namun, akun Anda masih bersifat sementara dan akan **otomatis diaktifkan** setelah sisa masa penangguhan di atas berakhir.
+                            Pengajuan banding Anda ditolak oleh tim manajemen. Namun, akun Anda masih bersifat sementara dan akan <strong>otomatis diaktifkan</strong> setelah sisa masa penangguhan di atas berakhir.
                           </p>
                         </div>
                       </div>
@@ -937,7 +937,7 @@ export default function LoginPage() {
                         <div className="flex-1">
                           <h4 className="text-sm font-extrabold text-red-550 uppercase tracking-wide">Banding Ditolak — Keputusan Final</h4>
                           <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-                            Pengajuan banding pemulihan akun yang diblokir permanen telah **ditolak secara final**. Keputusan ini tidak dapat diganggu gugat.
+                            Pengajuan banding pemulihan akun yang diblokir permanen telah <strong>ditolak secara final</strong>. Keputusan ini tidak dapat diganggu gugat.
                           </p>
                         </div>
                       </div>
@@ -973,7 +973,7 @@ export default function LoginPage() {
                         <div>
                           <h4 className="text-sm font-extrabold text-blue-800 dark:text-blue-300 uppercase tracking-wide">Banding Sedang Ditinjau</h4>
                           <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
-                            Banding Anda sedang dalam proses peninjauan oleh administrator. Keputusan resmi akan dikirimkan maksimal **1x24 jam** ke email Anda.
+                            Banding Anda sedang dalam proses peninjauan oleh administrator. Keputusan resmi akan dikirimkan maksimal <strong>1x24 jam</strong> ke email Anda.
                           </p>
                         </div>
                       </div>
@@ -1017,7 +1017,7 @@ export default function LoginPage() {
                         value={appealText}
                         onChange={(e) => setAppealText(e.target.value)}
                         rows={3}
-                        className="w-full p-4 bg-gray-50 dark:bg-gray-950 border border-gray-250 dark:border-gray-800 focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none shadow-inner"
+                        className="w-full p-4 bg-gray-50 dark:bg-gray-955 border border-gray-250 dark:border-gray-800 focus:border-primary rounded-2xl text-xs outline-none transition-all font-medium text-text-light dark:text-text-dark resize-none shadow-inner"
                       />
                       
                       <div className="flex gap-3">

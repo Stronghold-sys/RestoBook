@@ -339,9 +339,7 @@ export async function POST(req: NextRequest) {
             await supabaseAdmin.from('appeals').delete().eq('user_id', profileId);
 
             // Hapus sesi keamanan
-            if (userId) {
-              await supabaseAdmin.from('security_user_sessions').delete().eq('user_id', userId);
-            }
+            await supabaseAdmin.from('security_user_sessions').delete().eq('profile_id', profileId);
 
             // Hapus reservasi
             await supabaseAdmin.from('reservations').delete().eq('customer_id', profileId);

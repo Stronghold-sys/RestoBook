@@ -17,6 +17,14 @@
     --border-color: #334155;
   }
 
+  html, body {
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: auto; /* Mencegah lag saat page transition Next.js */
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -333,3 +341,18 @@ aside.fixed.lg\:hidden {
     display: none !important;
   }
 }
+
+/* ── Hardware Acceleration & Rendering Performance Optimizations ── */
+.smooth-gpu {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Mempercepat rendering list panjang dengan menunda paint elemen di luar viewport */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+

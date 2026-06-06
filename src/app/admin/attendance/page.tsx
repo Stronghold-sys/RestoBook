@@ -628,10 +628,9 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate, onV
 
 function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSuccess: () => void }) {
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [confirmReopenData, setConfirmReopenData] = useState<{ id: string; cashierName: string } | null>(null);
 
-  const handleReopen = async (shiftId: string, cashierName: string) => {
-    if (!confirm(`Apakah Anda yakin ingin membuka kembali shift untuk ${cashierName}? Data rekap penutupan shift akan direset dan absensi keluar hari ini juga akan dihapus agar kasir dapat masuk kembali.`)) return;
-    
+  const handleReopen = async (shiftId: string) => {
     setReopeningId(shiftId);
     try {
       const res = await fetch('/api/admin/reopen-shift', {
@@ -725,7 +724,7 @@ function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSucce
                     {s.status === 'closed' && (
                       <button
                         disabled={reopeningId === s.id}
-                        onClick={() => handleReopen(s.id, s.profiles?.full_name || 'Kasir')}
+                        onClick={() => setConfirmReopenData({ id: s.id, cashierName: s.profiles?.full_name || 'Kasir' })}
                         className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20"
                       >
                         {reopeningId === s.id ? 'Memproses...' : 'Buka Kembali'}
@@ -738,6 +737,43 @@ function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSucce
           </tbody>
         </table>
       </div>
+
+      {/* MODAL CONFIRM REOPEN SHIFT */}
+      <BaseModal isOpen={!!confirmReopenData} onClose={() => setConfirmReopenData(null)} size="sm" showCloseButton={false}>
+         <div className="text-center">
+            <div className="w-20 h-20 bg-amber-50 dark:bg-amber-955/30 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-3 shadow-inner border border-amber-100/50 dark:border-amber-900/30">
+              <AlertTriangle className="w-10 h-10" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
+              Buka Kembali Shift?
+            </h3>
+            <p className="text-muted text-xs font-medium mb-8 px-4 leading-relaxed">
+              Apakah Anda yakin ingin membuka kembali shift untuk <strong className="text-gray-900 dark:text-white font-bold">{confirmReopenData?.cashierName}</strong>? Data rekap penutupan shift akan direset dan absensi keluar hari ini juga akan dihapus agar kasir dapat masuk kembali.
+            </p>
+            <div className="flex flex-col gap-3">
+               <button 
+                 onClick={async () => {
+                   if (confirmReopenData) {
+                     const data = confirmReopenData;
+                     setConfirmReopenData(null);
+                     await handleReopen(data.id);
+                   }
+                 }}
+                 disabled={reopeningId !== null}
+                 className="w-full py-4 bg-amber-500 hover:bg-amber-650 text-white rounded-2xl font-black shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-95 disabled:opacity-50"
+               >
+                 {reopeningId !== null ? 'Memproses...' : 'Buka Kembali'}
+               </button>
+               <button 
+                 onClick={() => setConfirmReopenData(null)}
+                 disabled={reopeningId !== null}
+                 className="w-full py-4 bg-gray-100 dark:bg-gray-800 text-muted hover:text-primary hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl font-black transition-all uppercase tracking-widest text-xs active:scale-95"
+               >
+                 Batal
+               </button>
+            </div>
+         </div>
+      </BaseModal>
     </div>
   );
 }

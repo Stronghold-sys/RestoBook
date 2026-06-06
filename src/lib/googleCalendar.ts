@@ -208,7 +208,7 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
     `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
   ].join('\n');
 
-  const eventPayload: any = {
+  const eventPayload = {
     summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
     description: descriptionText,
     start: {
@@ -221,16 +221,7 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
     }
   };
 
-  if (eventData.email && eventData.email.includes('@')) {
-    eventPayload.attendees = [
-      {
-        email: eventData.email,
-        responseStatus: "needsAction"
-      }
-    ];
-  }
-
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events?sendUpdates=all`, {
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${accessToken}`,
@@ -296,7 +287,7 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
     `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
   ].join('\n');
 
-  const eventPayload: any = {
+  const eventPayload = {
     summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
     description: descriptionText,
     start: {
@@ -309,16 +300,7 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
     }
   };
 
-  if (eventData.email && eventData.email.includes('@')) {
-    eventPayload.attendees = [
-      {
-        email: eventData.email,
-        responseStatus: "needsAction"
-      }
-    ];
-  }
-
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events/${eventId}?sendUpdates=all`, {
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events/${eventId}`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${accessToken}`,

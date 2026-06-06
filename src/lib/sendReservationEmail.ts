@@ -6,6 +6,60 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
+function getGoogleCalendarLink(
+  id: string,
+  atasNama: string,
+  dateStr: string,
+  timeStr: string,
+  guestCount: number,
+  mejaNumbers: string,
+  notes: string,
+  restoName: string
+): string {
+  const dateParts = dateStr.split('-');
+  const timeClean = timeStr.substring(0, 5);
+  const timeParts = timeClean.split(':');
+
+  const year = parseInt(dateParts[0]) || 2026;
+  const month = (parseInt(dateParts[1]) || 1) - 1;
+  const day = parseInt(dateParts[2]) || 1;
+  const hour = parseInt(timeParts[0]) || 12;
+  const minute = parseInt(timeParts[1]) || 0;
+
+  // Asia/Jakarta is UTC+7, so to get UTC time we subtract 7 hours
+  const startUtc = new Date(Date.UTC(year, month, day, hour - 7, minute, 0));
+  const endUtc = new Date(Date.UTC(year, month, day, hour - 7 + 2, minute, 0)); // 2 hours duration
+
+  const formatUtcString = (d: Date) => {
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const min = String(d.getUTCMinutes()).padStart(2, '0');
+    const ss = String(d.getUTCSeconds()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}T${hh}${min}${ss}Z`;
+  };
+
+  const datesParam = `${formatUtcString(startUtc)}/${formatUtcString(endUtc)}`;
+  const title = `Reservasi Resto: ${atasNama} (Meja ${mejaNumbers})`;
+
+  const descriptionParts = [
+    `✨ DETAIL RESERVASI RESTOBOOK ✨`,
+    `──────────────────────────`,
+    `• ID Reservasi : #${id.substring(0, 8).toUpperCase()}`,
+    `• Nama Pemesan : ${atasNama}`,
+    `• Jumlah Tamu  : ${guestCount} Orang`,
+    `• Nomor Meja   : Meja ${mejaNumbers}`,
+    `• Catatan      : ${notes || '-'}`,
+    `──────────────────────────`,
+    `Info: Terima kasih telah melakukan reservasi di ${restoName}. Kami menunggu kedatangan Anda!`
+  ];
+
+  const details = descriptionParts.join('\n');
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${encodeURIComponent(datesParam)}&details=${encodeURIComponent(details)}`;
+}
+
 export async function sendReservationEmail(
   reservationId: string,
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
@@ -128,7 +182,17 @@ export async function sendReservationEmail(
       statusPillText = 'DIKONFIRMASI / AKTIF';
       statusPillBg = '#d1fae5';
       statusPillColor = '#059669';
-      statusDesc = 'Kabar baik! Reservasi meja Anda telah <strong>dikonfirmasi dan disetujui</strong> oleh kasir. Meja Anda telah kami kunci dan siapkan.<br/><br/><strong style="color: #059669;">🗓️ Info Kalender:</strong> Reservasi ini telah dimasukkan ke Google Calendar RestoBook secara otomatis. Anda dapat memantau jadwal kedatangan Anda secara real-time.';
+      const gCalLink = getGoogleCalendarLink(
+        reservationId,
+        atasNama,
+        resData.reservation_date,
+        resData.reservation_time,
+        resData.guest_count,
+        mejaNumbers,
+        catatan,
+        restoName
+      );
+      statusDesc = `Kabar baik! Reservasi meja Anda telah <strong>dikonfirmasi dan disetujui</strong> oleh kasir. Meja Anda telah kami kunci dan siapkan.<br/><br/><strong style="color: #2563eb;">🗓️ Info Kalender:</strong> Untuk menambahkan reservasi ini ke kalender Google Anda pribadi secara instan, silakan klik tombol di bawah:<br/><br/><a href="${gCalLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; font-weight: bold; border-radius: 8px; text-decoration: none; display: inline-block; font-size: 13px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">📅 Tambahkan ke Google Calendar Saya</a>`;
     } else if (status === 'completed') {
       subject = `Reservasi Meja Selesai - Terima Kasih - ${restoName}`;
       titleHeader = 'Terima Kasih Atas Kunjungan Anda!';

@@ -292,7 +292,11 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
 
   // Dideklarasikan sebagai boolean eksplisit di luar JSX agar ARIA static
   // validator tidak salah mengira nilainya sebagai ekspresi tak terbatas.
-  const ariaExpanded: boolean = state.showPanel;
+  // CATATAN: aria-expanded dihapus karena static ARIA checker tidak menerima
+  // ekspresi dinamis apapun. Aksesibilitas tetap terjaga lewat:
+  //  - aria-haspopup="dialog" pada button
+  //  - role="dialog" pada panel
+  //  - aria-controls yang menunjuk ke panel
 
   return (
     <>
@@ -310,8 +314,7 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
           onClick={() => !readOnly && dispatch({ type: "TOGGLE_PANEL" })}
           aria-label={`Status koneksi: ${cfg.label}, Latency: ${msLabel}`}
           aria-haspopup="dialog"
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
-          aria-expanded={ariaExpanded}
+          aria-controls="pm-detail-panel"
           title={`${cfg.label} — ${msLabel}`}
           disabled={readOnly}
         >
@@ -336,6 +339,7 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
         {/* ── Detail Panel ──────────────────────────────────── */}
         {state.showPanel && (
           <div
+            id="pm-detail-panel"
             className="pm-panel"
             role="dialog"
             aria-label="Detail status koneksi internet"

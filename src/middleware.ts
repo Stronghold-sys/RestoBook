@@ -302,6 +302,187 @@ function isLegitimateSearchEngine(userAgent: string): boolean {
   return engines.some(engine => ua.includes(engine));
 }
 
+// Helper untuk menghasilkan respons blokir keamanan yang indah (HTML untuk halaman biasa, JSON untuk API)
+function createBlockResponse(request: NextRequest, message: string, status: number = 403): NextResponse {
+  const path = request.nextUrl.pathname;
+  
+  if (path.startsWith('/api')) {
+    return new NextResponse(
+      JSON.stringify({ error: message }),
+      { status, headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' } }
+    );
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akses Ditangguhkan - RestoBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.15) 0%, rgba(234, 88, 12, 0) 70%);
+      top: 10%;
+      left: 10%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, rgba(249, 115, 22, 0) 70%);
+      bottom: 10%;
+      right: 10%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 480px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: rgba(234, 88, 12, 0.1);
+      border: 1px solid rgba(234, 88, 12, 0.2);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-container::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 24px;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.2) 0%, rgba(234, 88, 12, 0) 80%);
+      z-index: -1;
+    }
+    .icon {
+      width: 36px;
+      height: 36px;
+      color: #ea580c;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .highlight {
+      background: linear-gradient(to right, #f97316, #ea580c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #9ca3af;
+      margin-bottom: 32px;
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 16px;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 15px -3px rgba(234, 88, 12, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(234, 88, 12, 0.4);
+    }
+    .btn:active { transform: translateY(0); }
+    .footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #4b5563;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Keamanan Sistem</div>
+    <div class="icon-container">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+    <h1>Akses <span class="highlight">Ditangguhkan</span></h1>
+    <p>${message}</p>
+    <a href="/login" class="btn">Kembali ke Halaman Utama</a>
+    <div class="footer">RestoBook Security Shield Protection</div>
+  </div>
+</body>
+</html>`;
+
+  return new NextResponse(html, {
+    status,
+    headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff' }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MIDDLEWARE UTAMA
 // ═══════════════════════════════════════════════════════════════════
@@ -356,29 +537,20 @@ export async function middleware(request: NextRequest) {
   // C. Deteksi Coordinated ASN/Subnet Attacks & Botnets
   const { subnetBlocked, coordinatedAsn, highProtectionAsn, botnetDetected } = await detectCoordinatedAsnSubnetAttack(ip, cfAsn, path, fingerprint);
   if (subnetBlocked) {
-    return new NextResponse(
-      JSON.stringify({ error: 'Permintaan tidak dapat diproses (Akses Subnet Ditangguhkan).' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, 'Permintaan tidak dapat diproses (Akses Subnet Anda ditangguhkan sementara).', 403);
   }
 
   // D. Cek IP Blacklist
   const { blocked, reason } = await checkIPBlacklist(ip);
   if (blocked) {
-    return new NextResponse(
-      JSON.stringify({ error: `Akses IP ditolak oleh sistem keamanan: ${reason}` }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, `Akses IP ditolak oleh sistem keamanan: ${reason}`, 403);
   }
 
   // D.2. Cek Fingerprint & Browser Blacklist
   const { browser: clientBrowser } = parseUserAgent(userAgent);
   const { blocked: isFpBlocked, reason: fpBlockReason } = await checkBlockRules(fingerprint, clientBrowser);
   if (isFpBlocked) {
-    return new NextResponse(
-      JSON.stringify({ error: `Akses perangkat/browser Anda ditangguhkan oleh sistem keamanan: ${fpBlockReason || 'Pencekalan perangkat'}` }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, `Akses perangkat/browser Anda ditangguhkan oleh sistem keamanan: ${fpBlockReason || 'Pencekalan perangkat'}`, 403);
   }
 
   // E. Load Emergency Settings & Terapkan Proteksi Global
@@ -386,18 +558,12 @@ export async function middleware(request: NextRequest) {
   if (emergency.emergency_mode) {
     if (path === '/register' || path === '/api/register') {
       if (emergency.block_new_registrations) {
-        return new NextResponse(
-          JSON.stringify({ error: 'Permintaan tidak dapat diproses (Registrasi Baru Ditutup).' }),
-          { status: 403, headers: { 'Content-Type': 'application/json' } }
-        );
+        return createBlockResponse(request, 'Pendaftaran akun baru saat ini sedang ditutup oleh administrator sistem (Registrasi Baru Ditutup).', 403);
       }
     }
     const isSensitive = path.startsWith('/api/send-otp') || path.startsWith('/api/verify-otp') || path.startsWith('/api/reset-password');
     if (isSensitive && emergency.block_sensitive_endpoints) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Permintaan tidak dapat diproses (Layanan Ditangguhkan).' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      return createBlockResponse(request, 'Permintaan tidak dapat diproses karena layanan ini sedang ditangguhkan sementara.', 403);
     }
   }
 
@@ -416,10 +582,7 @@ export async function middleware(request: NextRequest) {
       severity: 'medium',
       payload: { userAgent }
     });
-    return new NextResponse(
-      JSON.stringify({ error: 'Aktivitas bot diblokir.' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, 'Aktivitas bot otomatis/headless browser diblokir untuk keamanan sistem.', 403);
   }
 
   // G. Deteksi VPN / Proxy / Tor
@@ -453,19 +616,13 @@ export async function middleware(request: NextRequest) {
     await logMiddlewareSecurity({
       ipAddress: ip, activity: 'BOT_BLOCKED', endpoint: path, status: 'blocked', userAgent
     });
-    return new NextResponse(
-      JSON.stringify({ error: 'Aktivitas bot diblokir.' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, 'Aktivitas agen bot otomatis diblokir.', 403);
   }
 
   // 4. Proteksi DDoS Ringan
   const ddosCheck = await handleDDoSProtection(ip, path, userAgent);
   if (ddosCheck.action === 'block') {
-    return new NextResponse(
-      JSON.stringify({ error: 'Terdeteksi aktivitas DDoS. IP Anda telah diblokir.' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, 'Terdeteksi aktivitas permintaan berlebih (DDoS). IP Anda telah diblokir demi keamanan.', 403);
   }
 
   // 5. Verifikasi CSRF Token
@@ -620,10 +777,7 @@ export async function middleware(request: NextRequest) {
       severity: 'critical',
       payload: { scoreContext, securityScore }
     });
-    return new NextResponse(
-      JSON.stringify({ error: 'Permintaan tidak dapat diproses (Akses ditangguhkan sementara karena terindikasi serangan).' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
+    return createBlockResponse(request, 'Akses Anda ditangguhkan sementara karena sistem mendeteksi aktivitas mencurigakan yang terindikasi serangan.', 403);
   }
 
   // 6.5. Deteksi Session Hijacking & Sesi Terikat (Log only to prevent false-positive logouts)

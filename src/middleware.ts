@@ -1004,7 +1004,7 @@ export async function middleware(request: NextRequest) {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://apis.google.com https://hcaptcha.com https://*.hcaptcha.com https://js.duitku.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https://*.supabase.co https://lh3.googleusercontent.com https://*.googleusercontent.com https://vantage.csw.lenovo.com https://*.unsplash.com",
+    "img-src * data: blob: http: https: android-assets: cap-file:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://api.duitku.com https://sandbox.duitku.com https://hcaptcha.com https://*.hcaptcha.com",
     "frame-src 'self' https://*.google.com https://hcaptcha.com https://*.hcaptcha.com https://sandbox.duitku.com https://api.duitku.com",

@@ -49,7 +49,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sandbox.duitku.com https://api.duitku.com https://accounts.google.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://images.unsplash.com https://source.unsplash.com https://placehold.co https://dazsblmccvxtewtmaljf.supabase.co https://lh3.googleusercontent.com",
+              "img-src * data: blob: http: https: android-assets: cap-file:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.duitku.com https://sandbox.duitku.com https://accounts.google.com",
               "frame-src https://sandbox.duitku.com https://api.duitku.com https://accounts.google.com",
               "object-src 'none'",

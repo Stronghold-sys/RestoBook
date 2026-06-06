@@ -364,7 +364,7 @@ export async function middleware(request: NextRequest) {
         );
       }
     }
-    const isSensitive = path.startsWith('/api/send-otp') || path.startsWith('/api/verify-otp') || path.startsWith('/api/reset-password') || path.startsWith('/api/auth/login');
+    const isSensitive = path.startsWith('/api/send-otp') || path.startsWith('/api/verify-otp') || path.startsWith('/api/reset-password');
     if (isSensitive && emergency.block_sensitive_endpoints) {
       return new NextResponse(
         JSON.stringify({ error: 'Permintaan tidak dapat diproses (Layanan Ditangguhkan).' }),

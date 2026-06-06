@@ -94,8 +94,8 @@ export default function CustomerFavoritesPage() {
           <AnimatePresence>
             {favorites.map((fav, i) => fav.menu_items && (
               <motion.div key={fav.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: i * 0.05 }} whileHover={{ y: -8 }} className="bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-                <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800">
-                  <Image src={fav.menu_items.image_url || "https://placehold.co/400x300"} alt={fav.menu_items.name} fill className="object-cover" />
+                <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                  <Image src={fav.menu_items.image_url || "https://placehold.co/400x300"} alt={fav.menu_items.name} fill className="object-contain" />
                   <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeFav(fav.id)} className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full shadow-lg" aria-label="Hapus dari Favorit" title="Hapus dari Favorit">
                     <Trash2 className="w-4 h-4" />
                   </motion.button>

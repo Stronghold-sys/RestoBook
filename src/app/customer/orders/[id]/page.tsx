@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 export const runtime = 'edge';
 
 import { useEffect, useState, useRef } from "react";
@@ -1360,8 +1360,8 @@ export default function OrderTrackingPage() {
         <div className="space-y-6">
           {orderItems.map(item => (
             <div key={item.id} className="flex gap-6 items-center p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-border-light dark:border-border-dark">
-                <Image src={item.menu_items?.image_url || "https://placehold.co/100"} alt={item.menu_items?.name} fill className="object-cover" />
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+                <Image src={item.menu_items?.image_url || "https://placehold.co/100"} alt={item.menu_items?.name} fill className="object-contain" />
               </div>
               <div className="flex-1">
                 <h4 className="font-black text-lg text-text-light dark:text-text-dark">{item.menu_items?.name}</h4>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 export const runtime = 'edge';
 
@@ -1216,8 +1216,8 @@ export default function CartPage() {
           <AnimatePresence>
             {items.map((item, index) => (
               <motion.div layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} key={item.id} className={`p-6 flex flex-col sm:flex-row gap-6 sm:items-center ${index !== items.length - 1 ? "border-b border-border-light dark:border-border-dark" : ""}`}>
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-border-light dark:border-border-dark">
-                  <Image src={item.image_url || "https://placehold.co/100x100"} alt={item.name} fill className="object-cover" />
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+                  <Image src={item.image_url || "https://placehold.co/100x100"} alt={item.name} fill className="object-contain" />
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">

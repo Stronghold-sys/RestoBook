@@ -1179,9 +1179,9 @@ export default function POSPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredMenu.map(item => (
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: item.is_active ? 0.98 : 1 }} key={item.id} onClick={() => addToCart(item)} className={`relative bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl overflow-hidden cursor-pointer shadow-sm transition-all flex flex-col ${item.is_active ? 'hover:border-primary' : 'opacity-60 grayscale'}`}>
-                        <div className="h-28 w-full bg-gray-200 relative overflow-hidden group">
+                        <div className="h-28 w-full bg-gray-200 dark:bg-gray-800 relative flex items-center justify-center overflow-hidden group">
                           {item.image_url ? (
-                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                            <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted"><UtensilsCrossed className="w-8 h-8 opacity-20" /></div>
                           )}

@@ -623,8 +623,8 @@ export default function LandingPage() {
             ) : (
               filtered.map((item, i) => (
                 <motion.div key={item.id || item.name} layout custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover={{ y: item.is_active ? -10 : 0, boxShadow: item.is_active ? "0 25px 50px -12px rgba(0,0,0,0.15)" : "none" }} className={`bg-card-light dark:bg-card-dark rounded-2xl overflow-hidden border border-border-light dark:border-border-dark group relative flex flex-col ${!item.is_active ? 'opacity-70 grayscale' : ''}`}>
-                  <div className="relative h-48 w-full overflow-hidden">
-                    <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Image src={item.image} alt={item.name} fill className="object-contain group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute top-3 left-3"><span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-white/90 dark:bg-black/60 text-primary backdrop-blur-sm">{item.cat}</span></div>
                     
                     {!item.is_active && (

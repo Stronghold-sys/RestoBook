@@ -260,12 +260,12 @@ export default function CustomerMenuPage() {
                   item.is_active ? "" : "opacity-60 grayscale cursor-pointer"
                 }`}
               >
-                <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800">
+                <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
                   <Image
                     src={item.image_url || "https://placehold.co/400x300?text=Menu"}
                     alt={item.name}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                   />
                   {!item.is_active && (
                     <div className="absolute top-3 left-3 z-10 bg-red-600 text-white font-black px-3.5 py-1.5 rounded-xl text-[10px] uppercase tracking-widest border border-white shadow-lg">

@@ -239,7 +239,7 @@ export default function AdminMenu() {
                     <td className="p-4 text-center">
                       <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 mx-auto">
                         {item.image_url ? (
-                          <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                          <Image src={item.image_url} alt={item.name} fill className="object-contain" />
                         ) : (
                           <ImageIcon className="w-6 h-6 text-gray-400 absolute inset-0 m-auto" />
                         )}
@@ -333,7 +333,7 @@ export default function AdminMenu() {
                 <div className="space-y-3">
                   {formData.image_url ? (
                     <div className="relative h-40 w-full rounded-xl overflow-hidden bg-gray-50 border border-border-light dark:border-border-dark flex items-center justify-center">
-                      <Image src={formData.image_url} alt="Preview" fill className="object-cover" />
+                      <Image src={formData.image_url} alt="Preview" fill className="object-contain" />
                       <button 
                         type="button" 
                         onClick={() => setFormData({ ...formData, image_url: "" })} 
@@ -377,8 +377,8 @@ export default function AdminMenu() {
                     placeholder="Masukkan URL Gambar (https://...)" 
                   />
                   {formData.image_url && (
-                    <div className="relative h-32 w-full rounded-xl overflow-hidden bg-gray-50 border border-border-light dark:border-border-dark">
-                      <Image src={formData.image_url} alt="Link Preview" fill className="object-cover" />
+                    <div className="relative h-32 w-full rounded-xl overflow-hidden bg-gray-50 border border-border-light dark:border-border-dark flex items-center justify-center">
+                      <Image src={formData.image_url} alt="Link Preview" fill className="object-contain" />
                     </div>
                   )}
                 </div>

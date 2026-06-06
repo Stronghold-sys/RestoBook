@@ -497,7 +497,7 @@ export default function OnlineOrdersPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border-light dark:border-border-dark">
                               {item.menu_items?.image_url ? (
-                                <Image src={item.menu_items.image_url} alt={item.menu_items.name} width={48} height={48} className="object-cover w-full h-full" />
+                                <Image src={item.menu_items.image_url} alt={item.menu_items.name} width={48} height={48} className="object-contain w-full h-full" />
                               ) : (
                                 <ShoppingBag className="w-5 h-5 text-muted/30" />
                               )}

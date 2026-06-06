@@ -22,6 +22,8 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
+const MASKED_CREDENTIALS = '{\n  "private_key": "******** (TERSIMPAN SECARA AMAN - TEMPEL JSON BARU DI SINI UNTUK MEMPERBARUI) ********"\n}';
+
 export default function AdminCalendarSettingsPage() {
   const supabase = createClient();
   
@@ -58,14 +60,9 @@ export default function AdminCalendarSettingsPage() {
       if (data) {
         setCalendarId(data.calendar_id || '');
         setTimezone(data.timezone || 'Asia/Jakarta');
-        // Mask the private key for security in client view if desired, 
-        // but since only admin is reading it, we can just load or show placeholder
+        // Mask the credentials for security in client view
         if (data.credentials_json) {
-          setCredentialsJson(
-            typeof data.credentials_json === 'string'
-              ? data.credentials_json
-              : JSON.stringify(data.credentials_json, null, 2)
-          );
+          setCredentialsJson(MASKED_CREDENTIALS);
           setHasExistingConfig(true);
         }
       }
@@ -98,14 +95,23 @@ export default function AdminCalendarSettingsPage() {
     if (!calendarId) return toast.error('Google Calendar ID wajib diisi.');
     if (!credentialsJson) return toast.error('Isi JSON Kredensial Service Account wajib diisi.');
 
-    // Simple validation of JSON structure
-    try {
-      const parsed = JSON.parse(credentialsJson);
-      if (!parsed.client_email || !parsed.private_key) {
-        return toast.error('JSON tidak valid. Harus mengandung client_email dan private_key.');
+    const payload: any = {
+      calendar_id: calendarId,
+      timezone: timezone,
+      updated_at: new Date().toISOString()
+    };
+
+    if (credentialsJson !== MASKED_CREDENTIALS) {
+      // Simple validation of JSON structure
+      try {
+        const parsed = JSON.parse(credentialsJson);
+        if (!parsed.client_email || !parsed.private_key) {
+          return toast.error('JSON tidak valid. Harus mengandung client_email dan private_key.');
+        }
+        payload.credentials_json = parsed;
+      } catch (err) {
+        return toast.error('Format JSON Kredensial tidak valid. Silakan periksa kembali.');
       }
-    } catch (err) {
-      return toast.error('Format JSON Kredensial tidak valid. Silakan periksa kembali.');
     }
 
     setIsSaving(true);
@@ -114,13 +120,6 @@ export default function AdminCalendarSettingsPage() {
         .from('google_calendar_credentials')
         .select('id')
         .maybeSingle();
-
-      const payload = {
-        calendar_id: calendarId,
-        timezone: timezone,
-        credentials_json: JSON.parse(credentialsJson),
-        updated_at: new Date().toISOString()
-      };
 
       let saveError;
       if (existing?.id) {
@@ -147,6 +146,7 @@ export default function AdminCalendarSettingsPage() {
       setIsSaving(false);
     }
   };
+
 
   // Sync a single reservation to Google Calendar
   const handleSyncSingle = async (resId: string, action: 'create' | 'update' | 'delete') => {

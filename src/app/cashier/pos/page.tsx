@@ -1103,7 +1103,7 @@ export default function POSPage() {
 
                     {orderType === "dine_in" && (
                       <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <label className="text-xs font-bold text-muted uppercase tracking-widest mb-3 block">Pilih Meja (Hijau = Tersedia)</label>
+                        <label className="text-xs font-bold text-muted uppercase tracking-widest mb-3 block">Pilih Meja (Hijau = Tersedia, Merah = Terisi, Kuning = Booking)</label>
                         <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 pb-2 scrollbar-hide">
                           {tables.map(table => (
                             <button 
@@ -1118,6 +1118,11 @@ export default function POSPage() {
                               }`}
                             >
                               <span className="text-xl font-black leading-none">{table.table_number}</span>
+                              <span className="text-[8px] mt-0.5 uppercase tracking-wider font-extrabold opacity-80 leading-none">
+                                {table.status === "available" ? "Tersedia" : 
+                                 table.status === "occupied" ? "Terisi" : 
+                                 "Booking"}
+                              </span>
                             </button>
                           ))}
                         </div>

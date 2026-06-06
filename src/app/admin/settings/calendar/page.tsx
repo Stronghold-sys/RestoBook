@@ -346,7 +346,7 @@ export default function AdminCalendarSettingsPage() {
               <AlertCircle className="w-4 h-4" /> Cara Konfigurasi:
             </h4>
             <ol className="list-decimal list-inside space-y-1.5 text-xs text-muted leading-relaxed">
-              <li>Buka <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google Cloud Console</a>.</li>
+              <li>Buka <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a>.</li>
               <li>Buat Service Account & unduh kunci file berformat <strong>JSON</strong>.</li>
               <li>Aktifkan <strong>Google Calendar API</strong> di project Cloud Anda.</li>
               <li>Buka Google Calendar target Anda, masuk ke Pengaturan Kalender.</li>
@@ -405,6 +405,8 @@ export default function AdminCalendarSettingsPage() {
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value)}
                   className="px-3 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm"
+                  aria-label="Filter status sinkronisasi"
+                  title="Filter status sinkronisasi"
                 >
                   <option value="all">Semua Status</option>
                   <option value="synced">Tersinkron</option>

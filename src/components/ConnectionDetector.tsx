@@ -23,7 +23,7 @@ const PAGE_SLOW_MS        = 5_000;   // Halaman belum siap setelah 5 det = slow 
 const STORAGE_KEY         = "rb_conn_monitor";
 const AUTO_REFRESH_KEY    = "rb_auto_refreshed";
 
-type ConnectionStatus = "online" | "offline" | "slow_internet" | "slow_page" | "recovered" | "idle";
+type ConnectionStatus = "online" | "offline" | "slow_page" | "recovered" | "idle";
 
 interface MonitorState {
   status: ConnectionStatus;
@@ -126,8 +126,6 @@ export default function ConnectionDetector() {
       failCount.current++;
       if (failCount.current >= OFFLINE_FAILURES) {
         applyStatus("offline");
-      } else if (failCount.current >= 2) {
-        applyStatus("slow_internet");
       }
       return;
     }
@@ -136,14 +134,10 @@ export default function ConnectionDetector() {
     failCount.current = 0;
     successCount.current++;
 
-    if (ms > SLOW_THRESHOLD_MS) {
-      successCount.current = 0;
-      applyStatus("slow_internet");
-      return;
-    }
+    // Kecepatan ping diabaikan dan tidak akan menampilkan status internet lambat
 
     // Pulih dari state buruk
-    if (prevStatus.current === "offline" || prevStatus.current === "slow_internet" || prevStatus.current === "slow_page") {
+    if (prevStatus.current === "offline" || prevStatus.current === "slow_page") {
       if (successCount.current >= RECOVER_SUCCESSES) {
         applyStatus("recovered");
         return;
@@ -324,9 +318,7 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
     );
   }
 
-  if (status === "slow_internet") {
-    return null; // Banner internet lambat dinonaktifkan atas permintaan user
-  }
+  // Status "slow_internet" telah dihapus sepenuhnya dari status detector atas permintaan user
 
   if (status === "slow_page") {
     return (

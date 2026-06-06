@@ -58,7 +58,7 @@ export default function AdminMenu() {
   const fetchData = async () => {
     try {
       const [menuRes, catRes] = await Promise.all([
-        supabase.from('menu_items').select('*, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('menu_items').select('*, categories(name)').eq('is_deleted', false).order('created_at', { ascending: false }),
         supabase.from('categories').select('id, name').eq('is_active', true).order('sort_order')
       ]);
 
@@ -169,7 +169,7 @@ export default function AdminMenu() {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      const { error } = await supabase.from('menu_items').delete().eq('id', deleteId);
+      const { error } = await supabase.from('menu_items').update({ is_deleted: true, is_active: false }).eq('id', deleteId);
       if (error) throw error;
       toast.success("Menu berhasil dihapus");
       setDeleteId(null);

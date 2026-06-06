@@ -292,7 +292,7 @@ export default function POSPage() {
 
   const fetchMenuItemsOnly = async () => {
     try {
-      const { data } = await supabase.from("menu_items").select("*").order("name");
+      const { data } = await supabase.from("menu_items").select("*").eq("is_deleted", false).order("name");
       if (data) setMenuItems(data);
     } catch (e) {
       console.error("POS menu poll error:", e);
@@ -341,7 +341,7 @@ export default function POSPage() {
       // Fetch Categories, Menu, Tables, Settings, and Vouchers
       const [catRes, menuRes, tableRes, settingsRes, vouchersRes] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order", { ascending: true }),
-        supabase.from("menu_items").select("*").order("name"),
+        supabase.from("menu_items").select("*").eq("is_deleted", false).order("name"),
         supabase.from("tables").select("*").order("table_number"),
         supabase.from("restaurant_settings").select("*").single(),
         fetch("/api/admin/vouchers").then(r => r.json()).catch(() => ({ vouchers: [] }))

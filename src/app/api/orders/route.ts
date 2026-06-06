@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
 
       for (const item of itemsData) {
         const menuItem = menuItems.find((m: any) => m.id === item.menu_item_id);
-        if (!menuItem) {
+        if (!menuItem || menuItem.is_deleted) {
           return NextResponse.json({ error: 'Menu tidak ditemukan' }, { status: 404 });
         }
         if (!menuItem.is_active) {

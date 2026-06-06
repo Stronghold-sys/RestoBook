@@ -45,7 +45,7 @@ export default function AdminMenuLogs() {
   };
 
   const fetchMenuItems = async () => {
-    const { data } = await supabase.from("menu_items").select("*").order("name");
+    const { data } = await supabase.from("menu_items").select("*").eq("is_deleted", false).order("name");
     if (data) setMenuItems(data);
   };
 

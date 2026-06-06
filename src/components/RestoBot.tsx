@@ -500,6 +500,7 @@ export default function RestoBot() {
           .from('menu_items')
           .select('*, categories(name)')
           .eq('is_active', true)
+          .eq('is_deleted', false)
           .order('name');
         if (menuData) {
           setAllMenuItems(menuData);
@@ -1214,7 +1215,7 @@ ${settings.is_maintenance_active && settings.maintenance_message ? `- Pesan Pent
 
           {/* Chat Input Container */}
           <div className="p-3.5 bg-white dark:bg-card-dark border-t border-border-light dark:border-border-dark">
-            <div className="flex items-end bg-gray-50 dark:bg-background-dark/80 rounded-2xl px-4 py-2 border border-gray-150 dark:border-border-dark">
+            <div className="flex items-end bg-gray-50 dark:bg-background-dark/80 rounded-2xl px-4 py-2 border border-gray-200 dark:border-border-dark focus-within:border-gray-200 dark:focus-within:border-border-dark">
               <textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -1226,7 +1227,7 @@ ${settings.is_maintenance_active && settings.maintenance_message ? `- Pesan Pent
                 }}
                 placeholder={lang === 'id' ? 'Ketik pesan...' : 'Type a message...'}
                 rows={1}
-                className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none resize-none text-text-light dark:text-text-dark placeholder-gray-400 dark:placeholder-gray-500 py-1 max-h-20 hide-scrollbar"
+                className="restobot-input flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm outline-none resize-none text-text-light dark:text-text-dark placeholder-gray-400 dark:placeholder-gray-500 py-1 max-h-20 hide-scrollbar"
               />
               <button 
                 onClick={() => sendMessage(inputMessage)}
@@ -1311,6 +1312,11 @@ ${settings.is_maintenance_active && settings.maintenance_message ? `- Pesan Pent
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        .restobot-input:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
         }
       `}} />
     </div>

@@ -148,7 +148,7 @@ export default function LandingPage() {
 
   // Fetch functions declared in component scope
   const fetchMenu = async () => {
-    const { data } = await supabase.from('menu_items').select('*, categories(name)').order('name');
+    const { data } = await supabase.from('menu_items').select('*, categories(name)').eq('is_deleted', false).order('name');
     if (data) setMenuItems(data.map(item => ({
       id: item.id,
       name: item.name,

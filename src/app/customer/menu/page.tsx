@@ -74,7 +74,7 @@ export default function CustomerMenuPage() {
 
   const fetchMenuItemsOnly = async () => {
     try {
-      const { data } = await supabase.from("menu_items").select("*").order("name");
+      const { data } = await supabase.from("menu_items").select("*").eq("is_deleted", false).order("name");
       if (data) setMenuItems(data);
     } catch (e) {
       console.error("Fast poll error:", e);
@@ -96,6 +96,7 @@ export default function CustomerMenuPage() {
       const { data: menuData, error: menuError } = await supabase
         .from("menu_items")
         .select("*")
+        .eq("is_deleted", false)
         .order("name");
 
       if (menuError) throw menuError;

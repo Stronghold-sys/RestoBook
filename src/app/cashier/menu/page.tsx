@@ -61,7 +61,7 @@ export default function CashierMenuManagement() {
 
       const [catRes, menuRes] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order", { ascending: true }),
-        supabase.from("menu_items").select("*").order("name")
+        supabase.from("menu_items").select("*").eq("is_deleted", false).order("name")
       ]);
 
       setCategories(catRes.data || []);

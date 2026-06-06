@@ -49,7 +49,7 @@ export default function AdminDashboard() {
     try {
       const [users, menu, orders] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('menu_items').select('*', { count: 'exact', head: true }),
+        supabase.from('menu_items').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
         supabase.from('orders').select('total_amount, payment_status, created_at, order_type')
       ]);
 

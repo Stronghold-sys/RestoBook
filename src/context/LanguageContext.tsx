@@ -182,7 +182,54 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    function translateAttributes(el: HTMLElement) {
+      const attrs = ["placeholder", "title", "alt", "aria-label"];
+      for (let i = 0; i < attrs.length; i++) {
+        const attr = attrs[i];
+        const val = el.getAttribute(attr);
+        if (!val) continue;
+
+        const cleanVal = val.trim().toLowerCase();
+        if (lang === "en") {
+          if (idToEnMap.has(cleanVal)) {
+            const enVal = idToEnMap.get(cleanVal);
+            if (enVal) {
+              (el as any)[`_orig_${attr}`] = val;
+              el.setAttribute(attr, enVal);
+            }
+          }
+        } else {
+          if (enToIdMap.has(cleanVal)) {
+            const idVal = enToIdMap.get(cleanVal);
+            if (idVal) {
+              (el as any)[`_orig_${attr}`] = val;
+              el.setAttribute(attr, idVal);
+            }
+          }
+        }
+      }
+    }
+
     function walk(root: Node) {
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        const el = root as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (!["script", "style", "pre", "code", "noscript"].includes(tag) && 
+            !el.closest("#lang-switcher") && !el.closest(".lang-switcher-wrap") && !el.closest("[data-no-translate]")) {
+          translateAttributes(el);
+          
+          const allElements = el.getElementsByTagName("*");
+          for (let i = 0; i < allElements.length; i++) {
+            const childEl = allElements[i] as HTMLElement;
+            const childTag = childEl.tagName.toLowerCase();
+            if (!["script", "style", "pre", "code", "noscript"].includes(childTag) &&
+                !childEl.closest("#lang-switcher") && !childEl.closest(".lang-switcher-wrap") && !childEl.closest("[data-no-translate]")) {
+              translateAttributes(childEl);
+            }
+          }
+        }
+      }
+
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
           const parent = node.parentElement;
@@ -210,18 +257,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Watch for dynamic DOM changes
     const observer = new MutationObserver((mutations) => {
       observer.disconnect(); // Avoid feedback loops
-      for (const mutation of mutations) {
+      for (let i = 0; i < mutations.length; i++) {
+        const mutation = mutations[i];
         if (mutation.type === "childList") {
           const addedNodes = mutation.addedNodes;
-          for (let i = 0; i < addedNodes.length; i++) {
-            const addedNode = addedNodes[i];
+          for (let j = 0; j < addedNodes.length; j++) {
+            const addedNode = addedNodes[j];
             if (addedNode.nodeType === Node.ELEMENT_NODE) {
-              if (!(addedNode as HTMLElement).closest("#lang-switcher")) {
+              if (!(addedNode as HTMLElement).closest("#lang-switcher") && !(addedNode as HTMLElement).closest(".lang-switcher-wrap")) {
                 walk(addedNode);
               }
             } else if (addedNode.nodeType === Node.TEXT_NODE) {
               const parent = addedNode.parentElement;
-              if (parent && !parent.closest("#lang-switcher") && !parent.closest("[data-no-translate]")) {
+              if (parent && !parent.closest("#lang-switcher") && !parent.closest(".lang-switcher-wrap") && !parent.closest("[data-no-translate]")) {
                 translateTextNode(addedNode);
               }
             }
@@ -230,8 +278,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           const node = mutation.target;
           if (node.nodeType === Node.TEXT_NODE) {
             const parent = node.parentElement;
-            if (parent && !parent.closest("#lang-switcher") && !parent.closest("[data-no-translate]")) {
+            if (parent && !parent.closest("#lang-switcher") && !parent.closest(".lang-switcher-wrap") && !parent.closest("[data-no-translate]")) {
               translateTextNode(node);
+            }
+          }
+        } else if (mutation.type === "attributes") {
+          const node = mutation.target;
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            if (!el.closest("#lang-switcher") && !el.closest(".lang-switcher-wrap") && !el.closest("[data-no-translate]")) {
+              translateAttributes(el);
             }
           }
         }
@@ -240,6 +296,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         childList: true,
         subtree: true,
         characterData: true,
+        attributes: true,
+        attributeFilter: ["placeholder", "title", "alt", "aria-label"],
       });
     });
 
@@ -247,6 +305,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
+      attributeFilter: ["placeholder", "title", "alt", "aria-label"],
     });
 
     return () => observer.disconnect();

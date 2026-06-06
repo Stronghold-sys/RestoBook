@@ -4,19 +4,38 @@ export interface CalendarEventData {
   atas_nama: string;
   telepon: string;
   reservation_date: string; // YYYY-MM-DD
-  reservation_time: string; // HH:MM
+  reservation_time: string; // HH:MM or HH:MM:SS
   guest_count: number;
   notes?: string;
 }
 
 export async function getCalendarCredentials() {
-  const { data, error } = await supabaseAdmin
-    .from('google_calendar_credentials')
-    .select('*')
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data;
+  const calendarId = process.env.GOOGLE_CALENDAR_ID || process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID;
+  const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'Asia/Jakarta';
+  const credentialsJsonStr = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (!calendarId || !credentialsJsonStr) {
+    console.warn("Google Calendar: Menggunakan konfigurasi fallback dari database karena Environment Variables (GOOGLE_CALENDAR_ID atau GOOGLE_SERVICE_ACCOUNT_JSON) tidak disetel.");
+    const { data, error } = await supabaseAdmin
+      .from('google_calendar_credentials')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data;
+  }
+
+  try {
+    const credentials_json = JSON.parse(credentialsJsonStr);
+    return {
+      calendar_id: calendarId,
+      timezone: timezone,
+      credentials_json
+    };
+  } catch (err: any) {
+    console.error("Gagal melakukan parse GOOGLE_SERVICE_ACCOUNT_JSON dari Environment Variable:", err.message);
+    return null;
+  }
 }
 
 // Helper: Base64Url encoding
@@ -111,6 +130,32 @@ async function getGoogleAccessToken(clientEmail: string, privateKeyPem: string):
   return data.access_token;
 }
 
+// Helper: safe date formatter for timezone-neutral YYYY-MM-DDTHH:MM:SS format
+function formatDateTimeString(dateStr: string, timeStr: string, addHours = 0): string {
+  // Extract time parts (ignoring seconds if any)
+  const timeClean = timeStr.substring(0, 5); // "HH:MM"
+  const dateParts = dateStr.split('-'); // ["YYYY", "MM", "DD"]
+  const timeParts = timeClean.split(':'); // ["HH", "MM"]
+
+  const year = parseInt(dateParts[0]) || 2026;
+  const month = (parseInt(dateParts[1]) || 1) - 1;
+  const day = parseInt(dateParts[2]) || 1;
+  const hour = parseInt(timeParts[0]) || 12;
+  const minute = parseInt(timeParts[1]) || 0;
+
+  // Perform date shift in UTC representation to avoid timezone shifts & safely handle midnight rollover
+  const utcDate = new Date(Date.UTC(year, month, day, hour + addHours, minute, 0));
+
+  const yyyy = utcDate.getUTCFullYear();
+  const mm = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(utcDate.getUTCDate()).padStart(2, '0');
+  const hh = String(utcDate.getUTCHours()).padStart(2, '0');
+  const min = String(utcDate.getUTCMinutes()).padStart(2, '0');
+  const ss = String(utcDate.getUTCSeconds()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+}
+
 export async function createGoogleEvent(eventData: CalendarEventData): Promise<string> {
   const credentials = await getCalendarCredentials();
   if (!credentials) {
@@ -126,19 +171,18 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
 
   const accessToken = await getGoogleAccessToken(config.client_email, config.private_key);
 
-  const startDateTime = new Date(`${eventData.reservation_date}T${eventData.reservation_time}:00`);
-  // Event duration is 2 hours by default
-  const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+  const startISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 0);
+  const endISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 2); // default 2 jam
 
   const eventPayload = {
     summary: `Reservasi: ${eventData.atas_nama}`,
     description: `Nama: ${eventData.atas_nama}\nTelepon: ${eventData.telepon}\nTamu: ${eventData.guest_count} orang\nCatatan: ${eventData.notes || '-'}`,
     start: {
-      dateTime: startDateTime.toISOString(),
+      dateTime: startISO,
       timeZone: timezone || 'Asia/Jakarta'
     },
     end: {
-      dateTime: endDateTime.toISOString(),
+      dateTime: endISO,
       timeZone: timezone || 'Asia/Jakarta'
     }
   };
@@ -175,18 +219,18 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
 
   const accessToken = await getGoogleAccessToken(config.client_email, config.private_key);
 
-  const startDateTime = new Date(`${eventData.reservation_date}T${eventData.reservation_time}:00`);
-  const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+  const startISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 0);
+  const endISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 2);
 
   const eventPayload = {
     summary: `Reservasi: ${eventData.atas_nama}`,
     description: `Nama: ${eventData.atas_nama}\nTelepon: ${eventData.telepon}\nTamu: ${eventData.guest_count} orang\nCatatan: ${eventData.notes || '-'}`,
     start: {
-      dateTime: startDateTime.toISOString(),
+      dateTime: startISO,
       timeZone: timezone || 'Asia/Jakarta'
     },
     end: {
-      dateTime: endDateTime.toISOString(),
+      dateTime: endISO,
       timeZone: timezone || 'Asia/Jakarta'
     }
   };

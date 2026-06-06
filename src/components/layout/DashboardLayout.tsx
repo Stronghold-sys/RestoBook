@@ -5,13 +5,15 @@ import {
   Menu as MenuIcon, X, LogOut, Sun, Moon, Volume2, VolumeX,
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
-  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, ShieldAlert, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare
+  Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, ShieldAlert, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare,
+  Lock, AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import { createAuditLog } from "@/lib/audit";
 import MaintenanceBlockPage from "@/components/MaintenanceBlockPage";
 import { useAudioStore } from "@/store/useAudioStore";
 import NotificationCenterDrawer from "@/components/layout/NotificationCenterDrawer";
@@ -85,6 +87,86 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     }
   });
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [shiftState, setShiftState] = useState<'open' | 'closed' | 'standby'>('standby');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const fetchShiftState = async (profileId: string) => {
+    try {
+      const { data: openShift } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('status', 'open')
+        .maybeSingle();
+
+      if (openShift) {
+        setShiftState('open');
+        return;
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: closedShift } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('status', 'closed')
+        .gte('created_at', todayStr)
+        .limit(1)
+        .maybeSingle();
+
+      if (closedShift) {
+        setShiftState('closed');
+      } else {
+        setShiftState('standby');
+      }
+    } catch (e) {
+      console.error("Error fetching shift state in layout:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!userProfile?.id || role !== "cashier") return;
+
+    fetchShiftState(userProfile.id);
+
+    const channel = supabase
+      .channel(`layout-shifts-${userProfile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "shifts"
+        },
+        (payload: any) => {
+          if (payload.new?.profile_id === userProfile.id || payload.old?.profile_id === userProfile.id) {
+            fetchShiftState(userProfile.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id, role]);
+
+  const isLinkAllowed = (href: string): boolean => {
+    if (role !== "cashier") return true;
+    
+    // Profil and Absen are always allowed
+    if (href === "/cashier/profile" || href === "/cashier/attendance") return true;
+
+    if (shiftState === "open") {
+      return true;
+    } else if (shiftState === "closed") {
+      return href === "/cashier/transactions";
+    } else {
+      // standby
+      return href === "/cashier/dashboard";
+    }
+  };
+
 
   const [maintenanceSettings, setMaintenanceSettings] = useState({
     is_maintenance_active: false,
@@ -619,43 +701,66 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </button>
 
             <nav className={`flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar ${isTutorialActive ? "pointer-events-none" : ""}`}>
-              {getMenuLinks().map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  prefetch={false}
-                  data-tour={`nav-${link.name}`}
-                  className={`group relative flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
-                    pathname === link.href
-                      ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-muted hover:bg-primary/5 hover:text-primary"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <link.icon className={`h-5 w-5 ${pathname === link.href ? "text-white" : "text-muted group-hover:text-primary"}`} />
-                    <span>{link.name}</span>
-                    {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
-                      <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+              {getMenuLinks().map((link) => {
+                const allowed = isLinkAllowed(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={allowed ? link.href : "#"}
+                    prefetch={false}
+                    data-tour={`nav-${link.name}`}
+                    onClick={(e) => {
+                      if (!allowed) {
+                        e.preventDefault();
+                        if (shiftState === 'closed') {
+                          toast.error("Akses Ditolak: Shift Anda telah ditutup hari ini. Silakan hubungi admin atau buka shift baru jika berwenang.");
+                        } else {
+                          toast.error("Akses Ditolak: Anda harus melakukan absensi dan membuka shift terlebih dahulu.");
+                        }
+                        createAuditLog("attempt_locked_access", {
+                          href: link.href,
+                          menuName: link.name,
+                          shiftState
+                        });
+                      }
+                    }}
+                    className={`group relative flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
+                      !allowed
+                        ? "opacity-50 cursor-not-allowed text-muted/50 hover:bg-transparent"
+                        : pathname === link.href
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "text-muted hover:bg-primary/5 hover:text-primary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <link.icon className={`h-5 w-5 ${!allowed ? "text-muted/40" : pathname === link.href ? "text-white" : "text-muted group-hover:text-primary"}`} />
+                      <span>{link.name}</span>
+                      {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
+                        <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+                      )}
+                    </div>
+                    {!allowed && (
+                      <Lock className="w-3.5 h-3.5 text-muted/40 shrink-0" />
                     )}
-                  </div>
-                  {link.badge !== undefined && link.badge > 0 && (
-                    <motion.span 
-                      initial={{ scale: 0 }} 
-                      animate={{ scale: 1 }} 
-                      className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
-                        pathname === link.href ? "bg-white text-primary" : "bg-rose-500 text-white"
-                      }`}
-                    >
-                      {link.badge}
-                    </motion.span>
-                  )}
-                </Link>
-              ))}
+                    {allowed && link.badge !== undefined && link.badge > 0 && (
+                      <motion.span 
+                        initial={{ scale: 0 }} 
+                        animate={{ scale: 1 }} 
+                        className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
+                          pathname === link.href ? "bg-white text-primary" : "bg-rose-50 text-white"
+                        }`}
+                      >
+                        {link.badge}
+                      </motion.span>
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className={`mt-6 border-t border-border-light dark:border-border-dark pt-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
               <button
-                onClick={handleLogout}
+                onClick={() => setShowLogoutModal(true)}
                 data-tour="logout-button"
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-500 transition-all hover:bg-rose-50 border border-transparent hover:border-rose-100"
               >
@@ -831,6 +936,112 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           profileId={userProfile?.id || ""}
         />
 
+        {/* Logout Confirmation Modal */}
+        <AnimatePresence>
+          {showLogoutModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 8 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.97, opacity: 0, y: 4 }}
+                transition={spring}
+                className="bg-card-light dark:bg-card-dark rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark space-y-6 text-text-light dark:text-text-dark"
+              >
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+                  <LogOut className="w-8 h-8" />
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black tracking-tight">
+                    Konfirmasi Keluar
+                  </h3>
+                  <p className="text-muted text-sm">
+                    Apakah Anda yakin ingin keluar dari akun Anda?
+                  </p>
+                  {userProfile && (
+                    <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[10px] font-black uppercase text-muted tracking-wider">
+                      Role: {role === 'admin' ? 'Administrator' : role === 'cashier' ? 'Kasir' : 'Pelanggan'} ({userProfile.full_name})
+                    </span>
+                  )}
+                </div>
+
+                {/* WARNING ZONE */}
+                {(() => {
+                  let hasCartItems = false;
+                  if (typeof window !== 'undefined') {
+                    const cartStorage = localStorage.getItem("restobook-cart");
+                    if (cartStorage) {
+                      try {
+                        const parsed = JSON.parse(cartStorage);
+                        if (parsed?.state?.items && parsed.state.items.length > 0) {
+                          hasCartItems = true;
+                        }
+                      } catch (e) {}
+                    }
+                    const posCartStr = localStorage.getItem("pos_cart");
+                    if (posCartStr) {
+                      try {
+                        const parsed = JSON.parse(posCartStr);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                          hasCartItems = true;
+                        }
+                      } catch (e) {}
+                    }
+                  }
+
+                  const isCashierActiveShift = role === 'cashier' && shiftState === 'open';
+
+                  if (!hasCartItems && !isCashierActiveShift) return null;
+
+                  return (
+                    <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl text-left">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Perhatian Penting
+                      </span>
+                      <ul className="text-xs text-amber-800 dark:text-amber-400 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                        {hasCartItems && (
+                          <li>Terdapat item aktif di keranjang belanja. Keluar dari akun akan mereset keranjang belanja Anda!</li>
+                        )}
+                        {isCashierActiveShift && (
+                          <li className="font-extrabold text-red-600 dark:text-red-400">Shift Kasir Anda masih AKTIF! Keluar akun tidak akan menutup shift kerja Anda secara otomatis. Pastikan Anda telah melakukan penutupan shift terlebih dahulu.</li>
+                        )}
+                      </ul>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-muted rounded-2xl font-black text-xs uppercase hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await createAuditLog('logout', {
+                        role: role || 'unknown',
+                        shiftState: role === 'cashier' ? shiftState : null,
+                        name: userProfile?.full_name || 'unknown'
+                      });
+                      setShowLogoutModal(false);
+                      handleLogout();
+                    }}
+                    className="flex-[2] py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-red-600/20 transition-all"
+                  >
+                    Keluar Akun
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {isSidebarOpen && (
@@ -875,34 +1086,58 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 </div>
 
                 <nav className={`space-y-1.5 overflow-y-auto custom-scrollbar h-[calc(100%-160px)] ${isTutorialActive ? "pointer-events-none" : ""}`}>
-                  {getMenuLinks().map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      data-tour={`nav-${link.name}`}
-                      onClick={() => !isTutorialActive && setIsSidebarOpen(false)}
-                      className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
-                        pathname === link.href
-                          ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "text-muted hover:bg-primary/5 hover:text-primary"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <link.icon className="h-5 w-5" />
-                        <span>{link.name}</span>
-                        {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
-                          <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+                  {getMenuLinks().map((link) => {
+                    const allowed = isLinkAllowed(link.href);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={allowed ? link.href : "#"}
+                        data-tour={`nav-${link.name}`}
+                        onClick={(e) => {
+                          if (!allowed) {
+                            e.preventDefault();
+                            if (shiftState === 'closed') {
+                              toast.error("Akses Ditolak: Shift Anda telah ditutup hari ini. Silakan hubungi admin atau buka shift baru jika berwenang.");
+                            } else {
+                              toast.error("Akses Ditolak: Anda harus melakukan absensi dan membuka shift terlebih dahulu.");
+                            }
+                            createAuditLog("attempt_locked_access", {
+                              href: link.href,
+                              menuName: link.name,
+                              shiftState
+                            });
+                          } else if (!isTutorialActive) {
+                            setIsSidebarOpen(false);
+                          }
+                        }}
+                        className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
+                          !allowed
+                            ? "opacity-50 cursor-not-allowed text-muted/50 hover:bg-transparent"
+                            : pathname === link.href
+                              ? "bg-primary text-white shadow-lg shadow-primary/20"
+                              : "text-muted hover:bg-primary/5 hover:text-primary"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <link.icon className={`h-5 w-5 ${!allowed ? "text-muted/40" : ""}`} />
+                          <span>{link.name}</span>
+                          {isTransactionRoute(link.href) && maintenanceSettings.is_maintenance_active && role !== "admin" && (
+                            <span className="text-[9px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Maintenance</span>
+                          )}
+                        </div>
+                        {!allowed && (
+                          <Lock className="w-3.5 h-3.5 text-muted/40 shrink-0" />
                         )}
-                      </div>
-                      {link.badge !== undefined && link.badge > 0 && (
-                        <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
-                          pathname === link.href ? "bg-white text-primary" : "bg-rose-500 text-white"
-                        }`}>
-                          {link.badge}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
+                        {allowed && link.badge !== undefined && link.badge > 0 && (
+                          <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
+                            pathname === link.href ? "bg-white text-primary" : "bg-rose-500 text-white"
+                          }`}>
+                            {link.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </nav>
 
                 <div className={`absolute bottom-6 left-6 right-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
@@ -929,10 +1164,10 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                    </div>
 
                    <button
-                    onClick={handleLogout}
-                    data-tour="logout-button"
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-500 transition-all hover:bg-rose-50"
-                  >
+                     onClick={() => setShowLogoutModal(true)}
+                     data-tour="logout-button"
+                     className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-500 transition-all hover:bg-rose-50"
+                   >
                     <LogOut className="h-5 w-5" />
                     Keluar Akun
                   </button>

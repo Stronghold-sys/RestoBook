@@ -11,6 +11,7 @@ import { id } from "date-fns/locale";
 import AttendanceModal from "@/components/cashier/AttendanceModal";
 import toast from "react-hot-toast";
 import BaseModal from "@/components/BaseModal";
+import { createAuditLog } from "@/lib/audit";
 
 export default function CashierDashboard() {
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,89 @@ export default function CashierDashboard() {
   const [actualCash, setActualCash] = useState("");
   const [closing, setClosing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [shiftNote, setShiftNote] = useState("");
+  const [shiftSummary, setShiftSummary] = useState<any>(null);
+  const [closedShiftId, setClosedShiftId] = useState<string | null>(null);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [reopening, setReopening] = useState(false);
+
+  const loadShiftSummary = async () => {
+    if (!openShiftData) return;
+    setShiftSummary({
+      cashierName: profile?.full_name || "Kasir",
+      clockInTime: openShiftData.start_time,
+      totalTransactions: 0,
+      totalRevenue: 0,
+      totalCash: 0,
+      totalNonCash: 0,
+      totalRefund: 0,
+      totalDiscount: 0,
+      expectedCash: Number(openShiftData.initial_cash || 0),
+      loading: true
+    });
+
+    try {
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', openShiftData.start_time);
+
+      const list = orders || [];
+      let transactions = 0;
+      let revenue = 0;
+      let cash = 0;
+      let nonCash = 0;
+      let refund = 0;
+      let discount = 0;
+
+      list.forEach((o: any) => {
+        if (o.status === 'cancelled') {
+          try {
+            const refundDetails = JSON.parse(o.cancel_reason);
+            if (refundDetails && refundDetails.refundStatus === 'approved') {
+              refund += Number(o.total_amount || 0);
+            }
+          } catch (e) {}
+        } else if (o.payment_status === 'paid') {
+          transactions++;
+          revenue += Number(o.total_amount || 0);
+          discount += Number(o.discount || 0);
+
+          if (o.payment_method === 'cash') {
+            cash += Number(o.total_amount || 0);
+          } else {
+            nonCash += Number(o.total_amount || 0);
+          }
+        }
+      });
+
+      const initial = Number(openShiftData.initial_cash || 0);
+      const expectedCash = initial + cash;
+
+      setShiftSummary({
+        cashierName: profile?.full_name || "Kasir",
+        clockInTime: openShiftData.start_time,
+        totalTransactions: transactions,
+        totalRevenue: revenue,
+        totalCash: cash,
+        totalNonCash: nonCash,
+        totalRefund: refund,
+        totalDiscount: discount,
+        expectedCash,
+        loading: false
+      });
+    } catch (e) {
+      console.error("Error loading shift summary:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (showCloseModal) {
+      loadShiftSummary();
+    }
+  }, [showCloseModal]);
   
   // New States
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -359,6 +443,19 @@ export default function CashierDashboard() {
       
       setIsCompletedToday(!!globalTodayCheckOut && !shiftData?.todayShift);
 
+      // Cek apakah ada shift closed hari ini
+      const todayStr = today.toISOString().split('T')[0];
+      const { data: closedShift } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'closed')
+        .gte('created_at', todayStr)
+        .limit(1)
+        .maybeSingle();
+
+      setClosedShiftId(closedShift?.id || null);
+
       //  BUKA AKSES JIKA: SEDANG ADA SHIFT TERBUKA, ATAU SUDAH ABSEN MASUK SHIFT INI TAPI BELUM KELUAR!
       if (shift || (todayCheckIn && !todayCheckOut)) {
         setHasOpenShift(true);
@@ -448,22 +545,12 @@ export default function CashierDashboard() {
     setClosing(true);
     
     try {
-      // 1. Hitung total pendapatan dari pesanan yang LUNAS selama shift ini
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('total_amount')
-        .eq('payment_status', 'paid')
-        .gte('created_at', openShiftData.start_time);
-
-      const systemRevenue = orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
-      const initial = Number(openShiftData.initial_cash);
+      const initial = Number(openShiftData.initial_cash || 0);
       const actual = Number(actualCash);
       
-      // Saldo yang seharusnya ada = Modal Awal + Pendapatan Sistem
-      const expectedCash = initial + systemRevenue;
+      const expectedCash = shiftSummary ? shiftSummary.expectedCash : initial;
       const diff = actual - expectedCash;
 
-      //  KECERDASAN LEMBUR OTOMATIS: Hitung detik lembur diam-diam demi payroll!
       let finalOtSecs = 0;
       if (todayShift?.end_time) {
          const nowTime = new Date();
@@ -471,7 +558,6 @@ export default function CashierDashboard() {
          const limitTime = new Date(nowTime);
          limitTime.setHours(eH, eM, 0, 0);
 
-         // Midnight cross handling
          if (nowTime.getTime() - limitTime.getTime() > 12 * 60 * 60 * 1000) {
             limitTime.setDate(limitTime.getDate() + 1);
          }
@@ -482,21 +568,40 @@ export default function CashierDashboard() {
          }
       }
 
-      // 2. Update Shift ke database
+      // Update Shift ke database dengan data detail lengkap
       const { error } = await supabase
         .from('shifts')
         .update({
           end_time: new Date().toISOString(),
-          final_cash_system: systemRevenue,
+          final_cash_system: shiftSummary ? shiftSummary.totalRevenue : 0,
           final_cash_actual: actual,
           difference: diff,
-          status: 'closed'
+          status: 'closed',
+          total_transactions: shiftSummary ? shiftSummary.totalTransactions : 0,
+          total_revenue: shiftSummary ? shiftSummary.totalRevenue : 0,
+          total_cash: shiftSummary ? shiftSummary.totalCash : 0,
+          total_non_cash: shiftSummary ? shiftSummary.totalNonCash : 0,
+          total_refund: shiftSummary ? shiftSummary.totalRefund : 0,
+          total_discount: shiftSummary ? shiftSummary.totalDiscount : 0,
+          note: shiftNote,
+          closed_by: openShiftData.profile_id
         })
         .eq('id', openShiftData.id);
 
       if (error) throw error;
 
-      //  LOG KEHADIRAN: Masukkan absen KELUAR resmi berisi data jam lembur untuk Payroll Admin
+      // CATAT LOG AUDIT PENUTUPAN SHIFT
+      await createAuditLog('close_shift', {
+        shiftId: openShiftData.id,
+        cashierId: openShiftData.profile_id,
+        initialCash: initial,
+        actualCash: actual,
+        expectedCash,
+        difference: diff,
+        note: shiftNote
+      });
+
+      // LOG KEHADIRAN: Masukkan absen KELUAR resmi berisi data jam lembur untuk Payroll Admin
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
          await supabase.from('attendance').insert({
@@ -507,12 +612,10 @@ export default function CashierDashboard() {
            notes: `OVERTIME_LOG:${JSON.stringify({ seconds: finalOtSecs, date: new Date().toISOString() })}`
          });
 
-         //  BERSIHKAN SAMPAH LOKAL: Hilangkan trigger lembur & timer agar kembali normal untuk login berikutnya
+         // BERSIHKAN SAMPAH LOKAL
          localStorage.removeItem("overtime_start_timestamp");
          localStorage.removeItem("shift_end_target_timestamp");
       }
-
-
 
       toast.success(diff < 0 
         ? `Shift Ditutup. Ada selisih MINUS Rp ${Math.abs(diff).toLocaleString('id-ID')}`
@@ -523,6 +626,7 @@ export default function CashierDashboard() {
       setShowCloseModal(false);
       setHasOpenShift(false);
       setOpenShiftData(null);
+      setShiftNote(""); // Reset catatan shift
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -549,6 +653,12 @@ export default function CashierDashboard() {
         notes: `TUTUP_SHIF_MANUAL_DARURAT: ${new Date().toISOString()}`
       });
 
+      // CATAT LOG AUDIT EMERGENCY CHECKOUT
+      await createAuditLog('emergency_checkout', {
+        cashierId: p?.id || null,
+        notes: `Emergency check-out at ${new Date().toISOString()}`
+      });
+
       toast.success("Sesi Darurat Berhasil Ditutup!");
       setHasOpenShift(false);
       setOpenShiftData(null);
@@ -559,6 +669,43 @@ export default function CashierDashboard() {
       toast.error(e.message);
     } finally {
       setClosing(false);
+    }
+  };
+
+  const handleReopenShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!closedShiftId) return toast.error("Tidak ada data shift yang ditutup hari ini.");
+    if (!adminEmail || !adminPassword) return toast.error("Email dan password Administrator wajib diisi.");
+    setReopening(true);
+
+    try {
+      const res = await fetch('/api/admin/reopen-shift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftId: closedShiftId,
+          adminEmail,
+          adminPassword
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal membuka kembali shift");
+      }
+
+      toast.success(result.message || "Shift berhasil dibuka kembali! Selamat bekerja.");
+      setShowReopenModal(false);
+      setAdminEmail("");
+      setAdminPassword("");
+      
+      // Refresh status shift
+      await checkShift();
+      await fetchDashboardData();
+    } catch (err: any) {
+      toast.error(err.message || "Terjadi kesalahan saat membuka kembali shift.");
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -1230,8 +1377,18 @@ export default function CashierDashboard() {
                            <p className="text-emerald-50 font-medium max-w-md mx-auto text-sm leading-relaxed mb-6">
                               Laporan kerja dan data keuangan Anda telah berhasil tersimpan secara aman di sistem. Terima kasih atas kontribusi luar biasa Anda hari ini!
                            </p>
-                           <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700/30 backdrop-blur-sm rounded-2xl border border-emerald-400/30 font-black text-xs uppercase tracking-widest">
-                              Sampai Jumpa Besok 
+                           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700/30 backdrop-blur-sm rounded-2xl border border-emerald-400/30 font-black text-xs uppercase tracking-widest">
+                                 Sampai Jumpa Besok 
+                              </div>
+                              {closedShiftId && (
+                                <button
+                                  onClick={() => setShowReopenModal(true)}
+                                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/35 border border-amber-400/30"
+                                >
+                                  Buka Kembali Shift (Admin)
+                                </button>
+                              )}
                            </div>
                         </motion.div>
                       ) : (
@@ -1392,7 +1549,6 @@ export default function CashierDashboard() {
 
       {/* Close Shift Modal */}
       {(() => {
-         // SISTEM FALLBACK ANTI-CRASH (Disaster Recovery Helper)
          const effectiveStartTime = openShiftData?.start_time || latestAttendance?.created_at || new Date().toISOString();
          const effectiveInitialCash = Number(openShiftData?.initial_cash || 0);
 
@@ -1403,123 +1559,200 @@ export default function CashierDashboard() {
                <p className="text-white/70 text-xs mt-1">Hitung uang laci dan setoran akhir</p>
              </div>
              <div className="p-8 space-y-6">
-               <div className="space-y-4 text-text-light dark:text-text-dark">
-                 <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-border-light dark:border-border-dark">
-                   <div className="flex justify-between text-xs">
-                     <span className="text-muted font-bold uppercase tracking-widest">Mulai Shift</span>
-                     <span className="font-black text-primary">{format(new Date(effectiveStartTime), 'HH:mm:ss')} WIB</span>
-                   </div>
-                   <div className="flex justify-between text-xs">
-                     <span className="text-muted font-bold uppercase tracking-widest">Selesai Shift</span>
-                     <span className="font-black text-secondary">{format(new Date(), 'HH:mm:ss')} WIB</span>
-                   </div>
-                   
-                   {/* Tampilkan Durasi Lembur Real-Time Jika Ada */}
-                   {(() => {
-                     const nowT = new Date();
-                     let isOvertime = false;
-                     let diff = 0;
-                     let titleLabel = "Waktu Lembur";
-
-                     if (subDetails?.isSubstitute) {
-                        // KHUSUS PENGGANTI: Lembur dihitung sejak menit ke-1 absensi!
-                        isOvertime = true;
-                        diff = nowT.getTime() - new Date(effectiveStartTime).getTime();
-                        titleLabel = "Lembur Penuh (Pengganti)";
-                     } else if (todayShift?.end_time) {
-                        // KARYAWAN NORMAL: Lembur dihitung setelah jam shift berakhir
-                        const [h, m] = todayShift.end_time.split(':').map(Number);
-                        const targetEnd = new Date(nowT);
-                        targetEnd.setHours(h, m, 0, 0);
-                        if (nowT.getTime() - targetEnd.getTime() > 12 * 60 * 60 * 1000) targetEnd.setDate(targetEnd.getDate() + 1);
-                        
-                        diff = nowT.getTime() - targetEnd.getTime();
-                        isOvertime = diff > 0;
-                     }
-
-                     if (!isOvertime || diff <= 0) return null;
-
-                     const oh = Math.floor(diff / 3600000);
-                     const om = Math.floor((diff % 3600000) / 60000);
-                     return (
-                       <div className="flex flex-col gap-1 bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-900/30 dark:to-orange-900/30 p-3 rounded-xl border border-red-200 dark:border-red-900/50 animate-pulse">
-                         <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                            <Flame className="w-3 h-3 animate-bounce" /> {titleLabel}
-                         </span>
-                         <div className="flex justify-between items-baseline">
-                           <span className="text-xs font-bold text-muted">Total Akumulasi</span>
-                           <span className="font-black text-lg text-red-600 dark:text-red-400">{oh} jam {om} menit</span>
-                         </div>
+               {shiftSummary?.loading ? (
+                 <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                   <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+                   <p className="text-xs font-bold text-muted animate-pulse">Menghitung Ringkasan Data Shift...</p>
+                 </div>
+               ) : (
+                 <>
+                   {/* PENDING ORDERS WARNING */}
+                   {stats.pendingOrders > 0 && (
+                     <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl flex items-start gap-3 text-amber-800 dark:text-amber-400">
+                       <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
+                       <div>
+                         <span className="text-xs font-black uppercase tracking-wider block">Peringatan: Transaksi Aktif</span>
+                         <p className="text-[11px] font-semibold leading-relaxed mt-0.5">
+                           Terdapat {stats.pendingOrders} pesanan aktif yang masih PENDING. Pastikan transaksi ini telah diselesaikan atau ditindaklanjuti sebelum Anda menutup shift.
+                         </p>
                        </div>
-                     );
-                   })()}
+                     </div>
+                   )}
 
-                   <div className="h-px bg-border-light dark:bg-border-dark my-1" />
-                   <div className="flex justify-between text-xs">
-                     <span className="text-muted font-bold uppercase tracking-widest">Durasi Kerja</span>
-                     <span className="font-black">
-                       {(() => {
-                         const timeDiff = new Date().getTime() - new Date(effectiveStartTime).getTime();
-                         const h = Math.floor(timeDiff / 3600000);
-                         const m = Math.floor((timeDiff % 3600000) / 60000);
-                         return `${h} jam ${m} menit`;
-                       })()}
-                     </span>
+                   {/* SHIFT DATA SUMMARY CARD */}
+                   {shiftSummary && (
+                     <div className="space-y-4 text-text-light dark:text-text-dark text-xs bg-gray-50 dark:bg-gray-800/40 p-5 rounded-3xl border border-border-light dark:border-border-dark">
+                       <h4 className="font-black text-[10px] uppercase tracking-widest text-muted border-b pb-2 mb-3 border-border-light dark:border-border-dark">
+                         Ringkasan Data Shift
+                       </h4>
+                       <div className="grid grid-cols-2 gap-y-3 font-semibold text-text-light dark:text-text-dark">
+                         <div className="text-muted">Nama Kasir</div>
+                         <div className="text-right font-black">{shiftSummary.cashierName}</div>
+                         
+                         <div className="text-muted">Jam Masuk</div>
+                         <div className="text-right font-black">{format(new Date(shiftSummary.clockInTime), 'dd MMM yyyy, HH:mm')} WIB</div>
+                         
+                         <div className="text-muted">Jam Keluar</div>
+                         <div className="text-right font-black">{format(new Date(), 'dd MMM yyyy, HH:mm')} WIB</div>
+                         
+                         <div className="h-px col-span-2 bg-border-light dark:bg-border-dark my-1" />
+
+                         <div className="text-muted">Total Transaksi</div>
+                         <div className="text-right font-black text-sm">{shiftSummary.totalTransactions} Pesanan</div>
+
+                         <div className="text-muted">Total Pemasukan</div>
+                         <div className="text-right font-black text-sm text-green-600 dark:text-green-400">Rp {shiftSummary.totalRevenue.toLocaleString('id-ID')}</div>
+
+                         <div className="text-muted">Pembayaran Tunai (Cash)</div>
+                         <div className="text-right font-black">Rp {shiftSummary.totalCash.toLocaleString('id-ID')}</div>
+
+                         <div className="text-muted">Pembayaran Non-Tunai</div>
+                         <div className="text-right font-black">Rp {shiftSummary.totalNonCash.toLocaleString('id-ID')}</div>
+
+                         {shiftSummary.totalRefund > 0 && (
+                           <>
+                             <div className="text-muted">Jumlah Refund/Void</div>
+                             <div className="text-right font-black text-red-500">Rp {shiftSummary.totalRefund.toLocaleString('id-ID')}</div>
+                           </>
+                         )}
+
+                         {shiftSummary.totalDiscount > 0 && (
+                           <>
+                             <div className="text-muted">Total Diskon/Voucher</div>
+                             <div className="text-right font-black text-rose-500">Rp {shiftSummary.totalDiscount.toLocaleString('id-ID')}</div>
+                           </>
+                         )}
+
+                         <div className="h-px col-span-2 bg-border-light dark:bg-border-dark my-1" />
+
+                         <div className="text-muted font-bold">Modal Awal Kasir</div>
+                         <div className="text-right font-black text-sm">Rp {effectiveInitialCash.toLocaleString('id-ID')}</div>
+
+                         <div className="text-muted font-bold">Saldo Akhir Teoritis</div>
+                         <div className="text-right font-black text-sm text-primary">Rp {shiftSummary.expectedCash.toLocaleString('id-ID')}</div>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* INPUT ACTUAL CASH */}
+                   <div className="space-y-3">
+                     <label className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Uang Fisik Akhir di Laci</label>
+                     <div className="relative">
+                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
+                       <input 
+                         type="number" 
+                         value={actualCash}
+                         onChange={(e) => setActualCash(e.target.value)}
+                         placeholder="Masukkan uang fisik saat ini..."
+                         className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-2xl transition-all text-text-light dark:text-text-dark"
+                       />
+                     </div>
+
+                     {actualCash && shiftSummary && (
+                       <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
+                         Number(actualCash) - shiftSummary.expectedCash >= 0 
+                           ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
+                           : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
+                       }`}>
+                         <div className="flex flex-col">
+                           <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang Laci</span>
+                           <span className="text-xs font-bold">
+                             {Number(actualCash) - shiftSummary.expectedCash >= 0 ? 'Kelebihan (Selisih Plus)' : 'Kekurangan (Selisih Minus)'}
+                           </span>
+                         </div>
+                         <span className="font-black text-2xl">
+                           {Number(actualCash) - shiftSummary.expectedCash >= 0 ? '+' : ''}
+                           {(Number(actualCash) - shiftSummary.expectedCash).toLocaleString('id-ID')}
+                         </span>
+                       </div>
+                     )}
                    </div>
-                 </div>
-                 <div className="flex justify-between text-sm">
-                   <span className="text-muted font-bold uppercase text-[10px]">Modal Awal</span>
-                   <span className="font-bold">Rp {effectiveInitialCash.toLocaleString('id-ID')}</span>
-                 </div>
-               </div>
 
-               <div className="space-y-3">
-                   <label className="text-[10px] font-black uppercase text-muted">Uang Fisik di Laci</label>
-                   <div className="relative">
-                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
-                     <input 
-                       type="number" 
-                       value={actualCash}
-                       onChange={(e) => setActualCash(e.target.value)}
-                       placeholder="Contoh: 500000"
-                       className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-2xl transition-all text-text-light dark:text-text-dark"
+                   {/* SHIFT NOTE INPUT */}
+                   <div className="space-y-1">
+                     <label htmlFor="shiftNoteInput" className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Catatan Shift / Keterangan</label>
+                     <textarea 
+                       id="shiftNoteInput"
+                       value={shiftNote}
+                       onChange={(e) => setShiftNote(e.target.value)}
+                       placeholder="Masukkan catatan khusus penutupan shift..."
+                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none focus:border-primary text-xs min-h-[70px] text-text-light dark:text-text-dark"
+                       title="Catatan Shift"
                      />
                    </div>
 
-                   {actualCash && (
-                     <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
-                       Number(actualCash) - effectiveInitialCash >= 0 
-                         ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
-                         : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
-                     }`}>
-                       <div className="flex flex-col">
-                         <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang</span>
-                         <span className="text-xs font-bold">
-                           {Number(actualCash) - effectiveInitialCash >= 0 ? 'Kelebihan (Plus)' : 'Kekurangan (Minus)'}
-                         </span>
-                       </div>
-                       <span className="font-black text-2xl">
-                         {Number(actualCash) - effectiveInitialCash >= 0 ? '+' : ''}
-                         {(Number(actualCash) - effectiveInitialCash).toLocaleString('id-ID')}
-                       </span>
-                     </div>
-                   )}
-                 </div>
-
-               <div className="flex gap-3">
-                 <button onClick={() => setShowCloseModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase">Batal</button>
-                 <button 
-                   onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
-                   disabled={closing}
-                   className="flex-2 py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
-                 >
-                   {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Tutup & Simpan Shift" : "Tutup Sesi Darurat"}
-                 </button>
-               </div>
+                   <div className="flex gap-3 pt-2">
+                     <button onClick={() => setShowCloseModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-xl font-bold text-xs uppercase transition-all">Batal</button>
+                     <button 
+                       onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
+                       disabled={closing}
+                       className="flex-2 py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
+                     >
+                       {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Akhiri & Simpan Shift" : "Tutup Sesi Darurat"}
+                     </button>
+                   </div>
+                 </>
+               )}
              </div>
            </BaseModal>
          );
       })()}
+
+      {/* Reopen Shift Modal (Admin Authorization) */}
+      <BaseModal isOpen={showReopenModal} onClose={() => setShowReopenModal(false)} size="sm" noPadding={true} showCloseButton={false}>
+        <div className="bg-amber-500 p-6 text-white text-center relative">
+          <h3 className="font-black text-xl text-white">Otorisasi Administrator</h3>
+          <p className="text-white/70 text-xs mt-1">Masukkan kredensial admin untuk membuka kembali shift</p>
+        </div>
+        <form onSubmit={handleReopenShift} className="p-8 space-y-6">
+          <div className="space-y-1">
+            <label htmlFor="adminEmailInput" className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Email Admin</label>
+            <input 
+              id="adminEmailInput"
+              type="email" 
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="admin@restobook.com"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none focus:border-amber-500 text-sm text-text-light dark:text-text-dark"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="adminPasswordInput" className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Password</label>
+            <input 
+              id="adminPasswordInput"
+              type="password" 
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none focus:border-amber-500 text-sm text-text-light dark:text-text-dark"
+              required
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={() => {
+                setShowReopenModal(false);
+                setAdminEmail("");
+                setAdminPassword("");
+              }} 
+              className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-xl font-bold text-xs uppercase transition-all"
+            >
+              Batal
+            </button>
+            <button 
+              type="submit"
+              disabled={reopening}
+              className="flex-2 py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase"
+            >
+              {reopening ? <Loader2 className="w-5 h-5 animate-spin" /> : "Otorisasi & Buka kembali"}
+            </button>
+          </div>
+        </form>
+      </BaseModal>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div whileHover={{ y: -4 }} className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-border-light dark:border-border-dark flex items-center gap-4">

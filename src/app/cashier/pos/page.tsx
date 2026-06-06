@@ -40,6 +40,13 @@ export default function POSPage() {
   
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pos_cart", JSON.stringify(cart));
+    }
+  }, [cart]);
+
   const [customerName, setCustomerName] = useState("");
   const [cashierName, setCashierName] = useState("");
   const [cashierId, setCashierId] = useState("");

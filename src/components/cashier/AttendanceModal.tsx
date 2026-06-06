@@ -6,6 +6,7 @@ import { Camera, RefreshCw, CheckCircle2, DollarSign, Loader2, AlertCircle, Shie
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import BaseModal from "@/components/BaseModal";
+import { createAuditLog } from "@/lib/audit";
 
 interface AttendanceModalProps {
   onSuccess: (shiftId: string) => void;
@@ -147,6 +148,12 @@ export default function AttendanceModal({ onSuccess, onClose, substituteDetails,
       if (!res.ok) throw new Error(result.error || "Gagal menyimpan data absensi");
 
       toast.success("Absensi & Buka Shift Berhasil!");
+      await createAuditLog('open_shift', {
+        shiftId: result.shiftId,
+        cashierId: profile.id,
+        initialCash: parseFloat(initialCash) || 0,
+        workShiftId: workShiftId || null
+      });
       onSuccess(result.shiftId);
     } catch (error: any) {
       toast.error(error.message);

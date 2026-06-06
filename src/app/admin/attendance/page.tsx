@@ -312,7 +312,7 @@ export default function AdminAttendancePage() {
       )}
 
       {/* Tab Shifts tetap sama namun dalam tampilan tabel yang lebih rapi */}
-      {activeTab === "shifts" && <ShiftsTable shifts={shifts} />}
+      {activeTab === "shifts" && <ShiftsTable shifts={shifts} onReopenSuccess={() => fetchData(true)} />}
 
       {/* MODUL BARU: MANAJER SHIFT KERJA */}
       {activeTab === "work_shifts" && <WorkShiftsManager />}
@@ -624,7 +624,30 @@ function EmployeeDetail({ employeeId, onClose, handleApproveLeave, onUpdate, onV
   );
 }
 
-function ShiftsTable({ shifts }: { shifts: any[] }) {
+function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSuccess: () => void }) {
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
+
+  const handleReopen = async (shiftId: string, cashierName: string) => {
+    if (!confirm(`Apakah Anda yakin ingin membuka kembali shift untuk ${cashierName}? Data rekap penutupan shift akan direset dan absensi keluar hari ini juga akan dihapus agar kasir dapat masuk kembali.`)) return;
+    
+    setReopeningId(shiftId);
+    try {
+      const res = await fetch('/api/admin/reopen-shift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shiftId })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Gagal membuka kembali shift');
+      toast.success(result.message || 'Shift berhasil dibuka kembali!');
+      onReopenSuccess();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setReopeningId(null);
+    }
+  };
+
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
@@ -638,12 +661,13 @@ function ShiftsTable({ shifts }: { shifts: any[] }) {
               <th className="px-6 py-4 whitespace-nowrap">Sistem</th>
               <th className="px-6 py-4 whitespace-nowrap">Fisik</th>
               <th className="px-6 py-4 whitespace-nowrap">Selisih</th>
+              <th className="px-6 py-4 whitespace-nowrap text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-light dark:divide-border-dark text-sm">
             {shifts.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted font-bold bg-gray-50/50 dark:bg-gray-800/10">
+                <td colSpan={8} className="px-6 py-12 text-center text-muted font-bold bg-gray-50/50 dark:bg-gray-800/10">
                   Belum ada riwayat penutupan kasir / shift.
                 </td>
               </tr>
@@ -652,7 +676,7 @@ function ShiftsTable({ shifts }: { shifts: any[] }) {
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
                   <td className="px-6 py-4 font-bold whitespace-nowrap">{s.profiles?.full_name}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
+                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-650'}`}>{s.status}</span>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
                     {s.status === 'closed' && s.end_time ? (
@@ -674,6 +698,17 @@ function ShiftsTable({ shifts }: { shifts: any[] }) {
                       <span className={`font-black whitespace-nowrap ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
                         {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
                       </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    {s.status === 'closed' && (
+                      <button
+                        disabled={reopeningId === s.id}
+                        onClick={() => handleReopen(s.id, s.profiles?.full_name || 'Kasir')}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20"
+                      >
+                        {reopeningId === s.id ? 'Memproses...' : 'Buka Kembali'}
+                      </button>
                     )}
                   </td>
                 </tr>

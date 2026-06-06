@@ -303,6 +303,8 @@ export default function AdminCalendarSettingsPage() {
                   value={timezone}
                   onChange={e => setTimezone(e.target.value)}
                   className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm"
+                  aria-label="Pilih zona waktu"
+                  title="Pilih zona waktu"
                 >
                   <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
                   <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
@@ -373,6 +375,7 @@ export default function AdminCalendarSettingsPage() {
                   disabled={isLoadingReservations}
                   className="p-2.5 border border-border-light dark:border-border-dark rounded-xl text-muted hover:text-primary transition-all bg-background-light dark:bg-background-dark"
                   title="Segarkan Data"
+                  aria-label="Segarkan Data"
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoadingReservations ? 'animate-spin' : ''}`} />
                 </button>

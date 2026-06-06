@@ -312,19 +312,27 @@ export default function CustomerReservationsPage() {
         status_badge: "dibatalkan"
       });
 
-      // Trigger Email Notification (realtime, async)
-      fetch("/api/reservations/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
-      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+      // Trigger Email Notification (realtime, awaited)
+      try {
+        await fetch("/api/reservations/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
+        });
+      } catch (err) {
+        console.error("Gagal mengirim email reservasi:", err);
+      }
 
-      // Trigger Google Calendar sync (async)
-      fetch("/api/reservations/sync-calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservationId: cancellingId, action: "delete" })
-      }).catch(err => console.error("Gagal sinkronisasi pembatalan kalender:", err));
+      // Trigger Google Calendar sync (awaited)
+      try {
+        await fetch("/api/reservations/sync-calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: cancellingId, action: "delete" })
+        });
+      } catch (err) {
+        console.error("Gagal sinkronisasi pembatalan kalender:", err);
+      }
 
       toast.success("Reservasi berhasil dibatalkan");
       setCancellingId(null);

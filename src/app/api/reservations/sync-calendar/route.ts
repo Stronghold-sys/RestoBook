@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (reservationId) {
       const { data, error } = await supabaseAdmin
         .from('reservations')
-        .select('*, profiles(full_name, phone)')
+        .select('*, profiles(full_name, phone), tables(table_number)')
         .eq('id', reservationId)
         .maybeSingle();
 
@@ -92,13 +92,30 @@ export async function POST(req: Request) {
       displayNotes = reservation.notes.trim();
     }
 
+    // Tentukan nomor meja lengkap (meja utama + meja tambahan)
+    let mesaList: string[] = [];
+    if (reservation.tables?.table_number) {
+      mesaList.push(reservation.tables.table_number.toString());
+    }
+    if (parsedNotes?.meja_tambahan && Array.isArray(parsedNotes.meja_tambahan)) {
+      parsedNotes.meja_tambahan.forEach((t: any) => {
+        const tStr = t.toString();
+        if (!mesaList.includes(tStr)) {
+          mesaList.push(tStr);
+        }
+      });
+    }
+    const mejaNumbers = mesaList.join(', ') || '-';
+
     const eventData = {
+      id: reservation.id,
       atas_nama: parsedNotes?.atas_nama || reservation.profiles?.full_name || 'Guest',
       telepon: parsedNotes?.telepon || reservation.profiles?.phone || '-',
       reservation_date: reservation.reservation_date,
       reservation_time: reservation.reservation_time,
       guest_count: reservation.guest_count,
-      notes: displayNotes
+      notes: displayNotes,
+      meja: mejaNumbers
     };
 
     if (action === 'create') {

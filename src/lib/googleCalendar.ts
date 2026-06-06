@@ -1,12 +1,14 @@
 import { supabaseAdmin } from './supabase/admin';
 
 export interface CalendarEventData {
+  id?: string;
   atas_nama: string;
   telepon: string;
   reservation_date: string; // YYYY-MM-DD
   reservation_time: string; // HH:MM or HH:MM:SS
   guest_count: number;
   notes?: string;
+  meja?: string;
 }
 
 export async function getCalendarCredentials() {
@@ -174,9 +176,40 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
   const startISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 0);
   const endISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 2); // default 2 jam
 
+  let formattedDate = eventData.reservation_date;
+  try {
+    formattedDate = new Date(eventData.reservation_date).toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (e) {
+    // fallback
+  }
+
+  const formattedTime = eventData.reservation_time.substring(0, 5) + ' WIB';
+  const displayId = eventData.id ? `#${eventData.id.substring(0, 8).toUpperCase()}` : '-';
+  const mejaListText = eventData.meja || '-';
+
+  const descriptionText = [
+    `✨ DETAIL RESERVASI RESTOBOOK ✨`,
+    `──────────────────────────`,
+    `• ID Reservasi    : ${displayId}`,
+    `• Nama Pemesan   : ${eventData.atas_nama}`,
+    `• Nomor Telepon  : ${eventData.telepon}`,
+    `• Tanggal         : ${formattedDate}`,
+    `• Waktu Datang    : ${formattedTime}`,
+    `• Jumlah Tamu     : ${eventData.guest_count} Orang`,
+    `• Nomor Meja      : Meja ${mejaListText}`,
+    `• Catatan Khusus  : ${eventData.notes || '-'}`,
+    `──────────────────────────`,
+    `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
+  ].join('\n');
+
   const eventPayload = {
-    summary: `Reservasi: ${eventData.atas_nama}`,
-    description: `Nama: ${eventData.atas_nama}\nTelepon: ${eventData.telepon}\nTamu: ${eventData.guest_count} orang\nCatatan: ${eventData.notes || '-'}`,
+    summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
+    description: descriptionText,
     start: {
       dateTime: startISO,
       timeZone: timezone || 'Asia/Jakarta'
@@ -222,9 +255,40 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
   const startISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 0);
   const endISO = formatDateTimeString(eventData.reservation_date, eventData.reservation_time, 2);
 
+  let formattedDate = eventData.reservation_date;
+  try {
+    formattedDate = new Date(eventData.reservation_date).toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (e) {
+    // fallback
+  }
+
+  const formattedTime = eventData.reservation_time.substring(0, 5) + ' WIB';
+  const displayId = eventData.id ? `#${eventData.id.substring(0, 8).toUpperCase()}` : '-';
+  const mejaListText = eventData.meja || '-';
+
+  const descriptionText = [
+    `✨ DETAIL RESERVASI RESTOBOOK ✨`,
+    `──────────────────────────`,
+    `• ID Reservasi    : ${displayId}`,
+    `• Nama Pemesan   : ${eventData.atas_nama}`,
+    `• Nomor Telepon  : ${eventData.telepon}`,
+    `• Tanggal         : ${formattedDate}`,
+    `• Waktu Datang    : ${formattedTime}`,
+    `• Jumlah Tamu     : ${eventData.guest_count} Orang`,
+    `• Nomor Meja      : Meja ${mejaListText}`,
+    `• Catatan Khusus  : ${eventData.notes || '-'}`,
+    `──────────────────────────`,
+    `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
+  ].join('\n');
+
   const eventPayload = {
-    summary: `Reservasi: ${eventData.atas_nama}`,
-    description: `Nama: ${eventData.atas_nama}\nTelepon: ${eventData.telepon}\nTamu: ${eventData.guest_count} orang\nCatatan: ${eventData.notes || '-'}`,
+    summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
+    description: descriptionText,
     start: {
       dateTime: startISO,
       timeZone: timezone || 'Asia/Jakarta'

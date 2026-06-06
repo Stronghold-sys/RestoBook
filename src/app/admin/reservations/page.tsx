@@ -72,6 +72,7 @@ export default function AdminReservationsPage() {
   };
 
   const handleConfirm = async (res: any) => {
+    const toastId = toast.loading("Mengonfirmasi reservasi...");
     try {
       const parsedNotes = getParsedNotes(res.notes);
       const tableIds = parsedNotes?.meja_ids || [res.table_id];
@@ -96,24 +97,38 @@ export default function AdminReservationsPage() {
         });
       }
 
-      // Trigger Email Notification (realtime, async)
-      fetch("/api/reservations/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservationId: res.id, status: "confirmed" })
-      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+      // Trigger Email Notification (realtime, awaited)
+      try {
+        await fetch("/api/reservations/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: res.id, status: "confirmed" })
+        });
+      } catch (err) {
+        console.error("Gagal mengirim email reservasi:", err);
+      }
 
-      // Trigger Google Calendar sync (async)
-      fetch("/api/reservations/sync-calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservationId: res.id, action: "create" })
-      }).catch(err => console.error("Gagal sinkronisasi Google Calendar:", err));
+      // Trigger Google Calendar sync (awaited)
+      try {
+        const syncRes = await fetch("/api/reservations/sync-calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: res.id, action: "create" })
+        });
+        const syncData = await syncRes.json();
+        if (syncRes.ok && syncData.success) {
+          toast.success("Reservasi dikonfirmasi & disinkronkan ke kalender!", { id: toastId });
+        } else {
+          toast.error(`Konfirmasi sukses, tetapi sinkronisasi kalender gagal: ${syncData.error || 'Terjadi kesalahan'}`, { id: toastId });
+        }
+      } catch (err: any) {
+        console.error("Gagal sinkronisasi Google Calendar:", err);
+        toast.error(`Konfirmasi sukses, tetapi sinkronisasi kalender gagal: ${err.message}`, { id: toastId });
+      }
 
-      toast.success("Reservasi berhasil dikonfirmasi!");
       fetchData();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message, { id: toastId });
     }
   };
 
@@ -158,19 +173,27 @@ export default function AdminReservationsPage() {
             });
           }
 
-          // Trigger Email Notification (realtime, async)
-          fetch("/api/reservations/send-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reservationId: res.id, status: "cancelled" })
-          }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+          // Trigger Email Notification (realtime, awaited)
+          try {
+            await fetch("/api/reservations/send-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reservationId: res.id, status: "cancelled" })
+            });
+          } catch (err) {
+            console.error("Gagal mengirim email reservasi:", err);
+          }
 
-          // Trigger Google Calendar sync (async)
-          fetch("/api/reservations/sync-calendar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reservationId: res.id, action: "delete" })
-          }).catch(err => console.error("Gagal menghapus event kalender:", err));
+          // Trigger Google Calendar sync (awaited)
+          try {
+            await fetch("/api/reservations/sync-calendar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reservationId: res.id, action: "delete" })
+            });
+          } catch (err) {
+            console.error("Gagal menghapus event kalender:", err);
+          }
 
           toast.success("Reservasi telah ditolak.", { id: toastId });
           fetchData();

@@ -128,7 +128,7 @@ export async function sendReservationEmail(
       statusPillText = 'DIKONFIRMASI / AKTIF';
       statusPillBg = '#d1fae5';
       statusPillColor = '#059669';
-      statusDesc = 'Kabar baik! Reservasi meja Anda telah <strong>dikonfirmasi dan disetujui</strong> oleh kasir. Meja Anda telah kami kunci dan siapkan.';
+      statusDesc = 'Kabar baik! Reservasi meja Anda telah <strong>dikonfirmasi dan disetujui</strong> oleh kasir. Meja Anda telah kami kunci dan siapkan.<br/><br/><strong style="color: #059669;">🗓️ Info Kalender:</strong> Reservasi ini telah dimasukkan ke Google Calendar RestoBook secara otomatis. Anda dapat memantau jadwal kedatangan Anda secara real-time.';
     } else if (status === 'completed') {
       subject = `Reservasi Meja Selesai - Terima Kasih - ${restoName}`;
       titleHeader = 'Terima Kasih Atas Kunjungan Anda!';

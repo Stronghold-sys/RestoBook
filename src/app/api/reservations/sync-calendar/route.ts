@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (reservationId) {
       const { data, error } = await supabaseAdmin
         .from('reservations')
-        .select('*')
+        .select('*, profiles(full_name, phone)')
         .eq('id', reservationId)
         .maybeSingle();
 
@@ -70,13 +70,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Reservasi tidak ditemukan di database.' }, { status: 404 });
     }
 
+    // Parse JSON dari notes jika ada
+    let parsedNotes: any = null;
+    if (reservation.notes) {
+      try {
+        parsedNotes = JSON.parse(reservation.notes);
+      } catch (e) {
+        // Jika bukan JSON valid, biarkan null
+      }
+    }
+
     const eventData = {
-      atas_nama: reservation.atas_nama,
-      telepon: reservation.telepon,
+      atas_nama: parsedNotes?.atas_nama || reservation.profiles?.full_name || 'Guest',
+      telepon: parsedNotes?.telepon || reservation.profiles?.phone || '-',
       reservation_date: reservation.reservation_date,
       reservation_time: reservation.reservation_time,
       guest_count: reservation.guest_count,
-      notes: reservation.notes
+      notes: parsedNotes?.catatan || parsedNotes?.notes || reservation.notes || '-'
     };
 
     if (action === 'create') {

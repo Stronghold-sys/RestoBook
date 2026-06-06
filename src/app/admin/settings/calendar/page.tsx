@@ -39,7 +39,7 @@ export default function AdminCalendarSettingsPage() {
     try {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*, tables(table_number)')
+        .select('*, tables(table_number), profiles(full_name)')
         .order('reservation_date', { ascending: false });
 
       if (error) throw error;
@@ -145,8 +145,18 @@ export default function AdminCalendarSettingsPage() {
 
   // Filter & Search Logic
   const filteredReservations = reservations.filter(res => {
+    const parsed = res.notes ? (() => {
+      try {
+        return JSON.parse(res.notes);
+      } catch {
+        return null;
+      }
+    })() : null;
+
+    const customerName = parsed?.atas_nama || res.profiles?.full_name || 'Guest';
+
     const matchesSearch = 
-      res.atas_nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.id.includes(searchQuery);
 
@@ -271,7 +281,7 @@ export default function AdminCalendarSettingsPage() {
                     }
                   })() : null;
 
-                  const customerName = parsed?.atas_nama || res.atas_nama || 'Guest';
+                  const customerName = parsed?.atas_nama || res.profiles?.full_name || 'Guest';
 
                   return (
                     <tr key={res.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors">

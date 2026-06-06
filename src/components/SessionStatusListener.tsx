@@ -55,7 +55,9 @@ export default function SessionStatusListener() {
   const pathname = usePathname();
   const supabase = createClient();
   const channelRef = useRef<any>(null);
+  const activeUserIdRef = useRef<string | null>(null);
 
+  // Unsubscribe channel if navigating to public pages (login, register, forgot password, home)
   useEffect(() => {
     if (
       pathname === "/login" ||
@@ -67,19 +69,30 @@ export default function SessionStatusListener() {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      return;
+      activeUserIdRef.current = null;
     }
+  }, [pathname, supabase]);
 
-    let activeUserId: string | null = null;
-
+  useEffect(() => {
     const setupListener = async (userId: string) => {
-      if (activeUserId === userId) return;
-      activeUserId = userId;
+      if (activeUserIdRef.current === userId) return;
+      activeUserIdRef.current = userId;
 
       // Clean up previous channel if any
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+      }
+
+      // Check current pathname before database fetching
+      const currentPath = window.location.pathname;
+      if (
+        currentPath === "/login" ||
+        currentPath === "/register" ||
+        currentPath === "/forgot-password" ||
+        currentPath === "/"
+      ) {
+        return;
       }
 
       // Fetch profile to get status and profiles ID
@@ -152,7 +165,7 @@ export default function SessionStatusListener() {
       if (session?.user?.id) {
         setupListener(session.user.id);
       } else {
-        activeUserId = null;
+        activeUserIdRef.current = null;
         if (channelRef.current) {
           supabase.removeChannel(channelRef.current);
           channelRef.current = null;
@@ -173,7 +186,7 @@ export default function SessionStatusListener() {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [router, supabase, pathname]);
+  }, [router, supabase]);
 
   return null;
 }

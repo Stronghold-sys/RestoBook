@@ -62,6 +62,7 @@ export default function ConnectionDetector() {
   const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const pageSlow       = useRef(false);
   const prevStatus     = useRef<ConnectionStatus>("idle");
+  const offlineTimeoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Simpan / muat state dari sessionStorage ───────────────────────────────
   const saveState = useCallback((s: ConnectionStatus) => {
@@ -200,13 +201,26 @@ export default function ConnectionDetector() {
     if (typeof window === "undefined") return;
 
     const onOffline = () => {
-      failCount.current = OFFLINE_FAILURES;
-      successCount.current = 0;
-      applyStatus("offline");
+      if (offlineTimeoutRef.current) clearTimeout(offlineTimeoutRef.current);
+
+      // Berikan jeda 1.5 detik untuk menghindari transient/false offline saat pindah halaman
+      offlineTimeoutRef.current = setTimeout(async () => {
+        // Lakukan verifikasi riil menggunakan ping ke server
+        const { ok } = await doPing();
+        if (!ok) {
+          failCount.current = OFFLINE_FAILURES;
+          successCount.current = 0;
+          applyStatus("offline");
+        }
+      }, 1500);
     };
 
     const onOnline = () => {
-      // Jangan langsung "online" — verifikasi dulu lewat ping
+      // Batalkan status offline yang tertunda jika koneksi terdeteksi aktif kembali
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+        offlineTimeoutRef.current = null;
+      }
       checkConnection();
     };
 
@@ -223,6 +237,7 @@ export default function ConnectionDetector() {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (offlineTimeoutRef.current) clearTimeout(offlineTimeoutRef.current);
     };
   }, [checkConnection, applyStatus]);
 

@@ -345,6 +345,7 @@ export default function RestoBot() {
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevRoleRef = useRef<string | null>(null);
 
   // Supabase dynamic user context states
   const [profile, setProfile] = useState<any>(null);
@@ -452,6 +453,10 @@ export default function RestoBot() {
     else if (pathname?.includes('/customer') || pathname?.includes('/dashboard')) newRole = 'customer';
     
     setRole(newRole);
+    
+    // Only load context if role changed or hasn't been fetched yet
+    if (prevRoleRef.current === newRole) return;
+    prevRoleRef.current = newRole;
     
     const loadAndInit = async () => {
       const supabase = createClient();
@@ -686,6 +691,8 @@ export default function RestoBot() {
     // Subscribe to auth state changes to reload context dynamically
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      // Force clear cache and load new context
+      prevRoleRef.current = null;
       loadAndInit();
     });
 

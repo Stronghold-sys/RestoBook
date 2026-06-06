@@ -61,9 +61,7 @@ export function useActivityTimeout({ role, onWarn, onLogout }: ActivityTimeoutOp
 
     const resetTimers = () => {
       // Jika warning sedang aktif dan user melakukan aksi, matikan warning
-      if (warningActive) {
-        setWarningActive(false);
-      }
+      setWarningActive(false);
 
       // Reset activity cookie
       updateActivityCookie();
@@ -121,7 +119,7 @@ export function useActivityTimeout({ role, onWarn, onLogout }: ActivityTimeoutOp
       });
       if (throttleTimer) clearTimeout(throttleTimer);
     };
-  }, [role, warningActive]);
+  }, [role]);
 
   return {
     warningActive,

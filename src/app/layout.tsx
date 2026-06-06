@@ -84,6 +84,24 @@ export default function RootLayout({
         <SpotlightTutorial />
         <ModernToaster />
         <RestoBot />
+        <Script
+          src="/translation-demo/translator.js"
+          strategy="lazyOnload"
+        />
+        <Script id="init-translator" strategy="lazyOnload">
+          {`
+            (function() {
+              function tryInit() {
+                if (typeof window !== 'undefined' && window.initLanguageSystem) {
+                  window.initLanguageSystem();
+                } else {
+                  setTimeout(tryInit, 50);
+                }
+              }
+              tryInit();
+            })();
+          `}
+        </Script>
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {

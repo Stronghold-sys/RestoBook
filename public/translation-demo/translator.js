@@ -426,8 +426,136 @@ function translateElement(element, targetLang) {
 
 function translatePage(targetLang = state.currentLanguage) {
   writeLog("info", `Memulai penterjemahan seluruh elemen halaman ke: ${targetLang}`);
+  
+  // 1. Terjemahkan elemen-elemen dengan atribut i18n
   const elements = document.querySelectorAll("[data-i18n], [data-i18n-placeholder], [data-i18n-title]");
   elements.forEach(el => translateElement(el, targetLang));
+
+  // 2. Terjemahkan seluruh text nodes secara otomatis
+  if (typeof document !== "undefined") {
+    translateTextNodes(document.body, targetLang);
+  }
+}
+
+// Menjelajahi seluruh text node di halaman dan menerjemahkannya secara realtime
+function translateTextNodes(root, targetLang) {
+  if (!root) return;
+  
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      
+      const tag = parent.tagName.toLowerCase();
+      // Lewati tag script, style, input, pre-formatted, code blocks, option dll.
+      if (['script', 'style', 'textarea', 'input', 'pre', 'code', 'noscript', 'option'].includes(tag)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      
+      // Lewati widget switcher bahasa atau elemen berlabel data-no-translate
+      if (parent.closest('#lang-switcher') || parent.closest('.lang-switcher-wrap') || parent.closest('[data-no-translate]')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      
+      // Lewati widget pemantau latency ping agar ms tidak diterjemahkan
+      if (parent.closest('.pm-wrapper') || parent.closest('#pm-detail-panel')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      
+      const text = node.nodeValue.trim();
+      // Lewati string kosong, satu huruf saja, atau yang hanya berisi angka/simbol/spasi
+      if (!text || /^[\d\s\p{P}]+$/u.test(text) || text.length <= 1) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  let node;
+  while (node = walk.nextNode()) {
+    translateTextNode(node, targetLang);
+  }
+}
+
+async function translateTextNode(node, targetLang) {
+  if (!node._originalText) {
+    node._originalText = node.nodeValue;
+  }
+  
+  const original = node._originalText;
+  
+  // Jika bahasa target sama dengan bahasa asal (id), kembalikan ke teks asli
+  if (targetLang === CONFIG.DEFAULT_LANG) {
+    node.nodeValue = original;
+    node._translatedText = original;
+    return;
+  }
+
+  try {
+    const translated = await getTranslation(original, targetLang);
+    node.nodeValue = translated;
+    node._translatedText = translated;
+  } catch (err) {
+    console.error("Gagal melakukan auto-translate text node:", err);
+  }
+}
+
+let observerInstance = null;
+
+function startTranslationObserver(targetLang) {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  
+  if (observerInstance) {
+    observerInstance.disconnect();
+  }
+  
+  observerInstance = new MutationObserver((mutations) => {
+    // Putuskan sementara agar perubahan teks penterjemah tidak memicu loop
+    observerInstance.disconnect();
+    
+    let needsTranslation = false;
+    
+    for (const mutation of mutations) {
+      if (mutation.type === "childList") {
+        for (const addedNode of mutation.addedNodes) {
+          if (addedNode.nodeType === Node.ELEMENT_NODE) {
+            if (!addedNode.closest('#lang-switcher') && !addedNode.closest('.lang-switcher-wrap') && !addedNode.closest('.pm-wrapper')) {
+              needsTranslation = true;
+            }
+          } else if (addedNode.nodeType === Node.TEXT_NODE) {
+            needsTranslation = true;
+          }
+        }
+      } else if (mutation.type === "characterData") {
+        const textNode = mutation.target;
+        if (textNode.nodeType === Node.TEXT_NODE) {
+          // Jika teks berubah dari luar sistem penerjemah (misal, React melakukan render ulang)
+          if (textNode.nodeValue !== textNode._translatedText) {
+            textNode._originalText = textNode.nodeValue;
+            needsTranslation = true;
+          }
+        }
+      }
+    }
+    
+    if (needsTranslation) {
+      translateTextNodes(document.body, targetLang);
+    }
+    
+    // Aktifkan kembali observer
+    observerInstance.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  });
+  
+  observerInstance.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
 }
 
 // ─── 6. DYNAMIC & BATCH TRANSLATION ──────────────────────────────────────────
@@ -460,6 +588,10 @@ function changeLanguage(lang) {
   
   translatePage(lang);
   updateLanguageUI();
+  
+  // Mulai memantau perubahan DOM untuk auto-translate
+  startTranslationObserver(lang);
+  
   writeLog("success", `Bahasa aktif diubah ke: ${CONFIG.SUPPORTED_LANGS[lang].name}`);
 }
 
@@ -692,6 +824,9 @@ async function initLanguageSystem() {
   
   // 5. Terjemahkan halaman awal
   translatePage(detected);
+  
+  // Mulai memantau perubahan DOM untuk auto-translate
+  startTranslationObserver(detected);
 }
 
 // UI Dropdown controls
@@ -726,4 +861,8 @@ if (typeof window !== "undefined") {
   window.renderLanguageDropdown = renderLanguageDropdown;
   window.toggleFavorite = toggleFavorite;
   window.syncDynamicContent = syncDynamicContent;
+  window.startTranslationObserver = startTranslationObserver;
+  window.translateTextNodes = translateTextNodes;
+  window.CONFIG = CONFIG;
+  window.translationState = state;
 }

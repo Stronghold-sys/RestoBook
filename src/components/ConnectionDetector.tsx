@@ -325,28 +325,7 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
   }
 
   if (status === "slow_internet") {
-    return (
-      <div className="cm-banner cm-banner--slow" role="status" aria-live="polite">
-        <div className="cm-top-progress" />
-        <div className="cm-banner__inner">
-          <span className="cm-banner__icon cm-pulse">{IconSignal}</span>
-          <div className="cm-banner__text">
-            <strong>Internet Lambat</strong>
-            <span>Koneksi tidak stabil. Beberapa fitur mungkin memuat lebih lama.
-              {latency && latency < 9999 && <em> ({Math.round(latency)}ms)</em>}
-            </span>
-          </div>
-          <div className="cm-banner__actions">
-            <button className="cm-btn cm-btn--ghost cm-btn--sm" onClick={onRetry} aria-label="Muat ulang">
-              {IconRefresh} Muat Ulang
-            </button>
-            <button className="cm-btn-close" onClick={onDismiss} aria-label="Tutup notifikasi">
-              {IconX}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Banner internet lambat dinonaktifkan atas permintaan user
   }
 
   if (status === "slow_page") {
@@ -725,7 +704,7 @@ const CSS_STYLES = `
 }
 
 /* Mobile: pinggir kanan atas juga tapi disesuaikan marginnya */
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .cm-toast {
     min-width: 260px;
     max-width: calc(100vw - 32px);
@@ -835,7 +814,7 @@ const CSS_STYLES = `
 .cm-check-icon svg { width: 22px; height: 22px; }
 
 /* ── Responsive adjustments ─────────────────────────────────── */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .cm-card { padding: 32px 20px 24px; border-radius: 20px; }
   .cm-title { font-size: 18px; }
   .cm-banner__inner { flex-direction: column; align-items: flex-start; gap: 8px; }

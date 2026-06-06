@@ -11,6 +11,7 @@ import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
 import TranslationRouteHandler from "@/components/TranslationRouteHandler";
+import { cookies } from "next/headers";
 
 import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
@@ -71,8 +72,11 @@ export default function RootLayout({
     ? "https://app-sandbox.duitku.com/lib/js/duitku.js"
     : "https://app-prod.duitku.com/lib/js/duitku.js";
 
+  const cookieStore = cookies();
+  const lang = cookieStore.get("rb_i18n_lang")?.value || "id";
+
   return (
-    <html lang="id">
+    <html lang={lang} className={lang !== 'id' ? 'i18n-loading' : ''}>
       <head>
         <style>{`
           .i18n-loading {
@@ -84,7 +88,9 @@ export default function RootLayout({
           (function() {
             try {
               var lang = localStorage.getItem('rb_i18n_lang');
-              if (lang && lang !== 'id') {
+              var cookieLang = document.cookie.split('; ').find(row => row.startsWith('rb_i18n_lang='))?.split('=')[1];
+              var activeLang = lang || cookieLang || 'id';
+              if (activeLang !== 'id') {
                 document.documentElement.classList.add('i18n-loading');
               }
             } catch (e) {}

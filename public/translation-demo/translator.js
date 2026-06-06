@@ -916,6 +916,7 @@ if (typeof window !== "undefined") {
 if (typeof window !== "undefined") {
   window.initLanguageSystem = initLanguageSystem;
   window.changeLanguage = changeLanguage;
+  window.translatePage = translatePage;
   window.toggleLanguageDropdown = toggleLanguageDropdown;
   window.closeLanguageDropdown = closeLanguageDropdown;
   window.clearTranslationCache = clearTranslationCache;

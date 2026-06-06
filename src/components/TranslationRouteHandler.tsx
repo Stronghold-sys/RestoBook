@@ -58,12 +58,23 @@ export default function TranslationRouteHandler() {
           (window as any).translatePage(activeLang);
         }
 
-        // Tampilkan kembali halaman setelah render/layout selesai
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
+        // Tunggu antrean penerjemahan kosong atau timeout 800ms sebelum menampilkan halaman
+        const checkInterval = 20; // cek setiap 20ms
+        const maxTimeout = 800; // batas waktu 800ms
+        let elapsed = 0;
+
+        const interval = setInterval(() => {
+          elapsed += checkInterval;
+          const state = (window as any).translationState;
+          const isQueueEmpty = !state || (state.queue.length === 0 && !state.isProcessingQueue);
+
+          if (isQueueEmpty || elapsed >= maxTimeout) {
+            clearInterval(interval);
             document.documentElement.classList.remove("i18n-loading");
-          });
-        });
+          }
+        }, checkInterval);
+
+        return () => clearInterval(interval);
       } else {
         document.documentElement.classList.remove("i18n-loading");
       }

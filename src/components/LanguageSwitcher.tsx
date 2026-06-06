@@ -58,6 +58,7 @@ export default function LanguageSwitcher() {
         const localLang = localStorage.getItem("rb_i18n_lang") || "id";
         if (metaLang && metaLang !== localLang && SUPPORTED_LANGS[metaLang]) {
           localStorage.setItem("rb_i18n_lang", metaLang);
+          document.cookie = `rb_i18n_lang=${metaLang}; path=/; max-age=31536000; SameSite=Lax; Secure`;
           setCurrentLang(metaLang);
           if (typeof window !== "undefined" && (window as any).changeLanguage) {
             (window as any).changeLanguage(metaLang);
@@ -90,6 +91,7 @@ export default function LanguageSwitcher() {
 
   const handleSelectLanguage = async (code: string) => {
     localStorage.setItem("rb_i18n_lang", code);
+    document.cookie = `rb_i18n_lang=${code}; path=/; max-age=31536000; SameSite=Lax; Secure`;
     setCurrentLang(code);
     updateRecents(code);
     setIsOpen(false);

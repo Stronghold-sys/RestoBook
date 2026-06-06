@@ -478,6 +478,20 @@ export async function middleware(request: NextRequest) {
   const { supabase, user, supabaseResponse } = await updateSession(request);
   let finalResponse = supabaseResponse;
 
+  if (user && finalResponse) {
+    const metaLang = user.user_metadata?.lang || 'id';
+    const clientLang = request.cookies.get('rb_i18n_lang')?.value;
+    if (metaLang !== clientLang) {
+      finalResponse.cookies.set('rb_i18n_lang', metaLang, {
+        path: '/',
+        secure: true,
+        httpOnly: false, // Client needs to read/write it
+        sameSite: 'lax',
+        maxAge: 31536000 // 1 year
+      });
+    }
+  }
+
   // Set Cookie UUID Sidik Jari Klien ke response utama jika baru
   if (isNewDevice && finalResponse) {
     finalResponse.cookies.set('sec_device_uuid', deviceUuid, {
@@ -489,12 +503,11 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // 6.2. Deteksi Impossible Travel & Account Sharing (Server-Side)
+  // 6.2. Deteksi Impossible Travel & Account Sharing (Server-Side - Log only to prevent false-positive logouts)
   if (user) {
     // A. Impossible Travel
     const travelCheck = await checkImpossibleTravel(user.id, cfCountry, cfCity);
     if (travelCheck.impossibleTravel) {
-      await supabase.auth.signOut();
       await logSecurityIncident({
         ipAddress: ip,
         fingerprint,
@@ -506,15 +519,6 @@ export async function middleware(request: NextRequest) {
         severity: 'critical',
         payload: { lastCountry: travelCheck.lastCountry, currentCountry: cfCountry, lastActive: travelCheck.lastActiveAt }
       });
-
-      const res = NextResponse.redirect(new URL(`/login?session_expired=true&impossible_travel=true&last=${travelCheck.lastCountry}&curr=${cfCountry}`, request.url));
-      res.cookies.delete('last_active_timestamp');
-      res.cookies.delete('csrf-token');
-      const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
-      if (authCookie) {
-        res.cookies.delete(authCookie.name);
-      }
-      return res;
     }
 
     // B. Account Sharing Detection (Aktif dari 2+ negara atau 3+ IP bersamaan dalam 15 menit)
@@ -529,7 +533,6 @@ export async function middleware(request: NextRequest) {
       const uniqueIps = new Set(activeSessions.map(s => s.ip_address));
       
       if (uniqueCountries.size >= 2 || uniqueIps.size >= 3) {
-        await supabase.auth.signOut();
         await logSecurityIncident({
           ipAddress: ip,
           fingerprint,
@@ -541,11 +544,6 @@ export async function middleware(request: NextRequest) {
           severity: 'high',
           payload: { activeSessions }
         });
-
-        const res = NextResponse.redirect(new URL('/login?session_expired=true&account_sharing=true', request.url));
-        res.cookies.delete('last_active_timestamp');
-        res.cookies.delete('csrf-token');
-        return res;
       }
     }
   }
@@ -605,7 +603,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // 6.5. Deteksi Session Hijacking & Sesi Terikat
+  // 6.5. Deteksi Session Hijacking & Sesi Terikat (Log only to prevent false-positive logouts)
   if (user) {
     const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
     const sessionId = authCookie ? authCookie.value.slice(0, 100) : null;
@@ -613,7 +611,6 @@ export async function middleware(request: NextRequest) {
     if (sessionId) {
       const hijackCheck = await detectSessionHijack(sessionId, user.id, request, ip);
       if (hijackCheck.hijacked) {
-        await supabase.auth.signOut();
         await logSecurityIncident({
           ipAddress: ip,
           endpoint: path,
@@ -621,14 +618,6 @@ export async function middleware(request: NextRequest) {
           severity: 'critical',
           payload: { reason: hijackCheck.reason, userId: user.id }
         });
-
-        const res = NextResponse.redirect(new URL('/login?session_expired=true&hijack=true', request.url));
-        res.cookies.delete('last_active_timestamp');
-        res.cookies.delete('csrf-token');
-        if (authCookie) {
-          res.cookies.delete(authCookie.name);
-        }
-        return res;
       }
     }
   }

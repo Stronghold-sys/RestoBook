@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogIn, User, Lock, Loader2, Eye, EyeOff, CheckCircle2, AlertTriangle, Clock, X, MessageSquare, CheckCircle, XCircle, Ban, RefreshCw, ShieldAlert, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
 import Script from "next/script";
@@ -26,8 +25,8 @@ export default function LoginPage() {
   const [appealData, setAppealData] = useState<any>(null);
   const [loadingAppeal, setLoadingAppeal] = useState(false);
   
-  const router = useRouter();
   const supabase = createClient();
+
 
   useEffect(() => {
     if (!suspendData || !suspendData.suspend_until) return;
@@ -559,11 +558,23 @@ export default function LoginPage() {
 
         const role = profile?.role || 'customer';
         
-        // Let user savor the congratulatory celebration for 1.5s before teleporting!
+        // Gunakan window.location.href (hard navigation) agar cookies auth
+        // token yang baru di-set via setSession() selalu ikut terkirim ke
+        // server — terutama penting di mobile browser (Safari iOS / Android)
+        // yang sering gagal membawa cookie baru saat Next.js client-side
+        // router.push() digunakan.
         setTimeout(() => {
-          router.push(`/${role}/dashboard`);
-          router.refresh();
-        }, 1500);
+          window.location.href = `/${role}/dashboard`;
+        }, 1200);
+
+        // Fallback safety: jika navigasi gagal setelah 8 detik, reset loading
+        setTimeout(() => {
+          if (typeof window !== 'undefined' &&
+              window.location.pathname === '/login') {
+            setLoading(false);
+            toast.error('Terjadi kendala navigasi. Silakan coba lagi.');
+          }
+        }, 8000);
       }
     } catch (err: any) {
       toast.error(err.message || "Terjadi kesalahan sistem");

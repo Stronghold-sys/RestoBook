@@ -285,11 +285,39 @@ function cleanupMemStore() {
   }
 }
 
+// Helper untuk mengecek apakah user agent berasal dari search engine crawler resmi
+function isLegitimateSearchEngine(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  const engines = [
+    'googlebot',
+    'bingbot',
+    'baiduspider',
+    'yandexbot',
+    'duckduckbot',
+    'facebot',
+    'twitterbot',
+    'pinterestbot',
+    'google-co'
+  ];
+  return engines.some(engine => ua.includes(engine));
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MIDDLEWARE UTAMA
 // ═══════════════════════════════════════════════════════════════════
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // 1. Abaikan aset statis, media, sitemap, dan robots.txt di awal untuk performa & aksesibilitas bot SEO
+  const isStaticAsset = path.startsWith('/_next') || 
+    path === '/sitemap.xml' ||
+    path === '/robots.txt' ||
+    /\.(ico|png|jpg|jpeg|gif|webp|svg|css|js|woff|woff2|ttf|mp3|json)$/.test(path);
+
+  if (isStaticAsset) {
+    return NextResponse.next();
+  }
+
   const ip = getClientIP(request);
   const userAgent = request.headers.get('user-agent') || '';
 
@@ -373,9 +401,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // F. Deteksi Headless Browser & Otomasi
+  // F. Deteksi Headless Browser & Otomasi (Kecuali Search Engine resmi untuk optimasi SEO)
   const isHeadless = detectHeadlessBrowser(request);
-  if (isHeadless && (path.startsWith('/api') || path === '/login' || path === '/register')) {
+  const isSearchEngine = isLegitimateSearchEngine(userAgent);
+  if (isHeadless && !isSearchEngine && (path.startsWith('/api') || path === '/login' || path === '/register')) {
     await logSecurityIncident({
       ipAddress: ip,
       fingerprint,
@@ -416,17 +445,11 @@ export async function middleware(request: NextRequest) {
   // H. Track & Detect Rotating IP / Country Hop
   const { riskScoreAddition, isRotating, ipCount30m, isCountryHop } = await trackAndDetectRotatingIP(fingerprint, ip, cfCountry, cfCity, cfAsn);
 
-  // 1. Abaikan aset statis dan media
-  const isStaticAsset = path.startsWith('/_next') || 
-    /\.(ico|png|jpg|jpeg|gif|webp|svg|css|js|woff|woff2|ttf|mp3)$/.test(path);
+  // (Aset statis dan media sudah diproses & diabaikan di awal middleware)
 
-  if (isStaticAsset) {
-    return NextResponse.next();
-  }
-
-  // 3. Deteksi Bot Palsu / Headless Browser
+  // 3. Deteksi Bot Palsu / Headless Browser (Kecuali Search Engine resmi)
   const { isBot } = parseUserAgent(userAgent);
-  if (isBot && (path.startsWith('/api') || path === '/login' || path === '/register')) {
+  if (isBot && !isSearchEngine && (path.startsWith('/api') || path === '/login' || path === '/register')) {
     await logMiddlewareSecurity({
       ipAddress: ip, activity: 'BOT_BLOCKED', endpoint: path, status: 'blocked', userAgent
     });
@@ -604,7 +627,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 6.5. Deteksi Session Hijacking & Sesi Terikat (Log only to prevent false-positive logouts)
-  if (user) {
+  if (user && path !== '/api/ping') {
     const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
     const sessionId = authCookie ? authCookie.value.slice(0, 100) : null;
     

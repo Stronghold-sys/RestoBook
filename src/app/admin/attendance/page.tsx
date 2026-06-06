@@ -669,16 +669,35 @@ function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSucce
           <tbody className="divide-y divide-border-light dark:divide-border-dark text-sm">
             {shifts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-muted font-bold bg-gray-50/50 dark:bg-gray-800/10">
-                  Belum ada riwayat penutupan kasir / shift.
+                <td colSpan={8} className="px-6 py-16 text-center bg-gray-50/50 dark:bg-gray-800/10">
+                  <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+                    <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                      <DollarSign className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <p className="font-black text-text-light dark:text-text-dark">Belum ada riwayat shift kasir</p>
+                    <p className="text-xs text-muted font-medium text-center">
+                      Data shift akan muncul otomatis setelah kasir melakukan <strong>absensi masuk (Buka Shift)</strong> dari halaman <em>Absensi</em> di panel kasir.
+                    </p>
+                    <div className="mt-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-2xl text-xs text-amber-700 dark:text-amber-400 font-medium text-left">
+                      <p className="font-black mb-1">Cara mengisi data:</p>
+                      <ol className="list-decimal list-inside space-y-1">
+                        <li>Login sebagai kasir</li>
+                        <li>Buka halaman <strong>Absensi</strong></li>
+                        <li>Klik tombol <strong>Buka Shift / Absen Masuk</strong></li>
+                        <li>Data shift akan muncul di sini secara realtime</li>
+                      </ol>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
               shifts.map(s => (
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
-                  <td className="px-6 py-4 font-bold whitespace-nowrap">{s.profiles?.full_name}</td>
+                  <td className="px-6 py-4 font-bold whitespace-nowrap">
+                    {s.profiles?.full_name || <span className="text-muted italic text-xs">Kasir #{s.user_id?.slice(0,6)}</span>}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-650'}`}>{s.status}</span>
+                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${s.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-650'}`}>{s.status === 'open' ? 'Berjalan' : 'Selesai'}</span>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
                     {s.status === 'closed' && s.end_time ? (
@@ -692,13 +711,13 @@ function ShiftsTable({ shifts, onReopenSuccess }: { shifts: any[]; onReopenSucce
                       <span className="text-green-500 animate-pulse font-bold whitespace-nowrap">Sedang Berjalan...</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">Rp {s.initial_cash.toLocaleString('id-ID')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">Rp {(s.initial_cash || 0).toLocaleString('id-ID')}</td>
                   <td className="px-6 py-4 whitespace-nowrap">Rp {s.final_cash_system?.toLocaleString('id-ID') || '0'}</td>
                   <td className="px-6 py-4 font-black whitespace-nowrap">Rp {s.final_cash_actual?.toLocaleString('id-ID') || '0'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {s.status === 'closed' && (
-                      <span className={`font-black whitespace-nowrap ${s.difference < 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                        {s.difference < 0 ? '-' : '+'} Rp {Math.abs(s.difference).toLocaleString('id-ID')}
+                      <span className={`font-black whitespace-nowrap ${(s.difference || 0) < 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                        {(s.difference || 0) < 0 ? '-' : '+'} Rp {Math.abs(s.difference || 0).toLocaleString('id-ID')}
                       </span>
                     )}
                   </td>

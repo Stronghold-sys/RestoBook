@@ -183,7 +183,7 @@ export default function AdminCalendarSettingsPage() {
         <div className="space-y-1">
           <h4 className="font-bold text-text-light dark:text-text-dark">Kredensial Aman Terkonfigurasi</h4>
           <p className="text-xs text-muted leading-relaxed">
-            Kredensial API Google Service Account dan Calendar ID Anda saat ini dikelola dan dibaca secara aman melalui **Cloudflare Variables & Secrets**. Form input manual di halaman web telah dihapus sepenuhnya untuk mematuhi standar keamanan terbaik dan menghindari paparan kunci privat secara plaintext.
+            Kredensial API Google Service Account dan Calendar ID Anda saat ini dikelola dan dibaca secara aman melalui <strong>Cloudflare Variables & Secrets</strong>. Form input manual di halaman web telah dihapus sepenuhnya untuk mematuhi standar keamanan terbaik dan menghindari paparan kunci privat secara plaintext.
           </p>
         </div>
       </div>

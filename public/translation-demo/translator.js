@@ -641,6 +641,12 @@ function changeLanguage(lang) {
   startTranslationObserver(lang);
   
   writeLog("success", `Bahasa aktif diubah ke: ${CONFIG.SUPPORTED_LANGS[lang].name}`);
+
+  // Hapus class i18n-loading jika ada
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.remove("i18n-loading");
+    document.body.classList.remove("i18n-loading");
+  }
 }
 
 function updateRecentLanguages(lang) {
@@ -849,32 +855,41 @@ async function initLanguageSystem() {
   updateStatus("translating");
   writeLog("info", "Memulai inisialisasi Sistem Multi-Language...");
   
-  // 1. Load cache lokal
-  loadTranslationCache();
-  
-  // 2. Load kamus fallback lokal (fallback.json)
   try {
-    const res = await fetch("/translation-demo/fallback.json");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    state.fallbackDictionary = await res.json();
-    writeLog("success", "Berhasil memuat kamus fallback lokal (fallback.json).");
-  } catch (e) {
-    writeLog("error", `Gagal memuat kamus fallback lokal: ${e.message}. Beberapa fallback lokal mungkin tidak bekerja.`);
+    // 1. Load cache lokal
+    loadTranslationCache();
+    
+    // 2. Load kamus fallback lokal (fallback.json)
+    try {
+      const res = await fetch("/translation-demo/fallback.json");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      state.fallbackDictionary = await res.json();
+      writeLog("success", "Berhasil memuat kamus fallback lokal (fallback.json).");
+    } catch (e) {
+      writeLog("error", `Gagal memuat kamus fallback lokal: ${e.message}. Beberapa fallback lokal mungkin tidak bekerja.`);
+    }
+    
+    // 3. Deteksi bahasa aktif
+    const detected = detectBrowserLanguage();
+    state.currentLanguage = detected;
+    localStorage.setItem(CONFIG.CURRENT_LANG_KEY, detected);
+    
+    // 4. Update UI bahasa
+    updateLanguageUI();
+    
+    // 5. Terjemahkan halaman awal
+    translatePage(detected);
+    
+    // Mulai memantau perubahan DOM untuk auto-translate
+    startTranslationObserver(detected);
+  } catch (err) {
+    console.error("Error during initLanguageSystem:", err);
+  } finally {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.remove("i18n-loading");
+      document.body.classList.remove("i18n-loading");
+    }
   }
-  
-  // 3. Deteksi bahasa aktif
-  const detected = detectBrowserLanguage();
-  state.currentLanguage = detected;
-  localStorage.setItem(CONFIG.CURRENT_LANG_KEY, detected);
-  
-  // 4. Update UI bahasa
-  updateLanguageUI();
-  
-  // 5. Terjemahkan halaman awal
-  translatePage(detected);
-  
-  // Mulai memantau perubahan DOM untuk auto-translate
-  startTranslationObserver(detected);
 }
 
 // UI Dropdown controls

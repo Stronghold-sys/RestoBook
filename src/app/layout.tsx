@@ -10,6 +10,7 @@ import AutoTableStatusManager from "@/components/AutoTableStatusManager";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
+import TranslationRouteHandler from "@/components/TranslationRouteHandler";
 
 import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
@@ -72,7 +73,26 @@ export default function RootLayout({
 
   return (
     <html lang="id">
+      <head>
+        <style>{`
+          .i18n-loading {
+            opacity: 0 !important;
+            transition: none !important;
+          }
+        `}</style>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var lang = localStorage.getItem('rb_i18n_lang');
+              if (lang && lang !== 'id') {
+                document.documentElement.classList.add('i18n-loading');
+              }
+            } catch (e) {}
+          })();
+        ` }} />
+      </head>
       <body className={inter.className}>
+        <TranslationRouteHandler />
         <AppSplashScreen />
         <DeviceDimensionManager />
         <DynamicFavicon />

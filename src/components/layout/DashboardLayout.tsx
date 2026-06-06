@@ -665,21 +665,21 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         {/* Main Content */}
         <div className="lg:pl-72 print:pl-0 min-h-screen flex flex-col">
           {/* Header */}
-          <header className={`sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-6 backdrop-blur-xl print:hidden smooth-gpu ${isTutorialActive ? "pointer-events-none" : ""}`}>
-            <div className="flex items-center gap-4 lg:hidden">
+          <header className={`sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border-light dark:border-border-dark bg-background-light/80 dark:bg-background-dark/80 px-3 sm:px-6 backdrop-blur-xl print:hidden smooth-gpu ${isTutorialActive ? "pointer-events-none" : ""}`}>
+            <div className="flex items-center gap-1.5 sm:gap-4 lg:hidden">
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 data-tour="mobile-hamburger"
                 aria-label="Buka Menu"
                 title="Buka Menu"
-                className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted"
+                className="p-1.5 sm:p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted"
               >
-                <MenuIcon className="h-6 w-6" />
+                <MenuIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
               <button
                 onClick={handleLogoClick}
                 data-tour="logo"
-                className="text-xl font-black text-primary hover:opacity-80 transition-all focus:outline-none"
+                className="text-base sm:text-xl font-black text-primary hover:opacity-80 transition-all focus:outline-none"
               >
                 RestoBook
               </button>
@@ -691,7 +691,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                </h2>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
               {/* Ping Monitor badge */}
               <PingMonitor size="sm" />
               {/* Language Switcher */}
@@ -720,13 +720,13 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               <button
                 onClick={() => setIsNotifCenterOpen(true)}
                 data-tour="header-notifications"
-                className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all relative"
+                className="p-1.5 sm:p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all relative"
                 title="Pusat Informasi"
                 aria-label="Pusat Informasi"
               >
-                <Bell className="h-5 w-5" />
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                 {unreadNotifCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] sm:h-5 sm:min-w-[20px] px-1 items-center justify-center rounded-full bg-rose-500 text-[8px] sm:text-[9px] font-black text-white shadow-sm">
                     {unreadNotifCount}
                   </span>
                 )}

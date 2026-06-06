@@ -469,6 +469,11 @@ const PM_STYLES = `
   font-weight: 700;
   letter-spacing: -.01em;
 }
+@media (max-width: 480px) {
+  .pm-label {
+    display: none !important;
+  }
+}
 
 /* ── Detail Panel ─────────────────────────────────────────── */
 .pm-panel {

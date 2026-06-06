@@ -128,7 +128,7 @@ export default function OrderTrackingPage() {
   const fetchChatMessages = async () => {
     setChatLoading(true);
     try {
-      const res = await fetch(`/api/customer/orders/${id}/chat`);
+      const res = await fetch(`/api/customer/orders/${id}/chat?lang=${localStorage.getItem("rb_i18n_lang") || "id"}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat obrolan");
       setChatRoom(data.chat);
@@ -399,7 +399,8 @@ export default function OrderTrackingPage() {
         },
         body: JSON.stringify({
           message: isCamera ? "Mengirim foto dari kamera" : `Mengirim file: ${file.name}`,
-          attachment_url: publicUrl
+          attachment_url: publicUrl,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
         })
       });
 
@@ -440,7 +441,8 @@ export default function OrderTrackingPage() {
         },
         body: JSON.stringify({
           message: "Mengirim foto dari kamera",
-          attachment_url: publicUrl
+          attachment_url: publicUrl,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
         })
       });
 
@@ -485,7 +487,8 @@ export default function OrderTrackingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend || null,
-          attachment_url: attachmentToSend || null
+          attachment_url: attachmentToSend || null,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
         })
       });
       const data = await res.json();
@@ -512,7 +515,10 @@ export default function OrderTrackingPage() {
       const res = await fetch(`/api/customer/orders/${id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({
+          action,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
+        })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -545,7 +551,8 @@ export default function OrderTrackingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          attachment_url: null
+          attachment_url: null,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
         })
       });
       const data = await res.json();

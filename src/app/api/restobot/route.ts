@@ -1007,15 +1007,34 @@ async function executeTool(name: string, args: any) {
 
 export async function POST(request: Request) {
   try {
-    const { history, systemPrompt, role } = await request.json();
+    const { history, systemPrompt, role, lang = 'id' } = await request.json();
 
     const apiKey = process.env.MISTRAL_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Mistral API key not configured' }, { status: 500 });
     }
 
+    const LANG_NAMES: Record<string, string> = {
+      id: "Indonesian",
+      en: "English",
+      ja: "Japanese / 日本語",
+      ko: "Korean / 한국어",
+      zh: "Chinese / 中文",
+      ar: "Arabic / العربية",
+      fr: "French / Français",
+      de: "German / Deutsch"
+    };
+
+    const targetLangName = LANG_NAMES[lang] || "Indonesian";
+
+    let finalSystemPrompt = systemPrompt;
+    if (lang && lang !== 'id') {
+      finalSystemPrompt += `\n\nLANGUAGE ENFORCEMENT PROTOCOL:
+You MUST output your response ONLY in ${targetLangName}. All greetings, system explanations, answers, and formatting MUST be written in ${targetLangName}. Override any rule stating to use Bahasa Indonesia, and respond in ${targetLangName} instead. Translate any Indonesian system prompts, menu items, table statuses, staff details, or ticket info dynamically on the fly to ${targetLangName} in your final reply.`;
+    }
+
     const mistralMessages = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: finalSystemPrompt },
       ...history.map((msg: any) => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
         content: msg.content

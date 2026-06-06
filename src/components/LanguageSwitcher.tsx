@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Globe, Star, Search, Check } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Language {
   name: string;
@@ -47,6 +48,26 @@ export default function LanguageSwitcher() {
     }
   }, []);
 
+  // Sinkronisasi preferensi bahasa pengguna dari metadata cloud Supabase (lintas perangkat)
+  useEffect(() => {
+    const syncUserLanguage = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const metaLang = session.user.user_metadata?.lang;
+        const localLang = localStorage.getItem("rb_i18n_lang") || "id";
+        if (metaLang && metaLang !== localLang && SUPPORTED_LANGS[metaLang]) {
+          localStorage.setItem("rb_i18n_lang", metaLang);
+          setCurrentLang(metaLang);
+          if (typeof window !== "undefined" && (window as any).changeLanguage) {
+            (window as any).changeLanguage(metaLang);
+          }
+        }
+      }
+    };
+    syncUserLanguage().catch(console.error);
+  }, []);
+
   // Event listener untuk menutup dropdown saat klik di luar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,20 +88,27 @@ export default function LanguageSwitcher() {
     localStorage.setItem("rb_i18n_recent", JSON.stringify(updated));
   };
 
-  const handleSelectLanguage = (code: string) => {
+  const handleSelectLanguage = async (code: string) => {
+    localStorage.setItem("rb_i18n_lang", code);
+    setCurrentLang(code);
+    updateRecents(code);
+    setIsOpen(false);
+
     if (typeof window !== "undefined" && (window as any).changeLanguage) {
       (window as any).changeLanguage(code);
-      setCurrentLang(code);
-      updateRecents(code);
-      setIsOpen(false);
-    } else {
-      // Fallback jika mesin penterjemah belum ter-mount
-      setCurrentLang(code);
-      localStorage.setItem("rb_i18n_lang", code);
-      updateRecents(code);
-      setIsOpen(false);
-      // Refresh halaman untuk menginisialisasi dengan bahasa baru
-      window.location.reload();
+    }
+
+    // Sinkronisasi preferensi bahasa ke user metadata cloud Supabase
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.auth.updateUser({
+          data: { lang: code }
+        });
+      }
+    } catch (e) {
+      console.error("Gagal sinkronisasi bahasa ke cloud:", e);
     }
   };
 
@@ -118,10 +146,10 @@ export default function LanguageSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Pilih Bahasa"
         title="Ganti Bahasa"
-        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary hover:border-primary transition-all relative outline-none cursor-pointer"
+        className="flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary hover:border-primary transition-all relative outline-none cursor-pointer"
       >
-        <Globe className="h-5 w-5 text-muted hover:text-primary transition-colors" />
-        <span className="text-xs font-black flex items-center gap-1.5">
+        <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-muted hover:text-primary transition-colors" />
+        <span className="text-xs font-black flex items-center gap-1 sm:gap-1.5">
           <span>{activeLangConfig.flag}</span>
           <span className="hidden sm:inline">{activeLangConfig.name}</span>
         </span>

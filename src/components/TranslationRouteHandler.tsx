@@ -1,31 +1,71 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
+
+const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export default function TranslationRouteHandler() {
   const pathname = usePathname();
 
+  // 1. Intersept click & popstate untuk menyembunyikan konten secara instan saat navigasi dimulai
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hideOnNavigate = () => {
+      const activeLang = localStorage.getItem("rb_i18n_lang") || "id";
+      if (activeLang !== "id") {
+        document.documentElement.classList.add("i18n-loading");
+      }
+    };
+
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
+      
+      // Deteksi jika link internal dan navigasi client-side
+      if (
+        anchor &&
+        anchor.href &&
+        anchor.href.startsWith(window.location.origin) &&
+        !anchor.target &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey
+      ) {
+        hideOnNavigate();
+      }
+    };
+
+    document.addEventListener("click", handleLinkClick, { capture: true });
+    window.addEventListener("popstate", hideOnNavigate);
+
+    return () => {
+      document.removeEventListener("click", handleLinkClick, { capture: true });
+      window.removeEventListener("popstate", hideOnNavigate);
+    };
+  }, []);
+
+  // 2. Terjemahkan halaman secara sinkron saat pathname berubah sebelum browser menggambar ulang (paint)
+  useSafeLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const activeLang = localStorage.getItem("rb_i18n_lang") || "id";
       if (activeLang !== "id") {
-        // 1. Tambahkan i18n-loading ke root html untuk menyembunyikan FOUT secara instan
-        document.documentElement.classList.add("i18n-loading");
-
-        // 2. Jalankan penterjemahan halaman secara sinkron
+        // Jalankan penterjemahan halaman secara sinkron
         if ((window as any).translatePage) {
           (window as any).translatePage(activeLang);
         }
 
-        // 3. Tampilkan kembali halaman setelah render/layout browser selesai
+        // Tampilkan kembali halaman setelah render/layout selesai
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             document.documentElement.classList.remove("i18n-loading");
           });
         });
+      } else {
+        document.documentElement.classList.remove("i18n-loading");
       }
     } catch (e) {
       console.error("Error in TranslationRouteHandler:", e);

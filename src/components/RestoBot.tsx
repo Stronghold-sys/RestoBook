@@ -894,7 +894,8 @@ export default function RestoBot() {
         body: JSON.stringify({
           history: historyToApi,
           systemPrompt: buildSystemPrompt(),
-          role: role
+          role: role,
+          lang: localStorage.getItem("rb_i18n_lang") || "id"
         })
       });
 

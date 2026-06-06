@@ -379,7 +379,7 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
           <span className="cm-check-icon">{IconCheckCircle}</span>
           <div className="cm-toast__text">
             <strong>Koneksi Pulih!</strong>
-            <span>Menutup notifikasi dalam <strong>{countdown} detik</strong></span>
+            <span>Internet kembali normal. Menutup dalam <strong>{countdown} detik</strong></span>
           </div>
         </div>
         {/* Countdown progress bar */}

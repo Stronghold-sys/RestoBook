@@ -203,18 +203,10 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
   const refreshedRef  = useRef(false);
   const panelRef      = useRef<HTMLDivElement>(null);
 
-  // ── Auto-refresh sekali saat pulih ────────────────────────────────────────
+  // ── Bersihkan status pulih ────────────────────────────────────────────────
   const handleRecovery = useCallback(() => {
-    const done = sessionStorage.getItem(AUTO_REFRESH_KEY) === "1";
-    if (done || refreshedRef.current) {
-      dispatch({ type: "CLEAR_RECOVERED" });
-      return;
-    }
-    refreshedRef.current = true;
-    sessionStorage.setItem(AUTO_REFRESH_KEY, "1");
     setTimeout(() => {
       dispatch({ type: "CLEAR_RECOVERED" });
-      window.location.reload();
     }, 2500);
   }, []);
 

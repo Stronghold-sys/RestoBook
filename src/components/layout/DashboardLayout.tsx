@@ -963,11 +963,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   <p className="text-muted text-sm">
                     Apakah Anda yakin ingin keluar dari akun Anda?
                   </p>
-                  {userProfile && (
-                    <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[10px] font-black uppercase text-muted tracking-wider">
-                      Role: {role === 'admin' ? 'Administrator' : role === 'cashier' ? 'Kasir' : 'Pelanggan'} ({userProfile.full_name})
-                    </span>
-                  )}
                 </div>
 
                 {/* WARNING ZONE */}

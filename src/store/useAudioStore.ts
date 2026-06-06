@@ -7,11 +7,11 @@ interface AudioStore {
 }
 
 export const useAudioStore = create<AudioStore>((set, get) => ({
-  isCustomerSoundEnabled: true,
+  isCustomerSoundEnabled: false,
   initAudioSettings: (userId: string) => {
     if (!userId) return;
-    const stored = localStorage.getItem(`restobook_audio_enabled_${userId}`);
-    set({ isCustomerSoundEnabled: stored !== 'false' }); // default to true
+    // Selalu nonaktifkan suara saat pertama kali masuk/login
+    set({ isCustomerSoundEnabled: false });
   },
   toggleCustomerSound: (userId: string) => {
     if (!userId) return;

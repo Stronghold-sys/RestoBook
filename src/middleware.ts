@@ -665,8 +665,8 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // 9. API Rate Limiting Multi-Layer
-  if (path.startsWith('/api')) {
+  // 9. API Rate Limiting Multi-Layer (Bypass /api/ping to prevent false connection loss alerts)
+  if (path.startsWith('/api') && path !== '/api/ping') {
     let limit = 60; // Public API rate limit (60/min)
     let rateLimitKey = `rate:pub:${ip}`;
 

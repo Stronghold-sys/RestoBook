@@ -107,20 +107,13 @@ export default function ConnectionDetector() {
 
   // ── Logic utama ping ──────────────────────────────────────────────────────
   const checkConnection = useCallback(async () => {
-    const isNavigatorOnline = navigator.onLine;
-
-    if (!isNavigatorOnline) {
-      successCount.current = 0;
-      failCount.current = Math.min(failCount.current + 1, OFFLINE_FAILURES + 1);
-      if (failCount.current >= OFFLINE_FAILURES) {
-        applyStatus("offline");
-      }
-      return;
-    }
-
+    // Verifikasi koneksi menggunakan ping asli ke server
     const { ok, latency: ms } = await doPing();
     setLatency(ms);
 
+    // Kita anggap offline jika ping gagal.
+    // Jika navigator.onLine menyatakan offline tapi ping berhasil, kita tetap anggap online
+    // karena komunikasi dengan server aktif berjalan dengan baik.
     if (!ok) {
       successCount.current = 0;
       failCount.current++;

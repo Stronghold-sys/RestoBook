@@ -10,8 +10,6 @@ import AutoTableStatusManager from "@/components/AutoTableStatusManager";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
-import { cookies } from "next/headers";
-import { LanguageProvider } from "@/context/LanguageContext";
 
 import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
@@ -72,14 +70,10 @@ export default function RootLayout({
     ? "https://app-sandbox.duitku.com/lib/js/duitku.js"
     : "https://app-prod.duitku.com/lib/js/duitku.js";
 
-  const cookieStore = cookies();
-  const lang = cookieStore.get("rb_i18n_lang")?.value || "id";
-
   return (
-    <html lang={lang}>
+    <html lang="id">
       <head />
       <body className={inter.className}>
-        <LanguageProvider>
           <AppSplashScreen />
           <DeviceDimensionManager />
           <DynamicFavicon />
@@ -91,7 +85,6 @@ export default function RootLayout({
           <SpotlightTutorial />
           <ModernToaster />
           <RestoBot />
-        </LanguageProvider>
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {

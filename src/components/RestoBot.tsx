@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Bot, Minimize2 } from 'lucide-react';
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from "@/context/LanguageContext";
 
 const formatMessageContent = (content: string) => {
   if (!content) return '';
@@ -318,7 +317,11 @@ const playPingSound = () => {
 
 export default function RestoBot() {
   const pathname = usePathname();
-  const { lang, t, formatCurrency } = useLanguage();
+  const lang = 'id' as const;
+  const formatCurrency = (amount: number) => {
+    const num = Number(amount) || 0;
+    return `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num)}`;
+  };
 
   // Sembunyikan RestoBot di halaman yang memiliki input chat sendiri
   // agar tombol chatbot tidak mengganggu tombol kirim pesan
@@ -689,7 +692,7 @@ export default function RestoBot() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [pathname, lang]);
+  }, [pathname]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

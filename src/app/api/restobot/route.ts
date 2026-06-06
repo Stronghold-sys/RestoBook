@@ -126,24 +126,16 @@ const MISTRAL_TOOLS = [
   }
 ];
 
-function formatCurrencyBackend(amount: number, lang: string = 'id'): string {
+function formatCurrencyBackend(amount: number): string {
   const num = Number(amount) || 0;
-  if (lang === 'id') {
-    const formatted = new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
-    return `Rp ${formatted}`;
-  } else {
-    const formatted = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
-    return `IDR ${formatted}`;
-  }
+  const formatted = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(num);
+  return `Rp ${formatted}`;
 }
 
-async function executeTool(name: string, args: any, lang: string = 'id') {
+async function executeTool(name: string, args: any) {
   const supabase = getSupabaseAdmin();
   const resendKey = process.env.RESEND_API_KEY;
 

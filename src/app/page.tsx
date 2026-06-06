@@ -11,7 +11,6 @@ import { useThemeStore } from "@/store/useThemeStore";
 import { createClient } from "@/lib/supabase/client";
 import { getStoreStatus, getMinutesUntilClose } from "@/utils/operationalHours";
 import toast from "react-hot-toast";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const CATEGORY_STYLE_MAP: Record<string, { icon: any; color: string }> = {
   "makanan utama": { icon: Utensils, color: "from-orange-500 to-red-500" },
@@ -379,7 +378,6 @@ export default function LandingPage() {
               <span className="text-xl font-bold text-text-light dark:text-text-dark whitespace-nowrap">Resto<span className="text-primary">Book</span></span>
             </button>
             <div className="flex gap-4 items-center">
-              <LanguageSwitcher />
               {user ? (
                 <div className="relative">
                   <button 

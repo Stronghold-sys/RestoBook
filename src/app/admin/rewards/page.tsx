@@ -13,10 +13,14 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
 import BaseModal from "@/components/BaseModal";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { createClient } from "@/lib/supabase/client";
-import * as XLSX from "xlsx";
 import { downloadFile } from "@/utils/downloadHelper";
+import dynamic from "next/dynamic";
+
+const LazyRewardsChart = dynamic(
+  () => import("@/components/charts/RewardsChart"),
+  { ssr: false, loading: () => <div className="h-64 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
 
 export default function AdminRewardsPage() {
   const [loading, setLoading] = useState(true);
@@ -1242,14 +1246,7 @@ export default function AdminRewardsPage() {
               </h3>
               <div className="h-64 w-full">
                 {stats.chart.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.chart}>
-                      <XAxis dataKey="label" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={{ background: "var(--card-color)", border: "1px solid var(--border-color)", borderRadius: "12px", fontSize: "12px" }} />
-                      <Bar dataKey="count" fill="#ff5722" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <LazyRewardsChart data={stats.chart} />
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted text-xs">Belum ada data penukaran</div>
                 )}

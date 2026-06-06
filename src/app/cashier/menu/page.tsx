@@ -225,7 +225,7 @@ export default function CashierMenuManagement() {
           >
             <div className="relative h-44 bg-gray-100 overflow-hidden shrink-0">
               {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted">
                   <UtensilsCrossed className="w-14 h-14 opacity-20 animate-pulse" />

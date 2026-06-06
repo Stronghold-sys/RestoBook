@@ -8,10 +8,17 @@ import toast from "react-hot-toast";
 import { format, subDays, subMonths, startOfDay, isAfter, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BaseModal from "@/components/BaseModal";
-import { 
-  PieChart, Pie, Cell, BarChart, Bar, Legend, 
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
+import dynamic from 'next/dynamic';
+
+const LazyRefundPieChart = dynamic(
+  () => import('@/components/charts/RefundsCharts').then(mod => mod.RefundPieChart),
+  { ssr: false, loading: () => <div className="h-64 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
+
+const LazyRefundBarChart = dynamic(
+  () => import('@/components/charts/RefundsCharts').then(mod => mod.RefundBarChart),
+  { ssr: false, loading: () => <div className="h-64 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
 
 export default function AdminRefundsPage() {
   const [loading, setLoading] = useState(true);
@@ -582,25 +589,7 @@ export default function AdminRefundsPage() {
                 {pieData.length === 0 ? (
                   <p className="text-xs text-muted font-bold">Tidak ada data refund.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [`${value} Pengajuan`, 'Jumlah']} />
-                      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <LazyRefundPieChart data={pieData} />
                 )}
               </div>
             </div>
@@ -612,17 +601,7 @@ export default function AdminRefundsPage() {
                 {barData.length === 0 ? (
                   <p className="text-xs text-muted font-bold">Tidak ada data refund.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                      <XAxis dataKey="name" stroke="#888888" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#888888" fontSize={10} tickLine={false} tickFormatter={(val) => `Rp ${val / 1000}k`} />
-                      <Tooltip formatter={(value) => [`Rp ${Number(value).toLocaleString("id-ID")}`, 'Nominal']} />
-                      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                      <Bar dataKey="Disetujui" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Menunggu" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <LazyRefundBarChart data={barData} />
                 )}
               </div>
             </div>

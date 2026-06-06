@@ -9,10 +9,13 @@ import { id as localeId } from "date-fns/locale";
 import toast from "react-hot-toast";
 import BaseModal from "@/components/BaseModal";
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import { downloadFile } from '@/utils/downloadHelper';
+import dynamic from 'next/dynamic';
+
+const LazyTransactionsChart = dynamic(
+  () => import('@/components/charts/TransactionsChart'),
+  { ssr: false, loading: () => <div className="h-[300px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
 
 export default function AdminTransactions() {
   const [loading, setLoading] = useState(true);
@@ -207,80 +210,83 @@ export default function AdminTransactions() {
   // Export PDF
   const handleExportPDF = async () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
-    const doc = new jsPDF('landscape'); 
-    
-    doc.setFontSize(18);
-    doc.setTextColor(20);
-    doc.text("Laporan Transaksi Restoran (Admin)", 14, 22);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB`, 14, 30);
-    doc.text(`Dicetak oleh: ${adminName || "Admin"}`, 14, 35);
-    
-    // Header Tabel
-    doc.setFontSize(10);
-    doc.setTextColor(255);
-    doc.setFillColor(232, 93, 4); // Orange primary color Admin
-    doc.rect(14, 42, 269, 10, 'F'); 
-    
-    doc.text("ID", 16, 48);
-    doc.text("Pelanggan", 35, 48);
-    doc.text("Pesanan", 72, 48);
-    doc.text("Tipe", 172, 48);
-    doc.text("Pembayaran", 194, 48);
-    doc.text("Total", 224, 48);
-    doc.text("Tanggal", 252, 48);
-    
-    doc.setTextColor(60);
-    let y = 58;
-    
-    filtered.forEach((order) => {
-      if (y > 190) { 
-        doc.addPage();
-        y = 20;
-        
-        doc.setTextColor(255);
-        doc.setFillColor(232, 93, 4);
-        doc.rect(14, y-8, 269, 10, 'F');
-        doc.text("ID", 16, y-2);
-        doc.text("Pelanggan", 35, y-2);
-        doc.text("Pesanan", 72, y-2);
-        doc.text("Tipe", 172, y-2);
-        doc.text("Pembayaran", 194, y-2);
-        doc.text("Total", 224, y-2);
-        doc.text("Tanggal", 252, y-2);
-        
-        doc.setTextColor(60);
-        y += 10;
-      }
-      
-      const itemsStr = formatOrderItems(order.order_items);
-      const truncItems = itemsStr.length > 75 ? itemsStr.substring(0, 72) + "..." : itemsStr;
-      
-      doc.text(`#${order.id.split("-")[0]}`, 16, y);
-      doc.text(order.profiles?.full_name?.substring(0, 15) || "Guest", 35, y);
-      doc.text(truncItems, 72, y);
-      doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
-      doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
-      doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
-      doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
-      
-      y += 10;
-      doc.setDrawColor(220);
-      doc.line(14, y - 6, 283, y - 6);
-    });
+    const toastId = toast.loading("Mempersiapkan ekspor PDF...");
     
     try {
+      const { default: jsPDF } = await import('jspdf');
+      const doc = new jsPDF('landscape'); 
+      
+      doc.setFontSize(18);
+      doc.setTextColor(20);
+      doc.text("Laporan Transaksi Restoran (Admin)", 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB`, 14, 30);
+      doc.text(`Dicetak oleh: ${adminName || "Admin"}`, 14, 35);
+      
+      // Header Tabel
+      doc.setFontSize(10);
+      doc.setTextColor(255);
+      doc.setFillColor(232, 93, 4); // Orange primary color Admin
+      doc.rect(14, 42, 269, 10, 'F'); 
+      
+      doc.text("ID", 16, 48);
+      doc.text("Pelanggan", 35, 48);
+      doc.text("Pesanan", 72, 48);
+      doc.text("Tipe", 172, 48);
+      doc.text("Pembayaran", 194, 48);
+      doc.text("Total", 224, 48);
+      doc.text("Tanggal", 252, 48);
+      
+      doc.setTextColor(60);
+      let y = 58;
+      
+      filtered.forEach((order) => {
+        if (y > 190) { 
+          doc.addPage();
+          y = 20;
+          
+          doc.setTextColor(255);
+          doc.setFillColor(232, 93, 4);
+          doc.rect(14, y-8, 269, 10, 'F');
+          doc.text("ID", 16, y-2);
+          doc.text("Pelanggan", 35, y-2);
+          doc.text("Pesanan", 72, y-2);
+          doc.text("Tipe", 172, y-2);
+          doc.text("Pembayaran", 194, y-2);
+          doc.text("Total", 224, y-2);
+          doc.text("Tanggal", 252, y-2);
+          
+          doc.setTextColor(60);
+          y += 10;
+        }
+        
+        const itemsStr = formatOrderItems(order.order_items);
+        const truncItems = itemsStr.length > 75 ? itemsStr.substring(0, 72) + "..." : itemsStr;
+        
+        doc.text(`#${order.id.split("-")[0]}`, 16, y);
+        doc.text(order.profiles?.full_name?.substring(0, 15) || "Guest", 35, y);
+        doc.text(truncItems, 72, y);
+        doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
+        doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
+        doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
+        doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
+        
+        y += 10;
+        doc.setDrawColor(220);
+        doc.line(14, y - 6, 283, y - 6);
+      });
+      
       const pdfBase64 = doc.output('datauristring');
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Laporan_Admin_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,
         mimeType: 'application/pdf'
       });
-      toast.success("Berhasil mengekspor ke PDF!");
+      toast.success("Berhasil mengekspor ke PDF!", { id: toastId });
     } catch (e) {
-      toast.error("Gagal mengekspor ke PDF");
+      toast.error("Gagal mengekspor ke PDF", { id: toastId });
       console.error(e);
     }
   };
@@ -425,29 +431,7 @@ export default function AdminTransactions() {
             <h3 className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2 mb-6">
               <TrendingUp className="w-5 h-5 text-primary" /> Tren Pendapatan (7 Hari Terakhir)
             </h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="colorPendapatan" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#e85d04" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#e85d04" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
-                  tickFormatter={(value) => `Rp ${value/1000}k`}
-                />
-                <Tooltip 
-                  formatter={(value: any) => [`Rp ${Number(value || 0).toLocaleString('id-ID')}`, 'Pendapatan']}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                />
-                <Area type="monotone" dataKey="pendapatan" stroke="#e85d04" strokeWidth={3} fillOpacity={1} fill="url(#colorPendapatan)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <LazyTransactionsChart data={chartData} />
           </div>
 
           <div className="bg-white dark:bg-card-dark rounded-3xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden flex-1">

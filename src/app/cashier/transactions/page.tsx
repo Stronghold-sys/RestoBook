@@ -7,8 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format, subDays, subMonths, startOfDay, isAfter } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
 import ReceiptComponent from "@/components/Receipt";
 import { useRef } from "react";
 import { downloadFile } from "@/utils/downloadHelper";
@@ -126,57 +124,59 @@ export default function CashierTransactionsPage() {
   // Export Excel
   const handleExportExcel = async () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
-    
-    const reportData = [];
-    reportData.push(["LAPORAN TRANSAKSI RESTORAN"]);
-    reportData.push(["Dicetak oleh:", cashierName || "Kasir"]);
-    reportData.push(["Tanggal Cetak:", format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId }) + " WIB"]);
-    reportData.push(["Filter Waktu:", dateFilter === 'all' ? 'Semua Waktu' : dateFilter === 'today' ? 'Hari Ini' : dateFilter === 'week' ? '7 Hari Terakhir' : dateFilter === 'month' ? '1 Bulan Terakhir' : '6 Bulan Terakhir']);
-    reportData.push([]); // Empty row
-    
-    // Table Headers
-    reportData.push(["No. Pesanan", "Pelanggan", "Tipe Pesanan", "Pesanan", "Metode Pembayaran", "Total (Rp)", "Tanggal Waktu"]);
-    
-    // Table Data
-    filtered.forEach(order => {
-      reportData.push([
-        `#${order.id.split("-")[0]}`,
-        getCustomerName(order),
-        order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway",
-        formatOrderItems(order.order_items),
-        order.payment_method === "cash" ? "Cash" : "Non-Cash",
-        Number(order.total_amount),
-        format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })
-      ]);
-    });
-
-    const worksheet = XLSX.utils.aoa_to_sheet(reportData);
-    
-    // Auto-size columns perfectly for maximum neatness in Excel
-    const wscols = [
-      { wch: 15 }, // No. Pesanan
-      { wch: 25 }, // Pelanggan
-      { wch: 15 }, // Tipe Pesanan
-      { wch: 50 }, // Pesanan (widened to 50 for full readability)
-      { wch: 20 }, // Metode Pembayaran
-      { wch: 18 }, // Total (Rp)
-      { wch: 25 }  // Tanggal Waktu
-    ];
-    worksheet['!cols'] = wscols;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
+    const toastId = toast.loading("Mempersiapkan ekspor Excel...");
     
     try {
+      const XLSX = await import("xlsx");
+      const reportData = [];
+      reportData.push(["LAPORAN TRANSAKSI RESTORAN"]);
+      reportData.push(["Dicetak oleh:", cashierName || "Kasir"]);
+      reportData.push(["Tanggal Cetak:", format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId }) + " WIB"]);
+      reportData.push(["Filter Waktu:", dateFilter === 'all' ? 'Semua Waktu' : dateFilter === 'today' ? 'Hari Ini' : dateFilter === 'week' ? '7 Hari Terakhir' : dateFilter === 'month' ? '1 Bulan Terakhir' : '6 Bulan Terakhir']);
+      reportData.push([]); // Empty row
+      
+      // Table Headers
+      reportData.push(["No. Pesanan", "Pelanggan", "Tipe Pesanan", "Pesanan", "Metode Pembayaran", "Total (Rp)", "Tanggal Waktu"]);
+      
+      // Table Data
+      filtered.forEach(order => {
+        reportData.push([
+          `#${order.id.split("-")[0]}`,
+          getCustomerName(order),
+          order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway",
+          formatOrderItems(order.order_items),
+          order.payment_method === "cash" ? "Cash" : "Non-Cash",
+          Number(order.total_amount),
+          format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })
+        ]);
+      });
+
+      const worksheet = XLSX.utils.aoa_to_sheet(reportData);
+      
+      // Auto-size columns perfectly for maximum neatness in Excel
+      const wscols = [
+        { wch: 15 }, // No. Pesanan
+        { wch: 25 }, // Pelanggan
+        { wch: 15 }, // Tipe Pesanan
+        { wch: 50 }, // Pesanan (widened to 50 for full readability)
+        { wch: 20 }, // Metode Pembayaran
+        { wch: 18 }, // Total (Rp)
+        { wch: 25 }  // Tanggal Waktu
+      ];
+      worksheet['!cols'] = wscols;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
+      
       const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
       await downloadFile({
         dataBase64: excelBase64,
         filename: `Laporan_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.xlsx`,
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
-      toast.success("Berhasil mengekspor ke Excel!");
+      toast.success("Berhasil mengekspor ke Excel!", { id: toastId });
     } catch (e) {
-      toast.error("Gagal mengekspor ke Excel");
+      toast.error("Gagal mengekspor ke Excel", { id: toastId });
       console.error(e);
     }
   };
@@ -184,81 +184,84 @@ export default function CashierTransactionsPage() {
   // Export PDF
   const handleExportPDF = async () => {
     if (filtered.length === 0) return toast.error("Tidak ada data untuk diekspor");
-    const doc = new jsPDF('landscape'); // Use landscape to fit more columns
-    
-    doc.setFontSize(18);
-    doc.setTextColor(20);
-    doc.text("Laporan Transaksi Restoran", 14, 22);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB`, 14, 30);
-    doc.text(`Dicetak oleh: ${cashierName || "Kasir (Sedang Shift)"}`, 14, 35);
-    
-    // Header Tabel
-    doc.setFontSize(10);
-    doc.setTextColor(255);
-    doc.setFillColor(249, 115, 22); // Orange primary color
-    doc.rect(14, 42, 269, 10, 'F'); // Width 269 for landscape
-    
-    doc.text("ID", 16, 48);
-    doc.text("Pelanggan", 35, 48);
-    doc.text("Pesanan", 72, 48);
-    doc.text("Tipe", 172, 48);
-    doc.text("Pembayaran", 194, 48);
-    doc.text("Total", 224, 48);
-    doc.text("Tanggal", 252, 48);
-    
-    doc.setTextColor(60);
-    let y = 58;
-    
-    filtered.forEach((order) => {
-      if (y > 190) { // Landscape height is shorter
-        doc.addPage();
-        y = 20;
-        
-        // Ulangi Header jika pindah halaman
-        doc.setTextColor(255);
-        doc.setFillColor(249, 115, 22);
-        doc.rect(14, y-8, 269, 10, 'F');
-        doc.text("ID", 16, y-2);
-        doc.text("Pelanggan", 35, y-2);
-        doc.text("Pesanan", 72, y-2);
-        doc.text("Tipe", 172, y-2);
-        doc.text("Pembayaran", 194, y-2);
-        doc.text("Total", 224, y-2);
-        doc.text("Tanggal", 252, y-2);
-        
-        doc.setTextColor(60);
-        y += 10;
-      }
-      
-      const itemsStr = formatOrderItems(order.order_items);
-      const truncItems = itemsStr.length > 75 ? itemsStr.substring(0, 72) + "..." : itemsStr;
-      
-      doc.text(`#${order.id.split("-")[0]}`, 16, y);
-      doc.text(getCustomerName(order).substring(0, 15), 35, y);
-      doc.text(truncItems, 72, y);
-      doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
-      doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
-      doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
-      doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
-      
-      y += 10;
-      doc.setDrawColor(220);
-      doc.line(14, y - 6, 283, y - 6);
-    });
+    const toastId = toast.loading("Mempersiapkan ekspor PDF...");
     
     try {
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF('landscape'); // Use landscape to fit more columns
+      
+      doc.setFontSize(18);
+      doc.setTextColor(20);
+      doc.text("Laporan Transaksi Restoran", 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB`, 14, 30);
+      doc.text(`Dicetak oleh: ${cashierName || "Kasir (Sedang Shift)"}`, 14, 35);
+      
+      // Header Tabel
+      doc.setFontSize(10);
+      doc.setTextColor(255);
+      doc.setFillColor(249, 115, 22); // Orange primary color
+      doc.rect(14, 42, 269, 10, 'F'); // Width 269 for landscape
+      
+      doc.text("ID", 16, 48);
+      doc.text("Pelanggan", 35, 48);
+      doc.text("Pesanan", 72, 48);
+      doc.text("Tipe", 172, 48);
+      doc.text("Pembayaran", 194, 48);
+      doc.text("Total", 224, 48);
+      doc.text("Tanggal", 252, 48);
+      
+      doc.setTextColor(60);
+      let y = 58;
+      
+      filtered.forEach((order) => {
+        if (y > 190) { // Landscape height is shorter
+          doc.addPage();
+          y = 20;
+          
+          // Ulangi Header jika pindah halaman
+          doc.setTextColor(255);
+          doc.setFillColor(249, 115, 22);
+          doc.rect(14, y-8, 269, 10, 'F');
+          doc.text("ID", 16, y-2);
+          doc.text("Pelanggan", 35, y-2);
+          doc.text("Pesanan", 72, y-2);
+          doc.text("Tipe", 172, y-2);
+          doc.text("Pembayaran", 194, y-2);
+          doc.text("Total", 224, y-2);
+          doc.text("Tanggal", 252, y-2);
+          
+          doc.setTextColor(60);
+          y += 10;
+        }
+        
+        const itemsStr = formatOrderItems(order.order_items);
+        const truncItems = itemsStr.length > 75 ? itemsStr.substring(0, 72) + "..." : itemsStr;
+        
+        doc.text(`#${order.id.split("-")[0]}`, 16, y);
+        doc.text(getCustomerName(order).substring(0, 15), 35, y);
+        doc.text(truncItems, 72, y);
+        doc.text(order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway", 172, y);
+        doc.text(order.payment_method === "cash" ? "Cash" : "Non-Cash", 194, y);
+        doc.text(`Rp ${Number(order.total_amount).toLocaleString("id-ID")}`, 224, y);
+        doc.text(format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: localeId }), 252, y);
+        
+        y += 10;
+        doc.setDrawColor(220);
+        doc.line(14, y - 6, 283, y - 6);
+      });
+      
       const pdfBase64 = doc.output('datauristring');
       await downloadFile({
         dataBase64: pdfBase64,
         filename: `Laporan_Transaksi_${format(new Date(), 'dd_MM_yyyy')}.pdf`,
         mimeType: 'application/pdf'
       });
-      toast.success("Berhasil mengekspor ke PDF!");
+      toast.success("Berhasil mengekspor ke PDF!", { id: toastId });
     } catch (e) {
-      toast.error("Gagal mengekspor ke PDF");
+      toast.error("Gagal mengekspor ke PDF", { id: toastId });
       console.error(e);
     }
   };

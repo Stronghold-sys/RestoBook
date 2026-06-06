@@ -4,10 +4,20 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, UtensilsCrossed, ShoppingBag, DollarSign, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { format, subDays, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { SkeletonDashboard } from "@/components/Skeleton";
+import dynamic from "next/dynamic";
+
+const LazyRevenueChart = dynamic(
+  () => import("@/components/charts/DashboardCharts").then((mod) => mod.RevenueChart),
+  { ssr: false, loading: () => <div className="h-[300px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
+
+const LazyOrderTypeChart = dynamic(
+  () => import("@/components/charts/DashboardCharts").then((mod) => mod.OrderTypeChart),
+  { ssr: false, loading: () => <div className="h-[250px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" /> }
+);
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -135,43 +145,14 @@ export default function AdminDashboard() {
             <span className="text-xs font-bold text-muted flex items-center gap-1"><Calendar className="w-3 h-3" /> Real-time Updates</span>
           </div>
           <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#e85d04" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#e85d04" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.1} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 'bold' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 'bold' }} tickFormatter={(val) => `Rp ${val/1000}k`} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', background: '#fff' }}
-                  itemStyle={{ fontWeight: 'bold', color: '#e85d04' }}
-                />
-                <Area type="monotone" dataKey="pendapatan" stroke="#e85d04" strokeWidth={4} fillOpacity={1} fill="url(#colorRevenue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <LazyRevenueChart data={chartData} />
           </div>
         </div>
 
         <div className="bg-card-light dark:bg-card-dark p-8 rounded-3xl shadow-sm border border-border-light dark:border-border-dark flex flex-col">
           <h3 className="font-black text-lg text-text-light dark:text-text-dark mb-8">Tipe Pesanan</h3>
           <div className="flex-1 flex items-center justify-center min-h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={orderTypes}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 'bold' }} />
-                <YAxis hide />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={40}>
-                  {orderTypes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <LazyOrderTypeChart data={orderTypes} />
           </div>
           <div className="grid grid-cols-3 gap-3 mt-6">
             {orderTypes.map((type, idx) => (

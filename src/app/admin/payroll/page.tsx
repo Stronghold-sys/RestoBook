@@ -14,10 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, startOfYear } from "date-fns";
 import { id } from "date-fns/locale";
 import toast from "react-hot-toast";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
 import { downloadFile } from "@/utils/downloadHelper";
-
 const BANK_BUMN = ["Bank BRI", "Bank BNI", "Bank Mandiri", "Bank BTN", "Bank BSI"];
 const BANK_SWASTA = ["BCA", "CIMB Niaga", "Danamon", "Permata Bank", "Panin Bank", "OCBC NISP", "Maybank", "Bank Mega", "Bank Bukopin", "Bank Sinarmas", "Bank BTPN", "Bank Commonwealth", "Bank Jago", "SeaBank", "Allo Bank", "Blu BCA"];
 const BANK_DAERAH = ["Bank Jateng", "BJB (Bank Jabar Banten)", "Bank DKI", "Bank Jatim", "Bank Sumut", "Bank Sumsel Babel", "Bank Aceh Syariah", "Bank Sulselbar", "Bank Sulut Go", "Bank Kaltimtara", "Bank NTB Syariah", "Bank BPD Bali", "Bank Maluku Malut", "Bank Papua", "Bank Kalbar", "Bank Kalteng", "Bank Sulteng", "Bank Sultra", "Bank Bengkulu", "Bank Jambi", "Bank Nagari", "Bank Lampung", "Bank NTT", "Bank Riau Kepri"];
@@ -704,6 +701,7 @@ export default function AdvancedPayrollPage() {
        const earnTotal = d.pokok + d.lembur + d.makan + d.trans + d.tetap + d.bonus + d.insentif;
        const dedTotal = d.kasbon + d.denda + d.dendaTelat + d.potLain;
 
+       const { default: jsPDF } = await import("jspdf");
        const doc = new jsPDF();
        const currency = (n: number) => n.toLocaleString('id-ID');
 

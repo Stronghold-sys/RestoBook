@@ -194,6 +194,13 @@ export default function CashierReservationsPage() {
         body: JSON.stringify({ reservationId: res.id, status: "confirmed" })
       }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
+      // Trigger Google Calendar sync (async)
+      fetch("/api/reservations/sync-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: res.id, action: "create" })
+      }).catch(err => console.error("Gagal sinkronisasi Google Calendar:", err));
+
       toast.success("Reservasi berhasil dikonfirmasi! Meja telah ditandai RESERVED.");
       fetchData();
     } catch (e: any) {
@@ -241,6 +248,13 @@ export default function CashierReservationsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reservationId: rejectingId, status: "cancelled" })
       }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+
+      // Trigger Google Calendar sync (async)
+      fetch("/api/reservations/sync-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: rejectingId, action: "delete" })
+      }).catch(err => console.error("Gagal menghapus event kalender:", err));
 
       toast.success("Reservasi telah ditolak.");
       setRejectingId(null);

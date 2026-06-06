@@ -1246,6 +1246,15 @@ export default function AdminSettingsPage() {
               <p className="text-[10px] text-muted mt-1">Batas waktu keterlambatan pelanggan sebelum status meja diatur ulang.</p>
             </div>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark flex justify-end">
+            <a 
+              href="/admin/settings/calendar"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 transition-all"
+            >
+              <CalendarDays className="w-4 h-4" /> Pengaturan Google Calendar & Sync
+            </a>
+          </div>
         </div>
       </motion.div>
 

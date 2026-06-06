@@ -319,6 +319,13 @@ export default function CustomerReservationsPage() {
         body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
       }).catch(err => console.error("Gagal mengirim email reservasi:", err));
 
+      // Trigger Google Calendar sync (async)
+      fetch("/api/reservations/sync-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: cancellingId, action: "delete" })
+      }).catch(err => console.error("Gagal sinkronisasi pembatalan kalender:", err));
+
       toast.success("Reservasi berhasil dibatalkan");
       setCancellingId(null);
       setCancelReason("");

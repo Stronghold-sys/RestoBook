@@ -51,7 +51,29 @@ export async function GET() {
       CREATE POLICY "Users can select own wallet logs" ON wallet_audit_logs FOR SELECT USING (customer_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
       CREATE POLICY "Admin full access wallet logs" ON wallet_audit_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid() AND role = 'admin'));
 
-      -- 4. RELOAD CACHE
+      -- 4. CREATE GOOGLE CALENDAR CREDENTIALS TABLE
+      CREATE TABLE IF NOT EXISTS google_calendar_credentials (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        calendar_id TEXT,
+        timezone TEXT DEFAULT 'Asia/Jakarta',
+        credentials_json JSONB,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+
+      -- Enable RLS
+      ALTER TABLE google_calendar_credentials ENABLE ROW LEVEL SECURITY;
+
+      -- Policies for RLS
+      DROP POLICY IF EXISTS "Admin full access calendar credentials" ON google_calendar_credentials;
+      CREATE POLICY "Admin full access calendar credentials" ON google_calendar_credentials FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid() AND role = 'admin'));
+
+      -- 5. ADD CALENDAR TRACKING COLUMNS TO RESERVATIONS TABLE
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS google_event_id TEXT;
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS sync_status TEXT CHECK (sync_status IN ('pending', 'synced', 'failed', 'updated', 'cancelled')) DEFAULT 'pending';
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS sync_error TEXT;
+
+      -- 6. RELOAD CACHE
       NOTIFY pgrst, 'reload schema';
     `;
 

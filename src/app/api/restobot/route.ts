@@ -1014,6 +1014,23 @@ async function executeTool(name: string, args: any) {
   return { success: false, error: 'Unknown tool.' };
 }
 
+function containsPromptInjection(content: string): boolean {
+  const lower = (content || '').toLowerCase();
+  const patterns = [
+    'ignore previous instructions',
+    'ignore all instructions',
+    'ignore the system prompt',
+    'system prompt override',
+    'developer mode',
+    'jailbreak',
+    'pretend you are',
+    'you are now',
+    'lupakan instruksi',
+    'abaikan instruksi'
+  ];
+  return patterns.some(p => lower.includes(p));
+}
+
 export async function POST(request: Request) {
   try {
     const { history, systemPrompt, role } = await request.json();
@@ -1023,7 +1040,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Mistral API key not configured' }, { status: 500 });
     }
 
+    // Input sanitization for prompt injection
+    const lastUserMessage = history[history.length - 1]?.content || '';
+    if (containsPromptInjection(lastUserMessage)) {
+      return NextResponse.json({ reply: 'Maaf, aktivitas mencurigakan terdeteksi. Silakan ajukan pertanyaan yang wajar.' });
+    }
+
     let finalSystemPrompt = systemPrompt;
+    
+    // Strict RAG enforcement instruction
+    finalSystemPrompt += `\n\nSTRICT RAG PROTOCOL:
+You must ONLY answer queries using the verified database/knowledge base information provided in the prompt.
+If the information is NOT present in the provided context, or if the user asks something outside the scope of the restaurant's menu, hours, settings, tables, and reservations, you MUST decline to answer and output EXACTLY:
+"Maaf, informasi tersebut tidak tersedia dalam basis data kami. Silakan hubungi Admin/CS kami untuk bantuan lebih lanjut."
+Do not make up facts, do not hallucinate, and do not provide any information not directly supported by the context.`;
+
     // Always use Indonesian and Rp format
     finalSystemPrompt += `\n\nCURRENCY FORMATTING PROTOCOL:
 Always format all currencies as "Rp [amount]" using Indonesian locale formatting (e.g., Rp 50.000 or Rp 1.000.000). Never use IDR or other currency symbols.`;

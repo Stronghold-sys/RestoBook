@@ -489,6 +489,15 @@ function createBlockResponse(request: NextRequest, message: string, status: numb
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // 0. Force HTTPS redirect (except for localhost)
+  const proto = request.headers.get('x-forwarded-proto');
+  const host = request.headers.get('host') || '';
+  if (proto === 'http' && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+    const httpsUrl = new URL(request.url);
+    httpsUrl.protocol = 'https:';
+    return NextResponse.redirect(httpsUrl, 301);
+  }
+
   // 1. Abaikan aset statis, media, sitemap, dan robots.txt di awal untuk performa & aksesibilitas bot SEO
   const isStaticAsset = path.startsWith('/_next') || 
     path === '/sitemap.xml' ||
@@ -847,7 +856,17 @@ export async function middleware(request: NextRequest) {
     let limit = 60; // Public API rate limit (60/min)
     let rateLimitKey = `rate:pub:${ip}`;
 
-    if (user) {
+    // Tighten rate limits for sensitive endpoints
+    if (path === '/api/auth/login') {
+      limit = 5;
+      rateLimitKey = `rate:login:${ip}`;
+    } else if (path.startsWith('/api/restobot')) {
+      limit = 10;
+      rateLimitKey = `rate:bot:${ip}`;
+    } else if (path.includes('/reservations')) {
+      limit = 5;
+      rateLimitKey = `rate:resv:${ip}`;
+    } else if (user) {
       const role = await getUserRole(user.id);
       if (role === 'admin') {
         limit = 1000;
@@ -974,9 +993,25 @@ export async function middleware(request: NextRequest) {
   // Tambahkan Header Keamanan Dasar
   finalResponse.headers.set('X-Content-Type-Options', 'nosniff');
   finalResponse.headers.set('X-Frame-Options', 'DENY');
-  finalResponse.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
   finalResponse.headers.set('X-XSS-Protection', '1; mode=block');
   finalResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // HSTS Header (Strict HTTPS)
+  finalResponse.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+
+  // Content Security Policy (CSP) dengan upgrade-insecure-requests dan source yang diijinkan
+  const cspHeader = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://apis.google.com https://hcaptcha.com https://*.hcaptcha.com https://js.duitku.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: https://*.supabase.co https://lh3.googleusercontent.com https://*.googleusercontent.com https://vantage.csw.lenovo.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://api.duitku.com https://sandbox.duitku.com https://hcaptcha.com https://*.hcaptcha.com",
+    "frame-src 'self' https://*.google.com https://hcaptcha.com https://*.hcaptcha.com https://sandbox.duitku.com https://api.duitku.com",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests"
+  ].join('; ');
+  finalResponse.headers.set('Content-Security-Policy', cspHeader);
 
   return finalResponse;
 }

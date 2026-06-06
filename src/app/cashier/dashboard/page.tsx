@@ -1634,63 +1634,63 @@ export default function CashierDashboard() {
                      </div>
                    )}
 
-                   {/* INPUT ACTUAL CASH */}
-                   <div className="space-y-3">
-                     <label className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Uang Fisik Akhir di Laci</label>
-                     <div className="relative">
-                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
-                       <input 
-                         type="number" 
-                         value={actualCash}
-                         onChange={(e) => setActualCash(e.target.value)}
-                         placeholder="Masukkan uang fisik saat ini..."
-                         className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-2xl transition-all text-text-light dark:text-text-dark"
-                       />
-                     </div>
+                    {/* INPUT ACTUAL CASH */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Uang Fisik Akhir di Laci</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">Rp</span>
+                        <input 
+                          type="number" 
+                          value={actualCash}
+                          onChange={(e) => setActualCash(e.target.value)}
+                          placeholder="Masukkan uang fisik saat ini..."
+                          className="w-full pl-12 pr-4 py-4 bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 rounded-2xl outline-none focus:border-primary font-black text-lg sm:text-2xl placeholder:text-sm sm:placeholder:text-base placeholder:font-normal transition-all text-text-light dark:text-text-dark"
+                        />
+                      </div>
 
-                     {actualCash && shiftSummary && (
-                       <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
-                         Number(actualCash) - shiftSummary.expectedCash >= 0 
-                           ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
-                           : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
-                       }`}>
-                         <div className="flex flex-col">
-                           <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang Laci</span>
-                           <span className="text-xs font-bold">
-                             {Number(actualCash) - shiftSummary.expectedCash >= 0 ? 'Kelebihan (Selisih Plus)' : 'Kekurangan (Selisih Minus)'}
-                           </span>
-                         </div>
-                         <span className="font-black text-2xl">
-                           {Number(actualCash) - shiftSummary.expectedCash >= 0 ? '+' : ''}
-                           {(Number(actualCash) - shiftSummary.expectedCash).toLocaleString('id-ID')}
-                         </span>
-                       </div>
-                     )}
-                   </div>
+                      {actualCash && shiftSummary && (
+                        <div className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
+                          Number(actualCash) - shiftSummary.expectedCash >= 0 
+                            ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-900/30' 
+                            : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-900/30'
+                        }`}>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase opacity-70">Selisih Uang Laci</span>
+                            <span className="text-xs font-bold">
+                              {Number(actualCash) - shiftSummary.expectedCash >= 0 ? 'Kelebihan (Selisih Plus)' : 'Kekurangan (Selisih Minus)'}
+                            </span>
+                          </div>
+                          <span className="font-black text-lg sm:text-2xl">
+                            {Number(actualCash) - shiftSummary.expectedCash >= 0 ? '+' : ''}
+                            {(Number(actualCash) - shiftSummary.expectedCash).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                   {/* SHIFT NOTE INPUT */}
-                   <div className="space-y-1">
-                     <label htmlFor="shiftNoteInput" className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Catatan Shift / Keterangan</label>
-                     <textarea 
-                       id="shiftNoteInput"
-                       value={shiftNote}
-                       onChange={(e) => setShiftNote(e.target.value)}
-                       placeholder="Masukkan catatan khusus penutupan shift..."
-                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none focus:border-primary text-xs min-h-[70px] text-text-light dark:text-text-dark"
-                       title="Catatan Shift"
-                     />
-                   </div>
+                    {/* SHIFT NOTE INPUT */}
+                    <div className="space-y-1">
+                      <label htmlFor="shiftNoteInput" className="text-[10px] font-black uppercase text-muted tracking-widest block ml-1">Catatan Shift / Keterangan</label>
+                      <textarea 
+                        id="shiftNoteInput"
+                        value={shiftNote}
+                        onChange={(e) => setShiftNote(e.target.value)}
+                        placeholder="Masukkan catatan khusus penutupan shift..."
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-xl outline-none focus:border-primary text-xs min-h-[70px] text-text-light dark:text-text-dark"
+                        title="Catatan Shift"
+                      />
+                    </div>
 
-                   <div className="flex gap-3 pt-2">
-                     <button onClick={() => setShowCloseModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-xl font-bold text-xs uppercase transition-all">Batal</button>
-                     <button 
-                       onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
-                       disabled={closing}
-                       className="flex-2 py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
-                     >
-                       {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Akhiri & Simpan Shift" : "Tutup Sesi Darurat"}
-                     </button>
-                   </div>
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                      <button onClick={() => setShowCloseModal(false)} className="w-full sm:flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-xl font-bold text-xs uppercase transition-all">Batal</button>
+                      <button 
+                        onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
+                        disabled={closing}
+                        className="w-full sm:flex-[2] py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
+                      >
+                        {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Akhiri & Simpan Shift" : "Tutup Sesi Darurat"}
+                      </button>
+                    </div>
                  </>
                )}
              </div>

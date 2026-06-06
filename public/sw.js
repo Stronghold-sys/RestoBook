@@ -1,5 +1,5 @@
-// Minimal service worker for PWA installability
-const CACHE_NAME = 'restobook-cache-v1';
+// Minimal service worker for PWA installability with safe error handling
+const CACHE_NAME = 'restobook-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json'
@@ -30,9 +30,25 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests, bypass all API mutations or non-GET requests (e.g. POST payments)
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Bypass for chrome-extension or other non-http(s) schemes
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    fetch(event.request).catch(async (error) => {
+      const cachedResponse = await caches.match(event.request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      // Propagate the network error so the browser handles it naturally (e.g. shows offline page)
+      // rather than returning undefined which causes service worker crash
+      throw error;
     })
   );
 });

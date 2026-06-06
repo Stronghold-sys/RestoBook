@@ -290,6 +290,10 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
     ? `${state.lastMs} ms`
     : "—";
 
+  // Dideklarasikan sebagai boolean eksplisit di luar JSX agar ARIA static
+  // validator tidak salah mengira nilainya sebagai ekspresi tak terbatas.
+  const ariaExpanded: boolean = state.showPanel;
+
   return (
     <>
       <style>{PM_STYLES}</style>
@@ -306,7 +310,8 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
           onClick={() => !readOnly && dispatch({ type: "TOGGLE_PANEL" })}
           aria-label={`Status koneksi: ${cfg.label}, Latency: ${msLabel}`}
           aria-haspopup="dialog"
-          aria-expanded={state.showPanel ? true : false}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-expanded={ariaExpanded}
           title={`${cfg.label} — ${msLabel}`}
           disabled={readOnly}
         >

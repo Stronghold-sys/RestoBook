@@ -701,6 +701,86 @@ export default function RestoBot() {
     };
   }, [pathname]);
 
+  // Real-time maintenance checking and notifications when chat opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const checkMaintenanceOnOpen = async () => {
+      const supabase = createClient();
+      try {
+        const { data: settingsData } = await supabase.from('restaurant_settings').select('*').single();
+        if (settingsData) {
+          // Update local state with latest settings
+          setSettings(settingsData);
+
+          const isMaintActive = settingsData.is_maintenance_active;
+          
+          // Get/initialize tracking state from localStorage
+          const trackingStr = localStorage.getItem('restobot_maintenance_tracking');
+          let tracking = { lastState: false, notifiedActive: false, notifiedRecovery: false };
+          if (trackingStr) {
+            try {
+              tracking = JSON.parse(trackingStr);
+            } catch (e) {
+              console.error("Failed to parse maintenance tracking:", e);
+            }
+          }
+
+          // State Machine transitions:
+          if (isMaintActive) {
+            // Reset recovery flag if we just entered active maintenance
+            if (!tracking.lastState) {
+              tracking.notifiedRecovery = false;
+            }
+            
+            // If user hasn't been notified for this maintenance session
+            if (!tracking.notifiedActive) {
+              const maintMsg = settingsData.maintenance_message || 
+                "Sistem kami saat ini sedang dalam pemeliharaan (maintenance) untuk peningkatan layanan. Beberapa fitur transaksi dan pembayaran saat ini tidak dapat digunakan. Kami mohon maaf atas ketidaknyamanannya dan akan segera kembali setelah pemeliharaan selesai.";
+              
+              setMessages(prev => [
+                ...prev,
+                { 
+                  role: 'assistant', 
+                  content: `INFORMASI PEMELIHARAAN SISTEM: ${maintMsg}`
+                }
+              ]);
+              
+              tracking.notifiedActive = true;
+              tracking.lastState = true;
+              localStorage.setItem('restobot_maintenance_tracking', JSON.stringify(tracking));
+            }
+          } else {
+            // System is recovered and was active previously
+            if (tracking.lastState && !tracking.notifiedRecovery) {
+              setMessages(prev => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: "SISTEM TELAH PULIH: Pemeliharaan sistem telah selesai. Layanan RestoBook kini sudah kembali aktif dan pulih sepenuhnya. Semua fitur transaksi, pemesanan, dan pembayaran dapat digunakan kembali dengan normal. Terima kasih atas kesabaran Anda!"
+                }
+              ]);
+              
+              tracking.notifiedRecovery = true;
+              tracking.notifiedActive = false;
+              tracking.lastState = false;
+              localStorage.setItem('restobot_maintenance_tracking', JSON.stringify(tracking));
+            } else if (!tracking.lastState) {
+              // If lastState was already false and remains false, we do not notify and keep tracking clean
+              tracking.notifiedActive = false;
+              tracking.notifiedRecovery = false;
+              localStorage.setItem('restobot_maintenance_tracking', JSON.stringify(tracking));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error checking maintenance settings on chat open:", err);
+      }
+    };
+
+    checkMaintenanceOnOpen();
+  }, [isOpen]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
@@ -771,6 +851,8 @@ export default function RestoBot() {
         settings.is_temporary_closed ? `Tutup Sementara (Akan buka kembali pukul ${settings.temporary_closed_reopen_time || '-'})` :
         settings.is_holiday ? `Tutup Libur/Hari Raya (Buka kembali tanggal ${settings.holiday_reopen_date || '-'})` : 'Buka Normal'
       }
+- Status Mode Maintenance: ${settings.is_maintenance_active ? 'AKTIF (Sistem sedang pemeliharaan berkala. Seluruh transaksi, pemesanan, dan pembayaran tidak tersedia/tidak dapat dilakukan sementara waktu)' : 'NONAKTIF'}
+${settings.is_maintenance_active && settings.maintenance_message ? `- Pesan Penting Maintenance: ${settings.maintenance_message}` : ''}
 - Alamat: ${settings.address || 'Jl. Contoh No. 123, Jakarta'}
 - Kontak Telepon: ${settings.phone || '021-12345678'}
 - Alamat Email: ${settings.email || 'info@restobook.com'}
@@ -855,9 +937,10 @@ export default function RestoBot() {
 2. DILARANG KERAS menggunakan format markdown apa pun: tidak boleh ada **, *, _, __, #, ##, ###, atau backtick.
 3. Untuk daftar/list, gunakan tanda "- " (strip spasi) atau angka "1. " saja, BUKAN tanda bintang.
 4. Untuk penekanan kata, gunakan HURUF KAPITAL, bukan bold/italic.
-5. Contoh SALAH: "**Nasi Goreng** - ${formatCurrency(25000)}" atau "*Tutup*" atau "## Menu"
-6. Contoh BENAR: "NASI GORENG - ${formatCurrency(25000)}" atau "Tutup" atau "Menu Kami:"
-7. SETIAP tanda bintang (*) yang muncul dalam respons = PELANGGARAN BERAT. Hindari sepenuhnya.`;
+5. EJAAN LAYANAN DOMPET: Selalu gunakan ejaan "Dompetku" atau "DOMPETKU" untuk layanan dompet digital. DILARANG KERAS menuliskan "DOMPEtky", "DOMPEтky", "dompetky", atau variasi typo lainnya.
+6. Contoh SALAH: "**Nasi Goreng** - ${formatCurrency(25000)}" atau "*Tutup*" atau "## Menu"
+7. Contoh BENAR: "NASI GORENG - ${formatCurrency(25000)}" atau "Tutup" atau "Menu Kami:"
+8. SETIAP tanda bintang (*) yang muncul dalam respons = PELANGGARAN BERAT. Hindari sepenuhnya.`;
 
     const localCtx = loadUserContext();
     const mergedUser = {

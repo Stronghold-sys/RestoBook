@@ -1129,6 +1129,11 @@ Always format all currencies as "Rp [amount]" using Indonesian locale formatting
       .replace(/\*/g, '')
       .trim();
 
+    // Fix spelling/typo in all forms of "dompetky" (including Cyrillic т and Latin t)
+    reply = reply.replace(/dompe[tт]ky/gi, (match: string) => {
+      return match === match.toUpperCase() ? 'DOMPETKU' : 'Dompetku';
+    });
+
     return NextResponse.json({ reply });
   } catch (error) {
     console.error('RestoBot Proxy Error:', error);

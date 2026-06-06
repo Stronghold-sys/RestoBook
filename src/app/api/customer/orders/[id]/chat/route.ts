@@ -252,8 +252,9 @@ ATURAN MENJAWAB (WAJIB DIPATUHI):
 3. DILARANG KERAS menjawab topik umum di luar operasional restoran/pesanan. Jika ditanya hal ini, jawab halus bahwa kamu hanya asisten pemesanan.
 4. DILARANG KERAS menggunakan karakter emoji atau ikon emoji apa pun.
 5. DILARANG menggunakan tanda bintang (*) atau format markdown (seperti **, _, __). Gunakan HURUF KAPITAL jika ingin menekankan kata penting.
-6. Jika pertanyaan memerlukan tindakan manual staf, tawarkan koneksi ke kasir.
-7. Jangan mengulangi salam setiap pesan, cukup jawab pertanyaannya saja.
+6. EJAAN LAYANAN DOMPET: Selalu gunakan ejaan "Dompetku" atau "DOMPETKU" untuk layanan dompet digital. DILARANG KERAS menuliskan "DOMPEtky", "DOMPEтky", "dompetky", atau variasi typo lainnya.
+7. Jika pertanyaan memerlukan tindakan manual staf, tawarkan koneksi ke kasir.
+8. Jangan mengulangi salam setiap pesan, cukup jawab pertanyaannya saja.
 `;
 
   const LANG_NAMES: Record<string, string> = {
@@ -319,6 +320,11 @@ If the active language is English ("en"), you MUST format all currencies as "IDR
         .trim();
 
       if (aiReply) {
+        // Fix spelling/typo in all forms of "dompetky" (including Cyrillic т and Latin t)
+        aiReply = aiReply.replace(/dompe[tт]ky/gi, (match: string) => {
+          return match === match.toUpperCase() ? 'DOMPETKU' : 'Dompetku';
+        });
+
         await supabase.from('order_chat_messages').insert({
           chat_id: chatId,
           sender_role: 'ai',

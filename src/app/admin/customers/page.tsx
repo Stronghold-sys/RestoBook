@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Search, Mail, Phone, Calendar,
@@ -17,13 +17,18 @@ import BaseModal from "@/components/BaseModal";
 // Helper component for live countdown timer in table row
 function CountdownTimer({ suspendUntil, onExpired }: { suspendUntil: string; onExpired: () => void }) {
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const onExpiredRef = useRef(onExpired);
+
+  useEffect(() => {
+    onExpiredRef.current = onExpired;
+  });
 
   useEffect(() => {
     const calculate = () => {
       const difference = new Date(suspendUntil).getTime() - Date.now();
       if (difference <= 0) {
         setTimeLeft("Habis");
-        onExpired();
+        onExpiredRef.current();
         return;
       }
       let tempDiff = difference;
@@ -62,7 +67,7 @@ function CountdownTimer({ suspendUntil, onExpired }: { suspendUntil: string; onE
     calculate();
     const interval = setInterval(calculate, 1000);
     return () => clearInterval(interval);
-  }, [suspendUntil, onExpired]);
+  }, [suspendUntil]);
 
   return (
     <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-md border border-amber-200/30">
@@ -193,69 +198,8 @@ export default function AdminCustomersPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchCustomers();
-    fetchAppeals();
-
-    const appealsChannel = supabase.channel("admin-appeals-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "appeals" }, () => {
-        fetchAppeals();
-      })
-      .subscribe();
-
-    const profilesChannel = supabase.channel("admin-profiles-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        fetchCustomers();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(appealsChannel);
-      supabase.removeChannel(profilesChannel);
-    };
-  }, []);
-
-  const fetchAppeals = async () => {
-    setLoadingAppeals(true);
-    try {
-      const { data, error } = await supabase
-        .from("appeals")
-        .select("*, profiles(*)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setAppeals(data || []);
-    } catch (err: any) {
-      toast.error("Gagal memuat daftar banding: " + err.message);
-    } finally {
-      setLoadingAppeals(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "customer")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setCustomers(data || []);
-
-      // Trigger automatic checks for scheduled suspends that are past due
-      if (data) {
-        checkAndRunScheduledSuspends(data);
-      }
-    } catch (error: any) {
-      toast.error("Gagal mengambil data pelanggan: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Check and execute scheduled suspends on the fly
-  const checkAndRunScheduledSuspends = async (list: any[]) => {
+  const checkAndRunScheduledSuspends = useCallback(async (list: any[]) => {
     const now = new Date();
     const toSuspend = list.filter(c =>
       c.status === "active" &&
@@ -298,7 +242,106 @@ export default function AdminCustomersPage() {
       .eq("role", "customer")
       .order("created_at", { ascending: false });
     if (updatedData) setCustomers(updatedData);
-  };
+  }, [supabase]);
+
+  // Check and restore expired suspends automatically on the fly
+  const checkAndRunExpiredSuspends = useCallback(async (list: any[]) => {
+    const now = new Date();
+    const toRestore = list.filter(c =>
+      c.status === "suspended" &&
+      c.suspend_until &&
+      new Date(c.suspend_until) <= now
+    );
+
+    if (toRestore.length === 0) return;
+
+    // Process concurrently in background
+    await Promise.all(toRestore.map(async (c) => {
+      try {
+        await fetch("/api/admin/customers/suspend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "restore",
+            customer_id: c.id,
+            restored_message: "Masa penangguhan akun Anda telah berakhir secara otomatis."
+          })
+        });
+      } catch (err) {
+        console.error("Gagal memulihkan akun kedaluwarsa:", err);
+      }
+    }));
+
+    // Reload list after processing
+    const { data: updatedData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "customer")
+      .order("created_at", { ascending: false });
+    if (updatedData) setCustomers(updatedData);
+  }, [supabase]);
+
+  const fetchCustomers = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("role", "customer")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCustomers(data || []);
+
+      // Trigger automatic checks for scheduled suspends & expired suspends
+      if (data) {
+        checkAndRunScheduledSuspends(data);
+        checkAndRunExpiredSuspends(data);
+      }
+    } catch (error: any) {
+      toast.error("Gagal mengambil data pelanggan: " + error.message);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [supabase, checkAndRunScheduledSuspends, checkAndRunExpiredSuspends]);
+
+  const fetchAppeals = useCallback(async (silent = false) => {
+    if (!silent) setLoadingAppeals(true);
+    try {
+      const { data, error } = await supabase
+        .from("appeals")
+        .select("*, profiles(*)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAppeals(data || []);
+    } catch (err: any) {
+      toast.error("Gagal memuat daftar banding: " + err.message);
+    } finally {
+      if (!silent) setLoadingAppeals(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchCustomers();
+    fetchAppeals();
+
+    const appealsChannel = supabase.channel("admin-appeals-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appeals" }, () => {
+        fetchAppeals(true); // silent refresh
+      })
+      .subscribe();
+
+    const profilesChannel = supabase.channel("admin-profiles-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        fetchCustomers(true); // silent refresh
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(appealsChannel);
+      supabase.removeChannel(profilesChannel);
+    };
+  }, [supabase, fetchCustomers, fetchAppeals]);
 
   // Fetch details (logs & appeals) when a customer detail panel is opened
   const fetchCustomerDetails = async (customer: any) => {
@@ -1117,7 +1160,7 @@ export default function AdminCustomersPage() {
                           ) : isSuspended && customer.suspend_until ? (
                             <CountdownTimer
                               suspendUntil={customer.suspend_until}
-                              onExpired={fetchCustomers}
+                              onExpired={() => fetchCustomers(true)}
                             />
                           ) : isScheduledSuspend && customer.scheduled_suspend_at ? (
                             <div className="space-y-0.5 whitespace-nowrap">

@@ -691,7 +691,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                </h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Ping Monitor badge */}
               <PingMonitor size="sm" />
               {/* Language Switcher */}
@@ -700,7 +700,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 onClick={handleToggleSound}
                 aria-label={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
                 title={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}
-                className={`p-2.5 rounded-xl border transition-all ${
+                className={`hidden lg:flex p-2.5 rounded-xl border transition-all ${
                   isSoundEnabled
                     ? "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-emerald-500 hover:text-emerald-600"
                     : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-rose-500 hover:text-rose-600"
@@ -713,7 +713,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 data-tour="theme-toggle"
                 aria-label={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
                 title={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
-                className="p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all"
+                className="hidden lg:flex p-2.5 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-muted hover:text-primary transition-all"
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" /> }
               </button>
@@ -731,7 +731,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   </span>
                 )}
               </button>
-              <div data-tour="profile-avatar" className="h-10 w-10 rounded-xl overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm">
+              <div data-tour="profile-avatar" className="hidden lg:flex h-10 w-10 rounded-xl overflow-hidden bg-primary/10 border border-primary/20 items-center justify-center text-primary font-black uppercase text-sm">
                 {userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -898,6 +898,28 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 </nav>
 
                 <div className={`absolute bottom-6 left-6 right-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
+                   {/* Sound & Theme toggles for mobile viewports */}
+                   <div className="flex items-center gap-3 mb-4">
+                     <button
+                       onClick={handleToggleSound}
+                       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-bold transition-all ${
+                         isSoundEnabled
+                           ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400"
+                           : "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/30 text-rose-600 dark:text-rose-400"
+                       }`}
+                     >
+                       {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                       <span>{isSoundEnabled ? "Suara On" : "Suara Off"}</span>
+                     </button>
+                     <button
+                       onClick={() => setIsDarkMode(!isDarkMode)}
+                       className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-xs font-bold text-muted hover:text-primary transition-all"
+                     >
+                       {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                       <span>{isDarkMode ? "Mode Terang" : "Mode Gelap"}</span>
+                     </button>
+                   </div>
+
                    <button
                     onClick={handleLogout}
                     data-tour="logout-button"

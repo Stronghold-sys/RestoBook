@@ -85,7 +85,7 @@ export default function ConnectionDetector() {
     }
   }, [saveState]);
 
-  // ── Efek Countdown & Auto-Refresh saat Koneksi Pulih ───────────────────────
+  // ── Efek Countdown & Tutup Notifikasi saat Koneksi Pulih ───────────────────
   useEffect(() => {
     if (status !== "recovered") return;
 
@@ -94,12 +94,8 @@ export default function ConnectionDetector() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.location.reload();
-          // Fallback jika reload butuh waktu
-          setTimeout(() => {
-            applyStatus("online");
-            setVisible(false);
-          }, 500);
+          applyStatus("online");
+          setVisible(false);
           return 0;
         }
         return prev - 1;
@@ -383,7 +379,7 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
           <span className="cm-check-icon">{IconCheckCircle}</span>
           <div className="cm-toast__text">
             <strong>Koneksi Pulih!</strong>
-            <span>Halaman dimuat ulang dalam <strong>{countdown} detik</strong></span>
+            <span>Menutup notifikasi dalam <strong>{countdown} detik</strong></span>
           </div>
         </div>
         {/* Countdown progress bar */}
@@ -461,14 +457,14 @@ const CSS_STYLES = `
 @keyframes cm-bounce-subtle  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 @keyframes cm-slide-down     { from{max-height:0;opacity:0} to{max-height:160px;opacity:1} }
 @keyframes cm-check-pop      { 0%{transform:scale(0) rotate(-30deg);opacity:0} 70%{transform:scale(1.15) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
-/* Animasi toast tengah-layar */
-@keyframes cm-toast-center-fade {
-  from { opacity: 0; transform: translate(-50%, -40%) scale(.93); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* Animasi toast pinggir-kanan */
+@keyframes cm-toast-right-fade {
+  from { opacity: 0; transform: translate(24px, -50%) scale(.93); }
+  to   { opacity: 1; transform: translate(0, -50%) scale(1); }
 }
-@keyframes cm-toast-center-fade-mobile {
-  from { opacity: 0; transform: translate(-50%, -43%) scale(.93); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+@keyframes cm-toast-right-fade-mobile {
+  from { opacity: 0; transform: translate(16px, -50%) scale(.93); }
+  to   { opacity: 1; transform: translate(0, -50%) scale(1); }
 }
 
 /* ── Top Banner (offline / slow) ───────────────────────────── */
@@ -711,13 +707,13 @@ const CSS_STYLES = `
 .cm-pulse { animation: cm-bounce-subtle 2.5s ease infinite; }
 
 /* ══════════════════════════════════════════════════════════════
-   Toast — posisi TENGAH layar, responsif & compact
+   Toast — posisi PINGGIR KANAN layar, responsif & compact
    ══════════════════════════════════════════════════════════════ */
 .cm-toast {
   position: fixed;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  right: 24px;
+  transform: translateY(-50%);
   z-index: 99999;
   min-width: 280px;
   max-width: min(90vw, 360px);
@@ -725,22 +721,22 @@ const CSS_STYLES = `
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 64px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.1);
-  animation: cm-toast-center-fade .4s cubic-bezier(.22,1,.36,1) both;
+  animation: cm-toast-right-fade .4s cubic-bezier(.22,1,.36,1) both;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Mobile: center juga tapi lebih ramping */
+/* Mobile: pinggir kanan juga tapi lebih ramping */
 @media (max-width: 560px) {
   .cm-toast {
     min-width: 260px;
     max-width: min(90vw, 300px);
     width: max-content;
     top: 50%;
-    left: 50%;
+    right: 16px;
+    left: auto;
     bottom: auto;
-    right: auto;
-    transform: translate(-50%, -50%);
-    animation: cm-toast-center-fade-mobile .38s cubic-bezier(.22,1,.36,1) both;
+    transform: translateY(-50%);
+    animation: cm-toast-right-fade-mobile .38s cubic-bezier(.22,1,.36,1) both;
   }
 }
 

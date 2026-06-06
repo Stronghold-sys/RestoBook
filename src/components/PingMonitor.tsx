@@ -342,73 +342,44 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
             id="pm-detail-panel"
             className="pm-panel"
             role="dialog"
-            aria-label="Detail status koneksi internet"
+            aria-label="Status koneksi internet"
           >
-            {/* Header */}
-            <div className="pm-panel__head" style={{ borderBottom: `1px solid ${cfg.border}` }}>
-              <div className="pm-panel__head-left">
+            <div className="pm-panel__body">
+              <div className="pm-panel__info">
                 <span
                   className={`pm-dot pm-dot--lg ${state.status !== "offline" ? "pm-dot--pulse" : ""}`}
                   style={{ background: cfg.color }}
                   aria-hidden="true"
                 />
-                <div>
-                  <div className="pm-panel__status" style={{ color: cfg.color }}>
-                    {cfg.label}
-                  </div>
-                  <div className="pm-panel__sub">
-                    {state.status === "offline"
-                      ? "Tidak ada koneksi ke server"
-                      : state.status === "checking"
-                      ? "Mendeteksi koneksi ke server..."
-                      : state.status === "recovering"
-                      ? "Koneksi pulih — memverifikasi..."
-                      : state.status === "very_slow"
-                      ? "Server merespons dengan lambat"
-                      : state.status === "slow"
-                      ? "Kualitas koneksi di bawah normal"
-                      : "Koneksi ke server stabil"}
-                  </div>
-                </div>
+                <strong style={{ color: cfg.color }}>{cfg.label}</strong>
+                {state.status !== "offline" && state.status !== "checking" && (
+                  <span className="pm-panel__latency">({msLabel})</span>
+                )}
               </div>
-              <div className="pm-panel__ms" style={{ color: cfg.color }}>
-                {msLabel}
+              <p className="pm-panel__desc">
+                {state.status === "offline"
+                  ? "Koneksi terputus! Tidak ada koneksi internet. Harap periksa jaringan Wi-Fi atau data seluler Anda."
+                  : state.status === "checking"
+                  ? "Mendeteksi kualitas koneksi ke server..."
+                  : state.status === "recovering"
+                  ? "Koneksi pulih. Sedang memverifikasi kestabilan jaringan..."
+                  : state.status === "excellent"
+                  ? "Koneksi Anda sangat cepat dan lancar. Sangat ideal untuk bertransaksi."
+                  : state.status === "good"
+                  ? "Koneksi Anda normal dan stabil. Aplikasi bekerja dengan baik."
+                  : state.status === "slow"
+                  ? "Koneksi Anda lambat. Beberapa gambar atau data mungkin memuat lebih lama."
+                  : "Koneksi Anda sangat lambat. Respon aplikasi mungkin terasa tertunda."}
+              </p>
+              <div className="pm-panel__actions">
+                <button
+                  className="pm-refresh-btn"
+                  onClick={runPing}
+                  aria-label="Cek ulang koneksi"
+                >
+                  ↻ Cek Ulang
+                </button>
               </div>
-            </div>
-
-            {/* Stats */}
-            <div className="pm-stats">
-              <StatBox label="Rata-rata" value={stats.avg !== null ? `${stats.avg} ms` : "—"} />
-              <StatBox label="Tercepat"  value={stats.min !== null ? `${stats.min} ms` : "—"} color="#10b981" />
-              <StatBox label="Terlambat" value={stats.max !== null ? `${stats.max} ms` : "—"} color="#f59e0b" />
-            </div>
-
-            {/* Histogram bar chart */}
-            {state.history.length > 0 && (
-              <div className="pm-hist" aria-label="Riwayat latency 10 ping terakhir">
-                <div className="pm-hist__label">Riwayat 10 Ping Terakhir</div>
-                <HistogramBars history={state.history} />
-              </div>
-            )}
-
-            {/* Threshold guide */}
-            <div className="pm-guide">
-              <ThresholdRow color="#10b981" label="Sangat Cepat" range="< 50 ms" />
-              <ThresholdRow color="#3b82f6" label="Normal"       range="50–120 ms" />
-              <ThresholdRow color="#f59e0b" label="Lambat"       range="120–300 ms" />
-              <ThresholdRow color="#ef4444" label="Sangat Lambat" range="> 300 ms" />
-            </div>
-
-            {/* Footer */}
-            <div className="pm-panel__foot">
-              <span>HTTP latency ke server • diperbarui otomatis</span>
-              <button
-                className="pm-refresh-btn"
-                onClick={runPing}
-                aria-label="Refresh ping sekarang"
-              >
-                ↻ Refresh
-              </button>
             </div>
           </div>
         )}
@@ -434,53 +405,6 @@ function SignalBars({ bars, color }: { bars: number; color: string }) {
         />
       ))}
     </span>
-  );
-}
-
-function StatBox({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="pm-stat">
-      <div className="pm-stat__val" style={color ? { color } : undefined}>{value}</div>
-      <div className="pm-stat__lbl">{label}</div>
-    </div>
-  );
-}
-
-function HistogramBars({ history }: { history: PingEntry[] }) {
-  const maxMs = Math.max(...history.map(h => h.ms), 300);
-  return (
-    <div className="pm-hist__bars">
-      {[...history].reverse().map((h, i) => {
-        const pct = Math.min((h.ms / maxMs) * 100, 100);
-        const col = !h.ok ? "#6b7280"
-          : h.ms < THRESHOLDS.excellent ? "#10b981"
-          : h.ms < THRESHOLDS.good      ? "#3b82f6"
-          : h.ms < THRESHOLDS.slow      ? "#f59e0b"
-          : "#ef4444";
-        return (
-          <div
-            key={i}
-            className="pm-hist__bar-wrap"
-            title={h.ok ? `${h.ms} ms` : "Gagal"}
-          >
-            <div
-              className="pm-hist__bar"
-              style={{ height: `${Math.max(pct, 8)}%`, background: col }}
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ThresholdRow({ color, label, range }: { color: string; label: string; range: string }) {
-  return (
-    <div className="pm-guide__row">
-      <span className="pm-guide__dot" style={{ background: color }} />
-      <span className="pm-guide__label">{label}</span>
-      <span className="pm-guide__range">{range}</span>
-    </div>
   );
 }
 
@@ -560,99 +484,61 @@ const PM_STYLES = `
   top: calc(100% + 10px);
   right: 0;
   z-index: 99990;
-  width: 300px;
+  width: 260px;
   background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 16px 56px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.05);
   overflow: hidden;
   animation: pm-fadein .22s ease both;
+  padding: 14px 16px;
 }
 @media (prefers-color-scheme: dark) {
   .pm-panel {
     background: #1e293b;
-    box-shadow: 0 16px 56px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
+    box-shadow: 0 16px 48px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.05);
   }
 }
 @media (max-width: 420px) {
-  .pm-panel { right: -60px; width: 280px; }
+  .pm-panel { right: -40px; width: 240px; }
 }
 
-/* Panel header */
-.pm-panel__head {
+.pm-panel__body {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
+  flex-direction: column;
   gap: 10px;
 }
-.pm-panel__head-left {
-  display: flex; align-items: center; gap: 10px;
+.pm-panel__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
 }
-.pm-panel__status {
-  font-size: 14px; font-weight: 800; letter-spacing: -.02em;
+.pm-panel__latency {
+  font-size: 12px;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
 }
-.pm-panel__sub {
-  font-size: 11px; color: #94a3b8; margin-top: 1px; line-height: 1.4;
+.pm-panel__desc {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
 }
-.pm-panel__ms {
-  font-size: 20px; font-weight: 900; letter-spacing: -.04em; flex-shrink: 0;
+@media (prefers-color-scheme: dark) {
+  .pm-panel__desc { color: #94a3b8; }
 }
-
-/* Stats row */
-.pm-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  padding: 0 12px 12px;
-}
-.pm-stat {
-  text-align: center;
-  padding: 8px 4px;
-  border-radius: 10px;
-}
-.pm-stat__val { font-size: 13px; font-weight: 800; color: #334155; }
-@media (prefers-color-scheme: dark) { .pm-stat__val { color: #e2e8f0; } }
-.pm-stat__lbl { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-
-/* Histogram */
-.pm-hist { padding: 0 16px 10px; }
-.pm-hist__label {
-  font-size: 10px; color: #94a3b8; text-transform: uppercase;
-  letter-spacing: .06em; margin-bottom: 8px;
-}
-.pm-hist__bars {
-  display: flex; align-items: flex-end; gap: 4px;
-  height: 44px;
-}
-.pm-hist__bar-wrap { flex: 1; display: flex; align-items: flex-end; height: 100%; }
-.pm-hist__bar { width: 100%; border-radius: 3px 3px 0 0; transition: height .3s ease; min-height: 4px; }
-
-/* Threshold guide */
-.pm-guide {
-  border-top: 1px solid rgba(148,163,184,.15);
-  padding: 10px 16px;
-  display: flex; flex-direction: column; gap: 5px;
-}
-.pm-guide__row {
-  display: flex; align-items: center; gap: 7px;
-}
-.pm-guide__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.pm-guide__label { font-size: 11px; color: #475569; font-weight: 600; flex: 1; }
-@media (prefers-color-scheme: dark) { .pm-guide__label { color: #94a3b8; } }
-.pm-guide__range { font-size: 10.5px; color: #94a3b8; font-variant-numeric: tabular-nums; }
-
-/* Footer */
-.pm-panel__foot {
-  border-top: 1px solid rgba(148,163,184,.15);
-  padding: 8px 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 10.5px; color: #94a3b8;
+.pm-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(148,163,184,.12);
+  padding-top: 8px;
+  margin-top: 2px;
 }
 .pm-refresh-btn {
   background: none; border: none; cursor: pointer;
-  font-size: 11px; color: #6366f1; font-weight: 700;
+  font-size: 11px; color: #ea580c; font-weight: 700;
   padding: 2px 6px; border-radius: 6px;
-  transition: background .15s;
+  transition: background .15s, color .15s;
 }
-.pm-refresh-btn:hover { background: rgba(99,102,241,.08); }
+.pm-refresh-btn:hover { background: rgba(234,88,12,.08); }
 `;

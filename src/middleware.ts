@@ -209,8 +209,8 @@ async function handleDDoSProtection(ip: string, path: string, userAgent: string)
   const reqsInLast1s = timestamps.filter(t => now - t < 1000).length;
   const reqsInLast2s = timestamps.filter(t => now - t < 2000).length;
 
-  // Level 4: > 15 requests/detik -> Blokir IP 24 Jam
-  if (reqsInLast1s > 15) {
+  // Level 4: > 80 requests/detik -> Blokir IP 24 Jam
+  if (reqsInLast1s > 80) {
     await addIPToBlacklist(ip, 1440, `Level 4 DDoS Protection: Burst request ${reqsInLast1s}/s`);
     await logMiddlewareSecurity({
       ipAddress: ip, activity: 'DDOS_ATTEMPT_LEVEL_4', endpoint: path, status: 'blocked', userAgent
@@ -218,8 +218,8 @@ async function handleDDoSProtection(ip: string, path: string, userAgent: string)
     return { action: 'block' };
   }
 
-  // Level 3: > 20 requests dalam 2 detik -> Blokir IP 1 Jam
-  if (reqsInLast2s > 20) {
+  // Level 3: > 120 requests dalam 2 detik -> Blokir IP 1 Jam
+  if (reqsInLast2s > 120) {
     await addIPToBlacklist(ip, 60, `Level 3 DDoS Protection: Burst request ${reqsInLast2s}/2s`);
     await logMiddlewareSecurity({
       ipAddress: ip, activity: 'DDOS_ATTEMPT_LEVEL_3', endpoint: path, status: 'blocked', userAgent
@@ -227,13 +227,13 @@ async function handleDDoSProtection(ip: string, path: string, userAgent: string)
     return { action: 'block' };
   }
 
-  // Level 2: > 6 requests/detik -> Delay response 5 detik
-  if (reqsInLast1s > 6) {
+  // Level 2: > 40 requests/detik -> Delay response 5 detik
+  if (reqsInLast1s > 40) {
     return { action: 'delay', delayMs: 5000 };
   }
 
-  // Level 1: > 3 requests/detik -> Delay response 2 detik
-  if (reqsInLast1s > 3) {
+  // Level 1: > 20 requests/detik -> Delay response 2 detik
+  if (reqsInLast1s > 20) {
     return { action: 'delay', delayMs: 2000 };
   }
 

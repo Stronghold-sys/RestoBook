@@ -508,6 +508,9 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       })
       .subscribe();
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userProfile?.id, role]);
 
   useEffect(() => {

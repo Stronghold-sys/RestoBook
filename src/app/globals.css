@@ -624,9 +624,41 @@ html.anim-mode-low .hover-scale:hover {
   transform: none !important;
 }
 
-/* ── Page transition: prevent scroll jump during exit animation ── */
+/* ── Page transition via data-attribute (no React remount) ── */
+/* Applied by RouteChangeListener on every route change */
 [data-page-transition] {
   overflow-x: hidden;
+}
+
+/* When navigating: page content fades + slides in */
+html[data-page-entering] main,
+html[data-page-entering] [data-page-content] {
+  animation: anim-page-enter var(--anim-normal) var(--anim-spring) both;
+}
+
+@keyframes anim-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--anim-slide-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion: no page enter animation */
+@media (prefers-reduced-motion: reduce) {
+  html[data-page-entering] main,
+  html[data-page-entering] [data-page-content] {
+    animation: none !important;
+  }
+}
+
+/* Low performance mode: no page enter animation */
+html.anim-mode-low[data-page-entering] main,
+html.anim-mode-low[data-page-entering] [data-page-content] {
+  animation: none !important;
 }
 
 /* ── Focus visible — accessible without disrupting animation ── */

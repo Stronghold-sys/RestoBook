@@ -14,7 +14,7 @@ import SpotlightTutorial from "@/components/SpotlightTutorial";
 import AnimationProvider from "@/components/AnimationProvider";
 import dynamic from "next/dynamic";
 
-const PageTransitionWrapper = dynamic(() => import("@/components/PageTransitionWrapper"), {
+const RouteChangeListener = dynamic(() => import("@/components/RouteChangeListener"), {
   ssr: false,
 });
 
@@ -85,9 +85,8 @@ export default function RootLayout({
           <ConnectionDetector />
           <SessionStatusListener />
           <AutoTableStatusManager />
-          <PageTransitionWrapper>
-            {children}
-          </PageTransitionWrapper>
+          <RouteChangeListener />
+          {children}
           <GlobalModalContainer />
           <SpotlightTutorial />
           <ModernToaster />

@@ -80,13 +80,25 @@ export async function POST(req: Request) {
       }
     }
 
+    // Tentukan catatan bersih agar tidak mengirimkan JSON mentah ke Google Calendar
+    let displayNotes = '-';
+    if (parsedNotes) {
+      if (typeof parsedNotes.catatan === 'string') {
+        displayNotes = parsedNotes.catatan.trim() || '-';
+      } else if (typeof parsedNotes.notes === 'string') {
+        displayNotes = parsedNotes.notes.trim() || '-';
+      }
+    } else if (reservation.notes && !reservation.notes.trim().startsWith('{')) {
+      displayNotes = reservation.notes.trim();
+    }
+
     const eventData = {
       atas_nama: parsedNotes?.atas_nama || reservation.profiles?.full_name || 'Guest',
       telepon: parsedNotes?.telepon || reservation.profiles?.phone || '-',
       reservation_date: reservation.reservation_date,
       reservation_time: reservation.reservation_time,
       guest_count: reservation.guest_count,
-      notes: parsedNotes?.catatan || parsedNotes?.notes || reservation.notes || '-'
+      notes: displayNotes
     };
 
     if (action === 'create') {

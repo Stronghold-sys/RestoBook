@@ -362,7 +362,7 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
           <span className="cm-spinner" aria-hidden="true" />
           <div className="cm-toast__text">
             <strong>Halaman Memuat Lebih Lama</strong>
-            <span>Browser sedang memproses konten. Ini bukan masalah internet Anda.</span>
+            <span>Browser sedang memproses konten. Ini bukan masalah koneksi internet Anda.</span>
           </div>
           <div className="cm-toast__actions">
             <button className="cm-btn cm-btn--ghost cm-btn--sm" onClick={() => window.location.reload()} aria-label="Coba muat ulang">
@@ -380,12 +380,22 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
   if (status === "recovered") {
     return (
       <div className="cm-toast cm-toast--success" role="status" aria-live="polite">
-        <div className="cm-toast__inner">
+        <div className="cm-toast__inner cm-toast__inner--success">
           <span className="cm-check-icon">{IconCheckCircle}</span>
           <div className="cm-toast__text">
             <strong>Koneksi Pulih!</strong>
-            <span>Internet kembali normal. Memuat data terbaru dalam <strong>{countdown}s</strong>…</span>
+            <span>
+              Internet kembali normal. Halaman akan dimuat ulang
+              dalam <strong style={{color:'#6ee7b7'}}>{countdown} detik</strong>…
+            </span>
           </div>
+        </div>
+        {/* Countdown progress bar */}
+        <div className="cm-toast__progress">
+          <div
+            className="cm-toast__progress-fill"
+            style={{ animationDuration: `${countdown + 1}s` }}
+          />
         </div>
       </div>
     );
@@ -440,10 +450,6 @@ const IconCheckCircle = (
 
 // ─── CSS (semua animasi dan gaya dalam satu blok ─ zero external deps) ─────────
 const CSS_STYLES = `
-/* ═══════════════════════════════════════════════════════════════
-   ConnectionDetector — Styles
-   ═══════════════════════════════════════════════════════════════ */
-
 /* ── Keyframes ─────────────────────────────────────────────── */
 @keyframes cm-fade-in        { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
 @keyframes cm-fade-in-up     { from{opacity:0;transform:translateY(20px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
@@ -456,6 +462,15 @@ const CSS_STYLES = `
 @keyframes cm-bounce-subtle  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 @keyframes cm-slide-down     { from{max-height:0;opacity:0} to{max-height:160px;opacity:1} }
 @keyframes cm-check-pop      { 0%{transform:scale(0) rotate(-30deg);opacity:0} 70%{transform:scale(1.15) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
+/* Animasi toast naik dari bawah-tengah */
+@keyframes cm-toast-rise {
+  from { opacity:0; transform:translate(-50%, 24px) scale(.94); }
+  to   { opacity:1; transform:translate(-50%, 0)     scale(1); }
+}
+@keyframes cm-toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
 
 /* ── Top Banner (offline / slow) ───────────────────────────── */
 .cm-banner {
@@ -478,9 +493,10 @@ const CSS_STYLES = `
   color: #fff;
   font-weight: 600;
   letter-spacing: .01em;
+  text-align: center;
 }
 .cm-banner--offline .cm-banner__icon {
-  width: 16px; height: 16px; display: flex; align-items: center;
+  width: 16px; height: 16px; display: flex; align-items: center; flex-shrink: 0;
   animation: cm-bounce-subtle 2s infinite;
 }
 
@@ -501,8 +517,8 @@ const CSS_STYLES = `
 .cm-banner__icon { width: 18px; height: 18px; flex-shrink: 0; }
 .cm-banner__text { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .cm-banner__text strong { font-weight: 700; font-size: 13px; }
-.cm-banner__text span   { font-size: 11.5px; opacity: .85; }
-.cm-banner__text em     { font-style: normal; opacity: .7; font-size: 10.5px; }
+.cm-banner__text span   { font-size: 12px; opacity: .9; line-height: 1.5; }
+.cm-banner__text em     { font-style: normal; opacity: .75; font-size: 11px; }
 .cm-banner__actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
 /* ── Fullscreen Overlay ─────────────────────────────────────── */
@@ -658,6 +674,7 @@ const CSS_STYLES = `
   color: inherit;
   font-size: 12px;
   border-radius: 8px;
+  white-space: nowrap;
 }
 .cm-btn--ghost:hover { background: rgba(255,255,255,.25); }
 
@@ -682,32 +699,49 @@ const CSS_STYLES = `
 /* ── Spinner ────────────────────────────────────────────────── */
 .cm-spinner {
   display: inline-block;
-  width: 18px; height: 18px;
+  width: 20px; height: 20px;
   border: 2.5px solid rgba(100,116,139,.25);
   border-top-color: #ea580c;
   border-radius: 50%;
   animation: cm-spin .8s linear infinite;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* ── Pulse animation ────────────────────────────────────────── */
 .cm-pulse { animation: cm-bounce-subtle 2.5s ease infinite; }
 
-/* ── Toast (loading + success) ─────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   Toast — posisi TENGAH bawah layar, responsif penuh
+   ══════════════════════════════════════════════════════════════ */
 .cm-toast {
   position: fixed;
-  bottom: 24px; right: 24px;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 99999;
-  max-width: 380px;
-  width: calc(100vw - 48px);
-  border-radius: 18px;
+  min-width: 300px;
+  max-width: min(90vw, 480px);
+  width: max-content;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 16px 56px rgba(0,0,0,.22), 0 0 0 1px rgba(255,255,255,.08);
-  animation: cm-slide-right .4s cubic-bezier(.22,1,.36,1) both;
+  box-shadow: 0 20px 64px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.1);
+  animation: cm-toast-rise .4s cubic-bezier(.22,1,.36,1) both;
   font-family: system-ui, -apple-system, sans-serif;
 }
-@media (max-width: 480px) {
-  .cm-toast { bottom: 16px; right: 12px; left: 12px; width: auto; }
+
+/* Mobile: full width dengan margin */
+@media (max-width: 560px) {
+  .cm-toast {
+    min-width: unset;
+    max-width: unset;
+    width: calc(100vw - 32px);
+    bottom: 24px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+    animation: cm-fade-in-up .38s cubic-bezier(.22,1,.36,1) both;
+  }
 }
 
 .cm-toast--loading {
@@ -715,49 +749,93 @@ const CSS_STYLES = `
   color: #e2e8f0;
 }
 @media (prefers-color-scheme: light) {
-  .cm-toast--loading { background: #fff; color: #1e293b; border: 1px solid #e2e8f0; }
+  .cm-toast--loading {
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 16px 48px rgba(0,0,0,.12);
+  }
 }
+
 .cm-toast--success {
   background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
   color: #d1fae5;
+  border: 1px solid rgba(16,185,129,.2);
 }
 
+/* Shimmer bar (loading) */
 .cm-toast__shimmer {
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg, #334155, #ea580c, #f59e0b, #334155);
   background-size: 200% 100%;
   animation: cm-shimmer 1.8s linear infinite;
 }
 
+/* Inner layout */
 .cm-toast__inner {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px 20px;
+}
+.cm-toast__inner--success {
+  padding: 20px 24px;
+  align-items: center;
 }
 
+/* Text content */
 .cm-toast__text {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
-.cm-toast__text strong { font-size: 13px; font-weight: 700; }
-.cm-toast__text span   { font-size: 11.5px; opacity: .8; line-height: 1.5; }
-.cm-toast__text strong { white-space: nowrap; }
+.cm-toast__text strong {
+  font-size: 14px;
+  font-weight: 800;
+  display: block;
+  white-space: normal;
+  line-height: 1.3;
+}
+.cm-toast__text span {
+  font-size: 12.5px;
+  opacity: .88;
+  line-height: 1.55;
+  white-space: normal;
+  word-break: break-word;
+}
 
-.cm-toast__actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.cm-toast__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Countdown progress bar (success) */
+.cm-toast__progress {
+  height: 3px;
+  background: rgba(255,255,255,.15);
+  overflow: hidden;
+}
+.cm-toast__progress-fill {
+  height: 100%;
+  background: #34d399;
+  animation: cm-toast-progress linear forwards;
+  border-radius: 2px;
+}
 
 /* ── Success icon (check) ───────────────────────────────────── */
 .cm-check-icon {
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   flex-shrink: 0;
   color: #6ee7b7;
   display: flex; align-items: center; justify-content: center;
   animation: cm-check-pop .5s cubic-bezier(.22,1,.36,1) .1s both;
 }
-.cm-check-icon svg { width: 32px; height: 32px; }
+.cm-check-icon svg { width: 36px; height: 36px; }
 
 /* ── Responsive adjustments ─────────────────────────────────── */
 @media (max-width: 600px) {
@@ -765,5 +843,9 @@ const CSS_STYLES = `
   .cm-title { font-size: 18px; }
   .cm-banner__inner { flex-direction: column; align-items: flex-start; gap: 8px; }
   .cm-banner__actions { width: 100%; justify-content: flex-end; }
+  .cm-toast__inner { gap: 12px; padding: 14px 16px; }
+  .cm-toast__inner--success { padding: 16px 18px; }
+  .cm-toast__text strong { font-size: 13px; }
+  .cm-toast__text span { font-size: 12px; }
 }
 `;

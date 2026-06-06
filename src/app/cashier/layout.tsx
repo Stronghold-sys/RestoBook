@@ -159,7 +159,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
 
   // 1. Guard ketika shift CLOSED
   if (shiftState === 'closed') {
-    const allowed = ['/cashier/profile', '/cashier/attendance', '/cashier/transactions'];
+    const allowed = ['/cashier/profile', '/cashier/attendance', '/cashier/transactions', '/cashier/dashboard'];
     if (!allowed.includes(pathname)) {
       return (
         <DashboardLayout role="cashier">

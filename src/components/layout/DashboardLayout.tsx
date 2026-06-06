@@ -160,7 +160,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     if (shiftState === "open") {
       return true;
     } else if (shiftState === "closed") {
-      return href === "/cashier/transactions";
+      return href === "/cashier/transactions" || href === "/cashier/dashboard";
     } else {
       // standby
       return href === "/cashier/dashboard";

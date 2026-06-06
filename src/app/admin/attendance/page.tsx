@@ -64,11 +64,13 @@ export default function AdminAttendancePage() {
         setEmployees(result.employees || []);
 
       } else if (activeTab === "shifts") {
-        const { data } = await supabase
-          .from('shifts')
-          .select('*, profiles(full_name, role, employee_id)')
-          .order('created_at', { ascending: false });
-        setShifts(data || []);
+        const res = await fetch(`/api/admin/cashier-shifts?t=${Date.now()}`);
+        const result = await res.json();
+        if (result.success) {
+          setShifts(result.shifts || []);
+        } else {
+          throw new Error(result.error || 'Gagal memuat data shift kasir');
+        }
       } else if (activeTab === "requests") {
         const { data } = await supabase
           .from('attendance')

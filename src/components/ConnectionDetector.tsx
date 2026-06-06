@@ -60,10 +60,8 @@ export default function ConnectionDetector() {
   const failCount      = useRef(0);
   const successCount   = useRef(0);
   const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const pageSlow       = useRef(false);
   const prevStatus     = useRef<ConnectionStatus>("idle");
-  const refreshedRef   = useRef(false);
 
   // ── Simpan / muat state dari sessionStorage ───────────────────────────────
   const saveState = useCallback((s: ConnectionStatus) => {
@@ -87,25 +85,29 @@ export default function ConnectionDetector() {
     }
   }, [saveState]);
 
-  // ── Auto refresh ─────────────────────────────────────────────────────────
-  const autoRefreshOnce = useCallback(() => {
-    const alreadyRefreshed = sessionStorage.getItem(AUTO_REFRESH_KEY) === "1";
-    if (alreadyRefreshed || refreshedRef.current) return;
-    refreshedRef.current = true;
-    sessionStorage.setItem(AUTO_REFRESH_KEY, "1");
+  // ── Efek Countdown & Auto-Refresh saat Koneksi Pulih ───────────────────────
+  useEffect(() => {
+    if (status !== "recovered") return;
 
     setCountdown(3);
-    countdownRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          clearInterval(countdownRef.current!);
+          clearInterval(timer);
           window.location.reload();
+          // Fallback jika reload butuh waktu
+          setTimeout(() => {
+            applyStatus("online");
+            setVisible(false);
+          }, 500);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, []);
+
+    return () => clearInterval(timer);
+  }, [status, applyStatus]);
 
   // ── Logic utama ping ──────────────────────────────────────────────────────
   const checkConnection = useCallback(async () => {
@@ -148,7 +150,6 @@ export default function ConnectionDetector() {
     if (prevStatus.current === "offline" || prevStatus.current === "slow_internet" || prevStatus.current === "slow_page") {
       if (successCount.current >= RECOVER_SUCCESSES) {
         applyStatus("recovered");
-        autoRefreshOnce();
         return;
       }
     }
@@ -160,20 +161,19 @@ export default function ConnectionDetector() {
       applyStatus("online");
       setVisible(false);
     }
-  }, [applyStatus, autoRefreshOnce]);
+  }, [applyStatus]);
 
   // ── Deteksi halaman lambat memuat ─────────────────────────────────────────
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Hapus flag auto-refresh saat reload manual (bukan otomatis)
+    // Hapus state lama saat reload manual (bukan otomatis)
     // Hanya hapus jika sudah > 30 detik sejak terakhir di-set
     const lastSaved = sessionStorage.getItem(STORAGE_KEY);
     if (lastSaved) {
       try {
         const parsed: MonitorState = JSON.parse(lastSaved);
         if (Date.now() - parsed.lastChecked > 30_000) {
-          sessionStorage.removeItem(AUTO_REFRESH_KEY);
           sessionStorage.removeItem(STORAGE_KEY);
         }
       } catch {}
@@ -240,7 +240,6 @@ export default function ConnectionDetector() {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, [checkConnection, applyStatus]);
 
@@ -384,17 +383,17 @@ function ConnectionUI({ status, latency, countdown, onRetry, onDismiss }: UIProp
           <span className="cm-check-icon">{IconCheckCircle}</span>
           <div className="cm-toast__text">
             <strong>Koneksi Pulih!</strong>
-            <span>
-              Internet kembali normal. Halaman akan dimuat ulang
-              dalam <strong style={{color:'#6ee7b7'}}>{countdown} detik</strong>…
-            </span>
+            <span>Halaman dimuat ulang dalam <strong>{countdown} detik</strong></span>
           </div>
         </div>
         {/* Countdown progress bar */}
         <div className="cm-toast__progress">
           <div
             className="cm-toast__progress-fill"
-            style={{ animationDuration: `${countdown + 1}s` }}
+            style={{
+              width: `${(countdown / 3) * 100}%`,
+              transition: countdown === 3 ? "none" : "width 1s linear"
+            }}
           />
         </div>
       </div>
@@ -462,14 +461,14 @@ const CSS_STYLES = `
 @keyframes cm-bounce-subtle  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 @keyframes cm-slide-down     { from{max-height:0;opacity:0} to{max-height:160px;opacity:1} }
 @keyframes cm-check-pop      { 0%{transform:scale(0) rotate(-30deg);opacity:0} 70%{transform:scale(1.15) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
-/* Animasi toast naik dari bawah-tengah */
-@keyframes cm-toast-rise {
-  from { opacity:0; transform:translate(-50%, 24px) scale(.94); }
-  to   { opacity:1; transform:translate(-50%, 0)     scale(1); }
+/* Animasi toast tengah-layar */
+@keyframes cm-toast-center-fade {
+  from { opacity: 0; transform: translate(-50%, -40%) scale(.93); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
-@keyframes cm-toast-progress {
-  from { width: 100%; }
-  to   { width: 0%; }
+@keyframes cm-toast-center-fade-mobile {
+  from { opacity: 0; transform: translate(-50%, -43%) scale(.93); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 /* ── Top Banner (offline / slow) ───────────────────────────── */
@@ -712,35 +711,36 @@ const CSS_STYLES = `
 .cm-pulse { animation: cm-bounce-subtle 2.5s ease infinite; }
 
 /* ══════════════════════════════════════════════════════════════
-   Toast — posisi TENGAH bawah layar, responsif penuh
+   Toast — posisi TENGAH layar, responsif & compact
    ══════════════════════════════════════════════════════════════ */
 .cm-toast {
   position: fixed;
-  bottom: 36px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 99999;
-  min-width: 300px;
-  max-width: min(90vw, 480px);
+  min-width: 280px;
+  max-width: min(90vw, 360px);
   width: max-content;
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 64px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.1);
-  animation: cm-toast-rise .4s cubic-bezier(.22,1,.36,1) both;
+  animation: cm-toast-center-fade .4s cubic-bezier(.22,1,.36,1) both;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Mobile: full width dengan margin */
+/* Mobile: center juga tapi lebih ramping */
 @media (max-width: 560px) {
   .cm-toast {
-    min-width: unset;
-    max-width: unset;
-    width: calc(100vw - 32px);
-    bottom: 24px;
-    left: 16px;
-    right: 16px;
-    transform: none;
-    animation: cm-fade-in-up .38s cubic-bezier(.22,1,.36,1) both;
+    min-width: 260px;
+    max-width: min(90vw, 300px);
+    width: max-content;
+    top: 50%;
+    left: 50%;
+    bottom: auto;
+    right: auto;
+    transform: translate(-50%, -50%);
+    animation: cm-toast-center-fade-mobile .38s cubic-bezier(.22,1,.36,1) both;
   }
 }
 
@@ -758,9 +758,11 @@ const CSS_STYLES = `
 }
 
 .cm-toast--success {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-  color: #d1fae5;
-  border: 1px solid rgba(16,185,129,.2);
+  background: rgba(6, 78, 59, 0.95); /* Emerald glassmorphism */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #e6fcf5;
+  border: 1px solid rgba(52, 211, 153, 0.2);
 }
 
 /* Shimmer bar (loading) */
@@ -775,12 +777,13 @@ const CSS_STYLES = `
 .cm-toast__inner {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 14px 16px;
 }
 .cm-toast__inner--success {
-  padding: 20px 24px;
+  padding: 12px 16px;
   align-items: center;
+  gap: 10px;
 }
 
 /* Text content */
@@ -788,20 +791,20 @@ const CSS_STYLES = `
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 .cm-toast__text strong {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13.5px;
+  font-weight: 700;
   display: block;
   white-space: normal;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 .cm-toast__text span {
-  font-size: 12.5px;
-  opacity: .88;
-  line-height: 1.55;
+  font-size: 11.5px;
+  opacity: .9;
+  line-height: 1.35;
   white-space: normal;
   word-break: break-word;
 }
@@ -823,19 +826,18 @@ const CSS_STYLES = `
 .cm-toast__progress-fill {
   height: 100%;
   background: #34d399;
-  animation: cm-toast-progress linear forwards;
   border-radius: 2px;
 }
 
 /* ── Success icon (check) ───────────────────────────────────── */
 .cm-check-icon {
-  width: 36px; height: 36px;
+  width: 22px; height: 22px;
   flex-shrink: 0;
-  color: #6ee7b7;
+  color: #34d399;
   display: flex; align-items: center; justify-content: center;
-  animation: cm-check-pop .5s cubic-bezier(.22,1,.36,1) .1s both;
+  animation: cm-check-pop .4s cubic-bezier(.22,1,.36,1) .05s both;
 }
-.cm-check-icon svg { width: 36px; height: 36px; }
+.cm-check-icon svg { width: 22px; height: 22px; }
 
 /* ── Responsive adjustments ─────────────────────────────────── */
 @media (max-width: 600px) {
@@ -843,9 +845,9 @@ const CSS_STYLES = `
   .cm-title { font-size: 18px; }
   .cm-banner__inner { flex-direction: column; align-items: flex-start; gap: 8px; }
   .cm-banner__actions { width: 100%; justify-content: flex-end; }
-  .cm-toast__inner { gap: 12px; padding: 14px 16px; }
-  .cm-toast__inner--success { padding: 16px 18px; }
-  .cm-toast__text strong { font-size: 13px; }
-  .cm-toast__text span { font-size: 12px; }
+  .cm-toast__inner { gap: 10px; padding: 12px 14px; }
+  .cm-toast__inner--success { padding: 12px 14px; }
+  .cm-toast__text strong { font-size: 12.5px; }
+  .cm-toast__text span { font-size: 11px; }
 }
 `;

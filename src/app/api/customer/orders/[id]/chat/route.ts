@@ -187,6 +187,23 @@ async function sendAIGreeting(supabase: any, chatId: string, lang: string = 'id'
   }).eq('id', chatId);
 }
 
+function formatCurrencyBackend(amount: number, lang: string = 'id'): string {
+  const num = Number(amount) || 0;
+  if (lang === 'id') {
+    const formatted = new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+    return `Rp ${formatted}`;
+  } else {
+    const formatted = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+    return `IDR ${formatted}`;
+  }
+}
+
 async function sendAIResponse(supabase: any, chatId: string, orderId: string, message: string, chatStatus: string, lang: string = 'id') {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) return;
@@ -203,7 +220,7 @@ async function sendAIResponse(supabase: any, chatId: string, orderId: string, me
     .eq('order_id', orderId);
 
   const itemsStr = (orderItems || []).map((item: any) => {
-    return `- ${item.quantity}x ${item.menu_items?.name || 'Item'} (Subtotal: Rp ${Number(item.subtotal).toLocaleString('id-ID')})`;
+    return `- ${item.quantity}x ${item.menu_items?.name || 'Item'} (Subtotal: ${formatCurrencyBackend(Number(item.subtotal), lang)})`;
   }).join('\n');
 
   let systemPrompt = `Kamu adalah RestoBot AI, asisten bantuan otomatis pelanggan restoran RestoBook.
@@ -223,7 +240,7 @@ INFORMASI PESANAN PELANGGAN:
 - Status Pembayaran: ${orderDetails?.payment_status === 'paid' ? 'Sudah Lunas' : 'Belum Bayar'}
 - Metode Pembayaran: ${orderDetails?.payment_method === 'cash' ? 'Tunai (Bayar di Kasir/Kurir)' : 'Non-Tunai (Digital/Transfer)'}
 - Catatan Tambahan Pesanan: ${orderDetails?.notes || 'Tidak ada catatan'}
-- Total Transaksi: Rp ${Number(orderDetails?.total_amount).toLocaleString('id-ID')}
+- Total Transaksi: ${formatCurrencyBackend(Number(orderDetails?.total_amount), lang)}
 - Daftar Menu yang Dipesan:
 ${itemsStr}
 
@@ -256,6 +273,10 @@ ATURAN MENJAWAB (WAJIB DIPATUHI):
     systemPrompt += `\n\nLANGUAGE ENFORCEMENT PROTOCOL:
 You MUST output your response ONLY in ${targetLangName}. All greetings, system explanations, answers, and formatting MUST be written in ${targetLangName}. Override any rule stating to use Bahasa Indonesia, and respond in ${targetLangName} instead. Translate any Indonesian system prompts, menu items, table statuses, staff details, or ticket info dynamically on the fly to ${targetLangName} in your final reply.`;
   }
+  
+  // Dynamic currency formatting rule injection
+  systemPrompt += `\n\nCURRENCY FORMATTING PROTOCOL:
+If the active language is English ("en"), you MUST format all currencies as "IDR [amount]" using English locale formatting (e.g., IDR 50,000 or IDR 1,000,000). If the active language is Indonesian ("id"), you MUST format all currencies as "Rp [amount]" using Indonesian locale formatting (e.g., Rp 50.000 or Rp 1.000.000). Never mix these format symbols and styles.`;
 
   const { data: historyMsgs } = await supabase
     .from('order_chat_messages')

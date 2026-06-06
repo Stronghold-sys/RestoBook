@@ -318,7 +318,7 @@ const playPingSound = () => {
 
 export default function RestoBot() {
   const pathname = usePathname();
-  const { lang, t } = useLanguage();
+  const { lang, t, formatCurrency } = useLanguage();
 
   // Sembunyikan RestoBot di halaman yang memiliki input chat sendiri
   // agar tombol chatbot tidak mengganggu tombol kirim pesan
@@ -770,7 +770,7 @@ export default function RestoBot() {
     // Inject Live Database Menu Items
     if (allMenuItems && allMenuItems.length > 0) {
       const menuText = allMenuItems.map(item => {
-        return `- ${item.name} (${item.categories?.name || 'Lainnya'}): Rp ${Number(item.price).toLocaleString('id-ID')} - ${item.description || 'Tidak ada deskripsi'}`;
+        return `- ${item.name} (${item.categories?.name || 'Lainnya'}): ${formatCurrency(Number(item.price))} - ${item.description || 'Tidak ada deskripsi'}`;
       }).join('\n');
       prompt += `\n\nDAFTAR SEMUA PRODUK / MENU AKTUAL DARI DATABASE:\n${menuText}`;
     }
@@ -800,7 +800,7 @@ export default function RestoBot() {
     // Inject Active Shifts (for Admin/Cashier)
     if (role === 'admin' || role === 'cashier') {
       if (activeShifts && activeShifts.length > 0) {
-        const shiftText = activeShifts.map(s => `- Shift ${s.profiles?.full_name || 'Kasir'}: Status: ${s.status}, Uang Awal: Rp ${Number(s.initial_cash).toLocaleString('id-ID')}, Mulai: ${new Date(s.start_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`).join('\n');
+        const shiftText = activeShifts.map(s => `- Shift ${s.profiles?.full_name || 'Kasir'}: Status: ${s.status}, Uang Awal: ${formatCurrency(Number(s.initial_cash))}, Mulai: ${new Date(s.start_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`).join('\n');
         prompt += `\n\nSHIFT AKTIF SAAT INI DARI DATABASE:\n${shiftText}`;
       } else {
         prompt += `\n\nSHIFT AKTIF SAAT INI DARI DATABASE: Tidak ada shift kasir yang aktif saat ini.`;
@@ -811,9 +811,9 @@ export default function RestoBot() {
     if ((role === 'admin' || role === 'cashier') && reportsSummary) {
       prompt += `\n\nLAPORAN RINGKASAN PENJUALAN HARI INI DARI DATABASE:
 - Jumlah Transaksi Selesai (Completed): ${reportsSummary.today_completed_orders_count} pesanan
-- Total Pendapatan Hari Ini: Rp ${Number(reportsSummary.today_total_revenue).toLocaleString('id-ID')}
-- Pendapatan Tunai (Cash): Rp ${Number(reportsSummary.today_cash_revenue).toLocaleString('id-ID')}
-- Pendapatan Non-Tunai (Digital/Online): Rp ${Number(reportsSummary.today_non_cash_revenue).toLocaleString('id-ID')}`;
+- Total Pendapatan Hari Ini: ${formatCurrency(Number(reportsSummary.today_total_revenue))}
+- Pendapatan Tunai (Cash): ${formatCurrency(Number(reportsSummary.today_cash_revenue))}
+- Pendapatan Non-Tunai (Digital/Online): ${formatCurrency(Number(reportsSummary.today_non_cash_revenue))}`;
     }
 
     // Inject Customer Rewards Data (only for customer role)
@@ -821,7 +821,7 @@ export default function RestoBot() {
       const rewardLines = customerRewards.map(r => {
         let detail = `- ${r.title} (${r.category}): Butuh ${r.min_points} poin`;
         if (r.discount_percent) detail += `, Diskon ${r.discount_percent}%`;
-        if (r.cashback_amount && r.cashback_amount > 0) detail += `, Cashback Rp ${Number(r.cashback_amount).toLocaleString('id-ID')}`;
+        if (r.cashback_amount && r.cashback_amount > 0) detail += `, Cashback ${formatCurrency(Number(r.cashback_amount))}`;
         if (r.stock !== null) detail += `, Stok: ${r.stock} item`;
         else detail += `, Stok: Tidak terbatas`;
         if (r.description) detail += ` - ${r.description}`;
@@ -845,8 +845,8 @@ export default function RestoBot() {
 2. DILARANG KERAS menggunakan format markdown apa pun: tidak boleh ada **, *, _, __, #, ##, ###, atau backtick.
 3. Untuk daftar/list, gunakan tanda "- " (strip spasi) atau angka "1. " saja, BUKAN tanda bintang.
 4. Untuk penekanan kata, gunakan HURUF KAPITAL, bukan bold/italic.
-5. Contoh SALAH: "**Nasi Goreng** - Rp 25.000" atau "*Tutup*" atau "## Menu"
-6. Contoh BENAR: "NASI GORENG - Rp 25.000" atau "Tutup" atau "Menu Kami:"
+5. Contoh SALAH: "**Nasi Goreng** - ${formatCurrency(25000)}" atau "*Tutup*" atau "## Menu"
+6. Contoh BENAR: "NASI GORENG - ${formatCurrency(25000)}" atau "Tutup" atau "Menu Kami:"
 7. SETIAP tanda bintang (*) yang muncul dalam respons = PELANGGARAN BERAT. Hindari sepenuhnya.`;
 
     const localCtx = loadUserContext();
@@ -903,7 +903,7 @@ export default function RestoBot() {
         // Use profile state (loaded from Supabase) for accurate points
         const points = profile?.points ?? 0;
         if (points > 0) {
-          showNotificationBubble(` Anda memiliki ${points} poin (setara Rp ${Number(points * 100).toLocaleString('id-ID')}) yang bisa digunakan!`, 'success');
+          showNotificationBubble(` Anda memiliki ${points} poin (setara ${formatCurrency(points * 100)}) yang bisa digunakan!`, 'success');
         }
       }
     }

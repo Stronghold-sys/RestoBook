@@ -155,30 +155,66 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    function translateTextNode(node: Node) {
-      const text = node.nodeValue?.trim();
-      if (!text || text.length <= 1 || /^[0-9\s!@#$%^&*()_+\-=\[\]{};':",./<>?|\\`~]*$/.test(text)) return;
-
-      const cleanText = text.toLowerCase();
-      if (lang === "en") {
-        // If we want English, find if the text is in ID translations
-        if (idToEnMap.has(cleanText)) {
-          const enVal = idToEnMap.get(cleanText);
-          if (enVal) {
-            // Store original text in node property for reference
-            (node as any)._originalVal = node.nodeValue;
-            node.nodeValue = enVal;
+    function translateCurrencyInString(text: string, targetLang: "id" | "en"): string {
+      if (targetLang === "en") {
+        // Replace Rp / Rp. with IDR, and convert Indonesian number formatting to English (dots to commas)
+        return text.replace(/(?:Rp\.?\s?)([0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)/gi, (match, numStr) => {
+          const cleanNum = numStr.replace(/\./g, "").replace(/,/g, ".");
+          const val = Number(cleanNum);
+          if (!isNaN(val)) {
+            const formatted = new Intl.NumberFormat("en-US", {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(val);
+            return `IDR ${formatted}`;
           }
+          return `IDR ${numStr}`;
+        }).replace(/\brp\b/gi, "IDR");
+      } else {
+        // Replace IDR with Rp, and convert English number formatting to Indonesian (commas to dots)
+        return text.replace(/(?:IDR\s?)([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)/gi, (match, numStr) => {
+          const cleanNum = numStr.replace(/,/g, "");
+          const val = Number(cleanNum);
+          if (!isNaN(val)) {
+            const formatted = new Intl.NumberFormat("id-ID", {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(val);
+            return `Rp ${formatted}`;
+          }
+          return `Rp ${numStr}`;
+        }).replace(/\bidr\b/gi, "Rp");
+      }
+    }
+
+    function translateTextNode(node: Node) {
+      const text = node.nodeValue;
+      if (!text) return;
+
+      const trimmed = text.trim();
+      if (!trimmed || trimmed.length <= 1) return;
+
+      // Check if we have the original value cached
+      const origText = (node as any)._originalVal || text;
+      const cleanOrig = origText.trim().toLowerCase();
+
+      let translated = origText;
+      if (lang === "en") {
+        if (idToEnMap.has(cleanOrig)) {
+          translated = idToEnMap.get(cleanOrig) || origText;
         }
       } else {
-        // If we want Indonesian, find if text is in EN translations and revert
-        if (enToIdMap.has(cleanText)) {
-          const idVal = enToIdMap.get(cleanText);
-          if (idVal) {
-            (node as any)._originalVal = node.nodeValue;
-            node.nodeValue = idVal;
-          }
+        if (enToIdMap.has(cleanOrig)) {
+          translated = enToIdMap.get(cleanOrig) || origText;
         }
+      }
+
+      // Now apply currency translation on the translated string
+      const finalVal = translateCurrencyInString(translated, lang);
+      
+      if (node.nodeValue !== finalVal) {
+        (node as any)._originalVal = origText;
+        node.nodeValue = finalVal;
       }
     }
 
@@ -189,23 +225,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const val = el.getAttribute(attr);
         if (!val) continue;
 
-        const cleanVal = val.trim().toLowerCase();
+        const origVal = (el as any)[`_orig_${attr}`] || val;
+        const cleanOrig = origVal.trim().toLowerCase();
+
+        let translated = origVal;
         if (lang === "en") {
-          if (idToEnMap.has(cleanVal)) {
-            const enVal = idToEnMap.get(cleanVal);
-            if (enVal) {
-              (el as any)[`_orig_${attr}`] = val;
-              el.setAttribute(attr, enVal);
-            }
+          if (idToEnMap.has(cleanOrig)) {
+            translated = idToEnMap.get(cleanOrig) || origVal;
           }
         } else {
-          if (enToIdMap.has(cleanVal)) {
-            const idVal = enToIdMap.get(cleanVal);
-            if (idVal) {
-              (el as any)[`_orig_${attr}`] = val;
-              el.setAttribute(attr, idVal);
-            }
+          if (enToIdMap.has(cleanOrig)) {
+            translated = enToIdMap.get(cleanOrig) || origVal;
           }
+        }
+
+        const finalVal = translateCurrencyInString(translated, lang);
+        if (val !== finalVal) {
+          (el as any)[`_orig_${attr}`] = origVal;
+          el.setAttribute(attr, finalVal);
         }
       }
     }

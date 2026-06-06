@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { motion, Variants } from "framer-motion";
 import { ArrowRight, Utensils, Star, MapPin, Phone, Mail, Flame, Coffee, IceCream, Sparkles, ChevronRight, LogOut, User, RefreshCw, ShieldAlert, Tag } from "lucide-react";
 import Link from "next/link";

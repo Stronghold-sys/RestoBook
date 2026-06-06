@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Star, Loader2, MessageSquare, Check, EyeOff, User, RefreshCw } from "lucide-react";

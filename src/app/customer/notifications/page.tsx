@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, CheckCheck, Loader2, ShoppingBag, CalendarDays, Info, Award, Gift } from "lucide-react";

@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Search, Eye, Check, X, CreditCard, Banknote, Printer, Receipt as ReceiptIcon, CheckCircle, Ban, MessageSquare, Users, ArrowLeft } from "lucide-react";

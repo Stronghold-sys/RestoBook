@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { motion } from "framer-motion";
 import { ShieldX, ArrowLeft, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";

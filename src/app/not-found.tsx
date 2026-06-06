@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { motion } from "framer-motion";
 import { FileQuestion, Home } from "lucide-react";
 import Link from "next/link";

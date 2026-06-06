@@ -1057,7 +1057,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   ? { duration: 0.01 }
                   : { type: "spring", stiffness: spring.stiffness, damping: spring.damping, mass: spring.mass }
                 }
-                className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden print:hidden"
+                className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden print:hidden flex flex-col"
               >
                 <div className="mb-10 flex items-center justify-between px-2">
                   <button
@@ -1080,7 +1080,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   </button>
                 </div>
 
-                <nav className={`space-y-1.5 overflow-y-auto custom-scrollbar h-[calc(100%-160px)] ${isTutorialActive ? "pointer-events-none" : ""}`}>
+                <nav className={`space-y-1.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 ${isTutorialActive ? "pointer-events-none" : ""}`}>
                   {getMenuLinks().map((link) => {
                     const allowed = isLinkAllowed(link.href);
                     return (
@@ -1135,7 +1135,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   })}
                 </nav>
 
-                <div className={`absolute bottom-6 left-6 right-6 ${isTutorialActive ? "pointer-events-none" : ""}`}>
+                <div className={`mt-4 shrink-0 ${isTutorialActive ? "pointer-events-none" : ""}`}>
                    {/* Sound & Theme toggles for mobile viewports */}
                    <div className="flex items-center gap-3 mb-4">
                      <button

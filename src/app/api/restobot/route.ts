@@ -639,8 +639,8 @@ async function executeTool(name: string, args: any) {
         <tr style="border-bottom: 1px solid #f3f4f6;">
           <td style="padding: 8px 0; color: #111827;">${name}</td>
           <td style="padding: 8px 0; text-align: center; color: #4b5563;">${quantity}</td>
-          <td style="padding: 8px 0; text-align: right; color: #4b5563;">${formatCurrencyBackend(price, lang)}</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #111827;">${formatCurrencyBackend(subtotal, lang)}</td>
+          <td style="padding: 8px 0; text-align: right; color: #4b5563;">${formatCurrencyBackend(price)}</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #111827;">${formatCurrencyBackend(subtotal)}</td>
         </tr>
       `;
     }).join('');
@@ -681,7 +681,7 @@ async function executeTool(name: string, args: any) {
                 <tfoot>
                   <tr style="border-top: 2px solid #e5e7eb; font-weight: bold; font-size: 16px;">
                     <td colspan="2" style="padding: 12px 0;">Total Pembayaran</td>
-                    <td colspan="2" style="text-align: right; padding: 12px 0; color: #ea580c;">${formatCurrencyBackend(order.total_amount, lang)}</td>
+                    <td colspan="2" style="text-align: right; padding: 12px 0; color: #ea580c;">${formatCurrencyBackend(order.total_amount)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -853,7 +853,7 @@ async function executeTool(name: string, args: any) {
           <td style="padding: 8px 0; color: #111827;">${dateStr}</td>
           <td style="padding: 8px 0; color: #4b5563;">${tx.description || typeLabel}</td>
           <td style="padding: 8px 0; text-align: center; color: #111827;">${statusLabel}</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: ${color};">${sign} ${formatCurrencyBackend(tx.amount, lang)}</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: ${color};">${sign} ${formatCurrencyBackend(tx.amount)}</td>
         </tr>
       `;
     }).join('');
@@ -881,7 +881,7 @@ async function executeTool(name: string, args: any) {
               
               <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; border-radius: 12px; margin: 24px 0; text-align: center;">
                 <p style="margin: 0; font-size: 13px; color: #15803d; font-weight: bold; text-transform: uppercase;">Saldo Aktif Dompetku</p>
-                <h3 style="margin: 8px 0 0 0; font-size: 28px; font-weight: 800; color: #166534;">${formatCurrencyBackend(profile.wallet_balance || 0, lang)}</h3>
+                <h3 style="margin: 8px 0 0 0; font-size: 28px; font-weight: 800; color: #166534;">${formatCurrencyBackend(profile.wallet_balance || 0)}</h3>
               </div>
 
               <h3 style="font-size: 15px; font-weight: 700; color: #111827; margin: 24px 0 12px 0; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px;">10 Transaksi Terakhir</h3>
@@ -1016,35 +1016,17 @@ async function executeTool(name: string, args: any) {
 
 export async function POST(request: Request) {
   try {
-    const { history, systemPrompt, role, lang = 'id' } = await request.json();
+    const { history, systemPrompt, role } = await request.json();
 
     const apiKey = process.env.MISTRAL_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Mistral API key not configured' }, { status: 500 });
     }
 
-    const LANG_NAMES: Record<string, string> = {
-      id: "Indonesian",
-      en: "English",
-      ja: "Japanese / 日本語",
-      ko: "Korean / 한국어",
-      zh: "Chinese / 中文",
-      ar: "Arabic / العربية",
-      fr: "French / Français",
-      de: "German / Deutsch"
-    };
-
-    const targetLangName = LANG_NAMES[lang] || "Indonesian";
-
     let finalSystemPrompt = systemPrompt;
-    if (lang && lang !== 'id') {
-      finalSystemPrompt += `\n\nLANGUAGE ENFORCEMENT PROTOCOL:
-You MUST output your response ONLY in ${targetLangName}. All greetings, system explanations, answers, and formatting MUST be written in ${targetLangName}. Override any rule stating to use Bahasa Indonesia, and respond in ${targetLangName} instead. Translate any Indonesian system prompts, menu items, table statuses, staff details, or ticket info dynamically on the fly to ${targetLangName} in your final reply.`;
-    }
-    
-    // Dynamic currency formatting rule injection
+    // Always use Indonesian and Rp format
     finalSystemPrompt += `\n\nCURRENCY FORMATTING PROTOCOL:
-If the active language is English ("en"), you MUST format all currencies as "IDR [amount]" using English locale formatting (e.g., IDR 50,000 or IDR 1,000,000). If the active language is Indonesian ("id"), you MUST format all currencies as "Rp [amount]" using Indonesian locale formatting (e.g., Rp 50.000 or Rp 1.000.000). Never mix these format symbols and styles.`;
+Always format all currencies as "Rp [amount]" using Indonesian locale formatting (e.g., Rp 50.000 or Rp 1.000.000). Never use IDR or other currency symbols.`;
 
     const mistralMessages = [
       { role: 'system', content: finalSystemPrompt },
@@ -1090,7 +1072,7 @@ If the active language is English ("en"), you MUST format all currencies as "IDR
         const args = JSON.parse(toolCall.function.arguments);
         let result;
         try {
-          result = await executeTool(name, args, lang);
+          result = await executeTool(name, args);
         } catch (e: any) {
           console.error(`Error executing tool ${name}:`, e);
           result = { success: false, error: e.message || 'Tool execution failed' };

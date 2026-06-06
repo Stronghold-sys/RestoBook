@@ -448,7 +448,14 @@ export async function middleware(request: NextRequest) {
   // 5. Verifikasi CSRF Token
   const method = request.method;
   const isMutation = ['POST', 'PUT', 'DELETE'].includes(method);
-  const isBypassedPath = path.startsWith('/api/payment') || path === '/api/auth/callback';
+  const isBypassedPath = 
+    path.startsWith('/api/payment') || 
+    path === '/api/auth/callback' ||
+    path === '/api/auth/login' ||
+    path === '/api/register' ||
+    path === '/api/send-otp' ||
+    path === '/api/verify-otp' ||
+    path === '/api/reset-password';
 
   if (isMutation && !isBypassedPath) {
     const csrfCookie = request.cookies.get('csrf-token')?.value;

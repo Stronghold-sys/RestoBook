@@ -142,11 +142,7 @@ export default function SessionStatusListener() {
             }
           }
         )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            console.log("SessionStatusListener successfully subscribed to profile updates.");
-          }
-        });
+        .subscribe();
 
       channelRef.current = channel;
     };

@@ -23,7 +23,6 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
 
         // 1. Cek Profil (Blokir)
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
-        console.log("Checking access - Profile blocked status:", profile?.is_blocked);
         if (profile?.is_blocked) {
           setLockdown({ active: true, type: 'blocked' });
           return;
@@ -37,8 +36,6 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-
-        console.log("Checking access - Latest attendance:", attendance?.type, "Status:", attendance?.status);
 
         if (attendance?.status === 'approved' && ['izin', 'sakit'].includes(attendance?.type)) {
           setLockdown({ active: true, type: 'leave', data: attendance });
@@ -88,26 +85,21 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
           // Jika profil user ini berubah (misal is_blocked)
           if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            console.log("Realtime Profile Update detected!");
             checkAccess();
           }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload: any) => {
           // Jika absensi user ini berubah (misal status jadi completed)
           if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            console.log("Realtime Attendance Update detected!");
             checkAccess();
           }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, (payload: any) => {
           if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            console.log("Realtime Shift Update detected!");
             checkAccess();
           }
         })
-        .subscribe((status) => {
-          console.log("Realtime subscription status:", status);
-        });
+        .subscribe();
       
       return channel;
     };

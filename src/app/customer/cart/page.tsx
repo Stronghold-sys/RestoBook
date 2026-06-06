@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export const runtime = 'edge';
 
@@ -675,12 +675,12 @@ export default function CartPage() {
       if (data.reference && typeof (window as any).checkout !== 'undefined') {
         (window as any).checkout.process(data.reference, {
           successEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Success:", result);
+            
             toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
             fetchProfile();
           },
           pendingEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Pending:", result);
+            
             toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchProfile();
           },
@@ -690,7 +690,7 @@ export default function CartPage() {
             fetchProfile();
           },
           closeEvent: function() {
-            console.log("Duitku Pop Closed.");
+            
             fetchProfile();
           }
         });
@@ -1854,3 +1854,4 @@ export default function CartPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export const runtime = 'edge';
 
@@ -293,14 +293,14 @@ export default function CustomerWalletPage() {
         setIsDuitkuOpen(true);
         (window as any).checkout.process(tx.payment_reference, {
           successEvent: function(result: any) {
-            console.log("Duitku Topup Success:", result);
+            
             toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
             setIsDuitkuOpen(false);
             setShowUnpaidModal(false);
             fetchWalletData();
           },
           pendingEvent: function(result: any) {
-            console.log("Duitku Topup Pending:", result);
+            
             toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             setIsDuitkuOpen(false);
             fetchWalletData();
@@ -312,7 +312,7 @@ export default function CustomerWalletPage() {
             fetchWalletData();
           },
           closeEvent: function() {
-            console.log("Duitku Pop Closed.");
+            
             setIsDuitkuOpen(false);
             fetchWalletData();
           }
@@ -341,7 +341,7 @@ export default function CustomerWalletPage() {
           setIsDuitkuOpen(true);
           (window as any).checkout.process(data.reference, {
             successEvent: async function(result: any) {
-              console.log("Duitku Order Success:", result);
+              
               setIsDuitkuOpen(false);
               setShowUnpaidModal(false);
               toast.success("Pembayaran Pesanan Berhasil!");
@@ -356,7 +356,7 @@ export default function CustomerWalletPage() {
               fetchWalletData();
             },
             pendingEvent: async function(result: any) {
-              console.log("Duitku Order Pending:", result);
+              
               setIsDuitkuOpen(false);
               toast("Menunggu konfirmasi pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
               await fetch('/api/payment/check-status', {
@@ -376,7 +376,7 @@ export default function CustomerWalletPage() {
               fetchWalletData();
             },
             closeEvent: async function() {
-              console.log("Duitku Pop Closed. Syncing status...");
+              
               setIsDuitkuOpen(false);
               await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", tx.id);
               await fetch('/api/payment/check-status', {
@@ -438,12 +438,12 @@ export default function CustomerWalletPage() {
       if (data.reference && typeof (window as any).checkout !== 'undefined') {
         (window as any).checkout.process(data.reference, {
           successEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Success:", result);
+            
             toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
             fetchWalletData();
           },
           pendingEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Pending:", result);
+            
             toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchWalletData();
           },
@@ -453,7 +453,7 @@ export default function CustomerWalletPage() {
             fetchWalletData();
           },
           closeEvent: function() {
-            console.log("Duitku Pop Closed.");
+            
             fetchWalletData();
           }
         });
@@ -987,7 +987,7 @@ export default function CustomerWalletPage() {
                         <div>
                           <h4 className="font-bold text-sm text-text-light dark:text-text-dark">{getTransactionTypeLabel(tx.type)}</h4>
                           <p className="text-[10px] text-muted mt-0.5">
-                            {tx.description} • {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
+                            {tx.description} â€¢ {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
                           </p>
                           <div className="flex flex-wrap items-center gap-2 mt-0.5">
                             <p className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider">ID: #{tx.id.substring(0, 8).toUpperCase()}</p>
@@ -1081,7 +1081,7 @@ export default function CustomerWalletPage() {
                 className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
               />
             </div>
-            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} • Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
+            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} â€¢ Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
           </div>
 
           {/* Quick Nominal Selectors */}
@@ -1441,3 +1441,4 @@ function CountdownTimer({ createdAt, expiryMinutes, onExpire }: { createdAt: str
     </span>
   );
 }
+

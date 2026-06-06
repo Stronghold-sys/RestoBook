@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 export const runtime = 'edge';
 
 import { useEffect, useState, useRef } from "react";
@@ -630,13 +630,11 @@ export default function OrderTrackingPage() {
       if (data.reference && typeof (window as any).checkout !== 'undefined') {
         (window as any).checkout.process(data.reference, {
           successEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Success:", result);
-            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
+                        toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
             fetchProfile();
           },
           pendingEvent: function(result: any) {
-            console.log("Duitku Wallet Topup Pending:", result);
-            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
+                        toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
             fetchProfile();
           },
           errorEvent: function(result: any) {
@@ -884,8 +882,7 @@ export default function OrderTrackingPage() {
          setIsDuitkuOpen(true);
          (window as any).checkout.process(data.reference, {
             successEvent: async function(result: any) {
-               console.log("Duitku Success Event:", result);
-               setIsDuitkuOpen(false);
+                              setIsDuitkuOpen(false);
                toast.success("Pembayaran Berhasil!");
                await fetch('/api/payment/check-status', {
                   method: 'POST',
@@ -898,8 +895,7 @@ export default function OrderTrackingPage() {
                setTimeout(() => fetchOrderDetails(), 500);
             },
             pendingEvent: async function(result: any) {
-               console.log("Duitku Pending Event:", result);
-               setIsDuitkuOpen(false);
+                              setIsDuitkuOpen(false);
                toast("Menunggu Konfirmasi...", { icon: "" });
                await fetch('/api/payment/check-status', {
                   method: 'POST',

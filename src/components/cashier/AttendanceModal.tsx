@@ -55,7 +55,6 @@ export default function AttendanceModal({ onSuccess, onClose, substituteDetails,
     if (stream) {
       stream.getTracks().forEach(track => {
         track.stop();
-        console.log("DEBUG: Track state stopped");
       });
       setStream(null);
     }
@@ -65,7 +64,6 @@ export default function AttendanceModal({ onSuccess, onClose, substituteDetails,
       const activeStream = videoRef.current.srcObject as MediaStream;
       activeStream.getTracks().forEach(track => {
         track.stop();
-        console.log("DEBUG: Track videoRef stopped");
       });
       videoRef.current.srcObject = null;
     }

@@ -152,11 +152,7 @@ export default function CashierDashboard() {
           }, 
           () => fetchDashboardData()
         )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log("Realtime subscribed successfully");
-          }
-        });
+        .subscribe();
 
       return channel;
     };

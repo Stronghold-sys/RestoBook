@@ -17,6 +17,7 @@ import { useAudioStore } from "@/store/useAudioStore";
 import NotificationCenterDrawer from "@/components/layout/NotificationCenterDrawer";
 import { useTutorialStore } from "@/store/useTutorialStore";
 import { useActivityTimeout } from "@/hooks/useActivityTimeout";
+import PingMonitor from "@/components/PingMonitor";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -690,6 +691,8 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Ping Monitor badge */}
+              <PingMonitor size="sm" />
               <button
                 onClick={handleToggleSound}
                 aria-label={isSoundEnabled ? "Matikan Suara Notifikasi" : "Aktifkan Suara Notifikasi"}

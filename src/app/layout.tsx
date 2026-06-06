@@ -10,8 +10,8 @@ import AutoTableStatusManager from "@/components/AutoTableStatusManager";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import dynamic from "next/dynamic";
-import TranslationRouteHandler from "@/components/TranslationRouteHandler";
 import { cookies } from "next/headers";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
@@ -76,58 +76,22 @@ export default function RootLayout({
   const lang = cookieStore.get("rb_i18n_lang")?.value || "id";
 
   return (
-    <html lang={lang} className={lang !== 'id' ? 'i18n-loading' : ''}>
-      <head>
-        <style>{`
-          .i18n-loading {
-            opacity: 0 !important;
-            transition: none !important;
-          }
-        `}</style>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            try {
-              var lang = localStorage.getItem('rb_i18n_lang');
-              var cookieLang = document.cookie.split('; ').find(row => row.startsWith('rb_i18n_lang='))?.split('=')[1];
-              var activeLang = lang || cookieLang || 'id';
-              if (activeLang !== 'id') {
-                document.documentElement.classList.add('i18n-loading');
-              }
-            } catch (e) {}
-          })();
-        ` }} />
-      </head>
+    <html lang={lang}>
+      <head />
       <body className={inter.className}>
-        <TranslationRouteHandler />
-        <AppSplashScreen />
-        <DeviceDimensionManager />
-        <DynamicFavicon />
-        <ConnectionDetector />
-        <SessionStatusListener />
-        <AutoTableStatusManager />
-        {children}
-        <GlobalModalContainer />
-        <SpotlightTutorial />
-        <ModernToaster />
-        <RestoBot />
-        <Script
-          src="/translation-demo/translator.js"
-          strategy="lazyOnload"
-        />
-        <Script id="init-translator" strategy="lazyOnload">
-          {`
-            (function() {
-              function tryInit() {
-                if (typeof window !== 'undefined' && window.initLanguageSystem) {
-                  window.initLanguageSystem();
-                } else {
-                  setTimeout(tryInit, 50);
-                }
-              }
-              tryInit();
-            })();
-          `}
-        </Script>
+        <LanguageProvider>
+          <AppSplashScreen />
+          <DeviceDimensionManager />
+          <DynamicFavicon />
+          <ConnectionDetector />
+          <SessionStatusListener />
+          <AutoTableStatusManager />
+          {children}
+          <GlobalModalContainer />
+          <SpotlightTutorial />
+          <ModernToaster />
+          <RestoBot />
+        </LanguageProvider>
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {
@@ -153,3 +117,4 @@ export default function RootLayout({
     </html>
   );
 }
+

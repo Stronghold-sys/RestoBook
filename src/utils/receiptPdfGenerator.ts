@@ -1,4 +1,3 @@
-import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { downloadFile } from "./downloadHelper";
@@ -24,6 +23,7 @@ export async function downloadReceiptPDF({
   cashierName?: string;
   settings?: any;
 }) {
+  const { default: jsPDF } = await import("jspdf");
   let activeSettings = settings;
   if (!activeSettings) {
     try {

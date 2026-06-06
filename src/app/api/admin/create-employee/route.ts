@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import jsPDF from "jspdf";
 
 const generateTempPassword = () => {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -24,87 +23,6 @@ const generateTempPassword = () => {
   
   return password.split('').sort(() => 0.5 - Math.random()).join('');
 };
-
-async function generatePDFBase64(emp: any) {
-  const doc = new jsPDF();
-  
-  // Design header
-  doc.setFillColor(232, 93, 4);
-  doc.rect(0, 0, 210, 40, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("RestoBook - Akun Karyawan", 14, 25);
-  
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  doc.text(`Selamat bergabung, ${emp.full_name}!`, 14, 55);
-  doc.text("Berikut adalah data akun Anda untuk mengakses sistem RestoBook:", 14, 62);
-  
-  // Grey background box
-  doc.setFillColor(245, 245, 245);
-  doc.rect(14, 70, 182, 110, 'F');
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("NO. ID KARYAWAN :", 20, 85);
-  doc.text(emp.employee_id, 80, 85);
-  
-  doc.text("USERNAME        :", 20, 95);
-  doc.text(emp.username, 80, 95);
-
-  doc.text("EMAIL LOGIN      :", 20, 105);
-  doc.text(emp.email, 80, 105);
-  
-  doc.text("PASSWORD AWAL    :", 20, 115);
-  doc.setTextColor(232, 93, 4);
-  doc.text(emp.password, 80, 115);
-  
-  doc.setTextColor(0, 0, 0);
-  doc.text("JABATAN          :", 20, 125);
-  doc.text(emp.job_title || emp.role, 80, 125);
-
-  doc.text("STATUS AKUN      :", 20, 135);
-  doc.text(emp.account_status || "Aktif", 80, 135);
-
-  doc.text("TGL PEMBUATAN    :", 20, 145);
-  doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 80, 145);
-
-  // Add Employee Photo to PDF if exists
-  if (emp.avatar_url) {
-    try {
-      const imgRes = await fetch(emp.avatar_url);
-      const imgBuffer = await imgRes.arrayBuffer();
-      const uint8Array = new Uint8Array(imgBuffer);
-      let binary = '';
-      for (let i = 0; i < uint8Array.byteLength; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
-      }
-      const imgBase64 = btoa(binary);
-      let format = 'JPEG';
-      if (emp.avatar_url.endsWith('.png')) format = 'PNG';
-      else if (emp.avatar_url.endsWith('.webp')) format = 'WEBP';
-      
-      doc.addImage(`data:image/jpeg;base64,${imgBase64}`, format, 145, 80, 35, 45);
-    } catch (e) {
-      console.error("Failed to add image to PDF:", e);
-    }
-  }
-  
-  doc.setTextColor(100, 100, 100);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("*Password wajib diganti saat login pertama demi keamanan akun.", 14, 195);
-  doc.text("*Gunakan No. ID Karyawan, Username atau Email Anda untuk masuk ke sistem.", 14, 202);
-
-  const pdfBuffer = doc.output('arraybuffer');
-  const uint8 = new Uint8Array(pdfBuffer);
-  let pdfBinary = '';
-  for (let i = 0; i < uint8.byteLength; i++) {
-    pdfBinary += String.fromCharCode(uint8[i]);
-  }
-  return btoa(pdfBinary);
-}
 
 export async function POST(req: Request) {
   try {
@@ -288,21 +206,8 @@ export async function POST(req: Request) {
       .single();
 
     if (profileError) throw profileError;
-
-    // 5. Generate PDF on the server side
-    const pdfBase64 = await generatePDFBase64({
-      full_name: fullName,
-      email: email,
-      employee_id: employeeId,
-      username: finalUsername,
-      password: tempPassword,
-      role: role,
-      job_title: jobTitle,
-      account_status: accountStatus,
-      avatar_url: avatarUrl
-    });
-
-    // 6. Send Email via Resend
+ 
+    // 5. Send Email via Resend with Credentials
     if (process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
@@ -310,34 +215,37 @@ export async function POST(req: Request) {
           to: email,
           subject: 'Selamat Bergabung di RestoBook!',
           html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #333;">
-              <h2 style="color: #e85d04;">Selamat Bergabung, ${fullName}!</h2>
-              <p>Akun Anda telah berhasil dibuat sebagai <strong>${role.toUpperCase()}</strong>.</p>
-              <p>Detail login Anda terlampir pada file <strong>PDF</strong> di email ini.</p>
-              <p>Silakan gunakan informasi tersebut untuk masuk ke sistem.</p>
+            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 12px;">
+              <h2 style="color: #e85d04; margin-top: 0;">Selamat Bergabung, ${fullName}!</h2>
+              <p>Akun karyawan Anda telah berhasil dibuat sebagai <strong>${role.toUpperCase()}</strong>.</p>
+              <p>Berikut adalah kredensial login Anda untuk mengakses sistem RestoBook:</p>
+              <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>No. ID Karyawan:</strong> ${employeeId}</p>
+                <p style="margin: 5px 0;"><strong>Username:</strong> ${finalUsername}</p>
+                <p style="margin: 5px 0;"><strong>Email Login:</strong> ${email}</p>
+                <p style="margin: 5px 0;"><strong>Password Sementara:</strong> <span style="color: #e85d04; font-weight: bold;">${tempPassword}</span></p>
+                <p style="margin: 5px 0;"><strong>Jabatan:</strong> ${jobTitle || role}</p>
+              </div>
+              <p style="font-size: 12px; color: #666; font-style: italic;">*Password di atas bersifat sementara. Anda wajib segera mengubahnya melalui menu Profil demi keamanan akun Anda.</p>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 12px;">(C) 2024 RestoBook Management System</p>
+              <p style="font-size: 12px; color: #999;">(C) 2026 RestoBook Management System</p>
             </div>
-          `,
-          attachments: pdfBase64 ? [{
-            filename: `Kredensial_${employeeId}.pdf`,
-            content: pdfBase64
-          }] : []
+          `
         });
       } catch (emailErr) {
         console.error("Email sending failed:", emailErr);
       }
     }
-
-    // 7. Send WhatsApp Notification via Fonnte
+ 
+    // 6. Send WhatsApp Notification via Fonnte
     if (phone) {
       try {
         const FONNTE_TOKEN = process.env.FONNTE_TOKEN || "CpJ7L8M8TfwCVy2k2m6C";
         const cleanPhone = phone.replace(/[^0-9]/g, '');
         const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : (cleanPhone.startsWith('8') ? '62' + cleanPhone : cleanPhone);
-
+ 
         const waMessage = `*SELAMAT BERGABUNG DI RESTOBOOK!*\n\nHalo *${fullName}*,\n\nSelamat bergabung di keluarga besar RestoBook! Akun karyawan Anda telah berhasil dibuat sebagai *${role.toUpperCase()}*.\n\nBerikut adalah data login Anda:\n\n*No. ID:* ${employeeId}\n*Username:* ${finalUsername}\n*Email:* ${email}\n*Password Sementara:* ${tempPassword}\n\n*PENTING:* Password di atas bersifat sementara. Anda *WAJIB* segera mengubahnya melalui menu Profil setelah berhasil login demi keamanan akun Anda.\n\nSelamat bekerja!\n\n*Manajemen RestoBook*`;
-
+ 
         await fetch('https://api.fonnte.com/send', {
           method: 'POST',
           headers: { 'Authorization': FONNTE_TOKEN },
@@ -351,15 +259,15 @@ export async function POST(req: Request) {
         console.error("WhatsApp sending failed:", waErr);
       }
     }
-
-    // 8. Save Audit Log
+ 
+    // 7. Save Audit Log
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
     const userAgent = req.headers.get('user-agent') || 'Unknown Browser';
     
     let device = 'Desktop';
     if (/mobile/i.test(userAgent)) device = 'Mobile';
     else if (/tablet/i.test(userAgent)) device = 'Tablet';
-
+ 
     await supabaseAdmin.from('audit_logs').insert({
       action: 'create',
       operator_id: operatorProfile?.id || null,
@@ -372,7 +280,7 @@ export async function POST(req: Request) {
       browser: userAgent,
       device: device
     });
-
+ 
     return NextResponse.json({ 
       success: true, 
       employee: { 
@@ -382,10 +290,10 @@ export async function POST(req: Request) {
         username: finalUsername,
         full_name: fullName,
         email: email,
-        pdfBase64: pdfBase64 // Return generated PDF to let admin download
+        pdfBase64: null // PDF generated client-side now or skipped
       } 
     });
-
+ 
   } catch (error: any) {
     console.error('Admin create employee error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

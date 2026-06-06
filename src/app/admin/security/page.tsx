@@ -377,6 +377,47 @@ export default function SecurityPage() {
     };
   }, []);
 
+  // Clear Logs and Incidents Actions
+  const handleClearLogs = async () => {
+    showConfirm(
+      "Bersihkan Semua Log Keamanan",
+      "Apakah Anda yakin ingin menghapus SELURUH histori log keamanan dari database? Tindakan ini tidak dapat dibatalkan.",
+      async () => {
+        try {
+          const { error } = await supabase.from("security_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          if (error) throw error;
+          toast.success("Seluruh log keamanan berhasil dibersihkan!");
+          setLogs([]);
+          fetchStats();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal membersihkan log keamanan");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
+  const handleClearIncidents = async () => {
+    showConfirm(
+      "Bersihkan Semua Insiden Keamanan",
+      "Apakah Anda yakin ingin menghapus SELURUH bukti forensik insiden keamanan dari database? Tindakan ini tidak dapat dibatalkan.",
+      async () => {
+        try {
+          const { error } = await supabase.from("security_incidents").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          if (error) throw error;
+          toast.success("Seluruh histori insiden keamanan berhasil dibersihkan!");
+          setIncidents([]);
+          fetchStats();
+        } catch (err: any) {
+          toast.error(err.message || "Gagal membersihkan insiden keamanan");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    );
+  };
+
   // IP Rule Actions
   const handleAddIpRule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -934,7 +975,18 @@ export default function SecurityPage() {
                     <h2 className="text-lg font-black">Audit Log Keamanan Terkini</h2>
                     <p className="text-xs text-muted">Aktivitas terdeteksi oleh middleware dan didelegasikan secara otomatis.</p>
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                    {logs.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearLogs}
+                        className="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white border border-rose-600 hover:border-rose-700 transition-all shadow-sm shadow-rose-600/10 shrink-0 cursor-pointer"
+                        title="Bersihkan Semua Log"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Bersihkan Log</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setVisibility(prev => ({ ...prev, logs: !prev.logs }))}
@@ -1477,7 +1529,18 @@ export default function SecurityPage() {
                     <h2 className="text-lg font-black">Investigasi Insiden Keamanan</h2>
                     <p className="text-xs text-muted">Bukti forensik serangan terdeteksi (SSRF, traversal, replay, VPN, brute force, dll).</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {incidents.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearIncidents}
+                        className="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white border border-rose-600 hover:border-rose-700 transition-all shadow-sm shadow-rose-600/10 shrink-0 cursor-pointer"
+                        title="Bersihkan Semua Insiden"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Bersihkan Insiden</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setVisibility(prev => ({ ...prev, incidents: !prev.incidents }))}

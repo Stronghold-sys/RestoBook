@@ -1600,24 +1600,26 @@ export default function POSPage() {
         noPadding={true} 
         showCloseButton={false}
       >
-        <div className="p-6 relative">
-          <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg z-20">Untuk Pelanggan</div>
-          <div className="max-h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
-            <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i: any) => {
-              const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
-              return {
-                name: i.menu_items?.name || i.name,
-                price: resolvedPrice,
-                quantity: i.quantity,
-                subtotal: i.subtotal || (resolvedPrice * i.quantity)
-              };
-            })} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
+        {completedOrder && (
+          <div className="p-6 relative">
+            <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-black uppercase px-4 py-1.5 rounded-full shadow-lg z-20">Untuk Pelanggan</div>
+            <div className="max-h-[60vh] overflow-y-auto mb-4 border border-gray-200 rounded-xl">
+              <Receipt ref={receiptPelangganRef} order={completedOrder} orderItems={completedOrder.order_items.map((i: any) => {
+                const resolvedPrice = Number(i.price || i.menu_items?.price || 0);
+                return {
+                  name: i.menu_items?.name || i.name,
+                  price: resolvedPrice,
+                  quantity: i.quantity,
+                  subtotal: i.subtotal || (resolvedPrice * i.quantity)
+                };
+              })} customerName={completedOrder.profiles?.full_name} cashierName={completedOrder.cashier?.full_name} cashReceived={completedOrder.cash_received} isKasirCopy={false} />
+            </div>
+            <button onClick={() => handlePrint(receiptPelangganRef)} className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600">
+              <Printer className="w-4 h-4" /> Cetak Struk Pelanggan
+            </button>
+            <button onClick={() => { setShowReceipts(false); clearCart(); }} className="w-full mt-3 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-black uppercase text-xs rounded-xl shadow-md transition-all">Selesai & Tutup</button>
           </div>
-          <button onClick={() => handlePrint(receiptPelangganRef)} className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600">
-            <Printer className="w-4 h-4" /> Cetak Struk Pelanggan
-          </button>
-          <button onClick={() => { setShowReceipts(false); clearCart(); }} className="w-full mt-3 py-3 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark font-black uppercase text-xs rounded-xl shadow-md transition-all">Selesai & Tutup</button>
-        </div>
+        )}
       </BaseModal>
 
       {/* Modal Peringatan Menu Habis */}

@@ -9,6 +9,7 @@ export interface CalendarEventData {
   guest_count: number;
   notes?: string;
   meja?: string;
+  email?: string;
 }
 
 export async function getCalendarCredentials() {
@@ -207,7 +208,7 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
     `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
   ].join('\n');
 
-  const eventPayload = {
+  const eventPayload: any = {
     summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
     description: descriptionText,
     start: {
@@ -220,7 +221,16 @@ export async function createGoogleEvent(eventData: CalendarEventData): Promise<s
     }
   };
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events`, {
+  if (eventData.email && eventData.email.includes('@')) {
+    eventPayload.attendees = [
+      {
+        email: eventData.email,
+        responseStatus: "needsAction"
+      }
+    ];
+  }
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events?sendUpdates=all`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${accessToken}`,
@@ -286,7 +296,7 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
     `Info: Reservasi ini telah terdaftar secara otomatis di sistem RestoBook.`
   ].join('\n');
 
-  const eventPayload = {
+  const eventPayload: any = {
     summary: `Reservasi: ${eventData.atas_nama} (Meja ${mejaListText})`,
     description: descriptionText,
     start: {
@@ -299,7 +309,16 @@ export async function updateGoogleEvent(eventId: string, eventData: CalendarEven
     }
   };
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events/${eventId}`, {
+  if (eventData.email && eventData.email.includes('@')) {
+    eventPayload.attendees = [
+      {
+        email: eventData.email,
+        responseStatus: "needsAction"
+      }
+    ];
+  }
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar_id)}/events/${eventId}?sendUpdates=all`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${accessToken}`,

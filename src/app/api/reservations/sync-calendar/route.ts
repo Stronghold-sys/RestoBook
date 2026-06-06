@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (reservationId) {
       const { data, error } = await supabaseAdmin
         .from('reservations')
-        .select('*, profiles(full_name, phone), tables(table_number)')
+        .select('*, profiles(full_name, phone, email, user_id), tables(table_number)')
         .eq('id', reservationId)
         .maybeSingle();
 
@@ -107,6 +107,25 @@ export async function POST(req: Request) {
     }
     const mejaNumbers = mesaList.join(', ') || '-';
 
+    // Resolusi email pelanggan
+    let customerEmail = reservation.profiles?.email || '';
+    if (!customerEmail && reservation.profiles?.user_id) {
+      try {
+        const { data: authData } = await supabaseAdmin.auth.admin.getUserById(reservation.profiles.user_id);
+        if (authData?.user?.email) {
+          customerEmail = authData.user.email;
+        }
+      } catch (e) {
+        console.warn('Gagal mengambil email auth:', e);
+      }
+    }
+    if (!customerEmail && parsedNotes?.target_email) {
+      customerEmail = parsedNotes.target_email;
+    }
+    if (!customerEmail && parsedNotes?.email) {
+      customerEmail = parsedNotes.email;
+    }
+
     const eventData = {
       id: reservation.id,
       atas_nama: parsedNotes?.atas_nama || reservation.profiles?.full_name || 'Guest',
@@ -115,7 +134,8 @@ export async function POST(req: Request) {
       reservation_time: reservation.reservation_time,
       guest_count: reservation.guest_count,
       notes: displayNotes,
-      meja: mejaNumbers
+      meja: mejaNumbers,
+      email: customerEmail
     };
 
     if (action === 'create') {

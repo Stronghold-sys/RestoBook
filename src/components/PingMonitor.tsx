@@ -306,7 +306,7 @@ export default function PingMonitor({ size = "md", readOnly = false }: PingMonit
           onClick={() => !readOnly && dispatch({ type: "TOGGLE_PANEL" })}
           aria-label={`Status koneksi: ${cfg.label}, Latency: ${msLabel}`}
           aria-haspopup="dialog"
-          aria-expanded={state.showPanel}
+          aria-expanded={state.showPanel ? true : false}
           title={`${cfg.label} — ${msLabel}`}
           disabled={readOnly}
         >

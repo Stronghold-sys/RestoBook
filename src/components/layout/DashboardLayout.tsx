@@ -18,6 +18,7 @@ import NotificationCenterDrawer from "@/components/layout/NotificationCenterDraw
 import { useTutorialStore } from "@/store/useTutorialStore";
 import { useActivityTimeout } from "@/hooks/useActivityTimeout";
 import PingMonitor from "@/components/PingMonitor";
+import { useAdaptiveAnimation } from "@/hooks/useAdaptiveAnimation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, role: initialRole }: DashboardLayoutProps) {
   const isTutorialActive = useTutorialStore((state) => state.isTutorialActive);
+  const { spring, duration, durationFast, reducedMotion } = useAdaptiveAnimation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [role, setRole] = useState<string | null>(initialRole || null);
@@ -774,12 +776,14 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: durationFast }}
               className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             >
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
+                initial={reducedMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0, y: 8 }}
+                animate={reducedMotion ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+                exit={reducedMotion ? { opacity: 0 } : { scale: 0.97, opacity: 0, y: 4 }}
+                transition={spring}
                 className="bg-card-light dark:bg-card-dark rounded-[2rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark text-center space-y-6 text-text-light dark:text-text-dark"
               >
                 <div className="w-16 h-16 bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-md">
@@ -832,14 +836,18 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: durationFast }}
                 onClick={() => setIsSidebarOpen(false)}
                 className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm lg:hidden"
               />
               <motion.aside
-                initial={{ x: "-100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "-100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                initial={{ x: "-100%", opacity: 0.8 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: "-100%", opacity: 0.8 }}
+                transition={reducedMotion
+                  ? { duration: 0.01 }
+                  : { type: "spring", stiffness: spring.stiffness, damping: spring.damping, mass: spring.mass }
+                }
                 className="fixed left-0 top-0 z-[9999] h-full w-80 bg-card-light dark:bg-card-dark p-6 lg:hidden print:hidden"
               >
                 <div className="mb-10 flex items-center justify-between px-2">
@@ -938,6 +946,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: duration }}
               className="fixed inset-0 z-[99999] bg-background-light dark:bg-background-dark overflow-y-auto"
             >
               {/* Navbar Skeleton */}

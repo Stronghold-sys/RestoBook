@@ -356,3 +356,283 @@ aside.fixed.lg\:hidden {
   contain-intrinsic-size: 0 500px;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   ADAPTIVE ANIMATION SYSTEM
+   CSS Custom Properties, Utility Classes, and Performance-Optimized Animations
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Animation CSS Custom Properties (updated by AnimationProvider) ── */
+:root {
+  /* Updated dynamically by refresh rate detection */
+  --anim-hz: 60;
+
+  /* Timing tokens — consumed by all animated elements */
+  --anim-fast:   0.12s;
+  --anim-normal: 0.22s;
+  --anim-slow:   0.38s;
+  --anim-ease:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --anim-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --anim-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --anim-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Slide distances */
+  --anim-slide-sm: 8px;
+  --anim-slide-md: 16px;
+  --anim-slide-lg: 24px;
+
+  /* Stagger */
+  --anim-stagger: 0.04s;
+}
+
+/* ── Smooth scroll for in-page navigation ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Override smooth scroll during page transitions to prevent conflicts */
+html.page-transitioning {
+  scroll-behavior: auto;
+}
+
+/* ── Base transition for interactive elements ── */
+/* Applied via Tailwind: class="transition-smooth" */
+.transition-smooth {
+  transition:
+    opacity var(--anim-fast) var(--anim-ease),
+    transform var(--anim-fast) var(--anim-ease),
+    background-color var(--anim-fast) var(--anim-ease),
+    border-color var(--anim-fast) var(--anim-ease),
+    color var(--anim-fast) var(--anim-ease),
+    box-shadow var(--anim-fast) var(--anim-ease);
+  will-change: auto;
+}
+
+.transition-smooth:hover,
+.transition-smooth:focus-visible {
+  will-change: transform, opacity;
+}
+
+/* ── Hover interaction utility classes ── */
+/* Subtle lift on hover — for cards, buttons */
+.hover-lift {
+  transition: transform var(--anim-fast) var(--anim-spring),
+              box-shadow var(--anim-fast) var(--anim-ease);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+/* Subtle scale on hover — for icon buttons, small cards */
+.hover-scale {
+  transition: transform var(--anim-fast) var(--anim-spring);
+}
+.hover-scale:hover {
+  transform: scale(1.04);
+}
+.hover-scale:active {
+  transform: scale(0.97);
+}
+
+/* Press feedback — for primary CTA buttons */
+.press-feedback {
+  transition: transform var(--anim-fast) var(--anim-ease),
+              opacity var(--anim-fast) var(--anim-ease);
+}
+.press-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* ── Keyframe animations (transform & opacity only — no reflow) ── */
+
+/* Fade in */
+@keyframes anim-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: anim-fade-in var(--anim-normal) var(--anim-ease) both;
+}
+
+/* Slide up + fade in */
+@keyframes anim-slide-up {
+  from { opacity: 0; transform: translateY(var(--anim-slide-md)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: anim-slide-up var(--anim-normal) var(--anim-spring) both;
+}
+
+/* Slide down + fade in */
+@keyframes anim-slide-down {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--anim-slide-md))); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: anim-slide-down var(--anim-normal) var(--anim-spring) both;
+}
+
+/* Slide in from left */
+@keyframes anim-slide-in-left {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--anim-slide-lg))); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: anim-slide-in-left var(--anim-normal) var(--anim-spring) both;
+}
+
+/* Slide in from right */
+@keyframes anim-slide-in-right {
+  from { opacity: 0; transform: translateX(var(--anim-slide-lg)); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: anim-slide-in-right var(--anim-normal) var(--anim-spring) both;
+}
+
+/* Scale in */
+@keyframes anim-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: anim-scale-in var(--anim-fast) var(--anim-spring) both;
+}
+
+/* Stagger helper — add [style="--delay: Xs"] to parent, nth-child handles delay */
+.animate-stagger > * {
+  animation-fill-mode: both;
+  animation-duration: var(--anim-normal);
+  animation-timing-function: var(--anim-spring);
+  animation-name: anim-slide-up;
+}
+.animate-stagger > *:nth-child(1)  { animation-delay: calc(var(--anim-stagger) * 0); }
+.animate-stagger > *:nth-child(2)  { animation-delay: calc(var(--anim-stagger) * 1); }
+.animate-stagger > *:nth-child(3)  { animation-delay: calc(var(--anim-stagger) * 2); }
+.animate-stagger > *:nth-child(4)  { animation-delay: calc(var(--anim-stagger) * 3); }
+.animate-stagger > *:nth-child(5)  { animation-delay: calc(var(--anim-stagger) * 4); }
+.animate-stagger > *:nth-child(6)  { animation-delay: calc(var(--anim-stagger) * 5); }
+.animate-stagger > *:nth-child(7)  { animation-delay: calc(var(--anim-stagger) * 6); }
+.animate-stagger > *:nth-child(8)  { animation-delay: calc(var(--anim-stagger) * 7); }
+.animate-stagger > *:nth-child(n+9) { animation-delay: calc(var(--anim-stagger) * 8); }
+
+/* ── Skeleton shimmer — GPU accelerated ── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 25%,
+    #334155 50%,
+    #1e293b 75%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-text       { height: 14px; border-radius: 4px; }
+.skeleton-text-lg    { height: 20px; border-radius: 4px; }
+.skeleton-title      { height: 28px; border-radius: 6px; }
+.skeleton-circle     { border-radius: 50%; }
+.skeleton-card       { height: 120px; border-radius: 12px; }
+.skeleton-image      { height: 200px; border-radius: 12px; }
+.skeleton-btn        { height: 40px; border-radius: 8px; }
+.skeleton-avatar     { width: 44px; height: 44px; border-radius: 50%; }
+.skeleton-badge      { height: 24px; width: 80px; border-radius: 20px; }
+.skeleton-table-row  { height: 48px; border-radius: 6px; }
+
+/* ── Loading spinner — GPU via rotation on transform ── */
+@keyframes anim-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-smooth {
+  animation: anim-spin 0.7s linear infinite;
+  will-change: transform;
+}
+
+/* ── Pulse for loading states (opacity only) ── */
+@keyframes anim-pulse-opacity {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.animate-pulse-smooth {
+  animation: anim-pulse-opacity 2s ease-in-out infinite;
+}
+
+/* ── Reduced Motion overrides ── */
+/* When OS reduced motion is enabled, disable all CSS animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover,
+  .hover-scale:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .animate-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .skeleton {
+    animation: none !important;
+    background: #e2e8f0;
+  }
+
+  .dark .skeleton {
+    background: #1e293b;
+  }
+}
+
+/* ── Low performance mode class (set by AnimationProvider on <html>) ── */
+html.anim-mode-low * {
+  animation-duration: 0.12s !important;
+  transition-duration: 0.12s !important;
+}
+html.anim-mode-low .hover-lift:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+html.anim-mode-low .hover-scale:hover {
+  transform: none !important;
+}
+
+/* ── Page transition: prevent scroll jump during exit animation ── */
+[data-page-transition] {
+  overflow-x: hidden;
+}
+
+/* ── Focus visible — accessible without disrupting animation ── */
+:focus-visible {
+  outline: 2px solid #ea580c;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+

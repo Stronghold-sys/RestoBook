@@ -9,10 +9,14 @@ import SessionStatusListener from "@/components/SessionStatusListener";
 import AutoTableStatusManager from "@/components/AutoTableStatusManager";
 import DeviceDimensionManager from "@/components/DeviceDimensionManager";
 import AppSplashScreen from "@/components/AppSplashScreen";
-import dynamic from "next/dynamic";
-
 import GlobalModalContainer from "@/components/layout/GlobalModalContainer";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
+import AnimationProvider from "@/components/AnimationProvider";
+import dynamic from "next/dynamic";
+
+const PageTransitionWrapper = dynamic(() => import("@/components/PageTransitionWrapper"), {
+  ssr: false,
+});
 
 const RestoBot = dynamic(() => import("@/components/RestoBot"), {
   ssr: false,
@@ -76,11 +80,14 @@ export default function RootLayout({
       <body className={inter.className}>
           <AppSplashScreen />
           <DeviceDimensionManager />
+          <AnimationProvider />
           <DynamicFavicon />
           <ConnectionDetector />
           <SessionStatusListener />
           <AutoTableStatusManager />
-          {children}
+          <PageTransitionWrapper>
+            {children}
+          </PageTransitionWrapper>
           <GlobalModalContainer />
           <SpotlightTutorial />
           <ModernToaster />

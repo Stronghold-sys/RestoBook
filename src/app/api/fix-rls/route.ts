@@ -106,6 +106,17 @@ export async function GET() {
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_message TEXT DEFAULT 'Sistem sedang dalam perbaikan untuk meningkatkan layanan. Sementara ini, proses transaksi dan pembayaran belum dapat digunakan. Silakan coba kembali nanti.';
     ALTER TABLE IF EXISTS restaurant_settings ADD COLUMN IF NOT EXISTS maintenance_estimated_hours TEXT DEFAULT '2 Jam';
 
+    -- Table reservation rules, check-in tracking & tolerance columns
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS tolerance_minutes INTEGER DEFAULT 15;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS check_in_deadline TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS rules_approved BOOLEAN DEFAULT TRUE;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS checked_in_by UUID REFERENCES profiles(id) ON DELETE SET NULL;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS seated_at TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS seated_by UUID REFERENCES profiles(id) ON DELETE SET NULL;
+    ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE;
+
+
     -- Create Notifications Table if not exists
     CREATE TABLE IF NOT EXISTS notifications (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

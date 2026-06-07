@@ -37,6 +37,7 @@ export default function CashierScanPage() {
   const [selectedTableId, setSelectedTableId] = useState("");
   const [checkInStatus, setCheckInStatus] = useState("arrived"); // arrived or seated
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [canOverride, setCanOverride] = useState(false);
 
   // Print slip state
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -191,6 +192,7 @@ export default function CashierScanPage() {
     setLoading(true);
     setReservation(null);
     setBookingHistory([]);
+    setCanOverride(false);
 
     try {
       const res = await fetch("/api/cashier/scan-qr", {
@@ -201,12 +203,20 @@ export default function CashierScanPage() {
 
       const data = await res.json();
       if (!res.ok) {
+        if (data.canOverride && cashierProfile?.role === 'admin') {
+          setReservation(data.reservation);
+          setCanOverride(true);
+          setSelectedTableId(data.reservation.table_id || "");
+          toast.error(data.error || "Reservasi ini telah dibatalkan/hangus.");
+          return;
+        }
         throw new Error(data.error || "Gagal memverifikasi QR Code");
       }
 
       setReservation(data.reservation);
       setBookingHistory(data.bookingHistory || []);
       setSelectedTableId(data.reservation.table_id || "");
+      setCanOverride(false);
       toast.success("Verifikasi Booking Berhasil!");
     } catch (err: any) {
       toast.error(err.message || "QR Code tidak valid");
@@ -215,7 +225,7 @@ export default function CashierScanPage() {
     }
   };
 
-  const handleCheckInSubmit = async () => {
+  const handleCheckInSubmit = async (useOverride = false) => {
     if (!reservation) return;
     setUpdatingStatus(true);
 
@@ -227,7 +237,8 @@ export default function CashierScanPage() {
           qrToken: reservation.qr_token || manualToken || reservation.id, // QR token is standard
           action: "check_in",
           tableId: selectedTableId || null,
-          status: checkInStatus
+          status: checkInStatus,
+          override: useOverride
         })
       });
 
@@ -236,7 +247,10 @@ export default function CashierScanPage() {
         throw new Error(data.error || "Gagal memperbarui status check-in");
       }
 
-      toast.success("Check-In Berhasil! Status diubah menjadi Sudah Check-In & Proses Sedang Berjalan");
+      toast.success(useOverride 
+        ? "Override Check-In Berhasil! Reservasi diaktifkan kembali." 
+        : "Check-In Berhasil! Status diubah menjadi Sudah Check-In & Proses Sedang Berjalan"
+      );
       
       // Update local reservation state
       setReservation((prev: any) => ({
@@ -245,6 +259,8 @@ export default function CashierScanPage() {
         table_id: selectedTableId,
         table_number: tables.find(t => t.id === selectedTableId)?.table_number
       }));
+
+      setCanOverride(false);
 
       // Redirect to reservations management page with query param id
       router.push(`/cashier/reservations?id=${reservation.id}`);
@@ -502,8 +518,15 @@ export default function CashierScanPage() {
                   </div>
 
                   {/* Check-In Controls */}
-                  {['pending', 'confirmed', 'arrived', 'seated'].includes(reservation.status) && (
+                  {(['pending', 'confirmed', 'arrived', 'seated'].includes(reservation.status) || (reservation.status === 'cancelled' && canOverride)) && (
                     <div className="pt-6 border-t border-border-light dark:border-border-dark space-y-4">
+                      {reservation.status === 'cancelled' && (
+                        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                          <span>Perhatian: Reservasi ini telah hangus/dibatalkan. Anda dapat meng-override sebagai Admin.</span>
+                        </div>
+                      )}
+
                       <h3 className="font-bold text-sm uppercase tracking-wider text-muted">Kontrol Kedatangan / Meja</h3>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -541,18 +564,29 @@ export default function CashierScanPage() {
 
                       {/* Action buttons */}
                       <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                        <button 
-                          onClick={handleCheckInSubmit}
-                          disabled={updatingStatus}
-                          className="flex-1 py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {updatingStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Check-In Sekarang
-                        </button>
+                        {reservation.status === 'cancelled' && canOverride ? (
+                          <button 
+                            onClick={() => handleCheckInSubmit(true)}
+                            disabled={updatingStatus}
+                            className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {updatingStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Override & Check-In (Admin)
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleCheckInSubmit(false)}
+                            disabled={updatingStatus}
+                            className="flex-1 py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {updatingStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Check-In Sekarang
+                          </button>
+                        )}
                         <button 
                           onClick={() => {
                             setReservation(null);
                             setManualToken("");
                             setBookingHistory([]);
+                            setCanOverride(false);
                           }}
                           className="px-5 py-4 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 rounded-2xl font-black text-xs uppercase hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all flex items-center justify-center gap-1.5"
                         >

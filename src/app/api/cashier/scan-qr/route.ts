@@ -5,6 +5,24 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { parseUserAgent } from '@/lib/security';
 
+function getParsedNotes(notesStr: string) {
+  if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
+  try {
+    const parsed = JSON.parse(notesStr);
+    if (parsed && typeof parsed === "object") {
+      return {
+        ...parsed,
+        atas_nama: parsed.atas_nama || "",
+        telepon: parsed.telepon || "",
+        meja_tambahan: parsed.meja_tambahan || [],
+        meja_ids: parsed.meja_ids || [],
+        catatan: parsed.catatan || ""
+      };
+    }
+  } catch (e) {}
+  return { atas_nama: "", telepon: "", catatan: notesStr, meja_tambahan: [], meja_ids: [] };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
@@ -87,10 +105,25 @@ export async function POST(request: NextRequest) {
     // 4. Validate reservation status for 'verify' or 'check_in'
     let isValid = true;
     let failureReason = '';
+    const parsedNotes = getParsedNotes(reservation.notes);
+    const isCancelled = reservation.status === 'cancelled';
+    const isAutoCancelled = isCancelled && (parsedNotes.dibatalkan_oleh === 'sistem' || (parsedNotes.catatan_batal && parsedNotes.catatan_batal.includes('hangus')));
+    
+    // Support override parameter
+    const override = body.override === true;
 
-    if (reservation.status === 'cancelled') {
-      isValid = false;
-      failureReason = 'Reservasi sudah dibatalkan';
+    if (isCancelled) {
+      if (profile.role === 'admin' && (isAutoCancelled || isCancelled)) {
+        if (override) {
+          isValid = true;
+        } else {
+          isValid = false;
+          failureReason = 'Reservasi ini telah dibatalkan/hangus. Silakan gunakan Override (Khusus Admin) untuk check-in.';
+        }
+      } else {
+        isValid = false;
+        failureReason = 'Reservasi sudah dibatalkan';
+      }
     } else if (reservation.status === 'rejected') {
       isValid = false;
       failureReason = 'Reservasi sudah ditolak';
@@ -103,6 +136,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isValid) {
+      const canOverride = profile.role === 'admin' && isCancelled;
+
       await supabaseAdmin.from('qr_scan_history').insert({
         reservation_id: reservation.id,
         cashier_id: profile.id,
@@ -114,14 +149,15 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ 
         error: failureReason,
+        canOverride: canOverride,
         reservation: {
           id: reservation.id,
           guest_count: reservation.guest_count,
           reservation_date: reservation.reservation_date,
           reservation_time: reservation.reservation_time,
           status: reservation.status,
-          customer_name: reservation.profiles?.full_name || 'Pelanggan',
-          phone: reservation.profiles?.phone
+          customer_name: parsedNotes.atas_nama || reservation.profiles?.full_name || 'Pelanggan',
+          phone: parsedNotes.telepon || reservation.profiles?.phone
         }
       }, { status: 400 });
     }
@@ -197,6 +233,40 @@ export async function POST(request: NextRequest) {
 
       if (tableId) {
         updateFields.table_id = tableId;
+      }
+
+      if (override) {
+        // Hapus catatan batal/dibatalkan_oleh, set override info
+        const updatedNotes = JSON.stringify({
+          ...parsedNotes,
+          catatan_batal: null,
+          dibatalkan_oleh: null,
+          override_by_admin: profile.full_name,
+          override_at: new Date().toISOString()
+        });
+        updateFields.notes = updatedNotes;
+        
+        // Kunci meja kembali
+        const tableIds = parsedNotes.meja_ids.length > 0 ? parsedNotes.meja_ids : [reservation.table_id].filter(Boolean);
+        if (tableIds.length > 0) {
+          await supabaseAdmin
+            .from('tables')
+            .update({ status: 'reserved' })
+            .in('id', tableIds);
+        }
+
+        // Catat Audit Log
+        await supabaseAdmin.from('audit_logs').insert({
+          action: 'admin_override_check_in',
+          operator_id: profile.id,
+          operator_name: profile.full_name,
+          target_id: reservation.id,
+          target_name: 'reservations',
+          data_before: { status: reservation.status },
+          data_after: { status: newStatus || 'arrived', override: true, notes: updatedNotes },
+          browser,
+          device
+        });
       }
 
       const { error: updateErr } = await supabaseAdmin

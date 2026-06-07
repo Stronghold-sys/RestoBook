@@ -52,6 +52,7 @@ function CashierReservationsContent() {
   const [bookingSubmit, setBookingSubmit] = useState(false);
 
   const [durationMinutes, setDurationMinutes] = useState<number>(120);
+  const [lateToleranceMinutes, setLateToleranceMinutes] = useState<number>(15);
   const [bookedTablesInfo, setBookedTablesInfo] = useState<Record<string, "pending" | "confirmed">>({});
 
   const getTodayStr = () => {
@@ -118,6 +119,9 @@ function CashierReservationsContent() {
           : settingsData.reservation_settings;
         if (resSettings?.duration_minutes) {
           setDurationMinutes(Number(resSettings.duration_minutes));
+        }
+        if (resSettings?.late_tolerance_minutes !== undefined) {
+          setLateToleranceMinutes(Number(resSettings.late_tolerance_minutes));
         }
       }
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
@@ -484,6 +488,11 @@ function CashierReservationsContent() {
         catatan: bookForm.notes
       });
 
+      // Calculate check-in deadline based on local restaurant timezone (WIB, UTC+7)
+      const bookingDateTime = new Date(`${bookForm.date}T${bookForm.time}:00+07:00`);
+      const deadlineTime = new Date(bookingDateTime.getTime() + lateToleranceMinutes * 60000);
+      const checkInDeadline = deadlineTime.toISOString();
+
       const { error } = await supabase.from("reservations").insert({
         customer_id: null, // Cashier booked walk-in/phone reservasi
         table_id: selectedTableIds[0],
@@ -492,6 +501,9 @@ function CashierReservationsContent() {
         guest_count: bookForm.guests,
         notes: structuredNotes,
         status: "pending",
+        tolerance_minutes: lateToleranceMinutes,
+        check_in_deadline: checkInDeadline,
+        rules_approved: true
       });
       if (error) throw error;
 
@@ -514,6 +526,30 @@ function CashierReservationsContent() {
     seated: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
     completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
     cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+  };
+
+  const getDynamicStatus = (res: any) => {
+    if (res.status !== "confirmed") return null;
+    if (!res.check_in_deadline) return null;
+    
+    const now = new Date();
+    const deadline = new Date(res.check_in_deadline);
+    
+    // Booking time (formatted to WIB UTC+7)
+    const bookingDateTime = new Date(`${res.reservation_date}T${res.reservation_time}:00+07:00`);
+    
+    if (now >= deadline) {
+      return {
+        text: "Reservasi hangus/terlambat",
+        badge: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+      };
+    } else if (now >= bookingDateTime) {
+      return {
+        text: "Waktu check-in dimulai",
+        badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+      };
+    }
+    return null;
   };
 
   const filtered = reservations.filter(r => {
@@ -571,6 +607,7 @@ function CashierReservationsContent() {
             ? parsedNotes.meja_tambahan.join(", ") 
             : res.tables?.table_number;
           const cancelledByInfo = getCancelledByLabel(parsedNotes);
+          const dynamicStatus = getDynamicStatus(res);
 
           return (
             <motion.div key={res.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
@@ -593,8 +630,9 @@ function CashierReservationsContent() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
-                    {res.status === "pending" ? "Menunggu" 
+                  <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${dynamicStatus ? dynamicStatus.badge : statusBadge[res.status]}`}>
+                    {dynamicStatus ? dynamicStatus.text 
+                      : res.status === "pending" ? "Menunggu" 
                       : res.status === "confirmed" ? "Aktif & Belum Check-In" 
                       : res.status === "arrived" ? "Sudah Check-In & Proses Sedang Berjalan"
                       : res.status === "seated" ? "Sudah Check-In & Proses Sedang Berjalan"

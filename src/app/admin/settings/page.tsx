@@ -94,6 +94,7 @@ export default function AdminSettingsPage() {
     auto_release_enabled: true,
     late_tolerance_minutes: 15
   });
+  const [initialReservationSettings, setInitialReservationSettings] = useState<any>(null);
 
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
   const [expiryHoursInput, setExpiryHoursInput] = useState<string>("1");
@@ -184,11 +185,13 @@ export default function AdminSettingsPage() {
           const resSettings = typeof data.reservation_settings === "string"
             ? JSON.parse(data.reservation_settings)
             : data.reservation_settings;
-          setReservationSettings({
+          const resObj = {
             duration_minutes: resSettings?.duration_minutes !== undefined ? Number(resSettings.duration_minutes) : 120,
             auto_release_enabled: resSettings?.auto_release_enabled !== undefined ? !!resSettings.auto_release_enabled : true,
             late_tolerance_minutes: resSettings?.late_tolerance_minutes !== undefined ? Number(resSettings.late_tolerance_minutes) : 15
-          });
+          };
+          setReservationSettings(resObj);
+          setInitialReservationSettings(resObj);
         }
       }
 
@@ -348,6 +351,35 @@ export default function AdminSettingsPage() {
         reservation_settings: reservationSettings,
       }).eq("id", settings.id);
       if (error) throw error;
+
+      // Check if late_tolerance_minutes changed and log it
+      const oldTolerance = initialReservationSettings?.late_tolerance_minutes !== undefined ? initialReservationSettings.late_tolerance_minutes : 15;
+      const newTolerance = reservationSettings.late_tolerance_minutes !== undefined && reservationSettings.late_tolerance_minutes !== "" ? Number(reservationSettings.late_tolerance_minutes) : 15;
+      
+      if (oldTolerance !== newTolerance) {
+        const { data: { user } } = await supabase.auth.getUser();
+        let adminName = "Admin";
+        let adminProfileId = null;
+        if (user) {
+          const { data: prof } = await supabase.from('profiles').select('id, full_name').eq('user_id', user.id).single();
+          if (prof) {
+            adminName = prof.full_name;
+            adminProfileId = prof.id;
+          }
+        }
+        await supabase.from('audit_logs').insert({
+          action: 'update_reservation_tolerance',
+          operator_id: adminProfileId,
+          operator_name: adminName,
+          target_id: settings.id,
+          target_name: 'restaurant_settings',
+          data_before: { late_tolerance_minutes: oldTolerance },
+          data_after: { late_tolerance_minutes: newTolerance },
+          browser: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
+          device: 'Web Client'
+        });
+        setInitialReservationSettings((prev: any) => ({ ...prev, late_tolerance_minutes: newTolerance }));
+      }
 
       const { error: estError } = await supabase
         .from("order_estimation_settings")
@@ -1231,19 +1263,49 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="resLateTolerance" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Toleransi Keterlambatan Check-In (Menit)</label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 h-4 w-4 text-muted" />
-                <input 
-                  id="resLateTolerance" 
-                  type="number" 
-                  min="0" 
-                  value={reservationSettings.late_tolerance_minutes}
-                  onChange={e => setReservationSettings({ ...reservationSettings, late_tolerance_minutes: cleanLeadingZero(e.target.value) === "" ? 0 : Number(cleanLeadingZero(e.target.value)) })}
-                  className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
-                />
+              <label htmlFor="resLateTolerance" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Batas Toleransi Check-in (Menit)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Clock className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                  <input 
+                    id="resLateTolerance" 
+                    type="number" 
+                    min="0" 
+                    max="120"
+                    value={reservationSettings.late_tolerance_minutes === "" ? "" : reservationSettings.late_tolerance_minutes}
+                    onChange={e => {
+                      let val = e.target.value;
+                      if (val === "") {
+                        setReservationSettings({ ...reservationSettings, late_tolerance_minutes: "" });
+                        return;
+                      }
+                      const clean = cleanLeadingZero(val).replace(/[^0-9]/g, "");
+                      if (clean === "") {
+                        setReservationSettings({ ...reservationSettings, late_tolerance_minutes: 0 });
+                        return;
+                      }
+                      let num = Number(clean);
+                      if (num > 120) num = 120;
+                      setReservationSettings({ ...reservationSettings, late_tolerance_minutes: num });
+                    }}
+                    className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
+                  />
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setReservationSettings({ ...reservationSettings, late_tolerance_minutes: 15 })} 
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-text-light dark:text-text-dark rounded-xl font-bold text-xs uppercase shadow-sm transition-all"
+                >
+                  Reset
+                </button>
               </div>
-              <p className="text-[10px] text-muted mt-1">Batas waktu keterlambatan pelanggan sebelum status meja diatur ulang.</p>
+              <p className="text-[10px] text-muted mt-1">Batas waktu keterlambatan pelanggan check-in setelah jam booking dimulai (maksimal 120 menit).</p>
+              
+              <div className="mt-2.5 p-3.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl">
+                <p className="text-[10.5px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed italic">
+                  <strong>Pratinjau Aturan Pelanggan:</strong> "Pelanggan wajib melakukan check-in maksimal {reservationSettings.late_tolerance_minutes || 15} menit setelah jam booking dimulai. Jika melebihi batas tersebut dan pelanggan tidak kunjung hadir, maka reservasi dinyatakan hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain."
+                </p>
+              </div>
             </div>
           </div>
 

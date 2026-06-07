@@ -338,9 +338,22 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
       })
       .subscribe();
 
+    // Background scheduler for checking expired reservations
+    const expiryInterval = setInterval(() => {
+      fetch('/api/reservations/check-expiry')
+        .then(res => res.json())
+        .then(data => {
+          if (data.processedCount > 0) {
+            console.log(`Auto-expiry: Berhasil membatalkan ${data.processedCount} reservasi.`);
+          }
+        })
+        .catch(err => console.error("Gagal menjalankan auto-expiry check:", err));
+    }, 120000); // 2 menit
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(maintChannel);
+      clearInterval(expiryInterval);
     };
   }, []);
 

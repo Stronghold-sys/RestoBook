@@ -52,6 +52,9 @@ export default function AdminRefundsPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchRefundRequests();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => {
+        fetchRefundRequests();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -254,7 +257,7 @@ export default function AdminRefundsPage() {
         processedAt: new Date().toISOString()
       };
 
-      if (selectedRefund.type === "reservation") {
+      if (selectedRefund.type === "reservation" || selectedRefund.type === "combined") {
         const response = await fetch('/api/reservations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -841,7 +844,7 @@ export default function AdminRefundsPage() {
         {selectedRefund && actionType && (
           <div className="space-y-4">
             <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
-              <p><span className="text-muted">{selectedRefund.type === "reservation" ? "ID Reservasi" : "ID Pesanan"}:</span> #{selectedRefund.id.split("-")[0].toUpperCase()}</p>
+              <p><span className="text-muted">{(selectedRefund.type === "reservation" || selectedRefund.type === "combined") ? "ID Reservasi" : "ID Pesanan"}:</span> #{selectedRefund.id.split("-")[0].toUpperCase()}</p>
               <p><span className="text-muted">Pelanggan:</span> {selectedRefund.customer_name}</p>
               <p><span className="text-muted">Dana Cash Dibayar:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
               {selectedRefund.voucher_id && (

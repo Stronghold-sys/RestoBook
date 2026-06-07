@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from './supabase/admin';
+import { parseUserAgent } from './security';
 
 // ── 1. List Domain Email Sekali Pakai (Disposable Email Domains) ─────
 const DISPOSABLE_EMAIL_DOMAINS = [
@@ -308,15 +309,26 @@ export async function detectSessionHijack(
       return { hijacked: true, reason: `Negara berubah drastis: ${session.country} -> ${cfCountry}` };
     }
 
-    // B. Perubahan User-Agent (Browser berubah di tengah jalan)
-    if (session.user_agent !== ua) {
-      return { hijacked: true, reason: 'User Agent browser berubah tiba-tiba' };
+    // B. Perubahan User-Agent (Browser atau OS berubah di tengah jalan)
+    const sessionUAParsed = parseUserAgent(session.user_agent);
+    const currentUAParsed = parseUserAgent(ua);
+    
+    // Abaikan jika salah satu terdeteksi sebagai Capacitor / App fetcher / Unknown browser
+    const isAppRequest = 
+      sessionUAParsed.browser === 'Browser tidak diketahui' || 
+      currentUAParsed.browser === 'Browser tidak diketahui' ||
+      (ua && (ua.includes('Capacitor') || ua.includes('okhttp') || ua.includes('capacitor')));
+
+    if (!isAppRequest && (sessionUAParsed.browser !== currentUAParsed.browser || sessionUAParsed.os !== currentUAParsed.os)) {
+      return { hijacked: true, reason: `Browser/OS berubah: ${sessionUAParsed.browser} on ${sessionUAParsed.os} -> ${currentUAParsed.browser} on ${currentUAParsed.os}` };
     }
 
-    // C. Perubahan ASN (ISP/Jaringan berubah ekstrem)
+    // C. Perubahan ASN (Jaringan berubah) - Dinonaktifkan karena sering memicu false positive saat pengguna berpindah jaringan (misal Wi-Fi ke Seluler)
+    /*
     if (session.asn !== 'Unknown' && cfAsn !== 'Unknown' && session.asn !== cfAsn) {
       return { hijacked: true, reason: `ASN Jaringan berubah: ${session.asn} -> ${cfAsn}` };
     }
+    */
 
     // Perbarui keaktifan sesi
     await supabase
@@ -446,7 +458,8 @@ export async function logSecurityIncident(event: {
       severity: event.severity
     });
 
-    // Pemicu Emergency Mode Otomatis jika insiden berkategori CRITICAL dalam jumlah banyak
+    // Pemicu Emergency Mode Otomatis dinonaktifkan atas permintaan admin agar tidak aktif sendiri demi stabilitas sistem
+    /*
     if (event.severity === 'critical') {
       const fiveMinsAgo = new Date(Date.now() - 5 * 60_000).toISOString();
       const { count } = await supabase
@@ -470,6 +483,7 @@ export async function logSecurityIncident(event: {
           .eq('emergency_mode', false); // hanya update jika belum aktif
       }
     }
+    */
   } catch (err) {
     console.error('Failed to log security incident:', err);
   }

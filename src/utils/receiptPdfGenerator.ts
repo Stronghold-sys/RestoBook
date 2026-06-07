@@ -88,7 +88,7 @@ export async function downloadReceiptPDF({
   doc.text(`Pelanggan: ${customerName.toUpperCase()}`, 5, y);
   
   y += 4;
-  const typeStr = order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway";
+  const typeStr = order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : order.order_type === "reservasi" ? "Reservasi" : "Takeaway";
   doc.text(`Tipe: ${typeStr}`, 5, y);
   
   y += 4;

@@ -2,16 +2,18 @@
 
 export const runtime = 'edge';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet, FileSpreadsheet, Eye, RotateCcw, Info, AlertTriangle, Upload } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet, FileSpreadsheet, Eye, RotateCcw, Info, AlertTriangle, Upload, Receipt as ReceiptIcon, Printer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { SkeletonOrderItem } from "@/components/Skeleton";
 import BaseModal from "@/components/BaseModal";
+import Receipt from "@/components/Receipt";
+import { downloadReceiptPDF } from "@/utils/receiptPdfGenerator";
 
 interface Reservation {
   id: string;
@@ -153,6 +155,57 @@ export default function CustomerReservationsPage() {
   const [historyRefundTypeFilter, setHistoryRefundTypeFilter] = useState<string>("all");
   const [historySearchResNo, setHistorySearchResNo] = useState("");
   const [selectedDetailRes, setSelectedDetailRes] = useState<Reservation | null>(null);
+  const [selectedReceiptRes, setSelectedReceiptRes] = useState<Reservation | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+
+  const handleDownloadReceiptPDF = async () => {
+    if (!selectedReceiptRes) return;
+    setDownloadingReceipt(true);
+    try {
+      const parsed = getParsedNotes(selectedReceiptRes.notes);
+      const clientName = parsed.atas_nama || "Pelanggan";
+      const displayMejaList = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedReceiptRes.tables?.table_number || "";
+      
+      const mappedOrder = {
+        id: selectedReceiptRes.id,
+        created_at: selectedReceiptRes.created_at,
+        order_type: "reservasi",
+        payment_method: selectedReceiptRes.payment_method || "tunai",
+        payment_status: selectedReceiptRes.payment_status || "paid",
+        total_amount: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0,
+        discount: 0
+      };
+
+      let mappedItems = [];
+      if (Array.isArray(selectedReceiptRes.menu_items) && selectedReceiptRes.menu_items.length > 0) {
+        mappedItems = selectedReceiptRes.menu_items.map((item: any) => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity || item.qty || 1,
+          subtotal: (item.price * (item.quantity || item.qty || 1))
+        }));
+      } else {
+        mappedItems = [{
+          name: `Booking Meja ${displayMejaList}`,
+          price: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0,
+          quantity: 1,
+          subtotal: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0
+        }];
+      }
+
+      await downloadReceiptPDF({
+        order: mappedOrder,
+        orderItems: mappedItems,
+        customerName: clientName
+      });
+      toast.success("Kwitansi berhasil diunduh!");
+    } catch (e: any) {
+      toast.error("Gagal mengunduh kwitansi: " + e.message);
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  };
 
   const supabase = createClient();
 
@@ -1265,6 +1318,17 @@ export default function CustomerReservationsPage() {
                           </motion.button>
                         )}
                         <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
+                        {res.status === "completed" && (
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }} 
+                            onClick={() => setSelectedReceiptRes(res)} 
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/10 transition-all border border-emerald-500"
+                            title="Lihat Kwitansi Pembayaran"
+                          >
+                            <ReceiptIcon className="w-4 h-4" /> Lihat Kwitansi
+                          </motion.button>
+                        )}
                         <motion.button 
                           whileTap={{ scale: 0.9 }} 
                           onClick={() => setSelectedDetailRes(res)} 
@@ -2628,6 +2692,80 @@ export default function CustomerReservationsPage() {
                 </button>
               </div>
             </>
+          );
+        })()}
+      </BaseModal>
+
+      {/* Modal Kwitansi Pembayaran */}
+      <BaseModal
+        isOpen={!!selectedReceiptRes}
+        onClose={() => setSelectedReceiptRes(null)}
+        size="md"
+        title="Kwitansi Pembayaran Reservasi"
+      >
+        {selectedReceiptRes && (() => {
+          const parsed = getParsedNotes(selectedReceiptRes.notes);
+          const clientName = parsed.atas_nama || "Pelanggan";
+          const displayMejaList = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedReceiptRes.tables?.table_number || "";
+
+          const mappedOrder = {
+            id: selectedReceiptRes.id,
+            created_at: selectedReceiptRes.created_at,
+            order_type: "reservasi",
+            payment_method: selectedReceiptRes.payment_method || "tunai",
+            payment_status: selectedReceiptRes.payment_status || "paid",
+            total_amount: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0,
+            discount: 0
+          };
+
+          let mappedItems = [];
+          if (selectedReceiptRes.menu_items && Array.isArray(selectedReceiptRes.menu_items) && selectedReceiptRes.menu_items.length > 0) {
+            mappedItems = selectedReceiptRes.menu_items.map((item: any) => ({
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity || item.qty || 1,
+              subtotal: (item.price * (item.quantity || item.qty || 1))
+            }));
+          } else {
+            mappedItems = [{
+              name: `Booking Meja ${displayMejaList}`,
+              price: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0,
+              quantity: 1,
+              subtotal: selectedReceiptRes.menu_total || selectedReceiptRes.dp_amount || 0
+            }];
+          }
+
+          return (
+            <div className="space-y-6">
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setSelectedReceiptRes(null)} 
+                  className="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-xs font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Tutup
+                </button>
+                <button 
+                  onClick={handleDownloadReceiptPDF} 
+                  disabled={downloadingReceipt}
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-primary/20 disabled:opacity-50"
+                >
+                  {downloadingReceipt ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Printer className="w-3.5 h-3.5" />
+                  )}
+                  Cetak / Unduh PDF
+                </button>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900/65 p-6 rounded-2xl border border-border-light dark:border-border-dark overflow-auto max-h-[70vh] flex justify-center">
+                <Receipt 
+                  ref={receiptRef} 
+                  order={mappedOrder} 
+                  orderItems={mappedItems} 
+                  customerName={clientName} 
+                />
+              </div>
+            </div>
           );
         })()}
       </BaseModal>

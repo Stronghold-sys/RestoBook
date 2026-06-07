@@ -95,6 +95,7 @@ export default function CustomerReservationsPage() {
   const [chargeCancel, setChargeCancel] = useState<number>(20);
   const [refundPolicy, setRefundPolicy] = useState<string>("manual");
   const [toleranceMinutes, setToleranceMinutes] = useState<number>(15);
+  const [taxPercent, setTaxPercent] = useState<number>(10);
 
   // Rules Modal & Cancellation Form
   const [showRulesModal, setShowRulesModal] = useState<boolean>(false);
@@ -240,7 +241,7 @@ export default function CustomerReservationsPage() {
       // Fetch reservation settings
       const { data: settingsData } = await supabase
         .from("restaurant_settings")
-        .select("reservation_settings, minimal_dp, charge_cancel, refund_policy")
+        .select("reservation_settings, minimal_dp, charge_cancel, refund_policy, tax_percent")
         .single();
       if (settingsData) {
         if (settingsData.minimal_dp !== null && settingsData.minimal_dp !== undefined) {
@@ -253,6 +254,9 @@ export default function CustomerReservationsPage() {
         }
         if (settingsData.refund_policy) {
           setRefundPolicy(settingsData.refund_policy);
+        }
+        if (settingsData.tax_percent !== null && settingsData.tax_percent !== undefined) {
+          setTaxPercent(Number(settingsData.tax_percent));
         }
         if (settingsData.reservation_settings) {
           const resSettings = typeof settingsData.reservation_settings === "string"
@@ -444,9 +448,13 @@ export default function CustomerReservationsPage() {
       if (walletInfo.isBlocked) {
         return toast.error(walletInfo.blockReason || "DompetKu Anda diblokir.");
       }
-      const totalMenuPrice = calculateMenuTotal();
-      if (walletInfo.balance < totalMenuPrice) {
-        return toast.error(`Saldo DompetKu tidak mencukupi (Saldo: Rp ${walletInfo.balance.toLocaleString('id-ID')}, Tagihan: Rp ${totalMenuPrice.toLocaleString('id-ID')}). Silakan pilih metode lain.`);
+      const subtotalMenu = calculateMenuTotal();
+      const additionalFee = 0;
+      const taxableAmount = subtotalMenu + additionalFee;
+      const taxAmount = Math.round((taxableAmount * taxPercent) / 100);
+      const grandTotal = taxableAmount + taxAmount;
+      if (walletInfo.balance < grandTotal) {
+        return toast.error(`Saldo DompetKu tidak mencukupi (Saldo: Rp ${walletInfo.balance.toLocaleString('id-ID')}, Tagihan: Rp ${grandTotal.toLocaleString('id-ID')}). Silakan pilih metode lain.`);
       }
       if (!pin) {
         return toast.error("Masukkan PIN DompetKu Anda terlebih dahulu.");
@@ -461,8 +469,12 @@ export default function CustomerReservationsPage() {
       if (walletInfo.isBlocked) {
         return toast.error(walletInfo.blockReason || "DompetKu Anda diblokir.");
       }
-      const totalMenuPrice = calculateMenuTotal();
-      const dpAmt = (totalMenuPrice * dpPercent) / 100;
+      const subtotalMenu = calculateMenuTotal();
+      const additionalFee = 0;
+      const taxableAmount = subtotalMenu + additionalFee;
+      const taxAmount = Math.round((taxableAmount * taxPercent) / 100);
+      const grandTotal = taxableAmount + taxAmount;
+      const dpAmt = Math.round((grandTotal * dpPercent) / 100);
       if (walletInfo.balance < dpAmt) {
         return toast.error(`Saldo DompetKu tidak mencukupi untuk membayar DP (Saldo: Rp ${walletInfo.balance.toLocaleString('id-ID')}, DP: Rp ${dpAmt.toLocaleString('id-ID')}). Silakan pilih metode lain.`);
       }
@@ -515,9 +527,14 @@ export default function CustomerReservationsPage() {
       }
 
       const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
-      const totalMenuPrice = calculateMenuTotal();
-      const dpAmt = paymentMethod === "dp" ? (totalMenuPrice * dpPercent) / 100 : 0;
-      const remainingAmt = paymentMethod === "dp" ? totalMenuPrice - dpAmt : (paymentMethod === "dompetku" ? 0 : totalMenuPrice);
+      const subtotalMenu = calculateMenuTotal();
+      const additionalFee = 0;
+      const taxableAmount = subtotalMenu + additionalFee;
+      const taxAmount = Math.round((taxableAmount * taxPercent) / 100);
+      const grandTotal = taxableAmount + taxAmount;
+
+      const dpAmt = paymentMethod === "dp" ? Math.round((grandTotal * dpPercent) / 100) : 0;
+      const remainingAmt = paymentMethod === "dp" ? grandTotal - dpAmt : (paymentMethod === "dompetku" ? 0 : grandTotal);
 
       const structuredNotes = JSON.stringify({
         atas_nama: form.atasNama,
@@ -556,7 +573,11 @@ export default function CustomerReservationsPage() {
           dpAmount: dpAmt,
           remainingAmount: remainingAmt,
           menuItems: menuItemsList,
-          menuTotal: totalMenuPrice,
+          menuTotal: grandTotal, // Keep grandTotal here so that existing systems treat it as the total amount.
+          subtotal: subtotalMenu, // New field
+          taxPercent: taxPercent, // New field
+          taxAmount: taxAmount, // New field
+          additionalFee: additionalFee, // New field
           pin: (paymentMethod === "dompetku" || (paymentMethod === "dp" && dpSource === "dompetku")) ? pin : undefined,
           dpSource: paymentMethod === "dp" ? dpSource : undefined,
           rules_approved_at: new Date().toISOString(),
@@ -576,7 +597,7 @@ export default function CustomerReservationsPage() {
       const isNonCash = paymentMethod === "non_cash";
       const isDpNonCash = paymentMethod === "dp" && dpSource === "non_cash";
 
-      if ((isNonCash || isDpNonCash) && totalMenuPrice > 0) {
+      if ((isNonCash || isDpNonCash) && subtotalMenu > 0) {
         const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
         try {
           const invRes = await fetch('/api/payment/create-invoice', {
@@ -1004,6 +1025,14 @@ export default function CustomerReservationsPage() {
   });
 
   const displayedReservations = filteredHistory;
+
+  const subtotalMenu = calculateMenuTotal();
+  const additionalFee = 0;
+  const taxableAmount = subtotalMenu + additionalFee;
+  const taxAmount = Math.round((taxableAmount * taxPercent) / 100);
+  const grandTotal = taxableAmount + taxAmount;
+  const dpAmountCalculated = paymentMethod === "dp" ? Math.round((grandTotal * dpPercent) / 100) : 0;
+  const remainingAmountCalculated = paymentMethod === "dp" ? grandTotal - dpAmountCalculated : (paymentMethod === "dompetku" ? 0 : grandTotal);
 
   if (loading) {
     return (
@@ -1609,7 +1638,7 @@ export default function CustomerReservationsPage() {
             </div>
 
             {/* Menu Items Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
               {menuItems
                 .filter((item) => {
                   const matchesCategory = activeCategory === "all" || item.category_id === activeCategory;
@@ -1622,26 +1651,26 @@ export default function CustomerReservationsPage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col p-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden"
+                      className="flex flex-row md:flex-col items-center md:items-stretch p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl gap-3 overflow-hidden"
                     >
                       {/* Image */}
                       {item.image_url ? (
                         <img
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-20 rounded-lg object-cover bg-gray-100 mb-2 shrink-0"
+                          className="w-16 h-16 md:w-full md:h-24 rounded-lg object-cover bg-gray-100 shrink-0"
                         />
                       ) : (
-                        <div className="w-full h-20 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2 shrink-0">
+                        <div className="w-16 h-16 md:w-full md:h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                           <ShoppingBag className="w-6 h-6 text-muted" />
                         </div>
                       )}
                       {/* Info */}
-                      <div className="flex-1 min-w-0 mb-2">
-                        <h4 className="font-bold text-xs text-text-light dark:text-text-dark line-clamp-2 leading-tight" title={item.name}>
+                      <div className="flex-1 min-w-0 md:mt-1">
+                        <h4 className="font-bold text-xs md:text-sm text-text-light dark:text-text-dark truncate md:line-clamp-2 leading-tight" title={item.name}>
                           {item.name}
                         </h4>
-                        <p className="text-xs text-primary font-bold mt-1">
+                        <p className="text-xs md:text-sm text-primary font-bold mt-1">
                           Rp {item.price.toLocaleString("id-ID")}
                         </p>
                         <p className="text-[10px] text-muted mt-0.5">
@@ -1649,7 +1678,7 @@ export default function CustomerReservationsPage() {
                         </p>
                       </div>
                       {/* Action */}
-                      <div className="shrink-0 w-full">
+                      <div className="shrink-0 w-24 md:w-full md:mt-2">
                         {qty > 0 ? (
                           <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                             <button
@@ -1714,7 +1743,7 @@ export default function CustomerReservationsPage() {
                 </div>
                 <div className="border-t border-border-light dark:border-border-dark pt-3 flex justify-between font-bold text-sm text-text-light dark:text-text-dark">
                   <span>Subtotal Menu:</span>
-                  <span>Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
+                  <span>Rp {subtotalMenu.toLocaleString("id-ID")}</span>
                 </div>
               </div>
             )}
@@ -1821,7 +1850,7 @@ export default function CustomerReservationsPage() {
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span className="font-semibold">DompetKu Anda belum aktif. Silakan lakukan aktivasi terlebih dahulu sebelum menggunakannya.</span>
                   </div>
-                ) : (walletInfo && walletInfo.balance < (paymentMethod === "dp" ? (calculateMenuTotal() * dpPercent) / 100 : calculateMenuTotal())) ? (
+                ) : (walletInfo && walletInfo.balance < (paymentMethod === "dp" ? dpAmountCalculated : grandTotal)) ? (
                   <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-250 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 space-y-3">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1932,19 +1961,29 @@ export default function CustomerReservationsPage() {
                 Ringkasan Pembayaran Reservasi & Pre-Order
               </h4>
               <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
-                <span>Total Harga Menu:</span>
-                <span className="font-semibold">Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
+                <span>Subtotal Menu:</span>
+                <span className="font-semibold">Rp {subtotalMenu.toLocaleString("id-ID")}</span>
+              </div>
+              {taxAmount > 0 && (
+                <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                  <span>PPN ({taxPercent}%):</span>
+                  <span className="font-semibold">Rp {taxAmount.toLocaleString("id-ID")}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                <span>Total Tagihan:</span>
+                <span className="font-semibold">Rp {grandTotal.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
-                <span>Metode Pembayaran Utama:</span>
-                <span className="font-semibold uppercase text-primary">{paymentMethod}</span>
+                <span>Metode Pembayaran:</span>
+                <span className="font-semibold uppercase text-primary">{paymentMethod === "dp" ? "Bayar DP" : paymentMethod}</span>
               </div>
               {paymentMethod === "dp" && (
                 <>
                   <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
                     <span>DP Dibayar ({dpPercent}%):</span>
                     <span className="font-semibold text-primary">
-                      Rp {((calculateMenuTotal() * dpPercent) / 100).toLocaleString("id-ID")}
+                      Rp {dpAmountCalculated.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
@@ -1954,16 +1993,10 @@ export default function CustomerReservationsPage() {
                   <div className="flex justify-between text-sm font-bold text-text-light dark:text-text-dark border-t border-dashed border-primary/20 pt-2 mt-1">
                     <span>Sisa Pembayaran di Kasir:</span>
                     <span className="text-primary">
-                      Rp {(calculateMenuTotal() - (calculateMenuTotal() * dpPercent) / 100).toLocaleString("id-ID")}
+                      Rp {remainingAmountCalculated.toLocaleString("id-ID")}
                     </span>
                   </div>
                 </>
-              )}
-              {paymentMethod !== "dp" && (
-                <div className="flex justify-between text-sm font-bold text-text-light dark:text-text-dark border-t border-dashed border-primary/20 pt-2 mt-1">
-                  <span>Total Tagihan:</span>
-                  <span className="text-primary">Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
-                </div>
               )}
             </div>
 

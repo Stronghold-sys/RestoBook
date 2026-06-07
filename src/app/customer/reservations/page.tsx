@@ -2045,7 +2045,7 @@ export default function CustomerReservationsPage() {
                     <p className="text-muted text-[11px] mt-0.5">ID Reservasi: <span className="font-mono font-bold text-text-light dark:text-text-dark">#{cancellingRes.id.substring(0, 8).toUpperCase()}</span></p>
                   </div>
                 </div>
-                <button type="button" onClick={() => setCancellingId(null)} className="p-2 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
+                <button type="button" onClick={() => setCancellingId(null)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
               </div>
 
               <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 pt-4 sm:pt-4 space-y-5">

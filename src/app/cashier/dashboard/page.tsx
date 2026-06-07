@@ -34,6 +34,7 @@ export default function CashierDashboard() {
   const [hasOpenShift, setHasOpenShift] = useState<boolean | null>(null);
   const [openShiftData, setOpenShiftData] = useState<any>(null);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showConfirmCloseModal, setShowConfirmCloseModal] = useState(false);
   const [actualCash, setActualCash] = useState("");
   const [closing, setClosing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -456,8 +457,8 @@ export default function CashierDashboard() {
 
       setClosedShiftId(closedShift?.id || null);
 
-      //  BUKA AKSES JIKA: SEDANG ADA SHIFT TERBUKA, ATAU SUDAH ABSEN MASUK SHIFT INI TAPI BELUM KELUAR!
-      if (shift || (todayCheckIn && !todayCheckOut)) {
+      //  BUKA AKSES JIKA: SEDANG ADA SHIFT TERBUKA, ATAU SUDAH ABSEN MASUK SHIFT INI TAPI BELUM KELUAR (DAN BELUM ADA SHIFT CLOSED HARI INI)!
+      if (shift || (todayCheckIn && !todayCheckOut && !closedShift)) {
         setHasOpenShift(true);
         setOpenShiftData((prev: any) => {
           const newVal = shift || null;
@@ -634,42 +635,12 @@ export default function CashierDashboard() {
     }
   };
 
-  const handleEmergencyCheckout = async () => {
-    try {
-      setClosing(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Sesi user hilang.");
-
-      // Ambil detail profile ID
-      const { data: p } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
-
-      // Rekam Absen Keluar Darurat
-      await supabase.from('attendance').insert({
-        user_id: user.id,
-        profile_id: p?.id || null,
-        type: 'check_out',
-        status: 'completed',
-        work_shift_id: todayShift?.id || null,
-        notes: `TUTUP_SHIF_MANUAL_DARURAT: ${new Date().toISOString()}`
-      });
-
-      // CATAT LOG AUDIT EMERGENCY CHECKOUT
-      await createAuditLog('emergency_checkout', {
-        cashierId: p?.id || null,
-        notes: `Emergency check-out at ${new Date().toISOString()}`
-      });
-
-      toast.success("Sesi Darurat Berhasil Ditutup!");
-      setHasOpenShift(false);
-      setOpenShiftData(null);
-      
-      // Panggil sinkronisasi ulang agar UI kembali normal
-      checkShift();
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setClosing(false);
+  const handleTriggerConfirmClose = () => {
+    if (!actualCash) {
+      toast.error("Masukkan uang fisik akhir");
+      return;
     }
+    setShowConfirmCloseModal(true);
   };
 
   const handleReopenShift = async (e: React.FormEvent) => {
@@ -1684,11 +1655,10 @@ export default function CashierDashboard() {
                     <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                       <button onClick={() => setShowCloseModal(false)} className="w-full sm:flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-xl font-bold text-xs uppercase transition-all">Batal</button>
                       <button 
-                        onClick={openShiftData ? handleCloseShift : handleEmergencyCheckout}
-                        disabled={closing}
+                        onClick={handleTriggerConfirmClose}
                         className="w-full sm:flex-[2] py-3 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-xs uppercase animate-none"
                       >
-                        {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : openShiftData ? "Akhiri & Simpan Shift" : "Tutup Sesi Darurat"}
+                        Tutup Shift
                       </button>
                     </div>
                  </>
@@ -1697,6 +1667,64 @@ export default function CashierDashboard() {
            </BaseModal>
          );
       })()}
+
+      {/* Secondary Confirmation Modal for Closing Shift */}
+      <AnimatePresence>
+        {showConfirmCloseModal && (
+          <BaseModal 
+            isOpen={showConfirmCloseModal} 
+            onClose={() => setShowConfirmCloseModal(false)} 
+            size="md" 
+            noPadding={true} 
+            showCloseButton={false}
+          >
+            <div className="bg-red-600 p-6 text-white text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="font-black text-xl text-white uppercase tracking-tight">Konfirmasi Akhir Penutupan Shift</h3>
+              <p className="text-white/70 text-xs mt-1">Harap baca peringatan di bawah ini secara teliti</p>
+            </div>
+            
+            <div className="p-8 space-y-6 text-text-light dark:text-text-dark">
+              <div className="p-5 bg-red-50 dark:bg-red-950/20 border-2 border-red-500/20 rounded-[2rem] space-y-3 text-left">
+                <span className="text-xs font-black uppercase text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4" /> PERINGATAN PENTING & HARAP DIPERHATIKAN!
+                </span>
+                <p className="text-xs text-red-800 dark:text-red-300 font-semibold leading-relaxed">
+                  Sebelum melanjutkan, mohon periksa kembali seluruh catatan transaksi, laporan pembayaran tunai/non-tunai, dan hitung kembali uang fisik di laci kasir Anda secara teliti.
+                </p>
+                <div className="text-[11px] text-red-700/80 dark:text-red-400/80 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                  <li>Laporan keuangan shift Anda hari ini akan <strong>dikunci secara permanen</strong>.</li>
+                  <li>Sesi kerja Anda akan segera <strong>diakhiri dan ditutup</strong>.</li>
+                  <li>Anda <strong>tidak dapat melakukan transaksi baru</strong> maupun mengubah laporan ini setelah shift resmi ditutup tanpa izin dari Administrator.</li>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button 
+                  onClick={() => setShowConfirmCloseModal(false)} 
+                  disabled={closing}
+                  className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-2xl font-bold text-xs uppercase tracking-widest transition-all"
+                >
+                  Batal & Periksa
+                </button>
+                <button 
+                  onClick={async () => {
+                    setShowConfirmCloseModal(false);
+                    await handleCloseShift();
+                  }}
+                  disabled={closing}
+                  className="flex-2 py-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-102 transition-all shadow-xl shadow-red-600/20 flex items-center justify-center gap-2"
+                >
+                  {closing ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Ya, Tutup Shift Sekarang <CheckCircle2 className="w-4 h-4" /></>}
+                </button>
+              </div>
+            </div>
+          </BaseModal>
+        )}
+      </AnimatePresence>
 
       {/* Reopen Shift Modal (Admin Authorization) */}
       <BaseModal isOpen={showReopenModal} onClose={() => setShowReopenModal(false)} size="sm" noPadding={true} showCloseButton={false}>

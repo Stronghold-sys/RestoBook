@@ -145,6 +145,7 @@ export default function CashierDashboard() {
 
   // --- CORE SHIFT INTELLIGENCE STATE ---
   const [todayShift, setTodayShift] = useState<any>(null);
+  const [nextShift, setNextShift] = useState<any>(null);
   const [lateTolerance, setLateTolerance] = useState(15);
   const [curTime, setCurTime] = useState(new Date());
   const [shiftStatus, setShiftStatus] = useState<'loading' | 'future' | 'now' | 'late' | 'none'>('loading');
@@ -153,7 +154,8 @@ export default function CashierDashboard() {
   const [assignedTeam, setAssignedTeam] = useState<any[]>([]);
   const [isCompletedToday, setIsCompletedToday] = useState(false);
   const [subDetails, setSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
-  // isHolidayToday: true jika tidak ada jadwal shift untuk hari ini (tapi mungkin ada hari berikutnya)
+  const [nextSubDetails, setNextSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
+  // isHolidayToday: true jika tidak ada jadwal shift untuk hari ini
   const [isHolidayToday, setIsHolidayToday] = useState(false);
 
   const nowJKT = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
@@ -165,8 +167,8 @@ export default function CashierDashboard() {
     return tomorrow.getFullYear() + '-' + String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + String(tomorrow.getDate()).padStart(2, '0');
   })();
 
-  const isShiftToday = todayShift ? todayShift.shiftDate === todayDateStr : false;
-  const isShiftTomorrow = todayShift ? todayShift.shiftDate === tomorrowDateStr : false;
+  const isShiftToday = !!todayShift;
+  const isShiftTomorrow = nextShift ? nextShift.shiftDate === tomorrowDateStr : false;
   
   const supabase = createClient();
 
@@ -388,10 +390,15 @@ export default function CashierDashboard() {
       });
       const shiftData = await shiftRes.json();
 
-      if (shiftData.success && shiftData.todayShift) {
+      if (shiftData.success) {
         setTodayShift((prev: any) => {
-          const newVal = shiftData.todayShift;
+          const newVal = shiftData.todayShift || null;
           if (JSON.stringify(prev) === JSON.stringify(newVal)) return prev; 
+          return newVal;
+        });
+        setNextShift((prev: any) => {
+          const newVal = shiftData.nextShift || null;
+          if (JSON.stringify(prev) === JSON.stringify(newVal)) return prev;
           return newVal;
         });
         setAssignedTeam((prev: any[]) => {
@@ -399,14 +406,14 @@ export default function CashierDashboard() {
           if (JSON.stringify(prev) === JSON.stringify(newVal)) return prev; 
           return newVal;
         });
-        // SIMPAN DETAIL PENUGASAN (NORMAL / PENGGANTI)
         setSubDetails(shiftData.assignmentDetails || null);
-        // Simpan status libur hari ini
+        setNextSubDetails(shiftData.nextAssignmentDetails || null);
         setIsHolidayToday(!!shiftData.isHolidayToday);
       } else {
-        // Reset jika tidak ada shift
         setTodayShift(null);
+        setNextShift(null);
         setSubDetails(null);
+        setNextSubDetails(null);
         setIsHolidayToday(false);
       }
 
@@ -503,9 +510,7 @@ export default function CashierDashboard() {
       return;
     }
     
-    // KUNCI UTAMA: Jika hari ini LIBUR (tidak ada shift hari ini), tapi kita ingin menampilkan countdown ke shift berikutnya (misal jika shift sudah ditutup atau hari libur)
-    // Kita biarkan perhitungan countdown berjalan jika hari ini sudah selesai bertugas atau jika shift berikutnya ada di hari berikutnya.
-    if (isHolidayToday && !isCompletedToday) {
+    if (isHolidayToday) {
       setShiftStatus('none');
       return;
     }
@@ -1197,33 +1202,37 @@ export default function CashierDashboard() {
            {shiftStatus === 'loading' ? (
               <div className="p-20 flex flex-col items-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="mt-4 text-muted font-bold tracking-widest text-xs animate-pulse">MENYINKRONKAN JADWAL...</p></div>
            ) : shiftStatus === 'none' ? (
-               isHolidayToday && todayShift ? (
-                  // KASUS LIBUR: Ada shift berikutnya yang tersimpan, tapi hari ini libur
-                  <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-border-light dark:border-border-dark shadow-xl">
-                     <div className="w-24 h-24 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/40 dark:to-indigo-900/40 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
-                        <span className="text-5xl">🏖️</span>
-                     </div>
-                     <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Hari Libur</h2>
-                     <p className="text-muted text-sm mt-3 max-w-md mx-auto">Hari ini Anda tidak memiliki jadwal shift kerja. Nikmati waktu istirahat Anda!</p>
-                     <div className="mt-8 p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl max-w-sm mx-auto text-left">
-                        <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest mb-2">📅 Shift Berikutnya</p>
-                        <p className="font-black text-lg text-blue-700 dark:text-blue-300">{todayShift.name}</p>
-                        <p className="text-sm font-bold text-blue-600/70 dark:text-blue-400/70 mt-1">
-                           {new Date(todayShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
-                        </p>
-                        <p className="text-xs text-blue-600/60 dark:text-blue-400/60 mt-1">
-                           🕐 {todayShift.start_time?.slice(0,5)} – {todayShift.end_time?.slice(0,5)} WIB
-                        </p>
-                     </div>
-                  </div>
-               ) : (
-                  // KASUS TIDAK ADA JADWAL SAMA SEKALI
-                  <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-dashed border-border-light dark:border-border-dark shadow-xl">
-                     <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6"><ShieldX className="w-10 h-10 text-muted" /></div>
-                     <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Tidak Ada Jadwal Aktif</h2>
-                     <p className="text-muted text-sm mt-3 max-w-md mx-auto">Hari ini Anda tidak memiliki shift yang terdaftar di sistem. Silakan bersantai atau hubungi Admin jika merasa ini adalah kekeliruan.</p>
-                  </div>
-               )
+                isHolidayToday && nextShift ? (
+                   // KASUS LIBUR / TIDAK ADA SHIFT HARI INI: Ada shift berikutnya di hari lain
+                   <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-border-light dark:border-border-dark shadow-xl">
+                      <div className="w-24 h-24 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/40 dark:to-indigo-900/40 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
+                         <span className="text-5xl">🏖️</span>
+                      </div>
+                      <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Hari Libur / Tidak Ada Shift</h2>
+                      <p className="text-muted text-sm mt-3 max-w-md mx-auto leading-relaxed">
+                         Hari ini belum ada jadwal shift. Untuk hari ini, belum ada shift yang dijadwalkan. Silakan cek jadwal shift berikutnya.
+                      </p>
+                      <div className="mt-8 p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl max-w-sm mx-auto text-left">
+                         <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest mb-2">📅 Shift Terdekat Berikutnya</p>
+                         <p className="font-black text-lg text-blue-700 dark:text-blue-300">{nextShift.name}</p>
+                         <p className="text-sm font-bold text-blue-600/70 dark:text-blue-400/70 mt-1">
+                            {new Date(nextShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+                         </p>
+                         <p className="text-xs text-blue-600/60 dark:text-blue-400/60 mt-1">
+                            🕐 {nextShift.start_time?.slice(0,5)} – {nextShift.end_time?.slice(0,5)} WIB
+                         </p>
+                      </div>
+                   </div>
+                ) : (
+                   // KASUS TIDAK ADA JADWAL SAMA SEKALI
+                   <div className="bg-card-light dark:bg-card-dark p-12 rounded-[3rem] border-2 border-dashed border-border-light dark:border-border-dark shadow-xl">
+                      <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6"><ShieldX className="w-10 h-10 text-muted" /></div>
+                      <h2 className="text-2xl font-black text-text-light dark:text-text-dark uppercase tracking-tight">Tidak Ada Jadwal Shift</h2>
+                      <p className="text-muted text-sm mt-3 max-w-md mx-auto leading-relaxed">
+                         Hari ini belum ada jadwal shift. Untuk hari ini, belum ada shift yang dijadwalkan di sistem. Silakan hubungi Admin jika Anda merasa ini adalah kekeliruan.
+                      </p>
+                   </div>
+                )
            ) : (
               <div className="space-y-8 w-full">
                   {/* SHIFT CARD HEADER */}
@@ -1307,47 +1316,49 @@ export default function CashierDashboard() {
                                 </motion.div>
                               )}
                              {shiftStatus === 'future' && (
-                           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-3xl p-8 text-center">
-                              <p className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-widest uppercase mb-4">
-                                 {isShiftToday ? "Shift Belum Dimulai" : "Hitung Mundur Shift Berikutnya"}
-                              </p>
-                              <div className="flex gap-4 items-center">
-                                 <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.h).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Jam</span></div>
-                                 <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
-                                 <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.m).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Menit</span></div>
-                                 <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
-                                 <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.s).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Detik</span></div>
-                              </div>
-                              <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-5 font-medium italic">
-                                 {isShiftToday ? "Harap bersiap, tombol absensi akan aktif tepat saat jam masuk tiba." : "Persiapkan diri Anda untuk shift berikutnya."}
-                              </p>
-                           </motion.div>
-                        )}
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-3xl p-8 text-center">
+                               <p className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-widest uppercase mb-4">
+                                  {isShiftToday 
+                                     ? `Absen akan dibuka dalam ${String(shiftCountdown.h).padStart(2,'0')}:${String(shiftCountdown.m).padStart(2,'0')}:${String(shiftCountdown.s).padStart(2,'0')}`
+                                     : "Hitung Mundur Shift Berikutnya"}
+                               </p>
+                               <div className="flex gap-4 items-center">
+                                  <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.h).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Jam</span></div>
+                                  <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
+                                  <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.m).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Menit</span></div>
+                                  <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
+                                  <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.s).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Detik</span></div>
+                                </div>
+                               <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-5 font-medium italic">
+                                  {isShiftToday ? "Harap bersiap, tombol absensi akan aktif tepat saat jam masuk tiba." : "Persiapkan diri Anda untuk shift berikutnya."}
+                               </p>
+                            </motion.div>
+                         )}
 
-                        {!isCompletedToday && shiftStatus === 'now' && (
-                           <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="flex items-center gap-6 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-3xl p-6 shadow-lg shadow-emerald-500/20">
-                              <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0"><ShieldCheck className="w-7 h-7 animate-bounce" /></div>
-                              <div>
-                                 <h4 className="font-black text-lg leading-tight uppercase tracking-tight">Tugas Siap Dimulai!</h4>
-                                 <p className="text-white/80 text-xs mt-1 font-medium">Anda berada dalam jendela waktu yang tepat. Silakan absen masuk sekarang.</p>
-                              </div>
-                           </motion.div>
-                        )}
+                         {!isCompletedToday && shiftStatus === 'now' && (
+                            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="flex items-center gap-6 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-3xl p-6 shadow-lg shadow-emerald-500/20">
+                               <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0"><ShieldCheck className="w-7 h-7 animate-bounce" /></div>
+                               <div>
+                                  <h4 className="font-black text-lg leading-tight uppercase tracking-tight">Absen sudah dibuka.</h4>
+                                  <p className="text-white/80 text-xs mt-1 font-medium">Shift hari ini sedang aktif. Anda berada dalam jendela waktu yang tepat. Silakan absen masuk sekarang.</p>
+                                </div>
+                            </motion.div>
+                         )}
 
-                        {!isCompletedToday && shiftStatus === 'late' && (
-                           <motion.div 
-                             animate={{ boxShadow: ["0 0 0 rgba(239,68,68,0)", "0 0 20px rgba(239,68,68,0.3)", "0 0 0 rgba(239,68,68,0)"] }}
-                             transition={{ repeat: Infinity, duration: 2 }}
-                             className="flex items-center gap-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-3xl p-6"
-                           >
-                              <div className="w-14 h-14 bg-red-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-red-500/30 animate-pulse"><AlertCircle className="w-7 h-7" /></div>
-                              <div>
-                                 <h4 className="font-black text-lg leading-tight text-red-600 dark:text-red-400 uppercase">PERHATIAN: ANDA TERLAMBAT!</h4>
-                                 <p className="text-sm font-bold text-red-500/80 mt-0.5">Keterlambatan: <span className="underline decoration-double">{lateMinutes} Menit</span>.</p>
-                                 <p className="text-[10px] text-red-500/60 mt-1.5 font-medium italic leading-snug">Pemotongan gaji otomatis mungkin diberlakukan sesuai kebijakan resto.</p>
-                              </div>
-                           </motion.div>
-                        )}
+                         {!isCompletedToday && shiftStatus === 'late' && (
+                            <motion.div 
+                              animate={{ boxShadow: ["0 0 0 rgba(239,68,68,0)", "0 0 20px rgba(239,68,68,0.3)", "0 0 0 rgba(239,68,68,0)"] }}
+                              transition={{ repeat: Infinity, duration: 2 }}
+                              className="flex items-center gap-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-3xl p-6"
+                            >
+                               <div className="w-14 h-14 bg-red-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-red-500/30 animate-pulse"><AlertCircle className="w-7 h-7" /></div>
+                               <div>
+                                  <h4 className="font-black text-lg leading-tight text-red-600 dark:text-red-400 uppercase">Absen sudah dibuka.</h4>
+                                  <p className="text-sm font-bold text-red-500/80 mt-0.5">Shift hari ini sedang aktif. Keterlambatan: <span className="underline decoration-double">{lateMinutes} Menit</span>.</p>
+                                  <p className="text-[10px] text-red-500/60 mt-1.5 font-medium italic leading-snug">Pemotongan gaji otomatis mungkin diberlakukan sesuai kebijakan resto.</p>
+                               </div>
+                            </motion.div>
+                         )}
                            </>
                         )}
                      </div>
@@ -1379,16 +1390,16 @@ export default function CashierDashboard() {
                               {isShiftTomorrow ? (
                                  <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100"> JADWAL SHIFT BESOK</p>
-                                    <p className="font-black text-lg mt-1">{todayShift?.name}</p>
-                                    <p className="text-xs text-emerald-100/80 mt-1">🕐 {todayShift?.start_time.slice(0,5)} - {todayShift?.end_time.slice(0,5)} WIB</p>
+                                    <p className="font-black text-lg mt-1">{nextShift?.name}</p>
+                                    <p className="text-xs text-emerald-100/80 mt-1">🕐 {nextShift?.start_time.slice(0,5)} - {nextShift?.end_time.slice(0,5)} WIB</p>
                                  </div>
                               ) : (
                                  <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100"> JADWAL SHIFT BESOK</p>
                                     <p className="font-black text-lg mt-1">Libur / Tidak Ada Shift</p>
-                                    {todayShift && (
+                                    {nextShift && (
                                        <p className="text-xs text-emerald-100/80 mt-2 font-medium">
-                                          Shift terdekat berikutnya: <strong className="text-white">{todayShift.name}</strong> pada {new Date(todayShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                          Shift terdekat berikutnya: <strong className="text-white">{nextShift.name}</strong> pada {new Date(nextShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
                                        </p>
                                     )}
                                  </div>

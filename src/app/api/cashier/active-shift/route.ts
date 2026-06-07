@@ -167,48 +167,64 @@ export async function GET(request: Request) {
       }
     }
 
-    let chosenCandidate = nextActiveCandidate;
-    let shiftDate = todayISOStr;
-    const isHolidayToday = !chosenCandidate;
+    // Sort activeCandidates by start_time
+    const sortedTodayCandidates = [...activeCandidates].sort((a: any, b: any) => {
+      const timeA = a.work_shifts?.start_time || "";
+      const timeB = b.work_shifts?.start_time || "";
+      return timeA.localeCompare(timeB);
+    });
 
-    // Jika hari ini tidak ada shift aktif lagi, cari shift di hari-hari berikutnya (maksimal 7 hari ke depan)
-    if (!chosenCandidate) {
-      for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
-         const nextDate = new Date(nowWIB);
-         nextDate.setDate(nextDate.getDate() + dayOffset);
-         
-         const nextISOStr = nextDate.getFullYear() + '-' +
-           String(nextDate.getMonth() + 1).padStart(2, '0') + '-' +
-           String(nextDate.getDate()).padStart(2, '0');
-         const nextDayIndoName = dayNames[nextDate.getDay()];
-         
-         const match = (assignments || []).find((a: any) => {
-            // Kasus A: Jadwal pengganti pada tanggal ini
-            if (a.substitute_date === nextISOStr) {
-               return true;
-            }
-            // Kasus B: Jadwal reguler
-            if (!a.substitute_date && a.work_shifts?.days) {
-               return a.work_shifts.days.includes(nextDayIndoName) || a.work_shifts.days.includes(nextDayIndoName.slice(0,3));
-            }
-            return false;
-         });
-         
-         if (match) {
-            chosenCandidate = match;
-            shiftDate = nextISOStr;
-            break; // Temukan shift terdekat lalu hentikan loop
-         }
-      }
+    // Find the first today candidate that is NOT completed
+    let todayCandidate = sortedTodayCandidates.find((a: any) => !completedShiftIds.includes(a.work_shift_id));
+    
+    // If all are completed, fallback to the first today candidate
+    if (!todayCandidate && sortedTodayCandidates.length > 0) {
+      todayCandidate = sortedTodayCandidates[0];
+    }
+
+    const isHolidayToday = !todayCandidate;
+
+    // Find next shift candidate (strictly in the future)
+    let nextShiftCandidate = null;
+    let nextShiftDate = "";
+    
+    for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
+       const nextDate = new Date(nowWIB);
+       nextDate.setDate(nextDate.getDate() + dayOffset);
+       
+       const nextISOStr = nextDate.getFullYear() + '-' +
+         String(nextDate.getMonth() + 1).padStart(2, '0') + '-' +
+         String(nextDate.getDate()).padStart(2, '0');
+       const nextDayIndoName = dayNames[nextDate.getDay()];
+       
+       const matches = (assignments || []).filter((a: any) => {
+          if (a.substitute_date === nextISOStr) {
+             return true;
+          }
+          if (!a.substitute_date && a.work_shifts?.days) {
+             return a.work_shifts.days.includes(nextDayIndoName) || a.work_shifts.days.includes(nextDayIndoName.slice(0,3));
+          }
+          return false;
+       });
+       
+       if (matches.length > 0) {
+          const sortedMatches = [...matches].sort((a: any, b: any) => {
+            const timeA = a.work_shifts?.start_time || "";
+            const timeB = b.work_shifts?.start_time || "";
+            return timeA.localeCompare(timeB);
+          });
+          nextShiftCandidate = sortedMatches[0];
+          nextShiftDate = nextISOStr;
+          break;
+       }
     }
 
     let assignedEmployees: any[] = [];
-    if (chosenCandidate?.work_shift_id) {
-      // Tarik semua kolega di shift yang sama
+    if (todayCandidate?.work_shift_id) {
       const { data: colleagues } = await supabase
         .from('work_shift_assignments')
         .select('id, profiles!work_shift_assignments_profile_id_fkey(full_name, avatar_url)')
-        .eq('work_shift_id', chosenCandidate.work_shift_id);
+        .eq('work_shift_id', todayCandidate.work_shift_id);
       
       assignedEmployees = colleagues || [];
     }
@@ -216,14 +232,22 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       isHolidayToday: isHolidayToday,
-      todayShift: chosenCandidate?.work_shifts ? {
-        ...chosenCandidate.work_shifts,
-        shiftDate: shiftDate
+      todayShift: todayCandidate?.work_shifts ? {
+        ...todayCandidate.work_shifts,
+        shiftDate: todayISOStr
       } : null,
-      assignmentDetails: {
-         isSubstitute: !!chosenCandidate?.is_substitute,
-         substituteFor: chosenCandidate?.substitute_for?.full_name || null
-      },
+      nextShift: nextShiftCandidate?.work_shifts ? {
+        ...nextShiftCandidate.work_shifts,
+        shiftDate: nextShiftDate
+      } : null,
+      assignmentDetails: todayCandidate ? {
+         isSubstitute: !!todayCandidate.is_substitute,
+         substituteFor: todayCandidate.substitute_for?.full_name || null
+      } : null,
+      nextAssignmentDetails: nextShiftCandidate ? {
+         isSubstitute: !!nextShiftCandidate.is_substitute,
+         substituteFor: nextShiftCandidate.substitute_for?.full_name || null
+      } : null,
       today: todayIndoName,
       assignedEmployees: assignedEmployees.map((c: any) => c.profiles).filter(Boolean)
     });

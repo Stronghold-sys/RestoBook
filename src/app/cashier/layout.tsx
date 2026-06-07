@@ -157,65 +157,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
     );
   }
 
-  // 1. Guard ketika shift CLOSED
-  if (shiftState === 'closed') {
-    const allowed = ['/cashier/profile', '/cashier/attendance', '/cashier/transactions', '/cashier/dashboard'];
-    if (!allowed.includes(pathname)) {
-      return (
-        <DashboardLayout role="cashier">
-          <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6">
-            <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-              <ShieldAlert className="w-12 h-12 animate-pulse" />
-            </div>
-            <h2 className="text-3xl font-black text-text-light dark:text-text-dark mb-4 uppercase tracking-tighter">Shift Sudah Ditutup!</h2>
-            <p className="text-muted max-w-md mb-8 leading-relaxed font-semibold">
-              Shift kerja Anda hari ini telah berakhir dan ditutup. Akses ke menu ini telah dikunci demi keamanan data transaksi. Silakan hubungi admin atau buka shift baru sesuai hak akses Anda.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <button 
-                onClick={() => router.push('/cashier/profile')}
-                className="px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-muted rounded-2xl font-black text-xs uppercase transition-all"
-              >
-                Lihat Profil Saya
-              </button>
-              <button 
-                onClick={() => router.push('/cashier/attendance')}
-                className="px-6 py-3.5 bg-primary text-white hover:bg-primary-hover rounded-2xl font-black text-xs uppercase transition-all shadow-lg shadow-primary/20"
-              >
-                Lihat Riwayat Absensi
-              </button>
-            </div>
-          </div>
-        </DashboardLayout>
-      );
-    }
-  }
 
-  // 2. Guard ketika shift STANDBY
-  if (shiftState === 'standby') {
-    const allowed = ['/cashier/dashboard', '/cashier/profile', '/cashier/attendance'];
-    if (!allowed.includes(pathname)) {
-      return (
-        <DashboardLayout role="cashier">
-          <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6">
-            <div className="w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6">
-              <ShieldAlert className="w-12 h-12" />
-            </div>
-            <h2 className="text-3xl font-black text-text-light dark:text-text-dark mb-4 uppercase tracking-tighter">Akses Dibatasi!</h2>
-            <p className="text-muted max-w-md mb-8 leading-relaxed font-semibold">
-              Anda harus melakukan absensi masuk & membuka shift terlebih dahulu sebelum dapat mengakses fitur panel kasir.
-            </p>
-            <button 
-              onClick={() => router.push('/cashier/dashboard')}
-              className="px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-primary/30"
-            >
-              Kembali ke Dashboard
-            </button>
-          </div>
-        </DashboardLayout>
-      );
-    }
-  }
 
   return <DashboardLayout role="cashier">{children}</DashboardLayout>;
 }

@@ -89,6 +89,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [shiftState, setShiftState] = useState<'open' | 'closed' | 'standby'>('standby');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [lockModal, setLockModal] = useState<{ isOpen: boolean; type: 'closed' | 'standby' }>({ isOpen: false, type: 'standby' });
 
   const fetchShiftState = async (profileId: string) => {
     try {
@@ -712,11 +713,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                     onClick={(e) => {
                       if (!allowed) {
                         e.preventDefault();
-                        if (shiftState === 'closed') {
-                          toast.error("Akses Ditolak: Shift Anda telah ditutup hari ini. Silakan hubungi admin atau buka shift baru jika berwenang.");
-                        } else {
-                          toast.error("Akses Ditolak: Anda harus melakukan absensi dan membuka shift terlebih dahulu.");
-                        }
+                        setLockModal({ isOpen: true, type: shiftState === 'closed' ? 'closed' : 'standby' });
                         createAuditLog("attempt_locked_access", {
                           href: link.href,
                           menuName: link.name,
@@ -1037,6 +1034,90 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           )}
         </AnimatePresence>
 
+        {/* Cashier Lock Warning Modal */}
+        <AnimatePresence>
+          {lockModal.isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                transition={spring}
+                className="bg-card-light dark:bg-card-dark rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl border border-border-light dark:border-border-dark space-y-6 text-center text-text-light dark:text-text-dark"
+              >
+                {/* Padlock Icon Area */}
+                <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+                  <motion.div 
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      rotate: [0, -5, 5, -5, 5, 0]
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      ease: "easeInOut",
+                      repeat: Infinity,
+                      repeatDelay: 2.5
+                    }}
+                    className={`w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-lg ${
+                      lockModal.type === 'closed' 
+                        ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' 
+                        : 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    <Lock className="w-10 h-10" />
+                  </motion.div>
+                  {/* Floating Notification Dot */}
+                  <span className="absolute top-2 right-2 flex h-4 w-4">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      lockModal.type === 'closed' ? 'bg-rose-400' : 'bg-amber-400'
+                    }`}></span>
+                    <span className={`relative inline-flex rounded-full h-4 w-4 ${
+                      lockModal.type === 'closed' ? 'bg-rose-500' : 'bg-amber-500'
+                    }`}></span>
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black uppercase tracking-tight">
+                    {lockModal.type === 'closed' ? 'Shift Sudah Ditutup' : 'Akses Dibatasi'}
+                  </h3>
+                  <p className="text-muted text-sm leading-relaxed font-semibold">
+                    {lockModal.type === 'closed' 
+                      ? 'Shift kerja Anda untuk hari ini telah berakhir dan ditutup. Akses ke menu transaksi telah dikunci secara otomatis demi keamanan finansial. Hubungi Administrator jika perlu membuka kembali shift.'
+                      : 'Halo! Fitur kasir ini masih terkunci. Anda harus melakukan absensi masuk dan menginput modal kasir awal terlebih dahulu di Dashboard utama sebelum dapat menggunakannya.'
+                    }
+                  </p>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-3">
+                  {lockModal.type === 'standby' ? (
+                    <button
+                      onClick={() => {
+                        setLockModal({ isOpen: false, type: 'standby' });
+                        router.push('/cashier/dashboard');
+                      }}
+                      className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-102 transition-all shadow-xl shadow-primary/20"
+                    >
+                      Buka Dashboard Absensi
+                    </button>
+                  ) : null}
+                  <button
+                    onClick={() => setLockModal({ isOpen: false, type: lockModal.type })}
+                    className="w-full py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-muted rounded-2xl font-bold text-xs uppercase tracking-widest transition-all"
+                  >
+                    Tutup Peringatan
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {isSidebarOpen && (
@@ -1091,11 +1172,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                         onClick={(e) => {
                           if (!allowed) {
                             e.preventDefault();
-                            if (shiftState === 'closed') {
-                              toast.error("Akses Ditolak: Shift Anda telah ditutup hari ini. Silakan hubungi admin atau buka shift baru jika berwenang.");
-                            } else {
-                              toast.error("Akses Ditolak: Anda harus melakukan absensi dan membuka shift terlebih dahulu.");
-                            }
+                            setLockModal({ isOpen: true, type: shiftState === 'closed' ? 'closed' : 'standby' });
                             createAuditLog("attempt_locked_access", {
                               href: link.href,
                               menuName: link.name,

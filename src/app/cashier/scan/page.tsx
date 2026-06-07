@@ -271,7 +271,7 @@ export default function CashierScanPage() {
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       pending: "Menunggu",
-      confirmed: "Aktif",
+      confirmed: "Aktif & Belum Check-In",
       arrived: "Sudah Check-In & Proses Sedang Berjalan",
       seated: "Sudah Check-In & Proses Sedang Berjalan",
       completed: "Selesai",

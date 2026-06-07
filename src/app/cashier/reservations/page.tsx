@@ -540,7 +540,7 @@ function CashierReservationsContent() {
                 <div className="flex items-center gap-3">
                   <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
                     {res.status === "pending" ? "Menunggu" 
-                      : res.status === "confirmed" ? "Aktif" 
+                      : res.status === "confirmed" ? "Aktif & Belum Check-In" 
                       : res.status === "arrived" ? "Sudah Check-In & Proses Sedang Berjalan"
                       : res.status === "seated" ? "Sudah Check-In & Proses Sedang Berjalan"
                       : res.status === "cancelled" ? "Batal" 

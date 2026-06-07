@@ -397,9 +397,9 @@ export default function CustomerReservationsPage() {
   const getStatusText = (s: string) => {
     const map: Record<string, string> = { 
       pending: "Menunggu", 
-      confirmed: "Dikonfirmasi", 
-      arrived: "Sedang Berjalan",
-      seated: "Sedang Berjalan",
+      confirmed: "Aktif & Belum Check-In", 
+      arrived: "Sudah Check-In & Proses Sedang Berjalan",
+      seated: "Sudah Check-In & Proses Sedang Berjalan",
       cancelled: "Dibatalkan", 
       completed: "Selesai",
       rejected: "Ditolak"

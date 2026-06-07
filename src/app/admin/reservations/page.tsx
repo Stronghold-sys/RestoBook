@@ -331,7 +331,13 @@ export default function AdminReservationsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>{res.status === "pending" ? "Menunggu" : res.status === "confirmed" ? "Dikonfirmasi" : res.status === "cancelled" ? "Dibatalkan" : "Selesai"}</span>
+                  <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
+                    {res.status === "pending" ? "Menunggu" 
+                      : res.status === "confirmed" ? "Aktif & Belum Check-In" 
+                      : ["arrived", "seated"].includes(res.status) ? "Sudah Check-In & Proses Sedang Berjalan" 
+                      : res.status === "cancelled" ? "Dibatalkan" 
+                      : "Selesai"}
+                  </span>
                   
                   {/* Action Detail Button */}
                   <button onClick={() => setSelectedRes(res)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-primary" title="Detail Pemesan">
@@ -344,7 +350,7 @@ export default function AdminReservationsPage() {
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleReject(res)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors" aria-label="Tolak" title="Tolak"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
-                  {["confirmed", "arrived", "seated"].includes(res.status) && (
+                  {["arrived", "seated"].includes(res.status) && (
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesaikan Reservasi</motion.button>
                   )}
                 </div>

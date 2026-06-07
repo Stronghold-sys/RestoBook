@@ -498,7 +498,7 @@ function CashierReservationsContent() {
           { s: "completed", l: "Selesai", c: "from-blue-500 to-blue-600" },
           { s: "cancelled", l: "Ditolak / Batal", c: "from-red-500 to-rose-600" }
         ].map(item => (
-          <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${filter === item.s ? "ring-4 ring-primary" : ""}`}>
+          <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${filter === item.s ? "scale-105 shadow-xl border-2 border-white" : "opacity-75 hover:opacity-100"}`}>
             <p className="text-white/80 text-sm font-semibold leading-tight">{item.l}</p>
             <p className="text-3xl font-black mt-1">
               {item.s === "confirmed" 
@@ -541,8 +541,8 @@ function CashierReservationsContent() {
                   <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
                     {res.status === "pending" ? "Menunggu" 
                       : res.status === "confirmed" ? "Aktif" 
-                      : res.status === "arrived" ? "Sudah Tiba / Sedang Berjalan"
-                      : res.status === "seated" ? "Sudah Tiba / Sedang Berjalan"
+                      : res.status === "arrived" ? "Sudah Check-In & Proses Sedang Berjalan"
+                      : res.status === "seated" ? "Sudah Check-In & Proses Sedang Berjalan"
                       : res.status === "cancelled" ? "Batal" 
                       : "Selesai"}
                   </span>
@@ -558,7 +558,7 @@ function CashierReservationsContent() {
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => setRejectingId(res.id)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" aria-label="Tolak" title="Tolak dengan Alasan"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
-                  {["confirmed", "arrived", "seated"].includes(res.status) && (
+                  {["arrived", "seated"].includes(res.status) && (
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
                   )}
                 </div>
@@ -627,7 +627,7 @@ function CashierReservationsContent() {
                 {notesText && (
                   <div>
                     <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
+                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
                   </div>
                 )}
                 {parsed?.catatan_tolak && (
@@ -704,7 +704,7 @@ function CashierReservationsContent() {
                 {notesText && (
                   <div>
                     <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
+                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
                   </div>
                 )}
 

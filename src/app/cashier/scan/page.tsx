@@ -236,7 +236,7 @@ export default function CashierScanPage() {
         throw new Error(data.error || "Gagal memperbarui status check-in");
       }
 
-      toast.success("Check-In Berhasil! Status diubah menjadi Sudah Tiba / Sedang Berjalan");
+      toast.success("Check-In Berhasil! Status diubah menjadi Sudah Check-In & Proses Sedang Berjalan");
       
       // Update local reservation state
       setReservation((prev: any) => ({
@@ -271,9 +271,9 @@ export default function CashierScanPage() {
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       pending: "Menunggu",
-      confirmed: "Dikonfirmasi",
-      arrived: "Sudah Tiba / Sedang Berjalan",
-      seated: "Sudah Tiba / Sedang Berjalan",
+      confirmed: "Aktif",
+      arrived: "Sudah Check-In & Proses Sedang Berjalan",
+      seated: "Sudah Check-In & Proses Sedang Berjalan",
       completed: "Selesai",
       cancelled: "Dibatalkan"
     };
@@ -385,7 +385,7 @@ export default function CashierScanPage() {
                     value={manualToken}
                     onChange={e => setManualToken(e.target.value)}
                     placeholder="Contoh: RTB-E35FA..."
-                    className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all font-mono font-bold text-sm"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all font-mono font-bold text-sm"
                   />
                 </div>
                 <button 
@@ -495,7 +495,7 @@ export default function CashierScanPage() {
                       if (!parsed.catatan) return null;
                       return (
                         <p className="text-muted leading-relaxed font-semibold italic mt-1">
-                          Catatan dari pelanggan: &ldquo;{parsed.catatan}&rdquo;
+                          {parsed.catatan}
                         </p>
                       );
                     })()}
@@ -514,7 +514,7 @@ export default function CashierScanPage() {
                             id="arrival-status-select"
                             value={checkInStatus}
                             onChange={e => setCheckInStatus(e.target.value)}
-                            className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                            className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-bold"
                           >
                             <option value="arrived">Arrived (Tiba)</option>
                           </select>
@@ -527,7 +527,7 @@ export default function CashierScanPage() {
                             id="table-assign-select"
                             value={selectedTableId}
                             onChange={e => setSelectedTableId(e.target.value)}
-                            className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                            className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-bold"
                           >
                             <option value="">-- Pilih Meja --</option>
                             {tables.map(t => (

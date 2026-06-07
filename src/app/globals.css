@@ -663,7 +663,7 @@ html.anim-mode-low[data-page-entering] [data-page-content] {
 
 /* ── Focus visible — accessible without disrupting animation ── */
 :focus-visible {
-  outline: 2px solid #ea580c;
+  outline: 2px solid #94a3b8;
   outline-offset: 2px;
   border-radius: 4px;
 }

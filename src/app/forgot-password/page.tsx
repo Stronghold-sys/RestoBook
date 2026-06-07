@@ -193,7 +193,7 @@ export default function ForgotPasswordPage() {
                     ) : (
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-muted" />
                     )}
-                    <input id="fpIdentifier" title="Email atau No. HP" type="text" name="identifier" value={formData.identifier} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Email atau 0812..." />
+                    <input id="fpIdentifier" title="Email atau No. HP" type="text" name="identifier" value={formData.identifier} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="Email atau 0812..." />
                   </div>
                 </div>
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} type="submit" className="w-full mt-4 py-3 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium flex justify-center items-center gap-2">
@@ -214,20 +214,20 @@ export default function ForgotPasswordPage() {
               >
                 <div>
                   <label htmlFor="fpCode" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Kode OTP 6 Digit</label>
-                  <input id="fpCode" title="Kode OTP" type="text" maxLength={6} name="code" value={formData.code} onChange={handleChange} autoComplete="off" className="w-full text-center text-xl tracking-[0.3em] font-bold py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="000000" />
+                  <input id="fpCode" title="Kode OTP" type="text" maxLength={6} name="code" value={formData.code} onChange={handleChange} autoComplete="off" className="w-full text-center text-xl tracking-[0.3em] font-bold py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="000000" />
                 </div>
                 <div>
                   <label htmlFor="fpPassword" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Password Baru</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="fpPassword" title="Password Baru" type="password" name="password" value={formData.password} onChange={handleChange} autoComplete="new-password" className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="********" />
+                    <input id="fpPassword" title="Password Baru" type="password" name="password" value={formData.password} onChange={handleChange} autoComplete="new-password" className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="********" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="fpConfirm" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Konfirmasi Password Baru</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="fpConfirm" title="Konfirmasi Password Baru" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} autoComplete="new-password" className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="********" />
+                    <input id="fpConfirm" title="Konfirmasi Password Baru" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} autoComplete="new-password" className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="********" />
                   </div>
                 </div>
                 

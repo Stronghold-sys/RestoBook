@@ -584,7 +584,7 @@ export default function CustomerReservationsPage() {
                     
                     {displayNotes && (
                       <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg">
-                        <span className="font-bold">Catatan:</span> Catatan dari pelanggan: {displayNotes}
+                        <span className="font-bold">Catatan:</span> {displayNotes}
                       </p>
                     )}
                     
@@ -648,14 +648,14 @@ export default function CustomerReservationsPage() {
               <label htmlFor="atasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
               <div className="relative">
                 <User className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                <input id="atasNama" type="text" value={form.atasNama} onChange={e => setForm({ ...form, atasNama: e.target.value })} placeholder="Masukkan nama pemesan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+                <input id="atasNama" type="text" value={form.atasNama} onChange={e => setForm({ ...form, atasNama: e.target.value })} placeholder="Masukkan nama pemesan..." className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
               </div>
             </div>
             <div>
               <label htmlFor="telepon" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nomor Telepon</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
-                <input id="telepon" type="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="Contoh: 08123456789" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+                <input id="telepon" type="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="Contoh: 08123456789" className="w-full pl-9 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
               </div>
             </div>
           </div>
@@ -663,17 +663,17 @@ export default function CustomerReservationsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="resDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
-              <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+              <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
             </div>
             <div>
               <label htmlFor="resTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>
-              <input id="resTime" title="Waktu Reservasi" type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+              <input id="resTime" title="Waktu Reservasi" type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
             </div>
           </div>
 
           <div>
             <label htmlFor="resGuests" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Jumlah Tamu</label>
-            <input id="resGuests" title="Jumlah Tamu" type="number" value={form.guests} onChange={e => setForm({ ...form, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" required />
+            <input id="resGuests" title="Jumlah Tamu" type="number" value={form.guests} onChange={e => setForm({ ...form, guests: parseInt(e.target.value) })} min={1} max={50} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
           </div>
 
           <div>
@@ -741,7 +741,7 @@ export default function CustomerReservationsPage() {
 
           <div>
             <label htmlFor="resNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
-            <textarea id="resNotes" title="Catatan" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" rows={2} placeholder="Contoh: Butuh colokan listrik, AC dingin, dll" />
+            <textarea id="resNotes" title="Catatan" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" rows={2} placeholder="Contoh: Butuh colokan listrik, AC dingin, dll" />
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">

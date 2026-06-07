@@ -328,35 +328,35 @@ export default function RegisterPage() {
                   <label htmlFor="regName" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Nama Lengkap</label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regName" title="Nama Lengkap" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Masukkan nama lengkap Anda" />
+                    <input id="regName" title="Nama Lengkap" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="Masukkan nama lengkap Anda" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="regEmail" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regEmail" title="Email" type="email" name="email" value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Masukan email aktif Anda" />
+                    <input id="regEmail" title="Email" type="email" name="email" value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="Masukan email aktif Anda" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="regPassword" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regPassword" title="Password" type="password" name="password" value={formData.password} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Minimal 6 karakter" />
+                    <input id="regPassword" title="Password" type="password" name="password" value={formData.password} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="Minimal 6 karakter" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="regConfirmPassword" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Konfirmasi Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regConfirmPassword" title="Konfirmasi Password" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="Ulangi password" />
+                    <input id="regConfirmPassword" title="Konfirmasi Password" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="Ulangi password" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="regPhone" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">No Telepon (Opsional)</label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-5 w-5 text-muted" />
-                    <input id="regPhone" title="No Telepon" type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" placeholder="08123456789" />
+                    <input id="regPhone" title="No Telepon" type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none" placeholder="08123456789" />
                   </div>
                 </div>
                 {/* Honeypot Field */}
@@ -409,7 +409,7 @@ export default function RegisterPage() {
                         type="number"
                         value={captchaInput}
                         onChange={(e) => setCaptchaInput(e.target.value)}
-                        className="flex-1 py-2 px-3 bg-white dark:bg-gray-850 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-center font-bold text-lg text-text-light dark:text-text-dark"
+                        className="flex-1 py-2 px-3 bg-white dark:bg-gray-850 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-center font-bold text-lg text-text-light dark:text-text-dark"
                         placeholder="Jawaban"
                       />
                       <button
@@ -479,7 +479,7 @@ export default function RegisterPage() {
               >
                 <div>
                   <label htmlFor="regCode" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block text-center">Kode OTP 6 Digit</label>
-                  <input id="regCode" title="Kode OTP" type="text" maxLength={6} name="code" value={formData.code} onChange={handleChange} className="w-full text-center text-2xl tracking-[0.5em] font-bold py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark" placeholder="000000" />
+                  <input id="regCode" title="Kode OTP" type="text" maxLength={6} name="code" value={formData.code} onChange={handleChange} className="w-full text-center text-2xl tracking-[0.5em] font-bold py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" placeholder="000000" />
                 </div>
                 
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} type="submit" className="w-full py-3 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium flex justify-center items-center gap-2">

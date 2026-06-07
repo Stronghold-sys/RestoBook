@@ -399,7 +399,7 @@ export default function AdminReservationsPage() {
               {notesText && (
                 <div>
                   <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                  <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
+                  <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
                 </div>
               )}
               {parsed?.catatan_tolak && (

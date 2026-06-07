@@ -1057,7 +1057,7 @@ export default function ProfileContent() {
                     <label htmlFor="fullName" className="text-xs font-black uppercase text-muted ml-1">Nama Lengkap</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                      <input id="fullName" type="text" value={profile.full_name} onChange={e => setProfile({...profile, full_name: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" placeholder="Nama Lengkap" title="Nama Lengkap" />
+                      <input id="fullName" type="text" value={profile.full_name} onChange={e => setProfile({...profile, full_name: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm font-semibold" placeholder="Nama Lengkap" title="Nama Lengkap" />
                     </div>
                   </div>
 
@@ -1066,7 +1066,7 @@ export default function ProfileContent() {
                     <label htmlFor="birthdate" className="text-xs font-black uppercase text-muted ml-1">Tanggal Lahir</label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                      <input id="birthdate" type="date" value={profile.birthdate} onChange={e => setProfile({...profile, birthdate: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" title="Tanggal Lahir" />
+                      <input id="birthdate" type="date" value={profile.birthdate} onChange={e => setProfile({...profile, birthdate: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm font-semibold" title="Tanggal Lahir" />
                     </div>
                   </div>
 
@@ -1075,7 +1075,7 @@ export default function ProfileContent() {
                     <label htmlFor="address" className="text-xs font-black uppercase text-muted ml-1">Alamat Lengkap</label>
                     <div className="relative">
                       <Home className="absolute left-4 top-5 h-5 w-5 text-muted" />
-                      <textarea id="address" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" rows={2} placeholder="Tulis alamat rumah lengkap..." title="Alamat Lengkap" />
+                      <textarea id="address" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm font-semibold" rows={2} placeholder="Tulis alamat rumah lengkap..." title="Alamat Lengkap" />
                     </div>
                   </div>
 
@@ -1093,7 +1093,7 @@ export default function ProfileContent() {
                           disabled={profile.role !== "admin" && !profile.email_unlocked}
                           className={`w-full pl-12 pr-4 py-3.5 border rounded-2xl outline-none transition-all text-sm font-semibold ${
                             profile.role === "admin" || profile.email_unlocked
-                              ? "bg-background-light dark:bg-background-dark border-primary focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark"
+                              ? "bg-background-light dark:bg-background-dark border-slate-300 focus:ring-2 focus:ring-slate-300/20 text-text-light dark:text-text-dark"
                               : "bg-gray-50 dark:bg-gray-800/50 border-border-light dark:border-border-dark text-muted cursor-not-allowed"
                           }`}
                           placeholder="email@contoh.com"
@@ -1122,7 +1122,7 @@ export default function ProfileContent() {
                           type="tel" 
                           value={profile.phone} 
                           onChange={e => setProfile({...profile, phone: e.target.value})} 
-                          className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" 
+                          className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm font-semibold" 
                           placeholder="0812..." 
                           title="Nomor Telepon" 
                         />
@@ -1243,7 +1243,7 @@ export default function ProfileContent() {
                       value={oldPassword}
                       onChange={e => setOldPassword(e.target.value)}
                       placeholder="Masukkan password saat ini..."
-                      className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-semibold"
                       title="Password Lama"
                     />
                   </div>
@@ -1257,7 +1257,7 @@ export default function ProfileContent() {
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
                         placeholder="Minimal 8 karakter..."
-                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-semibold"
                         title="Password Baru"
                       />
                     </div>
@@ -1269,7 +1269,7 @@ export default function ProfileContent() {
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         placeholder="Ulangi password baru..."
-                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-semibold"
                         title="Konfirmasi Password Baru"
                       />
                     </div>
@@ -1638,7 +1638,7 @@ export default function ProfileContent() {
                       value={confirmDeletePassword}
                       onChange={e => setConfirmDeletePassword(e.target.value)}
                       placeholder="Masukkan password Anda..."
-                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-sm font-semibold"
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
@@ -1670,7 +1670,7 @@ export default function ProfileContent() {
                       value={otpCode}
                       onChange={e => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="Masukkan 6 digit kode OTP..."
-                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-center text-lg font-black tracking-[8px]"
+                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-center text-lg font-black tracking-[8px]"
                     />
                   </div>
                   <div className="flex gap-3 pt-2">

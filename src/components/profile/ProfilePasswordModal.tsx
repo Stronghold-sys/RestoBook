@@ -165,7 +165,7 @@ export default function ProfilePasswordModal({
                 type={showOldPass ? "text" : "password"}
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono text-text-light dark:text-text-dark"
+                className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 font-mono text-text-light dark:text-text-dark"
                 placeholder="Masukkan password saat ini..."
                 title="Password Lama"
               />
@@ -231,7 +231,7 @@ export default function ProfilePasswordModal({
                 maxLength={6}
                 type="text"
                 inputMode="numeric"
-                className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-center text-2xl font-black tracking-[10px] text-text-light dark:text-text-dark"
+                className="w-full px-4 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 text-center text-2xl font-black tracking-[10px] text-text-light dark:text-text-dark"
                 placeholder="000000"
                 title="Masukkan Kode OTP"
               />
@@ -247,7 +247,7 @@ export default function ProfilePasswordModal({
                 type={showNewPass ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary font-mono text-text-light dark:text-text-dark"
+                className="w-full pl-4 pr-12 py-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 font-mono text-text-light dark:text-text-dark"
                 placeholder="Minimal 6 karakter..."
                 title="Password Baru"
               />

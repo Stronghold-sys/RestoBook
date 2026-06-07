@@ -54,6 +54,14 @@ function CashierReservationsContent() {
   const [durationMinutes, setDurationMinutes] = useState<number>(120);
   const [bookedTablesInfo, setBookedTablesInfo] = useState<Record<string, "pending" | "confirmed">>({});
 
+  const getTodayStr = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const isTimeOverlapping = (t1: string, t2: string, duration: number) => {
     const parseToMinutes = (timeStr: string) => {
       const parts = timeStr.split(":");
@@ -384,6 +392,29 @@ function CashierReservationsContent() {
     if (!bookForm.date) return toast.error("Pilih tanggal");
     if (selectedTableIds.length === 0) return toast.error("Pilih minimal satu meja");
     if (!bookForm.atasNama) return toast.error("Masukkan nama");
+
+    // Validate past Date & Time (WIB)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const dateObj = new Date(bookForm.date + "T00:00:00");
+    const formattedDate = format(dateObj, "d MMMM yyyy", { locale: localeId });
+
+    if (bookForm.date < todayStr) {
+      return toast.error(`Tanggal reservasi yang Anda pilih (${formattedDate}) sudah terlewat. Silakan pilih tanggal hari ini atau tanggal lainnya.`);
+    }
+
+    if (bookForm.date === todayStr) {
+      const currentHours = today.getHours();
+      const currentMinutes = today.getMinutes();
+      const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+      if (bookForm.time < currentTimeStr) {
+        return toast.error(`Waktu reservasi yang Anda pilih (${bookForm.time} WIB) untuk tanggal hari ini (${formattedDate}) sudah terlewat. Silakan masukkan jam yang lain atau ganti tanggal.`);
+      }
+    }
 
     const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
     const totalCapacity = selectedTables.reduce((sum, t) => sum + t.capacity, 0);
@@ -797,7 +828,7 @@ function CashierReservationsContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="cashierDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
-              <input id="cashierDate" title="Tanggal Reservasi" type="date" value={bookForm.date} onChange={e => setBookForm({ ...bookForm, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
+              <input id="cashierDate" title="Tanggal Reservasi" type="date" value={bookForm.date} onChange={e => setBookForm({ ...bookForm, date: e.target.value })} min={getTodayStr()} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary outline-none" required />
             </div>
             <div>
               <label htmlFor="cashierTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>

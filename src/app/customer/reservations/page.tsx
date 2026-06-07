@@ -59,6 +59,14 @@ export default function CustomerReservationsPage() {
   const [selectedQrRes, setSelectedQrRes] = useState<Reservation | null>(null);
   const supabase = createClient();
 
+  const getTodayStr = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [durationMinutes, setDurationMinutes] = useState<number>(120);
   const [bookedTablesInfo, setBookedTablesInfo] = useState<Record<string, "pending" | "confirmed">>({});
 
@@ -184,6 +192,29 @@ export default function CustomerReservationsPage() {
     if (selectedTableIds.length === 0) return toast.error("Pilih setidaknya satu meja");
     if (!form.atasNama) return toast.error("Masukkan nama lengkap atas nama");
     if (!form.telepon) return toast.error("Masukkan nomor telepon");
+
+    // Validate past Date & Time (WIB)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const dateObj = new Date(form.date + "T00:00:00");
+    const formattedDate = format(dateObj, "d MMMM yyyy", { locale: localeId });
+
+    if (form.date < todayStr) {
+      return toast.error(`Tanggal reservasi yang Anda pilih (${formattedDate}) sudah terlewat. Silakan pilih tanggal hari ini atau tanggal lainnya.`);
+    }
+
+    if (form.date === todayStr) {
+      const currentHours = today.getHours();
+      const currentMinutes = today.getMinutes();
+      const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+      if (form.time < currentTimeStr) {
+        return toast.error(`Waktu reservasi yang Anda pilih (${form.time} WIB) untuk tanggal hari ini (${formattedDate}) sudah terlewat. Silakan masukkan jam yang lain atau ganti tanggal.`);
+      }
+    }
 
     const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
     const totalCapacity = selectedTables.reduce((sum, t) => sum + t.capacity, 0);
@@ -663,7 +694,7 @@ export default function CustomerReservationsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="resDate" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Tanggal</label>
-              <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={new Date().toISOString().split("T")[0]} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
+              <input id="resDate" title="Tanggal Reservasi" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} min={getTodayStr()} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" required />
             </div>
             <div>
               <label htmlFor="resTime" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Waktu</label>

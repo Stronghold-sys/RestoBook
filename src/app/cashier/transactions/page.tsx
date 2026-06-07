@@ -398,7 +398,7 @@ export default function CashierTransactionsPage() {
                     <td className="py-4 px-6 text-sm text-muted max-w-[200px] truncate" title={itemsStr}>{truncItems}</td>
                     <td className="py-4 px-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-muted whitespace-nowrap inline-block">{order.order_type === "dine_in" ? "Dine In" : order.order_type === "delivery" ? "Delivery" : "Takeaway"}</span></td>
                     <td className="py-4 px-6">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${order.payment_method === "cash" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50"}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap ${order.payment_method === "cash" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50"}`}>
                         {order.payment_method === "cash" ? <><Banknote className="w-3 h-3" /> Cash</> : <><CreditCard className="w-3 h-3" /> Non-Cash</>}
                       </span>
                     </td>

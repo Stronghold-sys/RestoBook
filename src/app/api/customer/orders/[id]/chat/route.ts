@@ -345,7 +345,7 @@ export async function GET(
   try {
     const orderId = params.id;
     const url = new URL(req.url);
-    const lang = url.searchParams.get('lang') || 'id';
+    const lang = 'id';
 
     const supabase = createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -488,7 +488,8 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { message, attachment_url, action, lang = 'id' } = body;
+    const { message, attachment_url, action } = body;
+    const lang = 'id';
 
     // --- Penanganan aksi khusus ---
     if (action === 'request_cashier') {

@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -22,6 +22,7 @@ interface Reservation {
   notes: string;
   tables: { table_number: number; capacity: number } | null;
   created_at: string;
+  qr_token?: string;
 }
 
 interface Table {
@@ -31,7 +32,7 @@ interface Table {
   status: string;
 }
 
-const ACTIVE_STATUSES = ["pending", "confirmed"];
+const ACTIVE_STATUSES = ["pending", "confirmed", "arrived", "seated"];
 const HISTORY_STATUSES = ["cancelled", "completed", "rejected"];
 
 export default function CustomerReservationsPage() {
@@ -55,6 +56,7 @@ export default function CustomerReservationsPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
+  const [selectedQrRes, setSelectedQrRes] = useState<Reservation | null>(null);
   const supabase = createClient();
 
   const [durationMinutes, setDurationMinutes] = useState<number>(120);
@@ -370,6 +372,8 @@ export default function CustomerReservationsPage() {
     const map: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
       confirmed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+      arrived: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+      seated: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
       cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
       completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
       rejected: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
@@ -381,6 +385,8 @@ export default function CustomerReservationsPage() {
     const map: Record<string, string> = { 
       pending: "Menunggu", 
       confirmed: "Dikonfirmasi", 
+      arrived: "Berjalan",
+      seated: "Berjalan",
       cancelled: "Dibatalkan", 
       completed: "Selesai",
       rejected: "Ditolak"
@@ -536,6 +542,17 @@ export default function CustomerReservationsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
+                        {["confirmed", "arrived", "seated"].includes(res.status) && (
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }} 
+                            whileTap={{ scale: 0.95 }} 
+                            onClick={() => setSelectedQrRes(res)} 
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-primary text-white hover:bg-primary-hover rounded-xl font-bold text-xs shadow-md shadow-primary/10 transition-all"
+                            title="Tampilkan QR Code Check-In"
+                          >
+                            <QrCode className="w-4 h-4" /> Tampilkan QR
+                          </motion.button>
+                        )}
                         <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
                         {res.status === "pending" && (
                           <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
@@ -799,6 +816,91 @@ export default function CustomerReservationsPage() {
             </motion.button>
           </div>
         </div>
+      </BaseModal>
+
+      {/* Modal QR Code Check-In */}
+      <BaseModal
+        isOpen={!!selectedQrRes}
+        onClose={() => setSelectedQrRes(null)}
+        showCloseButton={false}
+        size="md"
+        noPadding
+      >
+        {selectedQrRes && (() => {
+          const parsed = getParsedNotes(selectedQrRes.notes);
+          const clientName = parsed ? parsed.atas_nama : "Pelanggan";
+          const displayMejaList = parsed?.meja_tambahan ? parsed.meja_tambahan.join(", ") : selectedQrRes.tables?.table_number;
+          const qrData = selectedQrRes.qr_token || selectedQrRes.id;
+
+          return (
+            <>
+              <div className="bg-primary p-6 text-white flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold">QR Code Check-In</h2>
+                  <p className="text-white/80 text-sm mt-1">Gunakan kode ini untuk check-in meja</p>
+                </div>
+                <button onClick={() => setSelectedQrRes(null)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6 sm:p-8 space-y-6 text-center text-text-light dark:text-text-dark">
+                {/* QR Code Image */}
+                <div className="bg-white p-4 rounded-2xl inline-block shadow-md mx-auto">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
+                    alt="Check-In QR Code"
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+                
+                {/* Token Label */}
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Token Booking</p>
+                  <p className="font-mono font-black text-primary text-base select-all">{qrData}</p>
+                </div>
+
+                {/* Instructions */}
+                <div className="p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl text-sm border border-primary/20 text-left">
+                  <p className="text-primary font-bold text-center leading-relaxed">
+                    Tunjukkan QR Code ini kepada kasir saat kedatangan untuk melakukan check-in meja Anda secara instan.
+                  </p>
+                </div>
+
+                {/* Details */}
+                <div className="border-t border-border-light dark:border-border-dark pt-4 space-y-3 text-sm text-left">
+                  <h4 className="font-bold text-muted uppercase text-xs tracking-wider mb-2">Detail Reservasi</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted font-medium">Atas Nama</p>
+                      <p className="font-bold">{clientName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted font-medium">Tanggal</p>
+                      <p className="font-semibold">{format(new Date(selectedQrRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted font-medium">Waktu</p>
+                      <p className="font-semibold">{selectedQrRes.reservation_time?.substring(0, 5)} WIB</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted font-medium">Meja / Tamu</p>
+                      <p className="font-bold text-primary">Meja {displayMejaList} ({selectedQrRes.guest_count} Tamu)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedQrRes(null)}
+                  className="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-medium transition-all"
+                >
+                  Tutup
+                </button>
+              </div>
+            </>
+          );
+        })()}
       </BaseModal>
     </div>
   );

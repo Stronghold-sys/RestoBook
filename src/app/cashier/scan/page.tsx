@@ -244,12 +244,13 @@ export default function CashierScanPage() {
         table_number: tables.find(t => t.id === selectedTableId)?.table_number
       }));
 
+      // Redirect to reservations management page with query param id
+      router.push(`/cashier/reservations?id=${reservation.id}`);
+
     } catch (err: any) {
       toast.error(err.message || "Gagal memproses check-in");
     } finally {
-      setUpdatingStatus(true);
-      // Let realtime subscription handle the fresh fetch
-      setTimeout(() => setUpdatingStatus(false), 500);
+      setUpdatingStatus(false);
     }
   };
 
@@ -532,7 +533,17 @@ export default function CashierScanPage() {
                           disabled={updatingStatus}
                           className="flex-1 py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {updatingStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Simpan Status Check-In
+                          {updatingStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Check-In Sekarang
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setReservation(null);
+                            setManualToken("");
+                            setBookingHistory([]);
+                          }}
+                          className="px-5 py-4 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 rounded-2xl font-black text-xs uppercase hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <XCircle className="w-4 h-4" /> Batalkan
                         </button>
                         <button 
                           onClick={() => setShowPrintModal(true)}

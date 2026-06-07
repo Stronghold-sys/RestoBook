@@ -30,9 +30,14 @@ export async function sendReceiptEmail(orderId: string): Promise<{ success: bool
       // Step 1: Resolve the profile using customer_id (which is actually profile.id)
       const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('id, user_id, email, full_name')
+        .select('id, user_id, email, full_name, email_transaction')
         .eq('id', order.customer_id)
         .maybeSingle();
+
+      if (profile && profile.email_transaction === false) {
+        console.log(`[sendReceiptEmail] User turned off email transaction notifications. Skipping.`);
+        return { success: true };
+      }
 
       // If we couldn't find it by id, maybe customer_id IS the user_id (fallback for old orders)
       const resolvedUserId = profile?.user_id || order.customer_id;

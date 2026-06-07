@@ -86,9 +86,14 @@ export async function sendReservationEmail(
     if (resData.customer_id) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('id, user_id, email, full_name')
+        .select('id, user_id, email, full_name, email_booking')
         .eq('id', resData.customer_id)
         .maybeSingle();
+
+      if (profile && profile.email_booking === false) {
+        console.log(`[sendReservationEmail] User turned off email booking notifications. Skipping.`);
+        return { success: true };
+      }
 
       const resolvedUserId = profile?.user_id || resData.customer_id;
       

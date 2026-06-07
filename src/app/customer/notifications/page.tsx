@@ -44,10 +44,37 @@ export default function CustomerNotificationsPage() {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) return;
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", session.session.user.id).single();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, notif_booking, notif_payment, notif_promo, notif_security, notif_reminder")
+        .eq("user_id", session.session.user.id)
+        .single();
       if (!profile) return;
       const { data } = await supabase.from("notifications").select("*").eq("user_id", profile.id).order("created_at", { ascending: false });
-      setNotifications(data || []);
+      
+      let filteredData = data || [];
+      if (profile) {
+        filteredData = filteredData.filter((notif: any) => {
+          const type = notif.type;
+          if (type === "reservation") {
+            return profile.notif_booking !== false;
+          }
+          if (type === "order" || type === "payment") {
+            return profile.notif_payment !== false;
+          }
+          if (type === "point" || type === "new_reward" || type === "promo") {
+            return profile.notif_promo !== false;
+          }
+          if (type === "security") {
+            return profile.notif_security !== false;
+          }
+          if (type === "reminder") {
+            return profile.notif_reminder !== false;
+          }
+          return true;
+        });
+      }
+      setNotifications(filteredData);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   };
 

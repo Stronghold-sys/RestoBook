@@ -2,7 +2,7 @@
 
 export const runtime = 'edge';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BaseModal from "@/components/BaseModal";
+import { useSearchParams } from "next/navigation";
 
 interface Table {
   id: string;
@@ -18,7 +19,10 @@ interface Table {
   status: string;
 }
 
-export default function CashierReservationsPage() {
+function CashierReservationsContent() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("id");
+
   const [reservations, setReservations] = useState<any[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +76,20 @@ export default function CashierReservationsPage() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useEffect(() => {
+    if (highlightId && reservations.length > 0) {
+      const matched = reservations.find(r => r.id === highlightId);
+      if (matched) {
+        setSelectedRes(matched);
+        if (["confirmed", "arrived", "seated"].includes(matched.status)) {
+          setFilter("confirmed");
+        } else {
+          setFilter(matched.status);
+        }
+      }
+    }
+  }, [highlightId, reservations]);
 
   const fetchData = async () => {
     try {
@@ -426,11 +444,18 @@ export default function CashierReservationsPage() {
   const statusBadge: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
     confirmed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    arrived: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    seated: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+    completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
   };
 
-  const filtered = reservations.filter(r => filter === "all" || r.status === filter);
+  const filtered = reservations.filter(r => {
+    if (filter === "confirmed") {
+      return ["confirmed", "arrived", "seated"].includes(r.status);
+    }
+    return r.status === filter;
+  });
 
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -459,7 +484,11 @@ export default function CashierReservationsPage() {
         ].map(item => (
           <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${filter === item.s ? "ring-4 ring-primary" : ""}`}>
             <p className="text-white/80 text-sm font-semibold leading-tight">{item.l}</p>
-            <p className="text-3xl font-black mt-1">{reservations.filter(r => r.status === item.s).length}</p>
+            <p className="text-3xl font-black mt-1">
+              {item.s === "confirmed" 
+                ? reservations.filter(r => ["confirmed", "arrived", "seated"].includes(r.status)).length 
+                : reservations.filter(r => r.status === item.s).length}
+            </p>
           </motion.div>
         ))}
       </div>
@@ -492,7 +521,12 @@ export default function CashierReservationsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
-                    {res.status === "pending" ? "Menunggu" : res.status === "confirmed" ? "Aktif" : res.status === "cancelled" ? "Batal" : "Selesai"}
+                    {res.status === "pending" ? "Menunggu" 
+                      : res.status === "confirmed" ? "Aktif" 
+                      : res.status === "arrived" ? "Tiba"
+                      : res.status === "seated" ? "Duduk"
+                      : res.status === "cancelled" ? "Batal" 
+                      : "Selesai"}
                   </span>
                   
                   {/* Detail Button */}
@@ -506,7 +540,7 @@ export default function CashierReservationsPage() {
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => setRejectingId(res.id)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" aria-label="Tolak" title="Tolak dengan Alasan"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
-                  {res.status === "confirmed" && (
+                  {["confirmed", "arrived", "seated"].includes(res.status) && (
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
                   )}
                 </div>
@@ -753,5 +787,13 @@ export default function CashierReservationsPage() {
         </form>
       </BaseModal>
     </div>
+  );
+}
+
+export default function CashierReservationsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+      <CashierReservationsContent />
+    </Suspense>
   );
 }

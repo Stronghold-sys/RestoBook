@@ -958,7 +958,7 @@ export default function ProfileContent() {
             onClick={() => setActiveTab("preferences")}
             className={`flex-1 min-w-[100px] py-3.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "preferences" ? "bg-white dark:bg-gray-700 shadow text-teal-605" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
           >
-            Preferensi & Notifikasi
+            Notifikasi
           </button>
           <button 
             onClick={() => setActiveTab("security")}
@@ -1150,139 +1150,7 @@ export default function ProfileContent() {
             {activeTab === "preferences" && (
               <motion.div key="preferences-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-8">
                 
-                {/* 1. Pengaturan Tema */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Tampilan Tema</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: "light", label: "Light Mode" },
-                      { value: "dark", label: "Dark Mode" },
-                      { value: "system", label: "System Mode" }
-                    ].map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => {
-                          const updated = { ...preferences, theme: t.value };
-                          setPreferences(updated);
-                          handleSavePreferences(updated);
-                        }}
-                        className={`py-3 rounded-xl border text-xs font-bold transition-all ${
-                          preferences.theme === t.value
-                            ? "border-primary bg-primary/10 text-primary shadow-sm"
-                            : "border-border-light dark:border-border-dark hover:border-gray-300"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Preferensi Booking */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Preferensi Default Booking</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label htmlFor="pref-booking-guests" className="text-xs font-bold text-muted ml-1">Jumlah Tamu Default</label>
-                      <input 
-                        id="pref-booking-guests"
-                        type="number"
-                        min={1} max={30}
-                        value={preferences.booking_default_guests}
-                        onChange={e => setPreferences({ ...preferences, booking_default_guests: parseInt(e.target.value) || 2 })}
-                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        placeholder="Jumlah tamu"
-                        title="Jumlah Tamu Default"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label htmlFor="pref-booking-area" className="text-xs font-bold text-muted ml-1">Area Favorit</label>
-                      <select
-                        id="pref-booking-area"
-                        value={preferences.booking_favorite_area}
-                        onChange={e => setPreferences({ ...preferences, booking_favorite_area: e.target.value })}
-                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
-                        title="Area Favorit"
-                      >
-                        <option value="">-- Pilih Area --</option>
-                        <option value="indoor">Indoor (Bebas Rokok)</option>
-                        <option value="outdoor">Outdoor</option>
-                        <option value="smoking">Smoking Area</option>
-                        <option value="non_smoking">Non Smoking Area</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1 sm:col-span-2">
-                      <label htmlFor="pref-booking-notes" className="text-xs font-bold text-muted ml-1">Catatan Reservasi Default</label>
-                      <textarea
-                        id="pref-booking-notes"
-                        value={preferences.booking_notes}
-                        onChange={e => setPreferences({ ...preferences, booking_notes: e.target.value })}
-                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        rows={2}
-                        placeholder="Contoh: Meja dekat jendela..."
-                        title="Catatan Reservasi Default"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label htmlFor="pref-favorite-branch" className="text-xs font-bold text-muted ml-1">Cabang Favorit</label>
-                      <select
-                        id="pref-favorite-branch"
-                        value={preferences.favorite_branch}
-                        onChange={e => setPreferences({ ...preferences, favorite_branch: e.target.value })}
-                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
-                        title="Cabang Favorit"
-                      >
-                        <option value="">-- Pilih Cabang --</option>
-                        <option value="Cabang Jakarta Pusat">Cabang Jakarta Pusat</option>
-                        <option value="Cabang Jakarta Selatan">Cabang Jakarta Selatan</option>
-                        <option value="Cabang Bandung">Cabang Bandung</option>
-                        <option value="Cabang Surabaya">Cabang Surabaya</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label htmlFor="pref-favorite-payment" className="text-xs font-bold text-muted ml-1">Metode Bayar Favorit</label>
-                      <select
-                        id="pref-favorite-payment"
-                        value={preferences.favorite_payment_method}
-                        onChange={e => setPreferences({ ...preferences, favorite_payment_method: e.target.value })}
-                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
-                        title="Metode Bayar Favorit"
-                      >
-                        <option value="">-- Pilih Metode --</option>
-                        <option value="QRIS">QRIS</option>
-                        <option value="Transfer Bank">Transfer Bank</option>
-                        <option value="E-Wallet">E-Wallet</option>
-                        <option value="Kartu Debit">Kartu Debit</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Tampilan Kalender */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Tampilan Default Kalender</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: "monthly", label: "Bulanan" },
-                      { value: "weekly", label: "Mingguan" },
-                      { value: "daily", label: "Harian" }
-                    ].map(c => (
-                      <button
-                        key={c.value}
-                        onClick={() => setPreferences({ ...preferences, booking_calendar_view: c.value })}
-                        className={`py-3 rounded-xl border text-xs font-bold transition-all ${
-                          preferences.booking_calendar_view === c.value
-                            ? "border-primary bg-primary/10 text-primary shadow-sm"
-                            : "border-border-light dark:border-border-dark hover:border-gray-300"
-                        }`}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Notifikasi Toggles */}
+                {/* 1. Notifikasi Toggles */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Notifikasi Aplikasi</h3>
                   <div className="space-y-3">
@@ -1299,7 +1167,11 @@ export default function ProfileContent() {
                           <p className="text-[10px] text-muted">{n.desc}</p>
                         </div>
                         <button
-                          onClick={() => setPreferences({ ...preferences, [n.key]: !((preferences as any)[n.key]) })}
+                          onClick={() => {
+                            const updated = { ...preferences, [n.key]: !((preferences as any)[n.key]) };
+                            setPreferences(updated);
+                            handleSavePreferences(updated);
+                          }}
                           className={`w-11 h-6 rounded-full transition-all relative ${
                             (preferences as any)[n.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
                           }`}
@@ -1315,7 +1187,7 @@ export default function ProfileContent() {
                   </div>
                 </div>
 
-                {/* 5. Email Toggles */}
+                {/* 2. Email Toggles */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Notifikasi Email</h3>
                   <div className="space-y-3">
@@ -1328,7 +1200,11 @@ export default function ProfileContent() {
                       <div key={e.key} className="flex justify-between items-center gap-4">
                         <span className="text-sm font-bold">{e.label}</span>
                         <button
-                          onClick={() => setPreferences({ ...preferences, [e.key]: !((preferences as any)[e.key]) })}
+                          onClick={() => {
+                            const updated = { ...preferences, [e.key]: !((preferences as any)[e.key]) };
+                            setPreferences(updated);
+                            handleSavePreferences(updated);
+                          }}
                           className={`w-11 h-6 rounded-full transition-all relative ${
                             (preferences as any)[e.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
                           }`}
@@ -1344,49 +1220,8 @@ export default function ProfileContent() {
                   </div>
                 </div>
 
-                {/* 6. Privasi Akun */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Privasi & Persetujuan Data</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center gap-4">
-                      <div>
-                        <label htmlFor="pref-profile-visibility" className="text-sm font-bold block cursor-pointer">Visibilitas Profil</label>
-                        <p className="text-[10px] text-muted">Membatasi pencarian profil Anda oleh pelanggan lain</p>
-                      </div>
-                      <select
-                        id="pref-profile-visibility"
-                        value={preferences.privacy_profile_visibility}
-                        onChange={e => setPreferences({ ...preferences, privacy_profile_visibility: e.target.value })}
-                        className="p-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-xs font-bold outline-none"
-                        title="Visibilitas Profil"
-                      >
-                        <option value="public">Publik</option>
-                        <option value="private">Privat</option>
-                      </select>
-                    </div>
-                    <div className="flex justify-between items-center gap-4 py-2 border-t border-border-light/40 dark:border-border-dark/40">
-                      <div>
-                        <p className="text-sm font-bold">Persetujuan Penggunaan Data</p>
-                        <p className="text-[10px] text-muted">Izinkan RestoBook menggunakan preferensi untuk peningkatan layanan & promo personal</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences({ ...preferences, privacy_data_consent: !preferences.privacy_data_consent })}
-                        className={`w-11 h-6 rounded-full transition-all relative ${
-                          preferences.privacy_data_consent ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
-                        }`}
-                        aria-label="Toggle Persetujuan Penggunaan Data"
-                        title="Toggle Persetujuan Penggunaan Data"
-                      >
-                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
-                          preferences.privacy_data_consent ? "right-1" : "left-1"
-                        }`} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 <button onClick={() => handleSavePreferences()} className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
-                  <Save className="w-5 h-5" /> Simpan Semua Preferensi
+                  <Save className="w-5 h-5" /> Simpan Pengaturan Notifikasi
                 </button>
 
               </motion.div>

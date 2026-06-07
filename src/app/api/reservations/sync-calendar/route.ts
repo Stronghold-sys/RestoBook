@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (reservationId) {
       const { data, error } = await supabaseAdmin
         .from('reservations')
-        .select('*, profiles(full_name, phone, email, user_id), tables(table_number)')
+        .select('*, profiles!reservations_customer_id_fkey(full_name, phone, email, user_id), tables(table_number)')
         .eq('id', reservationId)
         .maybeSingle();
 

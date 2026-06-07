@@ -24,6 +24,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get the actual profile ID
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     // Ambil sessionId saat ini dari cookie untuk menandai "current device"
     const authCookie = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
     const currentSessionId = authCookie ? authCookie.value.slice(0, 100) : null;
@@ -31,7 +42,7 @@ export async function GET(request: NextRequest) {
     const { data: sessions, error } = await supabaseAdmin
       .from('security_user_sessions')
       .select('*')
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .eq('is_revoked', false)
       .order('last_active_at', { ascending: false });
 
@@ -81,6 +92,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get the actual profile ID
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     const { action, sessionId, isSuspicious } = await request.json();
 
     const authCookie = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
@@ -94,7 +116,7 @@ export async function POST(request: NextRequest) {
       const { error } = await supabaseAdmin
         .from('security_user_sessions')
         .update({ is_revoked: true, last_active_at: new Date().toISOString() })
-        .eq('profile_id', user.id)
+        .eq('profile_id', profile.id)
         .eq('session_id', sessionId);
 
       if (error) throw error;
@@ -107,7 +129,7 @@ export async function POST(request: NextRequest) {
       let query = supabaseAdmin
         .from('security_user_sessions')
         .update({ is_revoked: true, last_active_at: new Date().toISOString() })
-        .eq('profile_id', user.id);
+        .eq('profile_id', profile.id);
 
       if (currentSessionId) {
         query = query.neq('session_id', currentSessionId);
@@ -143,7 +165,7 @@ export async function POST(request: NextRequest) {
       const { error } = await supabaseAdmin
         .from('security_user_sessions')
         .update({ is_suspicious: isSuspicious ?? true })
-        .eq('profile_id', user.id)
+        .eq('profile_id', profile.id)
         .eq('session_id', sessionId);
 
       if (error) throw error;

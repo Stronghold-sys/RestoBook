@@ -891,7 +891,7 @@ export default function CustomerWalletPage() {
                         <div>
                           <h4 className="font-bold text-sm text-text-light dark:text-text-dark">{getTransactionTypeLabel(tx.type)}</h4>
                           <p className="text-[10px] text-muted mt-0.5">
-                            {tx.description} â€¢ {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
+                            {tx.description} • {format(new Date(tx.created_at), "dd MMM yyyy, HH:mm", { locale: id })} WIB
                           </p>
                           <div className="flex flex-wrap items-center gap-2 mt-0.5">
                             <p className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider">ID: #{tx.id.substring(0, 8).toUpperCase()}</p>
@@ -985,7 +985,7 @@ export default function CustomerWalletPage() {
                 className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary font-semibold text-text-light dark:text-text-dark" 
               />
             </div>
-            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} â€¢ Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
+            <span className="text-[9px] text-muted font-medium mt-1 block">Minimal Rp {settings.minTopup.toLocaleString('id-ID')} • Maksimal Rp {settings.maxTopup.toLocaleString('id-ID')}</span>
           </div>
 
           {/* Quick Nominal Selectors */}

@@ -142,8 +142,8 @@ export default function AdminRefundsPage() {
 
       const parsedReservations = (resData || []).map((res: any) => {
         let refundStatus: "pending" | "approved" | "rejected" = "pending";
-        if (res.refund_status === "completed") refundStatus = "approved";
-        else if (res.refund_status === "rejected") refundStatus = "rejected";
+        if (["completed", "refund_selesai", "dana_dikirim"].includes(res.refund_status)) refundStatus = "approved";
+        else if (["rejected", "ditolak"].includes(res.refund_status)) refundStatus = "rejected";
 
         return {
           id: res.id,

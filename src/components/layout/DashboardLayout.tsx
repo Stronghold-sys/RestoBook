@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
   Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, ShieldAlert, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare,
-  Lock, AlertTriangle, QrCode
+  Lock, AlertTriangle, QrCode, History
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -792,6 +792,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
+          { name: "Riwayat", href: "/customer/riwayat", icon: History },
           { name: "Pengaduan & Bantuan", href: "/customer/support", icon: LifeBuoy },
           { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];

@@ -38,6 +38,13 @@ function CashierReservationsContent() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Cashier cancellation modal state
+  const [cancellingResId, setCancellingResId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancellingSubmit, setCancellingSubmit] = useState(false);
+  const [cashierName, setCashierName] = useState("");
+  const [cashierId, setCashierId] = useState("");
+
   // Cashier booking Modal State
   const [showBookModal, setShowBookModal] = useState(false);
   const [bookForm, setBookForm] = useState({
@@ -115,6 +122,16 @@ function CashierReservationsContent() {
 
   const fetchData = async () => {
     try {
+      // Get Cashier Info
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase.from("profiles").select("id, full_name").eq("user_id", session.user.id).single();
+        if (profile) {
+          setCashierName(profile.full_name);
+          setCashierId(profile.id);
+        }
+      }
+
       const { data } = await supabase.from("reservations").select("*, profiles!reservations_customer_id_fkey(full_name, phone), tables(table_number, capacity)").order("reservation_date", { ascending: true });
       setReservations(data || []);
 
@@ -661,6 +678,18 @@ function CashierReservationsContent() {
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => setRejectingId(res.id)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" aria-label="Tolak" title="Tolak dengan Alasan"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
+                  {res.status === "confirmed" && (
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setCancellingResId(res.id);
+                        setCancelReason("");
+                      }}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/10 flex items-center gap-1.5"
+                    >
+                      <Ban className="w-4 h-4" /> Batalkan Reservasi
+                    </motion.button>
+                  )}
                   {["arrived", "seated"].includes(res.status) && (
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
                   )}
@@ -954,6 +983,73 @@ function CashierReservationsContent() {
           <div className="flex gap-3">
             <button type="button" onClick={() => setRejectingId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium">Batal</button>
             <button type="submit" className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/10">Kirim Penolakan</button>
+          </div>
+        </form>
+      </BaseModal>
+
+      {/* Cashier Cancellation Modal */}
+      <BaseModal
+        isOpen={!!cancellingResId}
+        onClose={() => setCancellingResId(null)}
+        showCloseButton={true}
+        size="sm"
+      >
+        <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4 flex items-center gap-2 text-red-600">
+          <Ban className="w-5 h-5" /> Batalkan Reservasi
+        </h3>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!cancellingResId) return;
+            if (!cancelReason.trim()) return toast.error("Masukkan alasan pembatalan");
+
+            setCancellingSubmit(true);
+            const toastId = toast.loading("Membatalkan reservasi...");
+            try {
+              const res = await fetch("/api/reservations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "cancel",
+                  reservationId: cancellingResId,
+                  reason: cancelReason,
+                  cancelledBy: cashierName || "Kasir",
+                  cancelledRole: "cashier",
+                  operatorId: cashierId || null
+                })
+              });
+              const resData = await res.json();
+              if (!res.ok) throw new Error(resData.error || "Gagal membatalkan reservasi");
+
+              toast.success("Reservasi berhasil dibatalkan!", { id: toastId });
+              setCancellingResId(null);
+              setCancelReason("");
+              fetchData();
+            } catch (err: any) {
+              toast.error(err.message, { id: toastId });
+            } finally {
+              setCancellingSubmit(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label htmlFor="cancelReasonInput" className="text-xs text-muted font-bold block mb-1 uppercase">Alasan Pembatalan</label>
+            <textarea
+              id="cancelReasonInput"
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="Masukkan alasan pembatalan reservasi oleh kasir..."
+              className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-red-500 text-text-light dark:text-text-dark"
+              rows={3}
+              required
+            />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setCancellingResId(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium">Batal</button>
+            <button type="submit" disabled={cancellingSubmit} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/10 flex items-center justify-center gap-1">
+              {cancellingSubmit ? <Loader2 className="w-4 h-4 animate-spin" /> : "Batalkan Reservasi"}
+            </button>
           </div>
         </form>
       </BaseModal>

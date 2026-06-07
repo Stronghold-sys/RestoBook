@@ -1213,7 +1213,7 @@ function POSContent() {
                     ) : (
                       <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-tight">
                         <span className="font-bold text-amber-500 block mb-0.5">Menunggu Pembayaran Online!</span>
-                        Pesanan ini menggunakan metode NON TUNAI. Pelanggan belum menyelesaikan pembayaran melalui aplikasi/gateway Duitku. Mohon tunggu hingga status berubah menjadi LUNAS.
+                        Pesanan ini menggunakan metode NON TUNAI. Pelanggan belum menyelesaikan pembayaran melalui aplikasi/gateway pembayaran. Mohon tunggu hingga status berubah menjadi LUNAS.
                       </div>
                     )
                   ) : (
@@ -1759,7 +1759,7 @@ function POSContent() {
                       <div>
                         <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase tracking-tight">Pembayaran Online</h4>
                         <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
-                          Pelanggan dapat memilih E-Wallet (ShopeePay, OVO, Dana), QRIS, Virtual Account, atau gerai retail langsung di jendela pembayaran Duitku Pop yang akan muncul.
+                          Pelanggan dapat memilih E-Wallet (ShopeePay, OVO, Dana), QRIS, Virtual Account, atau gerai retail langsung di jendela pembayaran online yang akan muncul.
                         </p>
                       </div>
                     </div>

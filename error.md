@@ -1,191 +1,566 @@
-Buat ulang fitur multi-language / language switcher secara total tanpa menggunakan API translation sama sekali.
+TAMBAHAN FITUR: PEMBATALAN OLEH KASIR, REFUND, RIWAYAT, DAN REALTIME UPDATE
 
-TUJUAN
+Tambahkan juga alur ketika reservasi dibatalkan oleh kasir, sehingga sistem menampilkan informasi yang jelas kepada pelanggan mengenai siapa yang membatalkan reservasi.
 
-- Website hanya mendukung 2 bahasa: Bahasa Indonesia dan English.
-- Semua teks pada seluruh file kode harus dibuat bilingual dan siap berubah otomatis saat pengguna memilih bahasa.
-- Semua kalimat yang sebelumnya hanya ada dalam Bahasa Indonesia harus diubah agar memiliki padanan English di semua bagian aplikasi.
-- Bahasa pada AI chatbot juga harus mengikuti bahasa yang dipilih pengguna web secara otomatis.
-- AI chat kasir juga wajib menyesuaikan bahasa aktif pengguna.
-- Fitur ini harus berlaku untuk semua role: admin, kasir, pelanggan, dan role lain yang ada di sistem.
-- Bahasa juga harus bisa diganti di seluruh halaman, termasuk halaman utama promosi / landing page / homepage public.
+1. PEMBATALAN RESERVASI OLEH KASIR
+Jika reservasi dibatalkan oleh kasir, maka di halaman pelanggan status reservasi harus menampilkan:
 
-KETENTUAN UTAMA
+- “Dibatalkan”
+- “Dibatalkan oleh kasir”
+- atau “Dibatalkan oleh resto” sesuai role yang melakukan pembatalan
 
-1. Jangan gunakan API translation apa pun.
-2. Gunakan sistem translation lokal berbasis key/value.
-3. Semua teks statis di UI harus dipindahkan ke file bahasa, bukan hardcoded di komponen.
-4. Semua file yang berisi teks harus diubah agar memakai key translation.
-5. Saat user mengganti bahasa, seluruh UI langsung berubah tanpa reload penuh jika memungkinkan.
-6. Preferensi bahasa harus disimpan, misalnya di localStorage, session, database user profile, atau cookie agar tetap tersimpan setelah refresh/login ulang.
-7. Default language bisa mengikuti bahasa browser, kalau tidak ada maka gunakan Indonesia atau English sesuai aturan sistem.
-8. Jika translation key tidak ditemukan, tampilkan fallback ke English.
-9. Semua pesan validasi, notifikasi, alert, toast, modal, label form, menu, sidebar, header, footer, button, empty state, error message, success message, breadcrumb, tooltip, dan semua teks sistem harus ikut diterjemahkan.
-10. Semua status, role label, dan teks dinamis juga harus disiapkan terjemahannya.
+Sistem harus menyimpan:
 
-STRUKTUR YANG HARUS DIBANGUN
+- siapa yang membatalkan
+- role yang membatalkan
+- alasan pembatalan
+- waktu pembatalan
+- status reservasi sebelum dan sesudah dibatalkan
 
-- Buat file terjemahan lokal seperti:
-  - /locales/id.json
-  - /locales/en.json
-- Gunakan key yang konsisten, misalnya:
-  - common.save
-  - common.cancel
-  - auth.login
-  - auth.logout
-  - dashboard.welcome
-  - order.status.pending
-  - validation.required
-  - chatbot.greeting
-- Jangan ada teks langsung di UI selain key translation.
+Jika pembayarannya sudah lunas, maka tombol “Refund” harus muncul di halaman pelanggan.
 
-LOGIKA SWITCHER
+1. FITUR REFUND JIKA PEMBATALAN OLEH KASIR
+Jika reservasi dibatalkan dan pembayaran sudah lunas atau DP sudah dibayar sebagian, maka pelanggan dapat mengajukan refund.
 
-- Tambahkan language switcher di header, navbar, sidebar, settings, dan halaman utama promosi.
-- Pilihan bahasa hanya:
-  - Bahasa Indonesia
-  - English
-- Saat user memilih bahasa:
-  - state bahasa berubah
-  - semua komponen rerender
-  - teks berubah sesuai dictionary
-  - chatbot dan template respons juga ikut berganti bahasa
-- Simpan pilihan bahasa supaya tetap aktif setelah refresh.
+Tombol refund harus menampilkan modal form pengajuan refund yang berisi:
 
-LOGIKA CHATBOT AI
+- nama pelanggan
+- nomor reservasi
+- alasan refund
+- jumlah nominal yang diajukan
+- metode pencairan dana:
+  - DompetKu
+  - Transfer
 
-- Chatbot wajib membaca bahasa aktif dari state global.
-- Semua system prompt, greeting, fallback response, button quick reply, dan pesan bantuan harus mengikuti bahasa yang dipilih.
-- Jika bahasa aktif Indonesia, chatbot menjawab dalam Bahasa Indonesia.
-- Jika bahasa aktif English, chatbot menjawab dalam English.
-- Jangan hardcode jawaban chatbot hanya dalam satu bahasa.
-- AI chat kasir juga harus mengikuti bahasa aktif pengguna secara otomatis.
-- Siapkan template respons bilingual untuk:
-  - salam pembuka
-  - bantuan menu
-  - error
-  - konfirmasi
-  - pesan sukses
-  - pesan kosong
-  - instruksi penggunaan
-- Jika chatbot memakai AI model, kirim parameter bahasa aktif ke prompt sistem agar respons konsisten dengan bahasa user.
-- Pastikan chatbot di halaman kasir, admin, pelanggan, dan halaman utama promosi semuanya memakai bahasa yang sama dengan pilihan user.
+Jika pelanggan memilih DompetKu:
 
-PENGGUNAAN DI SELURUH ROLE DAN HALAMAN
+- refund akan dikreditkan langsung ke akun DompetKu pelanggan
 
-- Admin panel
-- Kasir panel
-- Customer panel
-- Halaman utama promosi / landing page / homepage public
-- Login, register, forgot password, OTP, profile, settings, notifikasi, laporan, transaksi, dashboard, tabel, pagination, modal, banner, hero section, CTA, pricing section, footer, dan semua halaman lain harus ikut translation.
-- Setiap role boleh punya key khusus, tetapi tetap mengikuti bahasa global yang sama.
-- Semua teks promosi, headline, subheadline, tombol CTA, slogan, fitur unggulan, dan deskripsi layanan pada halaman utama juga harus bisa berubah bahasa.
+Jika pelanggan memilih Transfer:
 
-KWITANSI / RECEIPT / STRUK
+- pelanggan wajib mengisi detail rekening tujuan secara lengkap:
+  - nama bank
+  - nama pemilik rekening
+  - nomor rekening
+  - cabang bank jika diperlukan
 
-- Semua teks pada kwitansi/receipt/struk harus ikut berubah sesuai bahasa aktif.
-- Kwitansi untuk role pengguna dan kasir wajib menggunakan bahasa yang sama dengan pilihan user.
-- Jika bahasa Indonesia dipilih, isi kwitansi harus tampil dalam Bahasa Indonesia.
-- Jika English dipilih, isi kwitansi harus tampil dalam English.
-- Semua bagian kwitansi harus diterjemahkan, termasuk:
-  - judul kwitansi
-  - nomor transaksi
-  - tanggal dan waktu
-  - nama pelanggan
-  - nama kasir
-  - daftar item
-  - jumlah
-  - subtotal
-  - diskon
-  - pajak
-  - total
-  - metode pembayaran
-  - status pembayaran
-  - pesan terima kasih
-  - catatan tambahan
-  - footer / disclaimer
-- Kwitansi harus berlaku untuk:
-  - role pengguna / customer
-  - role kasir
-  - role admin jika ada preview atau cetak laporan
-- Jika ada tombol cetak / download kwitansi, labelnya juga harus ikut bahasa aktif.
-- Format nominal di kwitansi harus mengikuti locale mata uang aktif.
+Jika pelanggan memilih metode yang belum aktif atau tidak valid, tampilkan peringatan:
 
-PENYESUAIAN KODE
+- “Metode pencairan yang dipilih belum aktif.”
 
-- Ubah seluruh hardcoded text Bahasa Indonesia menjadi key translation.
-- Tambahkan semua terjemahan English pada seluruh file yang diperlukan.
-- Rapikan struktur i18n agar mudah dikembangkan.
-- Buat helper translation seperti:
-  - t('key.name')
-  - translate(key, lang)
-- Pastikan komponen yang menerima teks dari API/backend juga bisa ditampilkan sesuai bahasa aktif jika datanya mendukung.
+1. KALIMAT ATURAN SEBELUM PENGAJUAN REFUND
+Saat pelanggan menekan tombol “Ajukan Refund”, tampilkan modal pop-up berisi aturan berikut:
 
-FITUR TAMBAHAN YANG HARUS ADA
+- Pastikan seluruh data yang Anda input sudah benar sebelum mengajukan refund.
+- Periksa kembali nomor rekening atau akun DompetKu tujuan agar tidak terjadi kesalahan pencairan dana.
+- Refund hanya dapat diproses sesuai metode pencairan yang dipilih dan data yang telah diverifikasi.
+- Jika data tidak sesuai, resto berhak menolak pengajuan refund.
+- Dengan menekan tombol “Ajukan Refund”, pelanggan menyatakan bahwa seluruh data yang diisi sudah benar dan dapat dipertanggungjawabkan.
 
-- Deteksi bahasa browser saat pertama kali buka.
-- Dropdown language switcher yang jelas dan modern.
-- Icon bendera opsional, tetapi jangan terlalu bergantung pada icon.
-- Loading state saat switch bahasa bila diperlukan.
-- Fallback jika key tidak ada.
-- Dukungan pluralization sederhana bila perlu.
-- Format tanggal, mata uang, dan angka mengikuti locale bahasa aktif.
-- Accessibility: keyboard navigation, aria-label, dan fokus yang jelas.
-- Persistensi bahasa untuk guest dan user login.
-- Kompatibel dengan seluruh layout, halaman promosi, role-based panel, kwitansi, dan komponen reusable.
+1. STATUS SETELAH PENGAJUAN REFUND
+Setelah pelanggan mengajukan refund, status reservasi dan refund harus berubah menjadi:
 
-MATA UANG / CURRENCY
+- “Pengajuan Refund”
+- “Menunggu Peninjauan”
+- “Menunggu Verifikasi”
+- “Disetujui”
+- “Ditolak”
+- “Dana Dikirim”
+- “Refund Selesai”
 
-- Seluruh tampilan harga harus mendukung lokal bahasa aktif.
-- Untuk bahasa Indonesia, gunakan format Rupiah:
-  - simbol: Rp
-  - format angka: Rp 1.000.000
-  - pemisah ribuan dan desimal mengikuti format Indonesia
-- Untuk bahasa English, tetap gunakan mata uang asli sistem yaitu Indonesian Rupiah, tetapi tampilkan dalam format English/locale English:
-  - kode mata uang: IDR
-  - format angka: IDR 1,000,000
-  - bila perlu bisa juga menampilkan: Rp 1,000,000
-- Jangan hardcode angka atau simbol mata uang di UI.
-- Buat helper formatCurrency(amount, lang) atau gunakan Intl.NumberFormat agar nominal otomatis menyesuaikan bahasa aktif.
-- Semua harga pada:
-  - produk
-  - checkout
-  - invoice
-  - laporan
-  - dashboard
-  - transaksi
-  - refund
-  - diskon
-  - pajak
-  - total pembayaran
-  - saldo
-  harus ikut format locale.
-- Untuk English, label mata uang dan deskripsi harga juga harus berubah, misalnya:
-  - Harga -> Price
-  - Total Bayar -> Total Payment
-  - Bayar Sekarang -> Pay Now
-  - Rp 50.000 -> IDR 50,000
-- Pastikan format uang konsisten di seluruh role, semua halaman, kwitansi, dan halaman promosi.
+Saat pengajuan masuk, pelanggan harus melihat status:
 
-OUTPUT YANG DIMINTA
+- “Pengajuan refund sedang diproses”
 
-- Berikan implementasi lengkap code multi-language tanpa API.
-- Ubah semua teks Indonesia ke sistem bilingual Indonesia-English.
-- Sertakan struktur file, helper i18n, contoh dictionary, language switcher, dan contoh penerapan pada beberapa komponen utama.
-- Sertakan logika chatbot yang otomatis mengikuti bahasa aktif.
-- Sertakan AI chat kasir yang otomatis menyesuaikan bahasa aktif.
-- Sertakan format mata uang yang berubah sesuai bahasa aktif.
-- Sertakan template dan logika kwitansi/receipt/struk untuk user dan kasir yang ikut berubah bahasa.
-- Pastikan hasil akhir siap dipakai di seluruh role, halaman promosi, kwitansi, dan seluruh halaman lain.
+1. PROSES DI MENU REFUND ADMIN
+Pada menu refund di admin/resto, tampilkan data refund yang masuk dengan detail:
 
-JANGAN
+- jenis pengajuan: reservasi / pesanan / gabungan
+- nama pelanggan
+- nomor reservasi
+- status pembayaran sebelumnya
+- nominal refund
+- metode pengembalian dana
+- bukti pendukung
+- alasan pembatalan
+- status terakhir
 
-- Jangan memakai translation API.
-- Jangan hanya mengubah sebagian kecil file.
-- Jangan meninggalkan teks hardcoded yang masih tersisa.
-- Jangan membuat switcher yang hanya mengubah satu halaman saja.
-- Jangan membuat chatbot tetap satu bahasa.
-- Jangan hardcode mata uang tanpa helper locale.
-- Jangan lupa kwitansi/receipt/struk harus ikut berubah bahasa.
+Saat resto menekan tombol setujui:
 
-Gunakan pendekatan yang rapi, scalable, dan konsisten untuk seluruh project.
+- status berubah menjadi “Disetujui”
+- jika metode DompetKu, dana dikreditkan ke DompetKu pelanggan
+- jika metode Transfer, dana ditransfer ke rekening pelanggan
+- pelanggan mendapat notifikasi bahwa dana telah dikirim
+
+Saat resto menekan tombol tolak:
+
+- status berubah menjadi “Ditolak”
+- tampilkan alasan penolakan
+
+1. PESAN STATUS UNTUK PELANGGAN
+Jika refund disetujui, tampilkan pesan:
+
+- “Refund Anda telah disetujui.”
+- “Dana telah dikreditkan ke DompetKu Anda.” jika metode DompetKu
+- “Dana telah ditransfer ke rekening Anda.” jika metode Transfer
+- “Silakan periksa saldo DompetKu atau rekening bank Anda.”
+
+Jika refund masih diproses, tampilkan pesan:
+
+- “Refund sedang diproses oleh resto.”
+
+1. RIWAYAT REFUND DAN FILTER
+Tambahkan halaman riwayat yang menampilkan semua:
+
+- reservasi aktif
+- reservasi dibatalkan
+- pengajuan refund
+- refund disetujui
+- refund ditolak
+- refund selesai
+
+Tambahkan filter riwayat:
+
+- berdasarkan status
+- berdasarkan tanggal
+- berdasarkan metode pengembalian dana
+- berdasarkan jenis pengajuan
+- berdasarkan nomor reservasi
+- berdasarkan nama pelanggan
+
+Tambahkan juga pencarian cepat:
+
+- nama pelanggan
+- nomor reservasi
+- status refund
+
+1. REALTIME UPDATE
+Pastikan setiap perubahan status tampil secara realtime di semua role:
+
+- pelanggan
+- kasir
+- resto/admin
+
+Perubahan yang harus realtime:
+
+- status reservasi
+- status pembatalan
+- status refund
+- status persetujuan
+- status pembayaran
+- status pengiriman dana
+
+Gunakan mekanisme realtime seperti websocket, SSE, polling otomatis, atau sistem notifikasi internal agar data selalu sinkron tanpa refresh manual.
+
+1. LOGIKA UTAMA YANG HARUS DITERAPKAN
+
+- Jika reservasi dibatalkan oleh kasir, status pelanggan harus langsung berubah dan menampilkan siapa yang membatalkan.
+- Jika pembayaran sudah lunas, tombol refund harus aktif.
+- Jika pelanggan mengajukan refund, data harus masuk ke antrian refund resto.
+- Jika refund disetujui, sistem mengubah status menjadi selesai dan mengirim notifikasi ke pelanggan.
+- Jika refund menggunakan DompetKu, saldo harus masuk ke akun DompetKu pelanggan.
+- Jika refund menggunakan Transfer, sistem mencatat bahwa dana telah diproses ke rekening tujuan.
+- Semua perubahan status harus tersimpan dalam log riwayat dan tampil realtime di seluruh role.
+
+1. VALIDASI PENTING
+Pastikan:
+
+- data rekening wajib lengkap jika metode transfer dipilih
+- metode DompetKu hanya bisa dipilih jika akun aktif
+- pengajuan refund tidak bisa dikirim jika data belum lengkap
+- pelanggan menerima peringatan untuk memeriksa kembali data sebelum submit
+- restoran/kasir/resto dapat melihat siapa yang membatalkan reservasi
+- seluruh riwayat refund dapat difilter dan ditelusuri kembali
+- setiap perubahan status tersimpan aman di database dan log audit
+
+1. TAMPILAN YANG DIINGINKAN
+
+- modal refund yang jelas dan profesional
+- status pembatalan yang transparan
+- riwayat refund dengan filter lengkap
+- notifikasi realtime
+- badge status yang mudah dibaca
+- desain responsif di mobile dan desktop
+
+Buat seluruh fitur ini terintegrasi penuh dengan halaman pelanggan, kasir, resto/admin, refund, dan riwayat, serta pastikan semua perubahan data dan status berjalan realtime.
+
+========================
+13. PEMBATALAN OLEH KASIR, REFUND, RIWAYAT, DAN REALTIME UPDATE
+========================
+
+A. PEMBATALAN RESERVASI OLEH KASIR
+
+Tambahkan fitur agar kasir dapat membatalkan reservasi apabila diperlukan sesuai kewenangan yang diberikan.
+
+Saat reservasi dibatalkan oleh kasir:
+
+- Status reservasi pelanggan harus langsung berubah realtime.
+- Tampilkan informasi:
+  - Dibatalkan
+  - Dibatalkan oleh Kasir
+  - Nama kasir yang membatalkan
+  - Alasan pembatalan
+  - Tanggal dan waktu pembatalan
+
+Simpan data:
+
+- cancelled_by
+- cancelled_role
+- cancellation_reason
+- cancellation_time
+
+Tampilkan di halaman pelanggan:
+
+“Reservasi ini dibatalkan oleh kasir.”
+“Alasan pembatalan: {{reason}}”
+
+Jika pembatalan dilakukan oleh resto/admin:
+
+“Reservasi ini dibatalkan oleh pihak resto.”
+
+==================================================
+B. TOMBOL REFUND OTOMATIS SETELAH PEMBATALAN
+==================================================
+
+Jika reservasi dibatalkan dan:
+
+- pembayaran lunas
+ATAU
+- pembayaran DP sudah diterima
+
+Maka otomatis tampil tombol:
+
+- Ajukan Refund
+
+Jika belum ada pembayaran:
+
+- tombol refund tidak muncul
+
+==================================================
+C. MODAL PENGAJUAN REFUND
+==================================================
+
+Saat pelanggan klik “Ajukan Refund” tampilkan modal.
+
+Sebelum form tampil, munculkan peringatan:
+
+“Pastikan seluruh data yang Anda masukkan sudah benar.”
+“Periksa kembali rekening atau akun DompetKu tujuan.”
+“Kesalahan pengisian data dapat menyebabkan keterlambatan proses refund.”
+“Dengan melanjutkan, Anda menyatakan data yang diberikan sudah benar.”
+
+Field wajib:
+
+- Nama Pelanggan
+- Nomor Reservasi
+- Alasan Refund
+- Nominal Refund
+- Metode Pengembalian Dana
+
+Pilihan metode:
+
+1. DompetKu
+2. Transfer Bank
+
+==================================================
+D. REFUND KE DOMPETKU
+==================================================
+
+Jika pelanggan memilih DompetKu:
+
+- pastikan akun DompetKu aktif
+- tampilkan nomor akun DompetKu
+- dana dikreditkan ke saldo DompetKu pelanggan
+
+Jika DompetKu belum aktif:
+
+Tampilkan:
+
+“Fitur DompetKu belum aktif pada akun Anda.”
+“Silakan gunakan metode Transfer Bank.”
+
+Tombol submit tidak boleh aktif.
+
+==================================================
+E. REFUND KE TRANSFER BANK
+==================================================
+
+Jika pelanggan memilih Transfer:
+
+Wajib isi:
+
+- Nama Bank
+- Nama Pemilik Rekening
+- Nomor Rekening
+- Cabang Bank (opsional)
+- Catatan Tambahan (opsional)
+
+Validasi:
+
+- semua field wajib terisi
+- nomor rekening hanya angka
+- panjang rekening valid
+
+==================================================
+F. STATUS REFUND
+==================================================
+
+Setelah pelanggan mengirim pengajuan:
+
+Status menjadi:
+
+- Pengajuan Refund
+- Menunggu Peninjauan
+
+Tampilkan:
+
+“Pengajuan refund Anda telah dikirim dan sedang menunggu peninjauan pihak resto.”
+
+Status yang tersedia:
+
+- Pengajuan Refund
+- Menunggu Peninjauan
+- Menunggu Verifikasi
+- Disetujui
+- Ditolak
+- Dana Dikirim
+- Refund Selesai
+
+==================================================
+G. MENU REFUND DI ADMIN
+==================================================
+
+Tambahkan halaman:
+
+Refund Management
+
+Pisahkan kategori:
+
+- Refund Reservasi
+- Refund Pesanan Menu
+- Refund Gabungan
+
+Data yang tampil:
+
+- Nama Pelanggan
+- Nomor Reservasi
+- Nominal Refund
+- Metode Refund
+- Status Refund
+- Status Pembayaran
+- Alasan Refund
+- Bukti Pendukung
+- Tanggal Pengajuan
+
+==================================================
+H. PERSETUJUAN REFUND
+==================================================
+
+Saat resto menyetujui refund:
+
+Status:
+
+- Disetujui
+
+Jika metode:
+
+DompetKu:
+
+- saldo otomatis masuk ke DompetKu pelanggan
+
+Status:
+
+- Dana Dikirim
+- Refund Selesai
+
+Notifikasi pelanggan:
+
+“Refund Anda telah disetujui.”
+“Dana telah dikreditkan ke akun DompetKu Anda.”
+“Silakan periksa saldo DompetKu Anda.”
+
+Jika metode:
+
+Transfer:
+
+Status:
+
+- Dana Dikirim
+
+Notifikasi:
+
+“Refund Anda telah disetujui.”
+“Dana telah ditransfer ke rekening yang Anda daftarkan.”
+“Silakan periksa rekening Anda.”
+
+==================================================
+I. PENOLAKAN REFUND
+==================================================
+
+Jika ditolak:
+
+Status:
+
+- Ditolak
+
+Wajib isi:
+
+- alasan penolakan
+
+Pelanggan melihat:
+
+“Pengajuan refund ditolak.”
+“Alasan: {{reason}}”
+
+==================================================
+J. RIWAYAT PELANGGAN
+==================================================
+
+Tambahkan halaman:
+
+Riwayat
+
+Kategori:
+
+- Reservasi Aktif
+- Reservasi Selesai
+- Reservasi Dibatalkan
+- Pengajuan Refund
+- Refund Disetujui
+- Refund Ditolak
+- Refund Selesai
+
+Tambahkan filter:
+
+- Status
+- Rentang Tanggal
+- Metode Refund
+- Jenis Refund
+- Nomor Reservasi
+
+Tambahkan pencarian:
+
+- Nama
+- Nomor Reservasi
+- Status
+
+==================================================
+K. REALTIME UPDATE
+==================================================
+
+Semua perubahan wajib realtime.
+
+Role yang menerima update:
+
+- Pelanggan
+- Kasir
+- Dapur
+- Admin/Resto
+
+Realtime untuk:
+
+- Status Reservasi
+- Status Check-in
+- Status Pembayaran
+- Status DP
+- Status Refund
+- Status Pembatalan
+- Status Persetujuan
+- Status Meja
+
+Gunakan:
+
+- WebSocket
+ATAU
+- Server Sent Events (SSE)
+ATAU
+- Realtime Listener
+
+Tanpa perlu refresh halaman.
+
+==================================================
+L. LOG AKTIVITAS
+==================================================
+
+Simpan audit log lengkap:
+
+- Reservasi dibuat
+- Reservasi dikonfirmasi
+- Reservasi dibatalkan
+- Siapa yang membatalkan
+- Check-in
+- Refund diajukan
+- Refund disetujui
+- Refund ditolak
+- Dana dikirim
+- Perubahan status meja
+- Perubahan status pembayaran
+- Perubahan konfigurasi
+
+Data log:
+
+- user_id
+- role
+- action
+- old_value
+- new_value
+- timestamp
+
+==================================================
+M. VALIDASI PENTING
+==================================================
+
+Pastikan:
+
+- Refund tidak dapat diajukan dua kali.
+- Refund hanya muncul jika ada pembayaran.
+- DompetKu harus aktif sebelum digunakan.
+- Data rekening wajib lengkap.
+- Semua perubahan status tersimpan.
+- Semua perubahan tampil realtime.
+- Semua role melihat data yang sesuai hak aksesnya.
+- Riwayat tidak boleh hilang meskipun reservasi sudah selesai.
+- Semua transaksi refund dan pembayaran tercatat dalam audit log.
+
+==================================================
+N. PENYEMPURNAAN MODAL "AJUKAN SEKARANG"
+==================================================
+
+Sebelum pelanggan menekan tombol:
+
+"Lanjut Ajukan"
+
+Tambahkan peringatan:
+
+“Mohon periksa kembali seluruh data reservasi Anda sebelum melanjutkan.”
+
+Pastikan pelanggan memeriksa:
+
+- Tanggal Reservasi
+- Jam Booking
+- Jumlah Tamu
+- Meja yang Dipilih
+- Pesanan Menu
+- Metode Pembayaran
+- Nominal DP
+- Data Kontak
+
+Tambahkan checkbox:
+
+☐ Saya telah memeriksa kembali seluruh data reservasi dan pesanan saya.
+
+Tombol lanjut hanya aktif jika:
+
+- Checkbox aturan dicentang
+- Checkbox pemeriksaan data dicentang
+
+Setelah berhasil diajukan:
+
+Status awal:
+
+- Menunggu Konfirmasi
+- Menunggu Pembayaran (jika belum bayar)
+- DP Dibayar (jika DP berhasil)
+- Lunas (jika lunas)
+
+Simpan waktu persetujuan aturan dan waktu persetujuan pemeriksaan data ke database.

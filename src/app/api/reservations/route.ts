@@ -1,6 +1,8 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,7 +28,10 @@ export async function POST(req: NextRequest) {
         clientIP = '127.0.0.1',
         browser = 'Unknown',
         device = 'Unknown',
-        userAgent = 'Unknown'
+        userAgent = 'Unknown',
+        rules_approved_at,
+        data_checked_at,
+        data_checked
       } = body;
 
       if (!customerId || !tableIds || tableIds.length === 0 || !reservationDate || !reservationTime || !guestCount || !paymentMethod) {
@@ -172,7 +177,11 @@ export async function POST(req: NextRequest) {
           dp_percent: Number(dpPercent || 0),
           dp_amount: parsedDpAmount,
           remaining_amount: parsedRemainingAmount,
-          cancellation_charge_percent: chargeCancel
+          cancellation_charge_percent: chargeCancel,
+          rules_approved: true,
+          rules_approved_at: rules_approved_at || new Date().toISOString(),
+          data_checked: data_checked || false,
+          data_checked_at: data_checked_at || null
         })
         .select()
         .single();
@@ -205,6 +214,26 @@ export async function POST(req: NextRequest) {
         status: 'success'
       });
 
+      // Catat Audit Log
+      await supabaseAdmin.from('audit_logs').insert({
+        action: 'reservation_created',
+        operator_id: profile.id,
+        operator_name: profile.full_name || 'Pelanggan',
+        target_id: newRes.id,
+        target_name: 'reservations',
+        data_before: null,
+        data_after: {
+          id: newRes.id,
+          customer_id: customerId,
+          status: 'pending',
+          payment_status: dbPaymentStatus,
+          table_id: tableIds[0],
+          reservation_date: reservationDate
+        },
+        browser,
+        device
+      });
+
       return NextResponse.json({ success: true, reservation: newRes });
     }
 
@@ -215,7 +244,10 @@ export async function POST(req: NextRequest) {
         refundMethod,
         refundBankAccount,
         refundReason,
-        refundProof
+        refundProof,
+        cancelledRole,
+        cancelledBy,
+        operatorId
       } = body;
 
       if (!reservationId || !reason) {
@@ -245,6 +277,75 @@ export async function POST(req: NextRequest) {
           tableIdsToRelease = parsedNotes.meja_ids;
         }
       } catch (e) {}
+
+      // If cancelled by Cashier or Admin
+      if (cancelledRole === 'cashier' || cancelledRole === 'admin') {
+        let updatedNotes = res.notes;
+        try {
+          const parsed = JSON.parse(res.notes);
+          updatedNotes = JSON.stringify({
+            ...parsed,
+            catatan_batal: reason,
+            dibatalkan_oleh: cancelledRole === 'cashier' ? 'kasir' : 'admin'
+          });
+        } catch (e) {}
+
+        // Update reservation with cancellation details
+        const { error: cancelErr } = await supabaseAdmin
+          .from('reservations')
+          .update({
+            status: 'cancelled',
+            notes: updatedNotes,
+            cancelled_by: cancelledBy || (cancelledRole === 'cashier' ? 'Kasir' : 'Admin'),
+            cancelled_role: cancelledRole,
+            cancellation_reason: reason,
+            cancellation_time: new Date().toISOString(),
+            refund_status: null // Customer will apply for refund manually
+          })
+          .eq('id', res.id);
+
+        if (cancelErr) throw cancelErr;
+
+        // Release tables
+        if (tableIdsToRelease.length > 0) {
+          await supabaseAdmin
+            .from('tables')
+            .update({ status: 'available' })
+            .in('id', tableIdsToRelease);
+        }
+
+        // Add Notification
+        if (res.customer_id) {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: res.customer_id,
+            title: "Reservasi Dibatalkan",
+            message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah dibatalkan oleh ${cancelledRole === 'cashier' ? 'kasir' : 'pihak resto'} dengan alasan: ${reason}.`,
+            type: "reservation",
+            status_badge: "dibatalkan"
+          });
+        }
+
+        // Catat Audit Log
+        await supabaseAdmin.from('audit_logs').insert({
+          action: 'reservation_cancelled',
+          operator_id: operatorId || null,
+          operator_name: cancelledBy || (cancelledRole === 'cashier' ? 'Kasir' : 'Admin'),
+          target_id: res.id,
+          target_name: 'reservations',
+          data_before: { status: res.status },
+          data_after: {
+            status: 'cancelled',
+            cancelled_by: cancelledBy || (cancelledRole === 'cashier' ? 'Kasir' : 'Admin'),
+            cancelled_role: cancelledRole,
+            cancellation_reason: reason
+          }
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Reservasi berhasil dibatalkan oleh ${cancelledRole === 'cashier' ? 'kasir' : 'resto'}.`
+        });
+      }
 
       // Calculate paid amount
       let totalPaid = 0;
@@ -309,7 +410,11 @@ export async function POST(req: NextRequest) {
             refund_amount: totalPaid,
             refund_bank_account: refundBankAccount || null,
             refund_reason: refundReason || null,
-            refund_proof: refundProof || null
+            refund_proof: refundProof || null,
+            cancelled_by: 'Pelanggan',
+            cancelled_role: 'customer',
+            cancellation_reason: reason,
+            cancellation_time: new Date().toISOString()
           })
           .eq('id', res.id);
 
@@ -318,6 +423,23 @@ export async function POST(req: NextRequest) {
           .from('tables')
           .update({ status: 'available' })
           .in('id', tableIdsToRelease);
+
+        // Catat Audit Log
+        await supabaseAdmin.from('audit_logs').insert({
+          action: 'reservation_cancelled',
+          operator_id: res.customer_id,
+          operator_name: 'Pelanggan',
+          target_id: res.id,
+          target_name: 'reservations',
+          data_before: { status: res.status },
+          data_after: {
+            status: 'cancelled',
+            cancelled_by: 'Pelanggan',
+            cancelled_role: 'customer',
+            cancellation_reason: reason,
+            refund_status: dbRefundStatus
+          }
+        });
 
         return NextResponse.json({
           success: true,
@@ -367,7 +489,11 @@ export async function POST(req: NextRequest) {
             refund_amount: refundAmount,
             refund_bank_account: refundBankAccount || null,
             refund_reason: refundReason || null,
-            refund_proof: refundProof || null
+            refund_proof: refundProof || null,
+            cancelled_by: 'Pelanggan',
+            cancelled_role: 'customer',
+            cancellation_reason: reason,
+            cancellation_time: new Date().toISOString()
           })
           .eq('id', res.id);
 
@@ -377,6 +503,23 @@ export async function POST(req: NextRequest) {
           .update({ status: 'available' })
           .in('id', tableIdsToRelease);
 
+        // Catat Audit Log
+        await supabaseAdmin.from('audit_logs').insert({
+          action: 'reservation_cancelled',
+          operator_id: res.customer_id,
+          operator_name: 'Pelanggan',
+          target_id: res.id,
+          target_name: 'reservations',
+          data_before: { status: res.status },
+          data_after: {
+            status: 'cancelled',
+            cancelled_by: 'Pelanggan',
+            cancelled_role: 'customer',
+            cancellation_reason: reason,
+            refund_status: totalPaid > 0 ? 'waiting_review' : null
+          }
+        });
+
         return NextResponse.json({
           success: true,
           message: totalPaid > 0
@@ -385,6 +528,80 @@ export async function POST(req: NextRequest) {
           refundStatus: totalPaid > 0 ? 'waiting_review' : null
         });
       }
+    }
+
+    if (action === 'request_refund') {
+      const {
+        reservationId,
+        refundMethod,
+        refundBankAccount,
+        refundReason,
+        refundAmount
+      } = body;
+
+      if (!reservationId || !refundMethod || !refundReason) {
+        return NextResponse.json({ error: 'Data pengajuan refund tidak lengkap' }, { status: 400 });
+      }
+
+      // Fetch reservation
+      const { data: res, error: resErr } = await supabaseAdmin
+        .from('reservations')
+        .select('*')
+        .eq('id', reservationId)
+        .single();
+
+      if (resErr || !res) {
+        return NextResponse.json({ error: 'Reservasi tidak ditemukan' }, { status: 404 });
+      }
+
+      if (res.refund_status) {
+        return NextResponse.json({ error: 'Refund untuk reservasi ini sudah diajukan' }, { status: 400 });
+      }
+
+      const calculatedAmount = Number(refundAmount || res.dp_amount || res.menu_total || 0);
+
+      // Update refund details
+      const { data: updatedRes, error: updateErr } = await supabaseAdmin
+        .from('reservations')
+        .update({
+          refund_status: 'pengajuan_refund', // Status: "Pengajuan Refund" / "Menunggu Peninjauan"
+          refund_method: refundMethod,
+          refund_amount: calculatedAmount,
+          refund_bank_account: refundBankAccount || null,
+          refund_reason: refundReason
+        })
+        .eq('id', reservationId)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+
+      // Add Notification
+      if (res.customer_id) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: res.customer_id,
+          title: "Pengajuan Refund Terkirim",
+          message: `Pengajuan refund Anda sebesar Rp ${calculatedAmount.toLocaleString('id-ID')} untuk reservasi #${res.id.substring(0, 8).toUpperCase()} telah terkirim dan sedang menunggu peninjauan.`,
+          type: "refund"
+        });
+      }
+
+      // Write Audit Log
+      await supabaseAdmin.from('audit_logs').insert({
+        action: 'refund_requested',
+        operator_id: res.customer_id,
+        operator_name: 'Pelanggan',
+        target_id: res.id,
+        target_name: 'reservations',
+        data_before: { refund_status: null },
+        data_after: {
+          refund_status: 'pengajuan_refund',
+          refund_method: refundMethod,
+          refund_amount: calculatedAmount
+        }
+      });
+
+      return NextResponse.json({ success: true, reservation: updatedRes });
     }
 
     if (action === 'process_refund') {
@@ -403,6 +620,13 @@ export async function POST(req: NextRequest) {
 
       if (resErr || !res) {
         return NextResponse.json({ error: 'Reservasi tidak ditemukan' }, { status: 404 });
+      }
+
+      let finalRefundStatus = refundStatus;
+      if (refundStatus === 'completed') {
+        finalRefundStatus = res.refund_method === 'dompetku' ? 'refund_selesai' : 'dana_dikirim';
+      } else if (refundStatus === 'rejected') {
+        finalRefundStatus = 'rejected';
       }
 
       // If completed and method is dompetku, credit balance
@@ -445,13 +669,49 @@ export async function POST(req: NextRequest) {
       const { error: updateErr } = await supabaseAdmin
         .from('reservations')
         .update({
-          refund_status: refundStatus,
+          refund_status: finalRefundStatus,
           refund_proof: proofUrl || res.refund_proof || null,
           notes: updatedNotes
         })
         .eq('id', res.id);
 
       if (updateErr) throw updateErr;
+
+      // Add Notification to Customer
+      if (res.customer_id) {
+        let notifMsg = "";
+        if (finalRefundStatus === 'refund_selesai') {
+          notifMsg = "Refund Anda telah disetujui. Dana telah dikreditkan ke akun DompetKu Anda. Silakan periksa saldo DompetKu Anda.";
+        } else if (finalRefundStatus === 'dana_dikirim') {
+          notifMsg = "Refund Anda telah disetujui. Dana telah ditransfer ke rekening yang Anda daftarkan. Silakan periksa rekening Anda.";
+        } else if (finalRefundStatus === 'rejected') {
+          notifMsg = `Pengajuan refund Anda ditolak oleh pihak resto. Alasan: ${adminNotes || '-'}`;
+        }
+        
+        if (notifMsg) {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: res.customer_id,
+            title: finalRefundStatus === 'rejected' ? "Refund Ditolak" : "Refund Disetujui",
+            message: notifMsg,
+            type: "refund"
+          });
+        }
+      }
+
+      // Write Audit Log
+      await supabaseAdmin.from('audit_logs').insert({
+        action: finalRefundStatus === 'refund_selesai' ? 'refund_completed' : finalRefundStatus === 'rejected' ? 'refund_rejected' : 'refund_processed',
+        operator_id: null,
+        operator_name: 'Admin Restoran',
+        target_id: res.id,
+        target_name: 'reservations',
+        data_before: { refund_status: res.refund_status },
+        data_after: {
+          refund_status: finalRefundStatus,
+          proof_url: proofUrl,
+          admin_notes: adminNotes
+        }
+      });
 
       return NextResponse.json({ success: true, message: 'Status refund reservasi berhasil diperbarui' });
     }

@@ -39,6 +39,37 @@ export async function GET(request: NextRequest) {
     const authCookie = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
     const currentSessionId = authCookie ? authCookie.value.slice(0, 100) : null;
 
+    const ipAddress = request.headers.get('cf-connecting-ip') ||
+      request.headers.get('x-real-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      '127.0.0.1';
+    
+    const userAgent = request.headers.get('user-agent') || '';
+    const cfCountry = request.headers.get('cf-ipcountry') || request.headers.get('x-vercel-ip-country') || 'Indonesia';
+    const cfCity = request.headers.get('x-vercel-ip-city') || 'Jakarta';
+    const cfTimezone = request.headers.get('x-vercel-ip-timezone') || 'Asia/Jakarta';
+    const cfAsn = request.headers.get('x-vercel-ip-asn') || 'Unknown';
+    const uaParsed = parseUserAgent(userAgent);
+
+    if (currentSessionId) {
+      // Upsert current session so it's always recorded
+      await supabaseAdmin.from('security_user_sessions').upsert({
+        profile_id: profile.id,
+        session_id: currentSessionId,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        country: cfCountry,
+        city: cfCity,
+        timezone: cfTimezone,
+        asn: cfAsn,
+        last_active_at: new Date().toISOString(),
+        is_revoked: false,
+        device_name: uaParsed.device || 'Perangkat tidak dikenal',
+        browser: uaParsed.browser || 'Browser tidak dikenal',
+        os: uaParsed.os || 'OS tidak dikenal'
+      }, { onConflict: 'session_id' });
+    }
+
     const { data: sessions, error } = await supabaseAdmin
       .from('security_user_sessions')
       .select('*')
@@ -58,13 +89,32 @@ export async function GET(request: NextRequest) {
         city: s.city,
         timezone: s.timezone,
         lastActiveAt: s.last_active_at,
-        isCurrent: s.session_id === currentSessionId,
+        isCurrent: currentSessionId ? s.session_id === currentSessionId : true,
         isSuspicious: !!s.is_suspicious,
         deviceName: s.device_name || uaParsed.device || 'Perangkat tidak dikenal',
         browser: s.browser || uaParsed.browser || 'Browser tidak dikenal',
         os: s.os || uaParsed.os || 'OS tidak dikenal'
       };
     });
+
+    // Fallback if no current device session found in query results
+    const hasCurrent = formattedSessions.some((s: any) => s.isCurrent);
+    if (!hasCurrent || formattedSessions.length === 0) {
+      formattedSessions.unshift({
+        id: 'current-fallback',
+        sessionId: currentSessionId || 'current',
+        ipAddress: ipAddress,
+        country: cfCountry,
+        city: cfCity,
+        timezone: cfTimezone,
+        lastActiveAt: new Date().toISOString(),
+        isCurrent: true,
+        isSuspicious: false,
+        deviceName: uaParsed.device || 'Perangkat Saat Ini',
+        browser: uaParsed.browser || 'Browser Saat Ini',
+        os: uaParsed.os || 'OS Saat Ini'
+      });
+    }
 
     return NextResponse.json({ success: true, sessions: formattedSessions });
   } catch (error: any) {

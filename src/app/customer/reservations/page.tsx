@@ -201,7 +201,7 @@ export default function CustomerReservationsPage() {
       setProfileEmail(profile.email || "");
       setForm(f => ({ ...f, atasNama: profile.full_name || "", telepon: profile.phone || "" }));
 
-      const { data } = await supabase.from("reservations").select("*, tables(table_number, capacity), cancelled_by_profile:profiles!cancelled_by(full_name), profiles:customer_id(full_name, phone, email)").eq("customer_id", profile.id).order("reservation_date", { ascending: false });
+      const { data } = await supabase.from("reservations").select("*, tables(table_number, capacity), cancelled_by_profile:profiles!cancelled_by(full_name), profiles:customer_id(full_name, phone, email)").eq("customer_id", profile.id).order("created_at", { ascending: false });
       setReservations(data || []);
 
       // Fetch all tables so that tables occupied right now can still be reserved for tomorrow/future dates

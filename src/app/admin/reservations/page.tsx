@@ -56,7 +56,7 @@ export default function AdminReservationsPage() {
 
   const fetchData = async () => {
     try {
-      const { data } = await supabase.from("reservations").select("*, profiles!reservations_customer_id_fkey(full_name, phone), tables(table_number, capacity)").order("reservation_date", { ascending: false });
+      const { data } = await supabase.from("reservations").select("*, profiles!reservations_customer_id_fkey(full_name, phone), tables(table_number, capacity)").order("created_at", { ascending: false });
       setReservations(data || []);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   };

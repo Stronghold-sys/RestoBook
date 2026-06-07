@@ -140,7 +140,7 @@ function CashierReservationsContent() {
         }
       }
 
-      const { data } = await supabase.from("reservations").select("*, profiles!reservations_customer_id_fkey(full_name, phone), tables(table_number, capacity)").order("reservation_date", { ascending: true });
+      const { data } = await supabase.from("reservations").select("*, profiles!reservations_customer_id_fkey(full_name, phone), tables(table_number, capacity)").order("created_at", { ascending: false });
       setReservations(data || []);
 
       const { data: tbl } = await supabase.from("tables").select("*").order("table_number");

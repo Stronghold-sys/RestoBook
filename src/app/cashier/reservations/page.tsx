@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft } from "lucide-react";
+import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft, Ban, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -201,6 +201,25 @@ function CashierReservationsContent() {
     const cleanStr = notesStr.trim();
     const finalStr = (cleanStr === "-" || cleanStr === "_" || cleanStr === "") ? "" : cleanStr;
     return { atas_nama: "", telepon: "", catatan: finalStr, meja_tambahan: [], meja_ids: [] };
+  };
+
+  const getCancelledByLabel = (parsedNotes: any) => {
+    let dibatalkanOleh = parsedNotes?.dibatalkan_oleh;
+    if (!dibatalkanOleh) {
+      if (parsedNotes?.catatan_tolak) {
+        dibatalkanOleh = "kasir";
+      } else if (parsedNotes?.catatan_batal) {
+        dibatalkanOleh = "pelanggan";
+      } else {
+        return null;
+      }
+    }
+    const byMap: Record<string, { label: string; color: string }> = {
+      pelanggan: { label: "Dibatalkan oleh Pelanggan", color: "text-orange-600 dark:text-orange-400" },
+      kasir: { label: "Dibatalkan oleh Kasir", color: "text-red-600 dark:text-red-400" },
+      admin: { label: "Dibatalkan oleh Admin", color: "text-red-700 dark:text-red-500" },
+    };
+    return byMap[dibatalkanOleh] || { label: `Dibatalkan oleh ${dibatalkanOleh}`, color: "text-red-600 dark:text-red-400" };
   };
 
   const handleConfirm = async (res: any) => {
@@ -551,6 +570,7 @@ function CashierReservationsContent() {
           const displayMejaList = parsedNotes.meja_tambahan && parsedNotes.meja_tambahan.length > 0 
             ? parsedNotes.meja_tambahan.join(", ") 
             : res.tables?.table_number;
+          const cancelledByInfo = getCancelledByLabel(parsedNotes);
 
           return (
             <motion.div key={res.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
@@ -598,6 +618,24 @@ function CashierReservationsContent() {
                   )}
                 </div>
               </div>
+
+              {/* Cancellation info inline on cards */}
+              {res.status === "cancelled" && cancelledByInfo && (
+                <div className="mt-3 flex items-center gap-2 text-xs font-semibold">
+                  <Ban className={`w-3.5 h-3.5 ${cancelledByInfo.color}`} />
+                  <span className={cancelledByInfo.color}>{cancelledByInfo.label}</span>
+                </div>
+              )}
+              {res.status === "cancelled" && parsedNotes?.catatan_batal && (
+                <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  <span className="font-bold">Alasan Pembatalan:</span> {parsedNotes.catatan_batal}
+                </p>
+              )}
+              {res.status === "cancelled" && parsedNotes?.catatan_tolak && (
+                <p className="mt-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  <span className="font-bold">Alasan Penolakan:</span> {parsedNotes.catatan_tolak}
+                </p>
+              )}
             </motion.div>
           );
         })}
@@ -665,18 +703,25 @@ function CashierReservationsContent() {
                     <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
                   </div>
                 )}
-                {parsed?.catatan_tolak && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                    <span className="text-xs font-bold uppercase block mb-1">Alasan Penolakan</span>
-                    <p className="text-sm">{parsed.catatan_tolak}</p>
-                  </div>
-                )}
-                {parsed?.catatan_batal && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-200">
-                    <span className="text-xs font-bold uppercase block mb-1">Alasan Pembatalan (Pelanggan)</span>
-                    <p className="text-sm">{parsed.catatan_batal}</p>
-                  </div>
-                )}
+                {(parsed?.catatan_tolak || parsed?.catatan_batal) && (() => {
+                  const cancelInfo = getCancelledByLabel(parsed);
+                  const alasanText = parsed?.catatan_tolak || parsed?.catatan_batal;
+                  const labelAlasan = parsed?.catatan_tolak ? "Alasan Penolakan" : "Alasan Pembatalan";
+                  return (
+                    <div className="rounded-xl border border-red-200 dark:border-red-800 overflow-hidden">
+                      <div className="bg-red-50 dark:bg-red-900/20 px-4 py-3 border-b border-red-200 dark:border-red-800 flex items-center gap-2">
+                        <Ban className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                          {cancelInfo ? cancelInfo.label : "Reservasi Dibatalkan"}
+                        </span>
+                      </div>
+                      <div className="p-4 space-y-2 bg-white dark:bg-gray-900">
+                        <span className="text-xs text-muted uppercase font-bold tracking-wider block">{labelAlasan}</span>
+                        <p className="text-sm text-red-700 dark:text-red-400">{alasanText}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           );

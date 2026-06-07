@@ -449,13 +449,22 @@ export async function POST(req: NextRequest) {
           operator_name: 'Pelanggan',
           target_id: res.id,
           target_name: 'reservations',
-          data_before: { status: res.status },
+          data_before: {
+            status: res.status,
+            payment_status: res.payment_status,
+            refund_status: res.refund_status
+          },
           data_after: {
             status: 'cancelled',
             cancelled_by: 'Pelanggan',
             cancelled_role: 'customer',
             cancellation_reason: reason,
-            refund_status: dbRefundStatus
+            refund_status: dbRefundStatus,
+            refund_method: refundMethod,
+            refund_bank_account: refundBankAccount,
+            refund_reason: refundReason,
+            refund_proof: refundProof,
+            refund_amount: totalPaid
           }
         });
 
@@ -528,13 +537,24 @@ export async function POST(req: NextRequest) {
           operator_name: 'Pelanggan',
           target_id: res.id,
           target_name: 'reservations',
-          data_before: { status: res.status },
+          data_before: {
+            status: res.status,
+            payment_status: res.payment_status,
+            refund_status: res.refund_status
+          },
           data_after: {
             status: 'cancelled',
             cancelled_by: 'Pelanggan',
             cancelled_role: 'customer',
             cancellation_reason: reason,
-            refund_status: totalPaid > 0 ? 'waiting_review' : null
+            refund_status: totalPaid > 0 ? 'waiting_review' : null,
+            refund_method: refundMethod,
+            refund_bank_account: refundBankAccount,
+            refund_reason: refundReason,
+            refund_proof: refundProof,
+            refund_amount: refundAmount,
+            charge_amount: chargeAmount,
+            charge_percent: chargePercent
           }
         });
 

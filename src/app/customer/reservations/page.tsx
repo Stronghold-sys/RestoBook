@@ -101,6 +101,15 @@ export default function CustomerReservationsPage() {
   const [cancelRefundBankAccount, setCancelRefundBankAccount] = useState<string>("");
   const [cancelRefundProof, setCancelRefundProof] = useState<string>("");
   const [cancelRefundNotes, setCancelRefundNotes] = useState<string>("");
+  const [cancelRefundBankName, setCancelRefundBankName] = useState("");
+  const [cancelRefundAccountNo, setCancelRefundAccountNo] = useState("");
+  const [cancelRefundAccountName, setCancelRefundAccountName] = useState("");
+  const [cancelType, setCancelType] = useState<"Pembatalan Reservasi" | "Pembatalan Pesanan" | "Pembatalan Gabungan">("Pembatalan Reservasi");
+  const [uploadingCancelProof, setUploadingCancelProof] = useState(false);
+  const [profileEmail, setProfileEmail] = useState("");
+  const [cancelAgree1, setCancelAgree1] = useState(false);
+  const [cancelAgree2, setCancelAgree2] = useState(false);
+  const [cancelAgree3, setCancelAgree3] = useState(false);
 
   // Refund Request States
   const [showRefundWarning, setShowRefundWarning] = useState(false);
@@ -171,9 +180,10 @@ export default function CustomerReservationsPage() {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) return;
-      const { data: profile } = await supabase.from("profiles").select("id, full_name, phone").eq("user_id", session.session.user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("id, full_name, phone, email").eq("user_id", session.session.user.id).single();
       if (!profile) return;
       setProfileId(profile.id);
+      setProfileEmail(profile.email || "");
       setForm(f => ({ ...f, atasNama: profile.full_name || "", telepon: profile.phone || "" }));
 
       const { data } = await supabase.from("reservations").select("*, tables(table_number, capacity)").eq("customer_id", profile.id).order("reservation_date", { ascending: false });
@@ -687,6 +697,47 @@ export default function CustomerReservationsPage() {
       const res = reservations.find(r => r.id === cancellingId);
       if (!res) throw new Error("Reservasi tidak ditemukan");
 
+      let totalPaid = 0;
+      if (res.payment_status === "paid") {
+        totalPaid = Number(res.menu_total || 0);
+      } else if (res.payment_status === "dp_paid") {
+        totalPaid = Number(res.dp_amount || 0);
+      }
+
+      let bankAccountDetail = "";
+      if (totalPaid > 0) {
+        if (cancelRefundMethod === "transfer") {
+          if (!cancelRefundBankName.trim() || !cancelRefundAccountNo.trim() || !cancelRefundAccountName.trim()) {
+            throw new Error("Lengkapi data rekening bank Anda");
+          }
+          const isNumeric = /^[0-9]+$/.test(cancelRefundAccountNo.trim());
+          if (!isNumeric) {
+            throw new Error("Nomor rekening bank harus berupa angka saja");
+          }
+          bankAccountDetail = JSON.stringify({
+            bankName: cancelRefundBankName.trim(),
+            accountNo: cancelRefundAccountNo.trim(),
+            accountName: cancelRefundAccountName.trim(),
+            cancelType: cancelType,
+            catatan: cancelRefundNotes.trim(),
+            email: profileEmail || "-",
+            phone: form.telepon || "-",
+            customerName: form.atasNama || "-"
+          });
+        } else {
+          bankAccountDetail = JSON.stringify({
+            bankName: "DompetKu",
+            accountNo: walletInfo?.id || profileId,
+            accountName: form.atasNama || "-",
+            cancelType: cancelType,
+            catatan: cancelRefundNotes.trim(),
+            email: profileEmail || "-",
+            phone: form.telepon || "-",
+            customerName: form.atasNama || "-"
+          });
+        }
+      }
+
       // Call API cancel
       const response = await fetch("/api/reservations", {
         method: "POST",
@@ -695,10 +746,10 @@ export default function CustomerReservationsPage() {
           action: "cancel",
           reservationId: cancellingId,
           reason: cancelReason,
-          refundMethod: cancelRefundMethod,
-          refundBankAccount: cancelRefundMethod === "transfer" ? cancelRefundBankAccount : walletInfo?.id,
-          refundReason: cancelReason,
-          refundProof: cancelRefundProof || null
+          refundMethod: totalPaid > 0 ? (cancelRefundMethod === "dompetku" ? "dompetku" : "transfer") : null,
+          refundBankAccount: totalPaid > 0 ? bankAccountDetail : null,
+          refundReason: totalPaid > 0 ? cancelReason : null,
+          refundProof: totalPaid > 0 ? (cancelRefundProof || null) : null
         })
       });
 
@@ -727,6 +778,13 @@ export default function CustomerReservationsPage() {
       setCancelReason("");
       setCancelRefundBankAccount("");
       setCancelRefundProof("");
+      setCancelRefundBankName("");
+      setCancelRefundAccountNo("");
+      setCancelRefundAccountName("");
+      setCancelRefundNotes("");
+      setCancelAgree1(false);
+      setCancelAgree2(false);
+      setCancelAgree3(false);
       fetchData();
     } catch (err: any) {
       toast.error("Gagal membatalkan: " + err.message);
@@ -1120,15 +1178,41 @@ export default function CustomerReservationsPage() {
                           <Eye className="w-3.5 h-3.5" /> Detail
                         </motion.button>
                         {["pending", "confirmed"].includes(res.status) && (
-                          <motion.button 
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }} 
-                            onClick={() => { setCancellingId(res.id); setCancelReason(""); }} 
-                            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-xs font-bold text-rose-600 dark:text-rose-400 rounded-xl flex items-center gap-1.5 transition-all border border-rose-250 dark:border-rose-900/30"
-                            title="Batalkan Pesanan"
-                          >
-                            <Ban className="w-3.5 h-3.5" /> Batalkan Pesanan
-                          </motion.button>
+                          (() => {
+                            const isConfirmedCashPaid = res.status === "confirmed" && 
+                              (res.payment_method === "tunai" || res.payment_method === "cash") && 
+                              res.payment_status === "paid";
+                            
+                            if (isConfirmedCashPaid) {
+                              return (
+                                <span className="text-[11px] text-red-500 font-bold max-w-[220px] leading-tight text-right block">
+                                  Reservasi ini sudah dikonfirmasi dan dibayar tunai, sehingga pembatalan tidak dapat dilakukan melalui sistem.
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }} 
+                                onClick={() => { 
+                                  setCancellingId(res.id); 
+                                  setCancelReason(""); 
+                                  setCancelRefundBankName("");
+                                  setCancelRefundAccountNo("");
+                                  setCancelRefundAccountName("");
+                                  setCancelRefundNotes("");
+                                  setCancelRefundProof("");
+                                  const hasMenu = Number(res.menu_total || 0) > 0;
+                                  setCancelType(hasMenu ? "Pembatalan Gabungan" : "Pembatalan Reservasi");
+                                }} 
+                                className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-xs font-bold text-rose-600 dark:text-rose-400 rounded-xl flex items-center gap-1.5 transition-all border border-rose-250 dark:border-rose-900/30"
+                                title="Batalkan Pesanan"
+                              >
+                                <Ban className="w-3.5 h-3.5" /> Batalkan Pesanan
+                              </motion.button>
+                            );
+                          })()
                         )}
                       </div>
                     </div>
@@ -2140,36 +2224,133 @@ export default function CustomerReservationsPage() {
                       )}
                     </div>
 
+                    {/* Jenis Pembatalan */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="cancelType" className="text-xs font-bold text-muted uppercase tracking-wider block">Jenis Pembatalan</label>
+                      <select
+                        id="cancelType"
+                        value={cancelType}
+                        onChange={e => setCancelType(e.target.value as any)}
+                        className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark text-sm"
+                      >
+                        <option value="Pembatalan Reservasi">Pembatalan Reservasi (meja saja)</option>
+                        <option value="Pembatalan Pesanan">Pembatalan Pesanan (menu pre-order)</option>
+                        <option value="Pembatalan Gabungan">Pembatalan Gabungan (reservasi + pesanan)</option>
+                      </select>
+                    </div>
+
                     {cancelRefundMethod === "transfer" ? (
                       <>
+                        {/* Bank Name */}
                         <div className="space-y-1.5">
-                          <label htmlFor="refundAccount" className="text-xs font-bold text-muted uppercase tracking-wider block">
-                            Detail Rekening Bank (Nama Bank, No Rek, Atas Nama)
-                          </label>
+                          <label htmlFor="cancelBankName" className="text-xs font-bold text-muted uppercase tracking-wider block">Nama Bank</label>
                           <input
-                            id="refundAccount"
+                            id="cancelBankName"
                             type="text"
-                            placeholder="BCA - 123456789 - John Doe"
-                            value={cancelRefundBankAccount}
-                            onChange={e => setCancelRefundBankAccount(e.target.value)}
+                            placeholder="Contoh: BCA, BNI, Mandiri, BRI..."
+                            value={cancelRefundBankName}
+                            onChange={e => setCancelRefundBankName(e.target.value)}
                             className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm"
                             required={cancelRefundMethod === "transfer"}
                           />
                         </div>
 
+                        {/* Account Number */}
                         <div className="space-y-1.5">
-                          <label htmlFor="refundProof" className="text-xs font-bold text-muted uppercase tracking-wider block">
-                            Link Bukti Pendukung / Foto KTP / Resi Pembayaran
-                          </label>
+                          <label htmlFor="cancelAccountNo" className="text-xs font-bold text-muted uppercase tracking-wider block">Nomor Rekening</label>
                           <input
-                            id="refundProof"
+                            id="cancelAccountNo"
                             type="text"
-                            placeholder="http://example.com/bukti.jpg"
-                            value={cancelRefundProof}
-                            onChange={e => setCancelRefundProof(e.target.value)}
+                            inputMode="numeric"
+                            placeholder="Nomor rekening (angka saja)"
+                            value={cancelRefundAccountNo}
+                            onChange={e => setCancelRefundAccountNo(e.target.value.replace(/\D/g, ""))}
+                            className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm font-mono tracking-wider"
+                            required={cancelRefundMethod === "transfer"}
+                          />
+                        </div>
+
+                        {/* Account Holder Name */}
+                        <div className="space-y-1.5">
+                          <label htmlFor="cancelAccountName" className="text-xs font-bold text-muted uppercase tracking-wider block">Nama Pemilik Rekening</label>
+                          <input
+                            id="cancelAccountName"
+                            type="text"
+                            placeholder="Nama sesuai buku tabungan / KTP"
+                            value={cancelRefundAccountName}
+                            onChange={e => setCancelRefundAccountName(e.target.value)}
                             className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm"
                             required={cancelRefundMethod === "transfer"}
                           />
+                        </div>
+
+                        {/* File Upload Proof */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-muted uppercase tracking-wider block">Bukti Pendukung (KTP / Resi Pembayaran)</label>
+                          {cancelRefundProof ? (
+                            <div className="relative rounded-xl overflow-hidden border-2 border-primary/30 bg-primary/5">
+                              <img src={cancelRefundProof} alt="Bukti Pembatalan" className="w-full h-40 object-cover" />
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all">
+                                <button
+                                  type="button"
+                                  onClick={() => setCancelRefundProof("")}
+                                  className="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5"
+                                >
+                                  <X className="w-3.5 h-3.5" /> Hapus & Unggah Ulang
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label
+                              htmlFor="cancelProofUpload"
+                              className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                                uploadingCancelProof
+                                  ? "border-primary bg-primary/5 animate-pulse"
+                                  : "border-border-light dark:border-border-dark hover:border-primary hover:bg-primary/5"
+                              }`}
+                            >
+                              {uploadingCancelProof ? (
+                                <>
+                                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                                  <span className="mt-2 text-xs text-primary font-semibold">Mengunggah...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="w-6 h-6 text-muted" />
+                                  <span className="mt-2 text-xs text-muted font-semibold">Klik untuk unggah bukti</span>
+                                  <span className="text-[10px] text-muted/70 mt-0.5">JPG, PNG, PDF — Maks 5 MB</span>
+                                </>
+                              )}
+                              <input
+                                id="cancelProofUpload"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,application/pdf"
+                                className="hidden"
+                                disabled={uploadingCancelProof}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setUploadingCancelProof(true);
+                                  try {
+                                    const formData = new FormData();
+                                    formData.append("file", file);
+                                    formData.append("userId", profileId);
+                                    formData.append("bucket", "profiles");
+                                    const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                                    const uploadData = await uploadRes.json();
+                                    if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal mengunggah berkas");
+                                    setCancelRefundProof(uploadData.url);
+                                    toast.success("Bukti berhasil diunggah!");
+                                  } catch (err: any) {
+                                    toast.error("Gagal unggah: " + err.message);
+                                  } finally {
+                                    setUploadingCancelProof(false);
+                                    e.target.value = "";
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -2180,12 +2361,79 @@ export default function CustomerReservationsPage() {
                         </p>
                       </div>
                     )}
+
+                    {/* Additional Notes */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="cancelNotes" className="text-xs font-bold text-muted uppercase tracking-wider block">Catatan Tambahan (Opsional)</label>
+                      <textarea
+                        id="cancelNotes"
+                        value={cancelRefundNotes}
+                        onChange={e => setCancelRefundNotes(e.target.value)}
+                        placeholder="Catatan / keterangan tambahan untuk proses refund..."
+                        className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm min-h-[70px] resize-none transition-all"
+                      />
+                    </div>
                   </>
                 )}
 
+                {/* 3 Mandatory Agreement Checkboxes */}
+                <div className="p-4 bg-red-50/60 dark:bg-red-950/15 border border-red-200/60 dark:border-red-900/30 rounded-2xl space-y-3">
+                  <p className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Pernyataan Persetujuan Pembatalan</p>
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="cancelAgree1"
+                      checked={cancelAgree1}
+                      onChange={e => setCancelAgree1(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-red-500 focus:ring-red-500 border-gray-300 shrink-0"
+                    />
+                    <span className="text-xs font-semibold text-text-light dark:text-text-dark leading-relaxed">
+                      Saya memahami dan menyetujui bahwa pembatalan ini tidak dapat dibatalkan kembali setelah dikonfirmasi.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="cancelAgree2"
+                      checked={cancelAgree2}
+                      onChange={e => setCancelAgree2(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-red-500 focus:ring-red-500 border-gray-300 shrink-0"
+                    />
+                    <span className="text-xs font-semibold text-text-light dark:text-text-dark leading-relaxed">
+                      Saya menyatakan bahwa seluruh data rekening dan bukti yang saya lampirkan adalah benar dan dapat dipertanggungjawabkan.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="cancelAgree3"
+                      checked={cancelAgree3}
+                      onChange={e => setCancelAgree3(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-red-500 focus:ring-red-500 border-gray-300 shrink-0"
+                    />
+                    <span className="text-xs font-semibold text-text-light dark:text-text-dark leading-relaxed">
+                      Saya bersedia menunggu proses verifikasi dan pencairan refund sesuai kebijakan dan jadwal yang ditetapkan oleh pihak restoran.
+                    </span>
+                  </label>
+                </div>
+
                 <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider text-text-light dark:text-text-dark hover:bg-gray-150 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Batal</button>
-                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim() || (hasPayment && cancelRefundMethod === "transfer" && (!cancelRefundBankAccount.trim() || !cancelRefundProof.trim()))} className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all">
+                  <button type="button" onClick={() => { setCancellingId(null); setCancelAgree1(false); setCancelAgree2(false); setCancelAgree3(false); }} className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider text-text-light dark:text-text-dark hover:bg-gray-150 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Batal</button>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={
+                      cancelling ||
+                      !cancelReason.trim() ||
+                      !cancelAgree1 || !cancelAgree2 || !cancelAgree3 ||
+                      (hasPayment && cancelRefundMethod === "transfer" && (
+                        !cancelRefundBankName.trim() ||
+                        !cancelRefundAccountNo.trim() ||
+                        !cancelRefundAccountName.trim()
+                      ))
+                    }
+                    className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all"
+                  >
                     {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
                   </motion.button>
                 </div>

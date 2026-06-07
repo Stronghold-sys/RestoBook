@@ -970,12 +970,42 @@ export async function POST(req: NextRequest) {
         status_badge: 'Pending'
       });
 
+      // Catat Audit Log
+      await supabaseAdmin.from('audit_logs').insert({
+        action: 'order_refund_submitted',
+        operator_id: order.customer_id,
+        operator_name: 'Pelanggan',
+        target_id: orderId,
+        target_name: 'orders',
+        data_before: {
+          status: order.status,
+          cancel_reason: order.cancel_reason
+        },
+        data_after: {
+          status: 'cancelled',
+          refund_status: refundDetails.refundStatus,
+          refund_method: refundDetails.refundMethod,
+          bank_name: refundDetails.bankName,
+          account_no: refundDetails.accountNo,
+          account_name: refundDetails.accountName,
+          refund_reason: refundDetails.refundReason
+        }
+      });
+
       return NextResponse.json({ success: true, message: 'Refund request submitted' });
     }
 
     if (action === 'process_refund') {
       const { refundDetails } = body;
       if (!refundDetails) return NextResponse.json({ error: 'Refund details are required' }, { status: 400 });
+
+      // Fetch existing cancel_reason to capture data_before
+      let prevRefundDetails: any = {};
+      try {
+        if (order.cancel_reason) {
+          prevRefundDetails = JSON.parse(order.cancel_reason);
+        }
+      } catch {}
 
       const { error } = await supabaseAdmin
         .from('orders')
@@ -1108,6 +1138,28 @@ export async function POST(req: NextRequest) {
         message: notifMessage,
         type: 'order',
         status_badge: isApproved ? 'Berhasil' : 'Gagal'
+      });
+
+      // Catat Audit Log
+      await supabaseAdmin.from('audit_logs').insert({
+        action: isApproved ? 'order_refund_approved' : 'order_refund_rejected',
+        operator_id: null,
+        operator_name: 'Admin Restoran',
+        target_id: orderId,
+        target_name: 'orders',
+        data_before: {
+          refund_status: prevRefundDetails.refundStatus || 'pending',
+          cancel_reason: prevRefundDetails
+        },
+        data_after: {
+          refund_status: refundDetails.refundStatus,
+          refund_method: refundDetails.refundMethod,
+          bank_name: refundDetails.bankName,
+          account_no: refundDetails.accountNo,
+          proof_url: refundDetails.proofUrl || null,
+          admin_notes: refundDetails.adminNotes,
+          processed_at: refundDetails.processedAt
+        }
       });
 
       return NextResponse.json({ success: true, message: 'Refund request processed' });

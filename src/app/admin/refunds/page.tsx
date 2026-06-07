@@ -30,6 +30,10 @@ export default function AdminRefundsPage() {
   const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [refundTypeFilter, setRefundTypeFilter] = useState<"all" | "reservation" | "order">("all");
   const [activeTab, setActiveTab] = useState<"list" | "analytics">("list");
+  const [refundMethodFilter, setRefundMethodFilter] = useState<"all" | "wallet" | "bank">("all");
+  const [reservationStatusFilter, setReservationStatusFilter] = useState<"all" | "cancelled" | "pending" | "confirmed">("all");
+  const [searchResNo, setSearchResNo] = useState("");
+  const [selectedDetailRefund, setSelectedDetailRefund] = useState<any>(null);
   
   // Action Modals State
   const [selectedRefund, setSelectedRefund] = useState<any>(null);
@@ -134,7 +138,7 @@ export default function AdminRefundsPage() {
 
       const { data: resData, error: resErr } = await supabase
         .from("reservations")
-        .select("*, profiles!reservations_customer_id_fkey(full_name, phone)")
+        .select("*, profiles!reservations_customer_id_fkey(full_name, phone, email)")
         .not("refund_status", "is", null)
         .order("updated_at", { ascending: false });
 
@@ -145,28 +149,56 @@ export default function AdminRefundsPage() {
         if (["completed", "refund_selesai", "dana_dikirim"].includes(res.refund_status)) refundStatus = "approved";
         else if (["rejected", "ditolak"].includes(res.refund_status)) refundStatus = "rejected";
 
+        // Parse JSON refund_bank_account if available
+        let parsedBankAccount: any = {};
+        try {
+          if (res.refund_bank_account && res.refund_bank_account.startsWith("{")) {
+            parsedBankAccount = JSON.parse(res.refund_bank_account);
+          }
+        } catch {}
+
+        const bankName = parsedBankAccount.bankName || (res.refund_method === "dompetku" ? "DompetKu" : "Transfer Bank");
+        const accountNo = parsedBankAccount.accountNo || res.refund_bank_account || "-";
+        const accountName = parsedBankAccount.accountName || res.profiles?.full_name || "-";
+        const cancelType = parsedBankAccount.cancelType || "-";
+        const catatan = parsedBankAccount.catatan || "";
+        const customerEmail = parsedBankAccount.email || res.profiles?.email || "-";
+        const customerPhone = parsedBankAccount.phone || res.profiles?.phone || "-";
+
         const hasMenu = Number(res.menu_total || 0) > 0;
         return {
           id: res.id,
           type: hasMenu ? "combined" : "reservation",
           customer_id: res.customer_id,
           customer_name: res.profiles?.full_name || "Guest",
-          phone: res.profiles?.phone || "-",
+          phone: customerPhone,
+          email: customerEmail,
           payment_method: res.payment_method,
+          payment_status: res.payment_status,
+          reservation_date: res.reservation_date,
+          reservation_time: res.reservation_time,
+          reservation_status: res.status,
+          menu_total: res.menu_total,
+          dp_amount: res.dp_amount,
+          dp_percent: res.dp_percent,
+          remaining_amount: res.remaining_amount,
           total_amount: res.refund_amount || res.dp_amount || res.menu_total || 0,
           discount: 0,
           voucher_id: null,
           refundDetails: {
             refundStatus: refundStatus,
             refundMethod: res.refund_method === "dompetku" ? "wallet" : "bank",
-            bankName: res.refund_method === "dompetku" ? "DompetKu" : "Transfer Bank",
-            accountNo: res.refund_bank_account || "-",
-            accountName: res.profiles?.full_name || "-",
+            bankName: bankName,
+            accountNo: accountNo,
+            accountName: accountName,
+            cancelType: cancelType,
+            catatan: catatan,
             refundReason: res.refund_reason || "-",
-            adminNotes: "", 
+            adminNotes: "",
             proofUrl: res.refund_proof || "",
             processedAt: res.updated_at
           },
+          raw_refund_status: res.refund_status,
           created_at: res.created_at,
           updated_at: res.updated_at
         };
@@ -334,6 +366,12 @@ export default function AdminRefundsPage() {
     
     // Type filter logic
     if (refundTypeFilter !== "all" && o.type !== refundTypeFilter) return false;
+
+    // Refund Method filter
+    if (refundMethodFilter !== "all" && o.refundDetails.refundMethod !== refundMethodFilter) return false;
+
+    // Reservation Status filter (only for reservation types)
+    if (reservationStatusFilter !== "all" && o.reservation_status && o.reservation_status !== reservationStatusFilter) return false;
     
     // Period filter logic
     if (periodFilter !== "all") {
@@ -344,19 +382,22 @@ export default function AdminRefundsPage() {
       if (periodFilter === "month" && !isAfter(orderDate, subMonths(today, 1))) return false;
     }
 
-    const custName = o.profiles?.full_name?.toLowerCase() || "guest";
+    const custName = o.customer_name?.toLowerCase() || "guest";
     const bank = o.refundDetails.bankName?.toLowerCase() || "";
     const orderId = o.id.split("-")[0].toLowerCase();
+    const resNo = o.id.toLowerCase();
     
     // Payment and refund methods searchable strings
     const paymentMethodText = o.payment_method === 'wallet' ? 'saldo dompet dompetku' : 'pembayaran online non-cash';
     const refundMethodText = o.refundDetails.refundMethod === 'wallet' ? 'saldo dompet dompetku' : `transfer bank ${o.refundDetails.bankName || ''}`;
 
-    const searchMatch = custName.includes(searchQuery.toLowerCase()) || 
-                        bank.includes(searchQuery.toLowerCase()) || 
-                        orderId.includes(searchQuery.toLowerCase()) ||
-                        paymentMethodText.includes(searchQuery.toLowerCase()) ||
-                        refundMethodText.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const searchMatch = !q || custName.includes(q) || 
+                        bank.includes(q) || 
+                        orderId.includes(q) ||
+                        resNo.includes(q) ||
+                        paymentMethodText.includes(q) ||
+                        refundMethodText.toLowerCase().includes(q);
 
     return statusMatch && searchMatch;
   });
@@ -527,6 +568,18 @@ export default function AdminRefundsPage() {
             <option value="combined">Refund Gabungan</option>
           </select>
 
+          <select 
+            value={refundMethodFilter} 
+            onChange={e => setRefundMethodFilter(e.target.value as any)} 
+            className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-3 outline-none text-xs font-bold text-text-light dark:text-text-dark w-full md:w-auto"
+            title="Filter Metode Refund"
+            aria-label="Filter Metode Refund"
+          >
+            <option value="all">Semua Metode</option>
+            <option value="wallet">DompetKu</option>
+            <option value="bank">Transfer Bank</option>
+          </select>
+
           <button 
             onClick={handleExportExcel} 
             className="flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-xl text-xs font-black uppercase transition-all shadow-md shadow-emerald-500/10 w-full md:w-auto whitespace-nowrap"
@@ -668,12 +721,21 @@ export default function AdminRefundsPage() {
                       <span className="text-lg font-black text-primary">Rp {Number(order.total_amount).toLocaleString("id-ID")}</span>
                     </div>
 
-                    {isPending && (
-                      <div className="flex gap-2">
-                        <button onClick={() => { setSelectedRefund(order); setActionType("reject"); }} className="px-4 py-2 bg-red-50 text-red-500 rounded-xl font-bold hover:bg-red-100 transition-all text-xs flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Tolak</button>
-                        <button onClick={() => { setSelectedRefund(order); setActionType("approve"); }} className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all text-xs flex items-center gap-1.5 shadow-lg shadow-green-500/10"><CheckCircle className="w-4 h-4" /> Setujui (ACC)</button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDetailRefund(order)}
+                        className="px-4 py-2 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl font-bold hover:bg-blue-100 transition-all text-xs flex items-center gap-1.5 border border-blue-100 dark:border-blue-900/30"
+                      >
+                        Detail
+                      </button>
+                      {isPending && (
+                        <>
+                          <button onClick={() => { setSelectedRefund(order); setActionType("reject"); }} className="px-4 py-2 bg-red-50 text-red-500 rounded-xl font-bold hover:bg-red-100 transition-all text-xs flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Tolak</button>
+                          <button onClick={() => { setSelectedRefund(order); setActionType("approve"); }} className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all text-xs flex items-center gap-1.5 shadow-lg shadow-green-500/10"><CheckCircle className="w-4 h-4" /> Setujui</button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -858,6 +920,182 @@ export default function AdminRefundsPage() {
             </div>
           </div>
         )}
+      </BaseModal>
+
+      {/* Modal Detail Pengajuan Refund */}
+      <BaseModal
+        isOpen={!!selectedDetailRefund}
+        onClose={() => setSelectedDetailRefund(null)}
+        showCloseButton={false}
+        size="lg"
+        noPadding
+      >
+        {selectedDetailRefund && (() => {
+          const d = selectedDetailRefund;
+          const det = d.refundDetails;
+          const isPending = det.refundStatus === "pending";
+          return (
+            <>
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white flex justify-between items-start">
+                <div>
+                  <p className="text-white/70 text-xs font-bold uppercase tracking-wider">Detail Pengajuan Refund</p>
+                  <h2 className="text-xl font-black mt-1">#{d.id.substring(0, 8).toUpperCase()}</h2>
+                  <span className={`mt-2 inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                    det.refundStatus === "pending" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                    det.refundStatus === "approved" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                    "bg-rose-100 text-rose-700 border-rose-200"
+                  }`}>
+                    {det.refundStatus === "pending" ? "Menunggu Tinjauan" : det.refundStatus === "approved" ? "Disetujui" : "Ditolak"}
+                  </span>
+                </div>
+                <button type="button" onClick={() => setSelectedDetailRefund(null)} title="Tutup" aria-label="Tutup" className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 sm:p-8 space-y-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+
+                {/* Section A: Informasi Pelanggan */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest border-b border-border-light dark:border-border-dark pb-1">A. Informasi Pelanggan</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    {[
+                      { label: "Nama Pelanggan", value: d.customer_name },
+                      { label: "No. Telepon", value: d.phone },
+                      { label: "Email", value: d.email },
+                      { label: "ID Pelanggan", value: d.customer_id?.substring(0, 8).toUpperCase() || "-" },
+                    ].map(item => (
+                      <div key={item.label} className="bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                        <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">{item.label}</span>
+                        <span className="font-bold text-text-light dark:text-text-dark mt-0.5 block">{item.value || "-"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section B: Informasi Reservasi */}
+                {d.type !== "order" && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-primary uppercase tracking-widest border-b border-border-light dark:border-border-dark pb-1">B. Informasi Reservasi</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                      {[
+                        { label: "No. Reservasi (ID)", value: d.id },
+                        { label: "Tanggal Reservasi", value: d.reservation_date || "-" },
+                        { label: "Jam Reservasi", value: d.reservation_time ? d.reservation_time.substring(0, 5) + " WIB" : "-" },
+                        { label: "Status Reservasi", value: d.reservation_status || "-" },
+                        { label: "Metode Pembayaran", value: d.payment_method || "-" },
+                        { label: "Status Pembayaran", value: d.payment_status || "-" },
+                        { label: "Total Menu", value: d.menu_total ? `Rp ${Number(d.menu_total).toLocaleString("id-ID")}` : "-" },
+                        { label: "DP Dibayar", value: d.dp_amount ? `Rp ${Number(d.dp_amount).toLocaleString("id-ID")} (${d.dp_percent || 0}%)` : "-" },
+                        { label: "Sisa Tagihan", value: d.remaining_amount ? `Rp ${Number(d.remaining_amount).toLocaleString("id-ID")}` : "-" },
+                      ].map(item => (
+                        <div key={item.label} className="bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                          <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">{item.label}</span>
+                          <span className="font-bold text-text-light dark:text-text-dark mt-0.5 block break-all">{item.value || "-"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section C: Detail Pengajuan Refund */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest border-b border-border-light dark:border-border-dark pb-1">C. Detail Pengajuan Refund</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    {[
+                      { label: "Jenis Pembatalan", value: det.cancelType || "-" },
+                      { label: "Metode Refund", value: det.refundMethod === "wallet" ? "DompetKu" : "Transfer Bank" },
+                      { label: "Nama Bank", value: det.bankName || "-" },
+                      { label: "Nomor Rekening", value: det.accountNo || "-" },
+                      { label: "Nama Pemilik Rek.", value: det.accountName || "-" },
+                      { label: "Nominal Refund", value: `Rp ${Number(d.total_amount).toLocaleString("id-ID")}` },
+                      { label: "Tipe Transaksi", value: d.type === "reservation" ? "Reservasi" : d.type === "order" ? "Pesanan Menu" : "Gabungan" },
+                      { label: "Status Refund (Raw)", value: d.raw_refund_status || det.refundStatus },
+                    ].map(item => (
+                      <div key={item.label} className="bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                        <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">{item.label}</span>
+                        <span className="font-bold text-text-light dark:text-text-dark mt-0.5 block break-all">{item.value || "-"}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {det.refundReason && (
+                    <div className="p-3.5 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/60 dark:border-amber-900/30 rounded-xl">
+                      <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Alasan Pengajuan Refund</span>
+                      <p className="font-medium text-text-light dark:text-text-dark mt-1 leading-relaxed">{det.refundReason}</p>
+                    </div>
+                  )}
+
+                  {det.catatan && (
+                    <div className="p-3.5 bg-gray-50 dark:bg-gray-800/40 border border-border-light dark:border-border-dark rounded-xl">
+                      <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Catatan Tambahan Pelanggan</span>
+                      <p className="font-medium text-text-light dark:text-text-dark mt-1 leading-relaxed">{det.catatan}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section D: Bukti & Timestamp */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest border-b border-border-light dark:border-border-dark pb-1">D. Bukti & Waktu</p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                      <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Tanggal Pengajuan</span>
+                      <span className="font-bold text-text-light dark:text-text-dark mt-0.5 block">
+                        {d.created_at ? format(new Date(d.created_at), "dd MMM yyyy HH:mm", { locale: localeId }) + " WIB" : "-"}
+                      </span>
+                    </div>
+                    <div className="bg-background-light dark:bg-background-dark p-3 rounded-xl border border-border-light dark:border-border-dark">
+                      <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Terakhir Diperbarui</span>
+                      <span className="font-bold text-text-light dark:text-text-dark mt-0.5 block">
+                        {d.updated_at ? format(new Date(d.updated_at), "dd MMM yyyy HH:mm", { locale: localeId }) + " WIB" : "-"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {det.proofUrl ? (
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Bukti Pendukung Pelanggan</span>
+                      <a href={det.proofUrl} target="_blank" rel="noreferrer" className="block relative rounded-xl overflow-hidden border border-border-light dark:border-border-dark group">
+                        <img src={det.proofUrl} alt="Bukti Pembatalan" className="w-full h-48 object-cover group-hover:scale-105 transition-all" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                          <span className="text-white text-xs font-black uppercase tracking-wider">Klik Untuk Perbesar</span>
+                        </div>
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-gray-50 dark:bg-gray-800/30 border border-dashed border-border-light dark:border-border-dark rounded-xl text-xs text-muted font-semibold text-center">
+                      Tidak ada bukti yang dilampirkan
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                  <button type="button" onClick={() => setSelectedDetailRefund(null)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-muted font-black rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs">Tutup</button>
+                  {isPending && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedDetailRefund(null); setSelectedRefund(d); setActionType("reject"); }}
+                        className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-all uppercase text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <XCircle className="w-4 h-4" /> Tolak
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedDetailRefund(null); setSelectedRefund(d); setActionType("approve"); }}
+                        className="flex-1 py-3.5 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl transition-all uppercase text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-green-500/10"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Setujui
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </BaseModal>
     </div>
   );

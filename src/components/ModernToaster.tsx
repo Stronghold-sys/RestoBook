@@ -48,7 +48,7 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
   // Keywords to classify realtime events
   const realtimeKeywords = [
     'pesanan online baru', 'pesanan baru masuk', 'chat baru', 'pesan baru',
-    'reservasi baru', 'pembayaran baru', 'realtime', 'lunas'
+    'reservasi baru', 'reservasi', 'pembayaran baru', 'realtime', 'lunas'
   ];
   if (realtimeKeywords.some(kw => lowerMessage.includes(kw))) {
     visualType = 'realtime';

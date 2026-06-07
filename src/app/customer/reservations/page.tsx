@@ -294,7 +294,6 @@ export default function CustomerReservationsPage() {
         }).catch(err => console.error("Gagal mengirim email reservasi:", err));
       }
 
-      toast.success("Reservasi berhasil diajukan! Menunggu konfirmasi kasir.");
       setShowModal(false);
       setForm({ date: "", time: "12:00", guests: 2, notes: "", atasNama: form.atasNama, telepon: form.telepon });
       setSelectedTableIds([]);
@@ -367,7 +366,6 @@ export default function CustomerReservationsPage() {
         console.error("Gagal sinkronisasi pembatalan kalender:", err);
       }
 
-      toast.success("Reservasi berhasil dibatalkan");
       setCancellingId(null);
       setCancelReason("");
       fetchData();

@@ -1459,7 +1459,7 @@ export default function CustomerReservationsPage() {
                 />
                 <div className="text-left">
                   <p className="font-bold text-sm text-text-light dark:text-text-dark">Non Tunai</p>
-                  <p className="text-[10px]">Bayar online via Payment Gateway</p>
+                  <p className="text-[10px]">Bayar instan secara online</p>
                 </div>
               </label>
 

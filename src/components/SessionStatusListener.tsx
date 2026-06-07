@@ -55,9 +55,10 @@ export default function SessionStatusListener() {
   const pathname = usePathname();
   const supabase = createClient();
   const channelRef = useRef<any>(null);
+  const sessionChannelRef = useRef<any>(null);
   const activeUserIdRef = useRef<string | null>(null);
 
-  // Unsubscribe channel if navigating to public pages (login, register, forgot password, home)
+  // Unsubscribe channels if navigating to public pages
   useEffect(() => {
     if (
       pathname === "/login" ||
@@ -69,6 +70,10 @@ export default function SessionStatusListener() {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      if (sessionChannelRef.current) {
+        supabase.removeChannel(sessionChannelRef.current);
+        sessionChannelRef.current = null;
+      }
       activeUserIdRef.current = null;
     }
   }, [pathname, supabase]);
@@ -78,10 +83,13 @@ export default function SessionStatusListener() {
       if (activeUserIdRef.current === userId) return;
       activeUserIdRef.current = userId;
 
-      // Clean up previous channel if any
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+      }
+      if (sessionChannelRef.current) {
+        supabase.removeChannel(sessionChannelRef.current);
+        sessionChannelRef.current = null;
       }
 
       // Check current pathname before database fetching
@@ -158,6 +166,46 @@ export default function SessionStatusListener() {
         .subscribe();
 
       channelRef.current = channel;
+
+      // Get current sessionId from cookie
+      const rawCookie = document.cookie.split("; ").find(row => {
+        const parts = row.split("=");
+        return parts[0].trim().startsWith("sb-") && parts[0].trim().endsWith("-auth-token");
+      });
+      const sessionId = rawCookie ? rawCookie.split("=")[1].slice(0, 100) : null;
+
+      if (sessionId) {
+        const sessionChannel = supabase
+          .channel(`realtime-revoked-session-${profile.id}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "security_user_sessions",
+              filter: `session_id=eq.${sessionId}`,
+            },
+            async (payload: any) => {
+              if (payload.new && payload.new.is_revoked) {
+                if (channelRef.current) {
+                  supabase.removeChannel(channelRef.current);
+                  channelRef.current = null;
+                }
+                if (sessionChannelRef.current) {
+                  supabase.removeChannel(sessionChannelRef.current);
+                  sessionChannelRef.current = null;
+                }
+
+                await supabase.auth.signOut();
+                toast.error("Sesi Anda telah dicabut dari perangkat lain.", { id: "revoke-toast", duration: 8000 });
+                window.location.href = `/login?message=session_revoked`;
+              }
+            }
+          )
+          .subscribe();
+
+        sessionChannelRef.current = sessionChannel;
+      }
     };
 
     // Listen for auth state change
@@ -169,6 +217,10 @@ export default function SessionStatusListener() {
         if (channelRef.current) {
           supabase.removeChannel(channelRef.current);
           channelRef.current = null;
+        }
+        if (sessionChannelRef.current) {
+          supabase.removeChannel(sessionChannelRef.current);
+          sessionChannelRef.current = null;
         }
       }
     });
@@ -184,6 +236,9 @@ export default function SessionStatusListener() {
       subscription.unsubscribe();
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      if (sessionChannelRef.current) {
+        supabase.removeChannel(sessionChannelRef.current);
       }
     };
   }, [router, supabase]);

@@ -668,6 +668,28 @@ export async function middleware(request: NextRequest) {
   let finalResponse = supabaseResponse;
 
   if (user && finalResponse) {
+    const authCookie = request.cookies.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
+    const sessionId = authCookie ? authCookie.value.slice(0, 100) : null;
+    if (sessionId) {
+      const { data: sessionData } = await supabase
+        .from('security_user_sessions')
+        .select('is_revoked')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (sessionData?.is_revoked) {
+        await supabase.auth.signOut();
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('message', 'session_revoked');
+        const response = NextResponse.redirect(redirectUrl);
+        request.cookies.getAll().forEach(c => {
+          if (c.name.startsWith('sb-')) {
+            response.cookies.delete(c.name);
+          }
+        });
+        return response;
+      }
+    }
     const metaLang = user.user_metadata?.lang || 'id';
     const clientLang = request.cookies.get('rb_i18n_lang')?.value;
     if (metaLang !== clientLang) {

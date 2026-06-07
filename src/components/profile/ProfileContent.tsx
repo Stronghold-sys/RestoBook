@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, CheckCircle, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, HelpCircle } from "lucide-react";
+import { 
+  User, Mail, Phone, Camera, Save, Loader2, Shield, Lock, Key, 
+  CheckCircle, ClipboardList, Send, Calendar, AlertTriangle, Eye, EyeOff, 
+  HelpCircle, Smartphone, Globe, ShieldAlert, ShieldCheck, Ban, Trash2, Home, Info,
+  RefreshCw
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { useModalStore } from "@/store/useModalStore";
@@ -134,7 +139,6 @@ export default function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [profile, setProfile] = useState({ id: "", full_name: "", phone: "", avatar_url: "", email: "", role: "", employee_id: "", email_unlocked: false });
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -142,17 +146,73 @@ export default function ProfileContent() {
   const openModal = useModalStore(state => state.openModal);
   const closeModal = useModalStore(state => state.closeModal);
 
-
-
+  // Profile data state
+  const [profile, setProfile] = useState({ 
+    id: "", 
+    full_name: "", 
+    phone: "", 
+    avatar_url: "", 
+    email: "", 
+    role: "", 
+    employee_id: "", 
+    email_unlocked: false,
+    address: "",
+    birthdate: ""
+  });
+  const [originalProfile, setOriginalProfile] = useState<any>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<"profile" | "resign" | "status">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "resign" | "status" | "preferences" | "security">("profile");
+
+  // Preferences State
+  const [preferences, setPreferences] = useState({
+    theme: "system",
+    notif_booking: true,
+    notif_payment: true,
+    notif_promo: true,
+    notif_security: true,
+    notif_reminder: true,
+    email_promo: true,
+    email_booking: true,
+    email_transaction: true,
+    email_security: true,
+    favorite_branch: "",
+    favorite_payment_method: "",
+    booking_default_guests: 2,
+    booking_favorite_area: "",
+    booking_smoking: false,
+    booking_indoor: true,
+    booking_notes: "",
+    booking_calendar_view: "monthly",
+    privacy_profile_visibility: "public",
+    privacy_data_consent: true
+  });
+
+  // Devices & security logs states
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [securityLogs, setSecurityLogs] = useState<any[]>([]);
+
+  // Password change state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // OTP Modal states
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpType, setOtpType] = useState<"email" | "phone" | "deactivate" | "delete">("email");
+  const [otpTargetValue, setOtpTargetValue] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [confirmDeletePassword, setConfirmDeletePassword] = useState("");
+  const [otpStep, setOtpStep] = useState<"credentials" | "otp">("credentials");
 
   // Resign Form State
   const [effectiveDate, setEffectiveDate] = useState("");
   const [reason, setReason] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
-
 
   // Resign Status Check State
   const [checkId, setCheckId] = useState("");
@@ -189,42 +249,6 @@ export default function ProfileContent() {
     localStorage.setItem("resign_draft_additionalNotes", val);
   };
 
-
-
-  // Delete account state & function
-
-
-  const handleDeleteAccount = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error("Sesi tidak ditemukan");
-
-      const response = await fetch('/api/profile/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session.user.id }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Gagal menghapus akun");
-
-      toast.success("Akun Anda berhasil dihapus sepenuhnya!");
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-      } catch (e) {
-        console.error('API logout failed', e);
-      }
-      await supabase.auth.signOut();
-      window.location.href = '/';
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      closeModal();
-    }
-  };
-
-
-
   useEffect(() => {
     fetchProfile();
 
@@ -255,7 +279,9 @@ export default function ProfileContent() {
                 email: payload.new.email || "",
                 role: payload.new.role || "customer",
                 employee_id: payload.new.employee_id || "",
-                email_unlocked: !!payload.new.email_unlocked
+                email_unlocked: !!payload.new.email_unlocked,
+                address: payload.new.address || "",
+                birthdate: payload.new.birthdate || ""
               }));
             }
           }
@@ -296,6 +322,97 @@ export default function ProfileContent() {
     };
   }, [hasChecked, checkId]);
 
+  // Realtime preferences sync
+  useEffect(() => {
+    if (!profile.id) return;
+
+    const channel = supabase
+      .channel(`profile-preferences-sync-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${profile.id}`
+        },
+        (payload: any) => {
+          if (payload.new) {
+            setPreferences({
+              theme: payload.new.theme || "system",
+              notif_booking: payload.new.notif_booking !== false,
+              notif_payment: payload.new.notif_payment !== false,
+              notif_promo: payload.new.notif_promo !== false,
+              notif_security: payload.new.notif_security !== false,
+              notif_reminder: payload.new.notif_reminder !== false,
+              email_promo: payload.new.email_promo !== false,
+              email_booking: payload.new.email_booking !== false,
+              email_transaction: payload.new.email_transaction !== false,
+              email_security: payload.new.email_security !== false,
+              favorite_branch: payload.new.favorite_branch || "",
+              favorite_payment_method: payload.new.favorite_payment_method || "",
+              booking_default_guests: payload.new.booking_default_guests || 2,
+              booking_favorite_area: payload.new.booking_favorite_area || "",
+              booking_smoking: !!payload.new.booking_smoking,
+              booking_indoor: payload.new.booking_indoor !== false,
+              booking_notes: payload.new.booking_notes || "",
+              booking_calendar_view: payload.new.booking_calendar_view || "monthly",
+              privacy_profile_visibility: payload.new.privacy_profile_visibility || "public",
+              privacy_data_consent: payload.new.privacy_data_consent !== false
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id]);
+
+  // Devices & security logs loader
+  const fetchDevicesAndLogs = async () => {
+    setLoadingSessions(true);
+    try {
+      const devRes = await fetch('/api/profile/devices');
+      const devData = await devRes.json();
+      if (devRes.ok && devData.success) {
+        setSessions(devData.sessions || []);
+      }
+
+      const { data: logs } = await supabase
+        .from('security_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      setSecurityLogs(logs || []);
+    } catch (e) {
+      console.error("Error fetching devices/logs:", e);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "security") {
+      fetchDevicesAndLogs();
+
+      const sessionChannel = supabase
+        .channel(`security-session-sync-${profile.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "security_user_sessions" },
+          () => fetchDevicesAndLogs()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(sessionChannel);
+      };
+    }
+  }, [activeTab, profile.id]);
+
   const fetchProfile = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -310,7 +427,7 @@ export default function ProfileContent() {
       if (error) throw error;
       
       if (data) {
-        setProfile({
+        const profileObj = {
           id: data.id,
           full_name: data.full_name || "",
           phone: data.phone || "",
@@ -318,9 +435,38 @@ export default function ProfileContent() {
           email: data.email || session.user.email || "",
           role: data.role || "customer",
           employee_id: data.employee_id || "",
-          email_unlocked: !!data.email_unlocked
-        });
+          email_unlocked: !!data.email_unlocked,
+          address: data.address || "",
+          birthdate: data.birthdate || ""
+        };
+        setProfile(profileObj);
+        setOriginalProfile(profileObj);
         setPreviewUrl(data.avatar_url || "");
+
+        // Set preferences values
+        setPreferences({
+          theme: data.theme || "system",
+          notif_booking: data.notif_booking !== false,
+          notif_payment: data.notif_payment !== false,
+          notif_promo: data.notif_promo !== false,
+          notif_security: data.notif_security !== false,
+          notif_reminder: data.notif_reminder !== false,
+          email_promo: data.email_promo !== false,
+          email_booking: data.email_booking !== false,
+          email_transaction: data.email_transaction !== false,
+          email_security: data.email_security !== false,
+          favorite_branch: data.favorite_branch || "",
+          favorite_payment_method: data.favorite_payment_method || "",
+          booking_default_guests: data.booking_default_guests || 2,
+          booking_favorite_area: data.booking_favorite_area || "",
+          booking_smoking: !!data.booking_smoking,
+          booking_indoor: data.booking_indoor !== false,
+          booking_notes: data.booking_notes || "",
+          booking_calendar_view: data.booking_calendar_view || "monthly",
+          privacy_profile_visibility: data.privacy_profile_visibility || "public",
+          privacy_data_consent: data.privacy_data_consent !== false
+        });
+
         if (data.employee_id) {
           setCheckId(data.employee_id);
         }
@@ -333,6 +479,14 @@ export default function ProfileContent() {
   };
 
   const handleSave = async () => {
+    // Check if email or phone is changed to prevent saving directly
+    if (profile.email !== originalProfile.email) {
+      return handleStartOtpFlow("email", profile.email);
+    }
+    if (profile.phone !== originalProfile.phone) {
+      return handleStartOtpFlow("phone", profile.phone);
+    }
+
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -351,13 +505,15 @@ export default function ProfileContent() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Gagal menyimpan profil');
 
-      if (result.data) {
-        setProfile(prev => ({
-          ...prev,
-          email: result.data.email || prev.email,
-          email_unlocked: false // lock field immediately
-        }));
-      }
+      // Save additional profile preferences (address & birthdate)
+      await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: profile.address,
+          birthdate: profile.birthdate || null
+        })
+      });
 
       toast.success("Profil diperbarui!");
       useActivityStore.getState().addLog(
@@ -440,12 +596,11 @@ export default function ProfileContent() {
         effective_date: effectiveDate,
         reason: reason,
         additional_notes: additionalNotes,
-        status: "Menunggu Konfirmasi" // Pastikan ini sesuai dengan CONSTRAINT di DB
+        status: "Menunggu Konfirmasi"
       });
 
       if (error) throw error;
 
-      // Trigger automatic polite WhatsApp notification via Fonnte API
       if (profile.phone) {
         fetch("/api/admin/resign-action", {
           method: "POST",
@@ -463,7 +618,6 @@ export default function ProfileContent() {
 
       toast.success("Pengajuan Anda telah berhasil dikirim. Silakan tunggu konfirmasi dari admin.");
       
-      // Clear autosave drafts
       localStorage.removeItem("resign_draft_effectiveDate");
       localStorage.removeItem("resign_draft_reason");
       localStorage.removeItem("resign_draft_additionalNotes");
@@ -486,7 +640,6 @@ export default function ProfileContent() {
 
     setChecking(true);
     try {
-      // 1. Get profile by employee_id
       const { data: prof, error: profErr } = await supabase
         .from("profiles")
         .select("email")
@@ -497,7 +650,6 @@ export default function ProfileContent() {
         throw new Error("No. ID atau Password yang Anda masukkan tidak sesuai. Silakan coba kembali.");
       }
 
-      // 2. Validate password via Supabase Auth SignIn
       const { error: authErr } = await supabase.auth.signInWithPassword({
         email: prof.email,
         password: checkPassword
@@ -507,7 +659,6 @@ export default function ProfileContent() {
         throw new Error("No. ID atau Password yang Anda masukkan tidak sesuai. Silakan coba kembali.");
       }
 
-      // 3. Password correct! Fetch resign requests
       const { data: requests, error: reqErr } = await supabase
         .from("resign_requests")
         .select("*")
@@ -527,6 +678,262 @@ export default function ProfileContent() {
     }
   };
 
+  // OTP Verification flows
+  const handleStartOtpFlow = async (type: "email" | "phone", value: string) => {
+    if (!value.trim()) {
+      return toast.error(`${type === 'email' ? 'Email' : 'Nomor HP'} baru tidak boleh kosong`);
+    }
+
+    setOtpType(type);
+    setOtpTargetValue(value);
+    setSendingOtp(true);
+    setShowOtpModal(true);
+    setOtpStep("otp");
+    setOtpCode("");
+
+    try {
+      const res = await fetch("/api/profile/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_otp",
+          type,
+          value
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengirim OTP");
+
+      toast.success(`Kode OTP berhasil dikirim ke ${value}`);
+    } catch (e: any) {
+      toast.error(e.message);
+      setShowOtpModal(false);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode.trim()) return toast.error("Kode OTP wajib diisi");
+    setVerifyingOtp(true);
+
+    try {
+      const res = await fetch("/api/profile/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "verify_otp",
+          type: otpType,
+          value: otpTargetValue,
+          code: otpCode
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Verifikasi OTP gagal");
+
+      toast.success("Data berhasil diperbarui!");
+      setShowOtpModal(false);
+      fetchProfile();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  // Deactivate/Delete flows
+  const handleStartDeactivateDeleteFlow = (action: "deactivate" | "delete") => {
+    setOtpType(action);
+    setOtpStep("credentials");
+    setConfirmDeletePassword("");
+    setOtpCode("");
+    setShowOtpModal(true);
+  };
+
+  const handleDeactivateDeleteVerifyCredentials = async () => {
+    if (!confirmDeletePassword) return toast.error("Password wajib diisi");
+    setSendingOtp(true);
+
+    try {
+      const res = await fetch("/api/profile/deactivate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_otp"
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengirim kode verifikasi");
+
+      toast.success("Kode verifikasi OTP berhasil dikirim!");
+      setOtpStep("otp");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleDeactivateDeleteVerifyOtp = async () => {
+    if (!otpCode) return toast.error("Kode OTP wajib diisi");
+    setVerifyingOtp(true);
+
+    try {
+      const res = await fetch("/api/profile/deactivate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: otpType,
+          password: confirmDeletePassword,
+          code: otpCode
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Proses verifikasi gagal");
+
+      if (otpType === 'deactivate') {
+        toast.success("Akun berhasil dinonaktifkan sementara!");
+      } else {
+        toast.success("Akun berhasil dihapus secara permanen!");
+      }
+
+      setShowOtpModal(false);
+      
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {}
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  // Preference save helper
+  const handleSavePreferences = async (updatedPrefs?: any) => {
+    setSaving(true);
+    const prefsToSave = updatedPrefs || preferences;
+    try {
+      const res = await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(prefsToSave)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan preferensi");
+
+      toast.success("Preferensi diperbarui!");
+      fetchProfile();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Password update helper
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return toast.error("Semua kolom password wajib diisi");
+    }
+    if (newPassword !== confirmPassword) {
+      return toast.error("Password konfirmasi tidak cocok");
+    }
+    if (newPassword.length < 8) {
+      return toast.error("Password baru minimal 8 karakter");
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/profile/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "change_password",
+          oldPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah password");
+
+      toast.success("Password berhasil diubah!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  // Devices sessions revocation
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      const res = await fetch("/api/profile/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "revoke",
+          sessionId
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mencabut sesi");
+      toast.success("Sesi perangkat berhasil dicabut!");
+      fetchDevicesAndLogs();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    try {
+      const res = await fetch("/api/profile/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "revoke_all"
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mencabut semua sesi");
+      toast.success("Semua sesi perangkat lain berhasil dicabut!");
+      fetchDevicesAndLogs();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleMarkSuspicious = async (sessionId: string, isSuspicious: boolean) => {
+    try {
+      const res = await fetch("/api/profile/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "suspicious",
+          sessionId,
+          isSuspicious
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memperbarui status");
+      toast.success(isSuspicious ? "Perangkat ditandai mencurigakan!" : "Status perangkat diperbarui");
+      fetchDevicesAndLogs();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
@@ -536,10 +943,31 @@ export default function ProfileContent() {
           <h1 className="text-3xl font-black text-text-light dark:text-text-dark uppercase tracking-wide">Profil Saya</h1>
           <p className="text-muted mt-1">Kelola data diri, keamanan akun, dan status keanggotaan</p>
         </div>
-        <button onClick={() => openModal('profile_password', { email: profile.email, phone: profile.phone, fullName: profile.full_name, role: profile.role })} className="flex items-center justify-center gap-2 px-5 py-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl font-black hover:bg-amber-500 hover:text-white transition-all text-sm uppercase tracking-wider shadow-lg shadow-amber-500/5">
-          <Key className="w-4 h-4" /> Ganti Password
-        </button>
       </div>
+
+      {/* Tabs Navigation for Customer */}
+      {profile.role === "customer" && (
+        <div className="flex flex-wrap bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl gap-2 mb-8 shadow-inner max-w-xl">
+          <button 
+            onClick={() => setActiveTab("profile")}
+            className={`flex-1 min-w-[100px] py-3.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "profile" ? "bg-white dark:bg-gray-700 shadow text-primary" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
+          >
+            Data Pribadi
+          </button>
+          <button 
+            onClick={() => setActiveTab("preferences")}
+            className={`flex-1 min-w-[100px] py-3.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "preferences" ? "bg-white dark:bg-gray-700 shadow text-teal-605" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
+          >
+            Preferensi & Notifikasi
+          </button>
+          <button 
+            onClick={() => setActiveTab("security")}
+            className={`flex-1 min-w-[100px] py-3.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${activeTab === "security" ? "bg-white dark:bg-gray-700 shadow text-blue-600" : "text-muted hover:text-text-light dark:hover:text-text-dark"}`}
+          >
+            Perangkat & Keamanan
+          </button>
+        </div>
+      )}
 
       {/* Tabs Navigation for Employees */}
       {profile.role !== "customer" && profile.role !== "admin" && (
@@ -566,6 +994,7 @@ export default function ProfileContent() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
         {/* Left Column: Avatar & Mini Summary */}
         <div className="lg:col-span-1 space-y-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 text-center shadow-xl">
@@ -597,8 +1026,6 @@ export default function ProfileContent() {
               )}
             </div>
 
-
-
             <div className="mt-4 border-t border-border-light dark:border-border-dark pt-4 flex flex-col items-center gap-2 w-full">
               <span className="text-[10px] font-black uppercase text-muted">Panduan Interaktif</span>
               <button
@@ -608,7 +1035,7 @@ export default function ProfileContent() {
                   toast.success("Tutorial onboarding dimulai ulang!");
                 }}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-orange-500 hover:from-primary-hover hover:to-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-primary/10 hover:scale-[1.02] w-full"
-                title="Mulai Ulang Tutorial"
+                title="Mulai Ulang Tour"
               >
                 <HelpCircle className="w-4 h-4" /> Mulai Ulang Tour
               </button>
@@ -619,56 +1046,516 @@ export default function ProfileContent() {
         {/* Right Column: Tab Contents */}
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
+            
+            {/* Tab: Data Pribadi (profile) */}
             {activeTab === "profile" && (
               <motion.div key="profile-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Nama Lengkap */}
                   <div className="space-y-2">
                     <label htmlFor="fullName" className="text-xs font-black uppercase text-muted ml-1">Nama Lengkap</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                      <input id="fullName" type="text" value={profile.full_name} onChange={e => setProfile({...profile, full_name: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="Nama Lengkap" title="Nama Lengkap" />
+                      <input id="fullName" type="text" value={profile.full_name} onChange={e => setProfile({...profile, full_name: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" placeholder="Nama Lengkap" title="Nama Lengkap" />
                     </div>
                   </div>
+
+                  {/* Tanggal Lahir */}
                   <div className="space-y-2">
-                    <label htmlFor="phoneNumber" className="text-xs font-black uppercase text-muted ml-1">No. Telepon</label>
+                    <label htmlFor="birthdate" className="text-xs font-black uppercase text-muted ml-1">Tanggal Lahir</label>
                     <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                      <input id="phoneNumber" type="tel" value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="0812..." title="Nomor Telepon" />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+                      <input id="birthdate" type="date" value={profile.birthdate} onChange={e => setProfile({...profile, birthdate: e.target.value})} className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" title="Tanggal Lahir" />
                     </div>
                   </div>
-                </div>
-                {profile.email_unlocked && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-2xl text-xs font-bold leading-relaxed mb-4">
-                    Beberapa kolom yang terkait telah dibuka sementara agar Anda dapat melanjutkan proses pembaruan sesuai persetujuan admin.
+
+                  {/* Alamat Lengkap */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="address" className="text-xs font-black uppercase text-muted ml-1">Alamat Lengkap</label>
+                    <div className="relative">
+                      <Home className="absolute left-4 top-5 h-5 w-5 text-muted" />
+                      <textarea id="address" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" rows={2} placeholder="Tulis alamat rumah lengkap..." title="Alamat Lengkap" />
+                    </div>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <label htmlFor="emailAddr" className="text-xs font-black uppercase text-muted ml-1">Alamat Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-                    <input
-                      id="emailAddr"
-                      type="email"
-                      value={profile.email}
-                      disabled={profile.role !== "admin" && !profile.email_unlocked}
-                      onChange={e => setProfile({ ...profile, email: e.target.value })}
-                      className={`w-full pl-12 pr-4 py-3.5 border rounded-2xl outline-none transition-all ${
-                        profile.role === "admin" || profile.email_unlocked
-                          ? "bg-background-light dark:bg-background-dark border-primary focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark"
-                          : "bg-gray-50 dark:bg-gray-800/50 border-border-light dark:border-border-dark text-muted cursor-not-allowed"
-                      }`}
-                      placeholder="email@contoh.com"
-                      title="Alamat Email"
-                    />
+
+                  {/* Email (OTP Protected) */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="emailAddr" className="text-xs font-black uppercase text-muted ml-1">Alamat Email</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+                        <input
+                          id="emailAddr"
+                          type="email"
+                          value={profile.email}
+                          onChange={e => setProfile({ ...profile, email: e.target.value })}
+                          disabled={profile.role !== "admin" && !profile.email_unlocked}
+                          className={`w-full pl-12 pr-4 py-3.5 border rounded-2xl outline-none transition-all text-sm font-semibold ${
+                            profile.role === "admin" || profile.email_unlocked
+                              ? "bg-background-light dark:bg-background-dark border-primary focus:ring-2 focus:ring-primary/20 text-text-light dark:text-text-dark"
+                              : "bg-gray-50 dark:bg-gray-800/50 border-border-light dark:border-border-dark text-muted cursor-not-allowed"
+                          }`}
+                          placeholder="email@contoh.com"
+                          title="Alamat Email"
+                        />
+                      </div>
+                      {profile.role === "customer" && profile.email !== originalProfile?.email && (
+                        <button 
+                          onClick={() => handleStartOtpFlow("email", profile.email)}
+                          className="px-4 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider shrink-0 shadow-lg shadow-primary/10"
+                        >
+                          Verifikasi OTP
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Nomor HP (OTP Protected) */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="phoneNumber" className="text-xs font-black uppercase text-muted ml-1">No. Telepon / WhatsApp HP</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+                        <input 
+                          id="phoneNumber" 
+                          type="tel" 
+                          value={profile.phone} 
+                          onChange={e => setProfile({...profile, phone: e.target.value})} 
+                          className="w-full pl-12 pr-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm font-semibold" 
+                          placeholder="0812..." 
+                          title="Nomor Telepon" 
+                        />
+                      </div>
+                      {profile.role === "customer" && profile.phone !== originalProfile?.phone && (
+                        <button 
+                          onClick={() => handleStartOtpFlow("phone", profile.phone)}
+                          className="px-4 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider shrink-0 shadow-lg shadow-primary/10"
+                        >
+                          Verifikasi OTP
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
-                
+
                 <button onClick={handleSave} disabled={saving} className="w-full py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-hover transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Simpan Perubahan</>}
                 </button>
               </motion.div>
             )}
 
+            {/* Tab: Preferensi & Notifikasi (preferences) */}
+            {activeTab === "preferences" && (
+              <motion.div key="preferences-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-8">
+                
+                {/* 1. Pengaturan Tema */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Tampilan Tema</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: "light", label: "Light Mode" },
+                      { value: "dark", label: "Dark Mode" },
+                      { value: "system", label: "System Mode" }
+                    ].map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => {
+                          const updated = { ...preferences, theme: t.value };
+                          setPreferences(updated);
+                          handleSavePreferences(updated);
+                        }}
+                        className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                          preferences.theme === t.value
+                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                            : "border-border-light dark:border-border-dark hover:border-gray-300"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Preferensi Booking */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Preferensi Default Booking</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-muted ml-1">Jumlah Tamu Default</label>
+                      <input 
+                        type="number"
+                        min={1} max={30}
+                        value={preferences.booking_default_guests}
+                        onChange={e => setPreferences({ ...preferences, booking_default_guests: parseInt(e.target.value) || 2 })}
+                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-muted ml-1">Area Favorit</label>
+                      <select
+                        value={preferences.booking_favorite_area}
+                        onChange={e => setPreferences({ ...preferences, booking_favorite_area: e.target.value })}
+                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                      >
+                        <option value="">-- Pilih Area --</option>
+                        <option value="indoor">Indoor (Bebas Rokok)</option>
+                        <option value="outdoor">Outdoor</option>
+                        <option value="smoking">Smoking Area</option>
+                        <option value="non_smoking">Non Smoking Area</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-xs font-bold text-muted ml-1">Catatan Reservasi Default</label>
+                      <textarea
+                        value={preferences.booking_notes}
+                        onChange={e => setPreferences({ ...preferences, booking_notes: e.target.value })}
+                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        rows={2}
+                        placeholder="Contoh: Meja dekat jendela..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-muted ml-1">Cabang Favorit</label>
+                      <select
+                        value={preferences.favorite_branch}
+                        onChange={e => setPreferences({ ...preferences, favorite_branch: e.target.value })}
+                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                      >
+                        <option value="">-- Pilih Cabang --</option>
+                        <option value="Cabang Jakarta Pusat">Cabang Jakarta Pusat</option>
+                        <option value="Cabang Jakarta Selatan">Cabang Jakarta Selatan</option>
+                        <option value="Cabang Bandung">Cabang Bandung</option>
+                        <option value="Cabang Surabaya">Cabang Surabaya</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-muted ml-1">Metode Bayar Favorit</label>
+                      <select
+                        value={preferences.favorite_payment_method}
+                        onChange={e => setPreferences({ ...preferences, favorite_payment_method: e.target.value })}
+                        className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                      >
+                        <option value="">-- Pilih Metode --</option>
+                        <option value="QRIS">QRIS</option>
+                        <option value="Transfer Bank">Transfer Bank</option>
+                        <option value="E-Wallet">E-Wallet</option>
+                        <option value="Kartu Debit">Kartu Debit</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Tampilan Kalender */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Tampilan Default Kalender</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: "monthly", label: "Bulanan" },
+                      { value: "weekly", label: "Mingguan" },
+                      { value: "daily", label: "Harian" }
+                    ].map(c => (
+                      <button
+                        key={c.value}
+                        onClick={() => setPreferences({ ...preferences, booking_calendar_view: c.value })}
+                        className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                          preferences.booking_calendar_view === c.value
+                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                            : "border-border-light dark:border-border-dark hover:border-gray-300"
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Notifikasi Toggles */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Notifikasi Aplikasi</h3>
+                  <div className="space-y-3">
+                    {[
+                      { key: "notif_booking", label: "Notifikasi Booking", desc: "Dapatkan info persetujuan/pembatalan reservasi meja Anda" },
+                      { key: "notif_payment", label: "Notifikasi Pembayaran", desc: "Konfirmasi pembayaran lunas & info tagihan" },
+                      { key: "notif_promo", label: "Notifikasi Promo", desc: "Informasi diskon, reward loyalitas & voucher khusus untuk Anda" },
+                      { key: "notif_security", label: "Notifikasi Keamanan", desc: "Peringatan login baru, perubahan data sensitif & ganti password" },
+                      { key: "notif_reminder", label: "Reminder Reservasi", desc: "Pengingat otomatis H-1 dan beberapa jam sebelum booking meja" }
+                    ].map(n => (
+                      <div key={n.key} className="flex justify-between items-center gap-4 py-1.5">
+                        <div>
+                          <p className="text-sm font-bold">{n.label}</p>
+                          <p className="text-[10px] text-muted">{n.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => setPreferences({ ...preferences, [n.key]: !((preferences as any)[n.key]) })}
+                          className={`w-11 h-6 rounded-full transition-all relative ${
+                            (preferences as any)[n.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
+                            (preferences as any)[n.key] ? "right-1" : "left-1"
+                          }`} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Email Toggles */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Notifikasi Email</h3>
+                  <div className="space-y-3">
+                    {[
+                      { key: "email_booking", label: "Email Booking & Reservasi" },
+                      { key: "email_transaction", label: "Email Transaksi & Invoice" },
+                      { key: "email_promo", label: "Email Penawaran Promo & Event" },
+                      { key: "email_security", label: "Email Keamanan Akun" }
+                    ].map(e => (
+                      <div key={e.key} className="flex justify-between items-center gap-4">
+                        <span className="text-sm font-bold">{e.label}</span>
+                        <button
+                          onClick={() => setPreferences({ ...preferences, [e.key]: !((preferences as any)[e.key]) })}
+                          className={`w-11 h-6 rounded-full transition-all relative ${
+                            (preferences as any)[e.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
+                            (preferences as any)[e.key] ? "right-1" : "left-1"
+                          }`} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 6. Privasi Akun */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Privasi & Persetujuan Data</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center gap-4">
+                      <div>
+                        <p className="text-sm font-bold">Visibilitas Profil</p>
+                        <p className="text-[10px] text-muted">Membatasi pencarian profil Anda oleh pelanggan lain</p>
+                      </div>
+                      <select
+                        value={preferences.privacy_profile_visibility}
+                        onChange={e => setPreferences({ ...preferences, privacy_profile_visibility: e.target.value })}
+                        className="p-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-xs font-bold outline-none"
+                      >
+                        <option value="public">Publik</option>
+                        <option value="private">Privat</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-between items-center gap-4 py-2 border-t border-border-light/40 dark:border-border-dark/40">
+                      <div>
+                        <p className="text-sm font-bold">Persetujuan Penggunaan Data</p>
+                        <p className="text-[10px] text-muted">Izinkan RestoBook menggunakan preferensi untuk peningkatan layanan & promo personal</p>
+                      </div>
+                      <button
+                        onClick={() => setPreferences({ ...preferences, privacy_data_consent: !preferences.privacy_data_consent })}
+                        className={`w-11 h-6 rounded-full transition-all relative ${
+                          preferences.privacy_data_consent ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
+                        }`}
+                      >
+                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
+                          preferences.privacy_data_consent ? "right-1" : "left-1"
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={() => handleSavePreferences()} className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
+                  <Save className="w-5 h-5" /> Simpan Semua Preferensi
+                </button>
+
+              </motion.div>
+            )}
+
+            {/* Tab: Perangkat & Keamanan (security) */}
+            {activeTab === "security" && (
+              <motion.div key="security-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-8">
+                
+                {/* 1. Ganti Password */}
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Ubah Password Akun</h3>
+                  
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted ml-1">Password Lama</label>
+                    <input 
+                      type="password"
+                      value={oldPassword}
+                      onChange={e => setOldPassword(e.target.value)}
+                      placeholder="Masukkan password saat ini..."
+                      className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-muted ml-1">Password Baru</label>
+                      <input 
+                        type="password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="Minimal 8 karakter..."
+                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-muted ml-1">Konfirmasi Password Baru</label>
+                      <input 
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Ulangi password baru..."
+                        className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={changingPassword || !oldPassword || !newPassword}
+                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/10 flex justify-center items-center gap-1.5"
+                  >
+                    {changingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />} Perbarui Password Keamanan
+                  </button>
+                </form>
+
+                {/* 2. Lihat Perangkat Login */}
+                <div className="space-y-4 pt-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-border-light dark:border-border-dark">
+                    <h3 className="text-sm font-black uppercase text-muted tracking-wider">Perangkat Login Aktif</h3>
+                    <button 
+                      onClick={fetchDevicesAndLogs}
+                      disabled={loadingSessions}
+                      className="p-1 text-muted hover:text-primary transition-all disabled:opacity-50"
+                      title="Perbarui daftar"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loadingSessions ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+
+                  {loadingSessions && sessions.length === 0 ? (
+                    <div className="text-center py-6">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
+                    </div>
+                  ) : sessions.length === 0 ? (
+                    <p className="text-xs text-muted text-center py-4">Tidak ada data perangkat aktif.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {sessions.map(s => (
+                        <div key={s.id} className={`p-4 rounded-2xl border ${s.isSuspicious ? 'border-red-300 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/5' : 'border-border-light dark:border-border-dark'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs relative overflow-hidden`}>
+                          
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <Smartphone className="w-4 h-4 text-primary shrink-0" />
+                              <span className="font-bold text-sm">{s.deviceName}</span>
+                              {s.isCurrent && (
+                                <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 text-[8px] font-black uppercase">Perangkat Ini</span>
+                              )}
+                              {s.isSuspicious && (
+                                <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 text-[8px] font-black uppercase">Mencurigakan</span>
+                              )}
+                            </div>
+                            <div className="text-muted grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 leading-relaxed font-semibold">
+                              <p>Browser: {s.browser} ({s.os})</p>
+                              <p>IP Address: {s.ipAddress}</p>
+                              <p>Lokasi: {s.city || 'Unknown'}, {s.country || 'Unknown'}</p>
+                              <p>Aktivitas Terakhir: {new Date(s.lastActiveAt).toLocaleString('id-ID')}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 self-end sm:self-center shrink-0 z-10">
+                            {!s.isCurrent && (
+                              <>
+                                <button 
+                                  onClick={() => handleMarkSuspicious(s.sessionId, !s.isSuspicious)}
+                                  className={`px-3 py-2 rounded-xl font-bold uppercase text-[9px] border transition-all ${
+                                    s.isSuspicious 
+                                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/25' 
+                                      : 'bg-red-500/10 text-red-500 border-red-500/25'
+                                  }`}
+                                  title={s.isSuspicious ? "Hilangkan Tanda Mencurigakan" : "Tandai Mencurigakan"}
+                                >
+                                  {s.isSuspicious ? "Aman" : "Mencurigakan"}
+                                </button>
+                                <button 
+                                  onClick={() => handleRevokeSession(s.sessionId)}
+                                  className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[9px] shadow-sm"
+                                  title="Putuskan Koneksi"
+                                >
+                                  Logout
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {sessions.length > 1 && (
+                        <button 
+                          onClick={handleRevokeAllSessions}
+                          className="w-full py-3 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all"
+                        >
+                          Keluar dari Semua Perangkat Lain
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Log Keamanan Terkini */}
+                {securityLogs.length > 0 && (
+                  <div className="space-y-3 pt-4">
+                    <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Riwayat Log Keamanan Akun</h3>
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar text-[10px]">
+                      {securityLogs.map(l => (
+                        <div key={l.id} className="flex justify-between items-start gap-4 p-2.5 rounded-xl bg-background-light dark:bg-background-dark/30 border border-border-light/40 dark:border-border-dark/40">
+                          <div>
+                            <p className="font-bold text-xs">{l.activity.replace(/_/g, ' ')}</p>
+                            <p className="text-muted mt-0.5">IP: {l.ip_address} | {l.browser} ({l.device || 'PC'})</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`px-2 py-0.5 rounded font-black uppercase text-[8px] ${
+                              l.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>{l.status}</span>
+                            <p className="text-muted mt-1 text-[8px]">{new Date(l.created_at).toLocaleString('id-ID')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Zona Bahaya */}
+                <div className="bg-red-50 dark:bg-red-900/10 rounded-3xl border border-red-200 dark:border-red-900/30 p-6 space-y-4">
+                  <h3 className="text-lg font-black text-red-700 dark:text-red-400 uppercase tracking-wide">Zona Tindakan Berbahaya</h3>
+                  <p className="text-xs text-red-600 dark:text-red-400 leading-relaxed font-semibold">
+                    Menonaktifkan akun akan mengeluarkan Anda secara otomatis dari semua perangkat dan menonaktifkan login sementara. Menghapus akun bersifat PERMANEN dan menghapus identitas pribadi Anda dari sistem secara total.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      onClick={() => handleStartDeactivateDeleteFlow("deactivate")}
+                      className="px-5 py-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-600/10"
+                    >
+                      Nonaktifkan Akun
+                    </button>
+                    <button 
+                      onClick={() => handleStartDeactivateDeleteFlow("delete")}
+                      className="px-5 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-red-600/10"
+                    >
+                      Hapus Akun Permanen
+                    </button>
+                  </div>
+                </div>
+
+              </motion.div>
+            )}
+
+            {/* Tab: Ajukan Resign (resign) */}
             {activeTab === "resign" && (
               <motion.div key="resign-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-6">
                 <div className="border-l-4 border-teal-500 pl-4 py-1">
@@ -677,7 +1564,6 @@ export default function ProfileContent() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Auto-detect Full Name */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mr-1">
                       <label className="text-xs font-black uppercase text-muted ml-1">Nama Lengkap</label>
@@ -689,7 +1575,6 @@ export default function ProfileContent() {
                     </div>
                   </div>
 
-                  {/* Auto-detect Employee ID */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mr-1">
                       <label className="text-xs font-black uppercase text-muted ml-1">No. ID Karyawan</label>
@@ -701,7 +1586,6 @@ export default function ProfileContent() {
                     </div>
                   </div>
 
-                  {/* Auto-detect Job Role */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mr-1">
                       <label className="text-xs font-black uppercase text-muted ml-1">Jabatan / Role</label>
@@ -713,7 +1597,6 @@ export default function ProfileContent() {
                     </div>
                   </div>
 
-                  {/* Auto-detect Division */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mr-1">
                       <label className="text-xs font-black uppercase text-muted ml-1">Divisi</label>
@@ -726,7 +1609,6 @@ export default function ProfileContent() {
                   </div>
                 </div>
 
-                {/* Input 1: Tanggal Efektif */}
                 <div className="space-y-2">
                   <label htmlFor="effectiveDate" className="text-xs font-black uppercase text-muted ml-1">Tanggal Efektif Keluar <span className="text-red-500">*</span></label>
                   <div className="relative">
@@ -735,16 +1617,14 @@ export default function ProfileContent() {
                   </div>
                 </div>
 
-                {/* Input 2: Alasan Resign */}
                 <div className="space-y-2">
                   <label htmlFor="resignReason" className="text-xs font-black uppercase text-muted ml-1">Alasan Resign <span className="text-red-500">*</span></label>
-                  <textarea id="resignReason" rows={3} value={reason} onChange={e => handleReasonChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Sebutkan alasan utama Anda mengundurkan diri secara jelas..." />
+                  <textarea id="resignReason" rows={3} value={reason} onChange={e => handleReasonChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm font-semibold" placeholder="Sebutkan alasan utama Anda mengundurkan diri secara jelas..." />
                 </div>
 
-                {/* Input 3: Keterangan Tambahan */}
                 <div className="space-y-2">
                   <label htmlFor="additionalNotes" className="text-xs font-black uppercase text-muted ml-1">Keterangan Tambahan (Opsional)</label>
-                  <textarea id="additionalNotes" rows={2} value={additionalNotes} onChange={e => handleAdditionalNotesChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm" placeholder="Keterangan pendukung atau pesan penutup lainnya..." />
+                  <textarea id="additionalNotes" rows={2} value={additionalNotes} onChange={e => handleAdditionalNotesChange(e.target.value)} className="w-full p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-teal-500 transition-all text-sm font-semibold" placeholder="Keterangan pendukung atau pesan penutup lainnya..." />
                 </div>
 
                 <button 
@@ -758,6 +1638,7 @@ export default function ProfileContent() {
               </motion.div>
             )}
 
+            {/* Tab: Cek Status Resign (status) */}
             {activeTab === "status" && (
               <motion.div key="status-tab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-card-light dark:bg-card-dark rounded-3xl border border-border-light dark:border-border-dark p-8 shadow-xl space-y-6">
                 <div className="border-l-4 border-blue-500 pl-4 py-1">
@@ -838,7 +1719,6 @@ export default function ProfileContent() {
                               </div>
                             )}
 
-                            {/* Countdown & Final Decision Widget */}
                             {req.status === "Disetujui" && req.suspension_time && (
                               <ResignCountdownWidget req={req} profile={profile} />
                             )}
@@ -852,12 +1732,14 @@ export default function ProfileContent() {
             )}
           </AnimatePresence>
 
-          {profile.role === "customer" && (
+          {profile.role === "customer" && activeTab === "profile" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 dark:bg-red-900/10 rounded-3xl border border-red-200 dark:border-red-900/30 p-8 shadow-xl mt-6">
               <h3 className="text-lg font-black text-red-700 dark:text-red-400 uppercase tracking-wide">Zona Bahaya</h3>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">Tindakan di bawah ini bersifat permanen dan akan menghapus seluruh data Anda dari database tanpa sisa.</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold leading-relaxed">
+                Tindakan di bawah ini bersifat permanen dan akan menghapus seluruh data Anda dari database secara total.
+              </p>
               <button 
-                onClick={() => openModal('profile_delete', { onConfirm: handleDeleteAccount })} 
+                onClick={() => handleStartDeactivateDeleteFlow("delete")} 
                 className="mt-4 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-red-600/20"
               >
                 Hapus Akun Saya
@@ -866,6 +1748,93 @@ export default function ProfileContent() {
           )}
         </div>
       </div>
+
+      {/* Layered Confirmation & OTP Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-[2rem] p-6 w-full max-w-md shadow-2xl space-y-6 flex flex-col text-text-light dark:text-text-dark"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-border-light dark:border-border-dark">
+                <h3 className="font-bold text-lg uppercase tracking-tight flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-red-500" /> Verifikasi Tindakan Akun
+                </h3>
+                <button onClick={() => setShowOtpModal(false)} className="text-muted hover:text-text-light dark:hover:text-text-dark">&times;</button>
+              </div>
+
+              {otpStep === "credentials" ? (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted font-bold leading-relaxed">
+                    Untuk melanjutkan tindakan ini, Anda wajib memverifikasi password keamanan akun RestoBook Anda terlebih dahulu.
+                  </p>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted ml-1">Password Akun</label>
+                    <input 
+                      type="password"
+                      value={confirmDeletePassword}
+                      onChange={e => setConfirmDeletePassword(e.target.value)}
+                      placeholder="Masukkan password Anda..."
+                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button 
+                      onClick={() => setShowOtpModal(false)}
+                      className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={handleDeactivateDeleteVerifyCredentials}
+                      disabled={sendingOtp || !confirmDeletePassword}
+                      className="flex-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      {sendingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Kirim OTP Verifikasi
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted font-bold leading-relaxed">
+                    Kode verifikasi OTP sekali pakai telah dikirim. Masukkan 6 digit kode untuk melanjutkan tindakan.
+                  </p>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted ml-1">Kode OTP</label>
+                    <input 
+                      type="text"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={e => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      placeholder="Masukkan 6 digit kode OTP..."
+                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-center text-lg font-black tracking-[8px]"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button 
+                      onClick={() => setShowOtpModal(false)}
+                      className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl font-bold text-xs uppercase"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={['deactivate', 'delete'].includes(otpType) ? handleDeactivateDeleteVerifyOtp : handleVerifyOtp}
+                      disabled={verifyingOtp || otpCode.length < 6}
+                      className="flex-2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-md shadow-red-600/10"
+                    >
+                      {verifyingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Konfirmasi & Jalankan
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ShoppingBag, ListOrdered, ClipboardList, 
   CalendarDays, Heart, Bell, User as UserIcon, Users, 
   Settings, Layers, UtensilsCrossed, Star, Receipt, Clock, ShoppingCart, Armchair, RotateCcw, ShieldAlert, Power, Globe, Ticket, Gift, Wallet, LifeBuoy, MessageSquare,
-  Lock, AlertTriangle
+  Lock, AlertTriangle, QrCode
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -72,6 +72,75 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
   };
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Sync theme realtime with profile settings
+  useEffect(() => {
+    if (!userProfile?.user_id) return;
+
+    applyThemePreference(userProfile.theme);
+
+    const channel = supabase
+      .channel(`layout-profile-theme-${userProfile.user_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${userProfile.user_id}`
+        },
+        (payload: any) => {
+          if (payload.new) {
+            setUserProfile(payload.new);
+            applyThemePreference(payload.new.theme);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.user_id]);
+
+  const applyThemePreference = (pref: string) => {
+    if (pref === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else if (pref === 'light') {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    } else {
+      const systemPref = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(!!systemPref);
+      if (systemPref) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  };
+
+  const handleToggleTheme = async () => {
+    const nextTheme = isDarkMode ? 'light' : 'dark';
+    setIsDarkMode(!isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+    
+    try {
+      await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: nextTheme })
+      });
+    } catch (e) {
+      console.error("Gagal menyimpan preferensi tema:", e);
+    }
+  };
+
   const [isNotifCenterOpen, setIsNotifCenterOpen] = useState(false);
   const [onlineOrderCount, setOnlineOrderCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -659,6 +728,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           },
           { name: "Antrian Dapur", href: "/cashier/queue", icon: ListOrdered },
           { name: "Reservasi", href: "/cashier/reservations", icon: CalendarDays },
+          { name: "Pindai QR Booking", href: "/cashier/scan", icon: QrCode },
           { name: "Live Chat", href: "/cashier/chat", icon: MessageSquare, badge: unreadLiveChatCount },
           { name: "Transaksi", href: "/cashier/transactions", icon: Receipt },
           { name: "Absensi", href: "/cashier/attendance", icon: ClipboardList },
@@ -813,7 +883,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                 {isSoundEnabled ? <Volume2 className="h-5 w-5 animate-pulse" /> : <VolumeX className="h-5 w-5" />}
               </button>
               <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={handleToggleTheme}
                 data-tour="theme-toggle"
                 aria-label={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
                 title={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
@@ -1227,7 +1297,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                        <span>{isSoundEnabled ? "Suara On" : "Suara Off"}</span>
                      </button>
                      <button
-                       onClick={() => setIsDarkMode(!isDarkMode)}
+                       onClick={handleToggleTheme}
                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark text-xs font-bold text-muted hover:text-primary transition-all"
                      >
                        {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

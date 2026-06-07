@@ -366,19 +366,19 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     };
   }, []);
 
-  // Real-time listener untuk notifikasi pelanggan
+  // Real-time listener untuk notifikasi semua role (Customer, Cashier, Admin) dengan popup toast
   useEffect(() => {
-    if (!userProfile?.id || role !== "customer") return;
+    if (!userProfile?.id) return;
 
     // Fetch count awal
     fetchUnreadNotifCount();
 
     const channel = supabase
-      .channel(`customer-notifications-${userProfile.id}`)
+      .channel(`global-user-notifications-${userProfile.id}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${userProfile.id}`
@@ -386,9 +386,43 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
         (payload: any) => {
           fetchUnreadNotifCount();
 
-          if (payload.eventType === "INSERT") {
+          if (payload.new) {
+            toast(
+              (t) => (
+                <div className="flex flex-col gap-1">
+                  <span className="font-extrabold text-sm text-primary uppercase tracking-wider">
+                    {payload.new.title || "Notifikasi Baru"}
+                  </span>
+                  <span className="text-xs text-muted leading-relaxed font-semibold">
+                    {payload.new.message}
+                  </span>
+                </div>
+              ),
+              {
+                duration: 5000,
+                icon: "🔔",
+                style: {
+                  borderRadius: '1rem',
+                  background: isDarkMode ? '#1e1b4b' : '#fff',
+                  color: isDarkMode ? '#fff' : '#000',
+                  border: '1px solid ' + (isDarkMode ? '#312e81' : '#e5e7eb'),
+                }
+              }
+            );
             playSingleNotifSound();
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userProfile.id}`
+        },
+        () => {
+          fetchUnreadNotifCount();
         }
       )
       .subscribe();
@@ -396,7 +430,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userProfile?.id, role]);
+  }, [userProfile?.id, role, isDarkMode]);
 
   const playFallbackBeep = () => {
     try {
@@ -814,7 +848,7 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                         initial={{ scale: 0 }} 
                         animate={{ scale: 1 }} 
                         className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
-                          pathname === link.href ? "bg-white text-primary" : "bg-rose-50 text-white"
+                          pathname === link.href ? "bg-white text-primary" : "bg-rose-500 text-white"
                         }`}
                       >
                         {link.badge}

@@ -97,6 +97,9 @@ export async function POST(request: NextRequest) {
     } else if (reservation.status === 'completed') {
       isValid = false;
       failureReason = 'Reservasi sudah selesai digunakan';
+    } else if (reservation.status === 'arrived' || reservation.status === 'seated') {
+      isValid = false;
+      failureReason = 'Kode/QR Booking ini sudah melakukan check-in sebelumnya!';
     }
 
     if (!isValid) {

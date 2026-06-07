@@ -385,8 +385,8 @@ export default function CustomerReservationsPage() {
     const map: Record<string, string> = { 
       pending: "Menunggu", 
       confirmed: "Dikonfirmasi", 
-      arrived: "Berjalan",
-      seated: "Berjalan",
+      arrived: "Sedang Berjalan",
+      seated: "Sedang Berjalan",
       cancelled: "Dibatalkan", 
       completed: "Selesai",
       rejected: "Ditolak"

@@ -523,8 +523,8 @@ function CashierReservationsContent() {
                   <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${statusBadge[res.status]}`}>
                     {res.status === "pending" ? "Menunggu" 
                       : res.status === "confirmed" ? "Aktif" 
-                      : res.status === "arrived" ? "Tiba"
-                      : res.status === "seated" ? "Duduk"
+                      : res.status === "arrived" ? "Sudah Tiba / Sedang Berjalan"
+                      : res.status === "seated" ? "Sudah Tiba / Sedang Berjalan"
                       : res.status === "cancelled" ? "Batal" 
                       : "Selesai"}
                   </span>

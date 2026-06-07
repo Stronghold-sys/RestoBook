@@ -236,7 +236,7 @@ export default function CashierScanPage() {
         throw new Error(data.error || "Gagal memperbarui status check-in");
       }
 
-      toast.success(`Check-In Berhasil! Status diubah menjadi ${checkInStatus === 'arrived' ? 'Arrived' : 'Seated'}`);
+      toast.success("Check-In Berhasil! Status diubah menjadi Sudah Tiba / Sedang Berjalan");
       
       // Update local reservation state
       setReservation((prev: any) => ({
@@ -272,8 +272,8 @@ export default function CashierScanPage() {
     const map: Record<string, string> = {
       pending: "Menunggu",
       confirmed: "Dikonfirmasi",
-      arrived: "Arrived (Tiba)",
-      seated: "Seated (Duduk)",
+      arrived: "Sudah Tiba / Sedang Berjalan",
+      seated: "Sudah Tiba / Sedang Berjalan",
       completed: "Selesai",
       cancelled: "Dibatalkan"
     };
@@ -509,9 +509,6 @@ export default function CashierScanPage() {
                             className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
                           >
                             <option value="arrived">Arrived (Tiba)</option>
-                            <option value="seated">Seated (Duduk)</option>
-                            <option value="completed">Completed (Selesai)</option>
-                            <option value="cancelled">Cancelled (Batal)</option>
                           </select>
                         </div>
 

@@ -1,16 +1,31 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, isValidElement } from 'react';
 import { useToaster, toast, resolveValue, Toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
 import { useAudioStore } from '@/store/useAudioStore';
 
+// Safe helper to extract text from custom JSX elements
+const extractText = (node: any): string => {
+  if (!node) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join(' ');
+  if (typeof node === 'object' && node.props && node.props.children) {
+    return extractText(node.props.children);
+  }
+  return '';
+};
+
 // Custom component for individual toast item
 function ToastMessage({ toast: t }: { toast: Toast }) {
   const [isHovered, setIsHovered] = useState(false);
   const resolved = resolveValue(t.message, t);
-  const messageText = resolved ? String(resolved) : '';
+  
+  const isReactElement = isValidElement(resolved);
+  const isPrimitive = typeof resolved === 'string' || typeof resolved === 'number' || typeof resolved === 'boolean';
+  
+  const messageText = isReactElement ? extractText(resolved) : (resolved ? String(resolved) : '');
   const lowerMessage = messageText.toLowerCase();
 
   // Sub-classify toast types
@@ -198,15 +213,17 @@ function ToastMessage({ toast: t }: { toast: Toast }) {
 
       {/* Message Area */}
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-black tracking-wider uppercase ${styleConfig.titleColor}`}>
-          {visualType === 'success' ? 'Berhasil' : 
-           visualType === 'error' ? 'Kesalahan' : 
-           visualType === 'warning' ? 'Peringatan' : 
-           visualType === 'realtime' ? 'Notifikasi Langsung' : 'Informasi'}
-        </p>
-        <p className="text-sm font-bold mt-0.5 text-text-light dark:text-text-dark leading-snug">
-          {messageText}
-        </p>
+        {!isReactElement && (
+          <p className={`text-xs font-black tracking-wider uppercase ${styleConfig.titleColor}`}>
+            {visualType === 'success' ? 'Berhasil' : 
+             visualType === 'error' ? 'Kesalahan' : 
+             visualType === 'warning' ? 'Peringatan' : 
+             visualType === 'realtime' ? 'Notifikasi Langsung' : 'Informasi'}
+          </p>
+        )}
+        <div className="text-sm font-bold mt-0.5 text-text-light dark:text-text-dark leading-snug">
+          {isReactElement ? resolved : isPrimitive ? String(resolved) : ''}
+        </div>
       </div>
 
       {/* Time Progress Bar */}

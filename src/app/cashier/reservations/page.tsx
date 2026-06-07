@@ -85,8 +85,8 @@ function CashierReservationsContent() {
       const matched = reservations.find(r => r.id === highlightId);
       if (matched) {
         setSelectedRes(matched);
-        if (["confirmed", "arrived", "seated"].includes(matched.status)) {
-          setFilter("confirmed");
+        if (["arrived", "seated"].includes(matched.status)) {
+          setFilter("observing");
         } else {
           setFilter(matched.status);
         }
@@ -468,7 +468,10 @@ function CashierReservationsContent() {
 
   const filtered = reservations.filter(r => {
     if (filter === "confirmed") {
-      return ["confirmed", "arrived", "seated"].includes(r.status);
+      return r.status === "confirmed";
+    }
+    if (filter === "observing") {
+      return ["arrived", "seated"].includes(r.status);
     }
     return r.status === filter;
   });
@@ -491,18 +494,19 @@ function CashierReservationsContent() {
         </motion.button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {[
           { s: "pending", l: "Menunggu", c: "from-yellow-400 to-amber-500" },
-          { s: "confirmed", l: "Sedang Observasi", c: "from-green-500 to-emerald-600" },
+          { s: "confirmed", l: "Belum Check-In", c: "from-orange-500 to-amber-600" },
+          { s: "observing", l: "Sedang Observasi", c: "from-green-500 to-emerald-600" },
           { s: "completed", l: "Selesai", c: "from-blue-500 to-blue-600" },
           { s: "cancelled", l: "Ditolak / Batal", c: "from-red-500 to-rose-600" }
         ].map(item => (
           <motion.div key={item.s} whileHover={{ y: -2 }} onClick={() => setFilter(item.s)} className={`bg-gradient-to-br ${item.c} rounded-2xl p-5 text-white shadow-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${filter === item.s ? "scale-105 shadow-xl border-2 border-white" : "opacity-75 hover:opacity-100"}`}>
             <p className="text-white/80 text-sm font-semibold leading-tight">{item.l}</p>
             <p className="text-3xl font-black mt-1">
-              {item.s === "confirmed" 
-                ? reservations.filter(r => ["confirmed", "arrived", "seated"].includes(r.status)).length 
+              {item.s === "observing" 
+                ? reservations.filter(r => ["arrived", "seated"].includes(r.status)).length 
                 : reservations.filter(r => r.status === item.s).length}
             </p>
           </motion.div>

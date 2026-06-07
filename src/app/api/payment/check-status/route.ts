@@ -8,7 +8,7 @@ import { getPaidNotification } from '@/utils/notificationHelper';
 
 export async function POST(req: Request) {
   try {
-    const { orderId, duitkuOrderId } = await req.json();
+    const { orderId, duitkuOrderId, type } = await req.json();
 
     if (!orderId) return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
 
@@ -40,6 +40,49 @@ export async function POST(req: Request) {
 
     const result = await response.json();
     console.log("Duitku Status Result:", result.statusCode, result.statusMessage);
+
+    if (type === 'reservation') {
+      if (result.statusCode === '00') {
+        const { data: resObj } = await supabaseAdmin
+          .from('reservations')
+          .select('*')
+          .eq('id', orderId)
+          .single();
+
+        if (resObj && resObj.payment_status !== 'paid' && resObj.payment_status !== 'dp_paid') {
+          const isDp = resObj.payment_method === 'dp';
+          const newStatus = isDp ? 'dp_paid' : 'paid';
+
+          await supabaseAdmin
+            .from('reservations')
+            .update({ payment_status: newStatus })
+            .eq('id', orderId);
+
+          await supabaseAdmin.from('notifications').insert({
+            user_id: resObj.customer_id,
+            title: isDp ? 'DP Reservasi Berhasil Dibayar' : 'Pembayaran Reservasi Berhasil',
+            message: `Pembayaran ${isDp ? 'DP ' : ''}reservasi meja #${orderId.substring(0, 8).toUpperCase()} sebesar Rp ${Number(result.amount || 0).toLocaleString('id-ID')} telah berhasil.`,
+            type: 'reservation',
+            reference_id: orderId,
+            status_badge: 'Sukses'
+          });
+        }
+        return NextResponse.json({ status: 'paid', reference: result.reference });
+      }
+
+      // Also check our own DB - maybe callback already updated it
+      const { data: dbRes } = await supabaseAdmin
+        .from('reservations')
+        .select('payment_status')
+        .eq('id', orderId)
+        .single();
+
+      if (dbRes?.payment_status === 'paid' || dbRes?.payment_status === 'dp_paid') {
+        return NextResponse.json({ status: 'paid' });
+      }
+
+      return NextResponse.json({ status: result.statusMessage || 'pending', raw: result });
+    }
 
     if (result.statusCode === '00') {
       // Pembayaran LUNAS, update database

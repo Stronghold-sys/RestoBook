@@ -31,6 +31,44 @@ export async function POST(req: Request) {
       const match = merchantOrderId.match(uuidRegex);
       const dbOrderId = match ? match[0] : merchantOrderId.split('-')[0]; // Fallback ke bagian pertama sebelum tanda hubung
 
+      if (String(merchantOrderId).startsWith('RES-')) {
+        console.log("Reservation Callback Received for Tx ID:", dbOrderId);
+        // Fetch reservation
+        const { data: resObj } = await supabaseAdmin
+          .from('reservations')
+          .select('*, profiles:customer_id(*)')
+          .eq('id', dbOrderId)
+          .single();
+
+        if (resObj && resObj.payment_status !== 'paid' && resObj.payment_status !== 'dp_paid') {
+          const isDp = resObj.payment_method === 'dp';
+          const newStatus = isDp ? 'dp_paid' : 'paid';
+
+          // 1. Update reservation payment_status
+          const { error: resErr } = await supabaseAdmin
+            .from('reservations')
+            .update({ 
+              payment_status: newStatus
+            })
+            .eq('id', dbOrderId);
+
+          if (!resErr) {
+            // 2. Create reservation notification for the customer
+            await supabaseAdmin.from('notifications').insert({
+              user_id: resObj.customer_id,
+              title: isDp ? 'DP Reservasi Berhasil Dibayar' : 'Pembayaran Reservasi Berhasil',
+              message: `Pembayaran ${isDp ? 'DP ' : ''}reservasi meja #${dbOrderId.substring(0, 8).toUpperCase()} sebesar Rp ${Number(amount || 0).toLocaleString('id-ID')} telah berhasil.`,
+              type: 'reservation',
+              reference_id: dbOrderId,
+              status_badge: 'Sukses'
+            });
+
+            console.log(`Reservation payment updated to ${newStatus} for reservation ${dbOrderId}`);
+          }
+        }
+        return new NextResponse('OK', { status: 200 });
+      }
+
       if (String(merchantOrderId).startsWith('WLT-')) {
         console.log("Wallet Callback Received for Tx ID:", dbOrderId);
         // Fetch transaction

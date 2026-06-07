@@ -27,149 +27,209 @@ export async function POST(req: NextRequest) {
       return maintenanceResponse;
     }
     
-    const { orderId, paymentMethod, returnUrl } = await req.json();
+    const { orderId, paymentMethod, returnUrl, type } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    // Ambil detail order dengan join yang lengkap
-    const { data: order, error } = await supabaseAdmin
-      .from('orders')
-      .select('*, order_items(*, menu_items(name)), profiles!customer_id(*)')
-      .eq('id', orderId)
-      .single();
-
-    if (error || !order) {
-      console.error("Create Invoice - Order fetch error:", error, "ID:", orderId);
-      return NextResponse.json({ error: error?.message || 'Order not found' }, { status: 404 });
-    }
-
-    // Jika sudah lunas, tidak perlu buat invoice
-    if (order.payment_status === 'paid') {
-      return NextResponse.json({ error: 'Order is already paid' }, { status: 400 });
-    }
-
-    const paymentAmount = Math.floor(order.total_amount);
-    const merchantOrderId = order.id;
-
-    // Default Customer Detail Shell (Remove placeholder email)
+    let paymentAmount = 0;
+    let merchantOrderId = orderId;
     let customerDetail = {
       firstName: 'Pelanggan',
       lastName: '',
       email: '',
       phoneNumber: ''
     };
+    let finalItemDetails: any[] = [];
+    let productDetails = '';
+    let dbOrderForEmail: any = null;
 
-    // 1. Prioritas Profil (Robust handle for array/object response structure)
-    const rawProfile = order.profiles;
-    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
-    
-    if (profile) {
-      if (profile.full_name) {
-        const names = profile.full_name.trim().split(/\s+/);
-        customerDetail.firstName = names[0];
-        customerDetail.lastName = names.slice(1).join(' ') || '';
-      }
-      if (profile.email) customerDetail.email = profile.email;
-      if (profile.phone) customerDetail.phoneNumber = profile.phone;
-    } 
-    
-    // 2. Parser Fallback Data dari Notes (Untuk Walk-in POS)
-    if (order.notes) {
-      const nameMatch = order.notes.match(/\[NAMA:\s*(.*?)\]/i);
-      if (nameMatch && nameMatch[1] && nameMatch[1].trim().toLowerCase() !== 'guest') {
-         const cleanName = nameMatch[1].trim();
-         const names = cleanName.split(/\s+/);
-         customerDetail.firstName = names[0];
-         customerDetail.lastName = names.slice(1).join(' ') || '';
-      } else if (nameMatch && nameMatch[1].trim().toLowerCase() === 'guest') {
-         customerDetail.firstName = 'Guest';
-         customerDetail.lastName = ''; // Supaya tidak jadi "Guest Guest"
+    if (type === 'reservation') {
+      const { data: reservation, error } = await supabaseAdmin
+        .from('reservations')
+        .select('*, profiles:customer_id(*)')
+        .eq('id', orderId)
+        .single();
+
+      if (error || !reservation) {
+        console.error("Create Invoice - Reservation fetch error:", error, "ID:", orderId);
+        return NextResponse.json({ error: error?.message || 'Reservation not found' }, { status: 404 });
       }
 
-      const emailMatch = order.notes.match(/\[EMAIL:\s*(.*?)\]/i);
-      if (emailMatch && emailMatch[1]) customerDetail.email = emailMatch[1].trim();
+      if (reservation.payment_status === 'paid' || reservation.payment_status === 'dp_paid') {
+        return NextResponse.json({ error: 'Reservation is already paid' }, { status: 400 });
+      }
 
-      const telpMatch = order.notes.match(/\[TELP:\s*(.*?)\]/i);
-      if (telpMatch && telpMatch[1]) customerDetail.phoneNumber = telpMatch[1].trim();
-    }
+      const isDp = reservation.payment_method === 'dp';
+      paymentAmount = Math.floor(isDp ? (reservation.dp_amount || 0) : (reservation.menu_total || 0));
 
-    // === ITEM DETAILS MAPPING RIGOROUSLY ===
-    const itemDetails: any[] = [];
-    let itemsSum = 0;
-    const itemNames: string[] = [];
+      const profile = reservation.profiles;
+      if (profile) {
+        if (profile.full_name) {
+          const names = profile.full_name.trim().split(/\s+/);
+          customerDetail.firstName = names[0];
+          customerDetail.lastName = names.slice(1).join(' ') || '';
+        }
+        if (profile.email) customerDetail.email = profile.email;
+        if (profile.phone) customerDetail.phoneNumber = profile.phone;
+      }
 
-    const rawItems = order.order_items;
-    const orderItems = Array.isArray(rawItems) ? rawItems : (rawItems ? [rawItems] : []);
-
-    if (orderItems.length > 0) {
-      orderItems.forEach((item: any) => {
-        if (!item) return;
-        const rawMenu = item.menu_items;
-        const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
-        
-        const name = menuItem?.name || 'Item Menu';
-        const price = Math.floor(item.price);
-        const qty = Number(item.quantity) || 1;
-        
-        itemDetails.push({
-          name: name,
-          price: price,
-          quantity: qty
+      const itemDetails: any[] = [];
+      const itemNames: string[] = [];
+      const menuItems = reservation.menu_items || [];
+      if (menuItems.length > 0) {
+        menuItems.forEach((item: any) => {
+          const name = item.name || 'Item Menu';
+          const price = Math.floor(item.price || 0);
+          const qty = Number(item.quantity || 1);
+          itemDetails.push({ name, price, quantity: qty });
+          itemNames.push(`${name} x${qty}`);
         });
-        
-        itemsSum += (price * qty);
-        itemNames.push(`${name} x${qty}`);
-      });
-    }
+      }
 
-    // Sinkronisasi diskon/biaya lain (Discrepancy checker)
-    const discrepancy = paymentAmount - itemsSum;
-    if (discrepancy !== 0) {
-      itemDetails.push({
-        name: discrepancy > 0 ? 'Biaya Tambahan / Layanan' : 'Potongan Diskon',
-        price: discrepancy,
-        quantity: 1
-      });
-    }
-
-    // === DUITKU API ITEM DETAILS VALIDATOR ===
-    // Duitku Pop API does not allow items with negative or zero prices (e.g. discounts).
-    // If any item has price <= 0, we must fallback to a single consolidated item matching the final payment amount.
-    const hasInvalidPrice = itemDetails.length === 0 || itemDetails.some((item: any) => item.price <= 0);
-    const finalItemDetails = hasInvalidPrice 
-      ? [{
-          name: `Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()}`,
+      const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `Reservasi Meja`;
+      if (isDp) {
+        finalItemDetails = [{
+          name: `DP Reservasi #${orderId.substring(0, 8).toUpperCase()}`,
           price: paymentAmount,
           quantity: 1
-        }]
-      : itemDetails;
+        }];
+        productDetails = `DP Reservasi: ${summaryString}`.substring(0, 255);
+      } else {
+        const hasInvalidPrice = itemDetails.length === 0 || itemDetails.some((item: any) => item.price <= 0);
+        finalItemDetails = hasInvalidPrice
+          ? [{
+              name: `Reservasi #${orderId.substring(0, 8).toUpperCase()}`,
+              price: paymentAmount,
+              quantity: 1
+            }]
+          : itemDetails;
+        productDetails = `Reservasi: ${summaryString}`.substring(0, 255);
+      }
+    } else {
+      // Ambil detail order dengan join yang lengkap
+      const { data: order, error } = await supabaseAdmin
+        .from('orders')
+        .select('*, order_items(*, menu_items(name)), profiles!customer_id(*)')
+        .eq('id', orderId)
+        .single();
+
+      if (error || !order) {
+        console.error("Create Invoice - Order fetch error:", error, "ID:", orderId);
+        return NextResponse.json({ error: error?.message || 'Order not found' }, { status: 404 });
+      }
+
+      // Jika sudah lunas, tidak perlu buat invoice
+      if (order.payment_status === 'paid') {
+        return NextResponse.json({ error: 'Order is already paid' }, { status: 400 });
+      }
+
+      paymentAmount = Math.floor(order.total_amount);
+      dbOrderForEmail = order;
+
+      const rawProfile = order.profiles;
+      const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+      
+      if (profile) {
+        if (profile.full_name) {
+          const names = profile.full_name.trim().split(/\s+/);
+          customerDetail.firstName = names[0];
+          customerDetail.lastName = names.slice(1).join(' ') || '';
+        }
+        if (profile.email) customerDetail.email = profile.email;
+        if (profile.phone) customerDetail.phoneNumber = profile.phone;
+      } 
+      
+      if (order.notes) {
+        const nameMatch = order.notes.match(/\[NAMA:\s*(.*?)\]/i);
+        if (nameMatch && nameMatch[1] && nameMatch[1].trim().toLowerCase() !== 'guest') {
+           const cleanName = nameMatch[1].trim();
+           const names = cleanName.split(/\s+/);
+           customerDetail.firstName = names[0];
+           customerDetail.lastName = names.slice(1).join(' ') || '';
+        } else if (nameMatch && nameMatch[1].trim().toLowerCase() === 'guest') {
+           customerDetail.firstName = 'Guest';
+           customerDetail.lastName = '';
+        }
+
+        const emailMatch = order.notes.match(/\[EMAIL:\s*(.*?)\]/i);
+        if (emailMatch && emailMatch[1]) customerDetail.email = emailMatch[1].trim();
+
+        const telpMatch = order.notes.match(/\[TELP:\s*(.*?)\]/i);
+        if (telpMatch && telpMatch[1]) customerDetail.phoneNumber = telpMatch[1].trim();
+      }
+
+      const itemDetails: any[] = [];
+      let itemsSum = 0;
+      const itemNames: string[] = [];
+
+      const rawItems = order.order_items;
+      const orderItems = Array.isArray(rawItems) ? rawItems : (rawItems ? [rawItems] : []);
+
+      if (orderItems.length > 0) {
+        orderItems.forEach((item: any) => {
+          if (!item) return;
+          const rawMenu = item.menu_items;
+          const menuItem = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
+          
+          const name = menuItem?.name || 'Item Menu';
+          const price = Math.floor(item.price);
+          const qty = Number(item.quantity) || 1;
+          
+          itemDetails.push({
+            name: name,
+            price: price,
+            quantity: qty
+          });
+          
+          itemsSum += (price * qty);
+          itemNames.push(`${name} x${qty}`);
+        });
+      }
+
+      const discrepancy = paymentAmount - itemsSum;
+      if (discrepancy !== 0) {
+        itemDetails.push({
+          name: discrepancy > 0 ? 'Biaya Tambahan / Layanan' : 'Potongan Diskon',
+          price: discrepancy,
+          quantity: 1
+        });
+      }
+
+      const hasInvalidPrice = itemDetails.length === 0 || itemDetails.some((item: any) => item.price <= 0);
+      finalItemDetails = hasInvalidPrice 
+        ? [{
+            name: `Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()}`,
+            price: paymentAmount,
+            quantity: 1
+          }]
+        : itemDetails;
+
+      const userNotesRaw = order.notes || "";
+      const cleanNotes = userNotesRaw
+        .replace(/\[[^\]]+\]/g, '')
+        .replace(/Kasir:\s*[^\s,]+/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `No. Pesanan #${merchantOrderId.substring(0, 8)}`;
+      productDetails = cleanNotes 
+        ? `Pesanan: ${summaryString} | Catatan: ${cleanNotes}`.substring(0, 255) 
+        : `Pesanan: ${summaryString}`.substring(0, 255);
+    }
 
     const protocol = req.headers.get('x-forwarded-proto') || 'https';
     const host = req.headers.get('host');
     const baseUrl = `${protocol}://${host}`;
-    
-    // Ekstrak Catatan Pelanggan Murni (Buang semua tag sistem seperti [METODE: ...])
-    const userNotesRaw = order.notes || "";
-    const cleanNotes = userNotesRaw
-      .replace(/\[[^\]]+\]/g, '') // Hapus semua [TAG]
-      .replace(/Kasir:\s*[^\s,]+/gi, '') // Hapus tag Kasir
-      .replace(/\s+/g, ' ') // Normalisasi spasi
-      .trim();
-
-    // Susun deskripsi produk yang menampung ringkasan barang DAN pesan pelanggan
-    const summaryString = itemNames.length > 0 ? itemNames.join(', ') : `No. Pesanan #${merchantOrderId.substring(0, 8)}`;
-    
-    // Gabungkan ke visual productDetails
-    const productDetails = cleanNotes 
-      ? `Pesanan: ${summaryString} | Catatan: ${cleanNotes}`.substring(0, 255) 
-      : `Pesanan: ${summaryString}`.substring(0, 255);
 
     // === DUITKU POP BASE PAYLOAD ===
     const isSandbox = DUITKU_MERCHANT_CODE.startsWith('DS');
     const timestampForUnique = String(Date.now());
-    const finalOrderId = isSandbox ? `${merchantOrderId}-${timestampForUnique.substring(8)}` : merchantOrderId;
+    const prefix = type === 'reservation' ? 'RES-' : '';
+    const finalOrderId = isSandbox 
+      ? `${prefix}${merchantOrderId}-${timestampForUnique.substring(8)}` 
+      : `${prefix}${merchantOrderId}`;
 
     const payload: any = {
       paymentAmount: paymentAmount,
@@ -186,7 +246,7 @@ export async function POST(req: NextRequest) {
         phoneNumber: customerDetail.phoneNumber
       },
       callbackUrl: `${baseUrl}/api/payment/callback`,
-      returnUrl: returnUrl || `${baseUrl}/customer/orders/${merchantOrderId}`,
+      returnUrl: returnUrl || (type === 'reservation' ? `${baseUrl}/customer/reservations` : `${baseUrl}/customer/orders/${merchantOrderId}`),
       expiryPeriod: 1440 // Duitku Pop default in minutes
     };
 
@@ -236,16 +296,18 @@ export async function POST(req: NextRequest) {
         const resendKey = process.env.RESEND_API_KEY;
         if (resendKey && customerDetail.email && customerDetail.email.includes('@')) {
           const resend = new Resend(resendKey);
-          const restoName = (order.restaurant_settings as any)?.name || 'RestoBook';
+          const restoName = type === 'reservation' ? 'RestoBook' : ((dbOrderForEmail?.restaurant_settings as any)?.name || 'RestoBook');
           await resend.emails.send({
             from: 'RestoBook <noreply@restobookid.my.id>',
             to: customerDetail.email,
-            subject: `No. Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`,
+            subject: type === 'reservation'
+              ? `No. Reservasi #${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`
+              : `No. Pesanan #${merchantOrderId.substring(0, 8).toUpperCase()} - Tagihan Pembayaran ${restoName}`,
             html: `
               <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #f0f0f0; border-radius:15px;">
                 <h2 style="color:#f97316;">Menunggu Pembayaran</h2>
                 <p>Halo ${customerDetail.firstName},</p>
-                <p>Pesanan Anda telah kami terima. Silakan selesaikan pembayaran menggunakan tautan di bawah ini:</p>
+                <p>${type === 'reservation' ? 'Reservasi' : 'Pesanan'} Anda telah kami terima. Silakan selesaikan pembayaran menggunakan tautan di bawah ini:</p>
                 <div style="text-align:center; margin:30px 0;">
                   <a href="${data.paymentUrl}" style="background:#f97316; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Selesaikan Pembayaran Sekarang</a>
                 </div>
@@ -255,11 +317,11 @@ export async function POST(req: NextRequest) {
                     <li>Buka aplikasi Bank atau m-Banking Anda.</li>
                     <li>Pilih menu Transfer / Virtual Account.</li>
                     <li>Masukkan nomor Virtual Account yang tertera di halaman pembayaran.</li>
-                    <li>Pastikan nominal sesuai dengan total pesanan Anda.</li>
+                    <li>Pastikan nominal sesuai dengan total tagihan Anda.</li>
                     <li>Simpan bukti pembayaran Anda.</li>
                   </ul>
                 </div>
-                <p style="font-size:12px; color:#888; margin-top:20px;">Pesanan akan diproses otomatis setelah pembayaran Anda terverifikasi oleh sistem kami.</p>
+                <p style="font-size:12px; color:#888; margin-top:20px;">Tagihan akan diproses otomatis setelah pembayaran Anda terverifikasi oleh sistem kami.</p>
               </div>
             `
           });

@@ -3,6 +3,7 @@
 export const runtime = 'edge';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,6 +51,7 @@ const ACTIVE_STATUSES = ["pending", "confirmed", "arrived", "seated"];
 const HISTORY_STATUSES = ["cancelled", "completed", "rejected"];
 
 export default function CustomerReservationsPage() {
+  const router = useRouter();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
@@ -514,6 +516,64 @@ export default function CustomerReservationsPage() {
       toast.success("Reservasi berhasil diajukan!");
 
       setShowModal(false);
+      const isNonCash = paymentMethod === "non_cash";
+      const isDpNonCash = paymentMethod === "dp" && dpSource === "non_cash";
+
+      if ((isNonCash || isDpNonCash) && totalMenuPrice > 0) {
+        const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
+        try {
+          const invRes = await fetch('/api/payment/create-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              orderId: resData.reservation.id,
+              type: 'reservation',
+              paymentMethod: "",
+              returnUrl: window.location.href
+            })
+          });
+          const invData = await invRes.json();
+          toast.dismiss(pToast);
+          
+          if (!invRes.ok) throw new Error(invData.error || 'Gagal menyiapkan tagihan');
+          
+          if (invData.reference && typeof (window as any).checkout !== 'undefined') {
+            (window as any).checkout.process(invData.reference, {
+              successEvent: async function(result: any) {
+                toast.success("Pembayaran Reservasi Berhasil!");
+                await fetch('/api/payment/check-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    orderId: resData.reservation.id,
+                    type: 'reservation',
+                    duitkuOrderId: result?.merchantOrderId || resData.reservation.id 
+                  })
+                });
+                fetchData();
+              },
+              pendingEvent: function(result: any) {
+                toast("Menunggu konfirmasi pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
+                fetchData();
+              },
+              errorEvent: function(result: any) {
+                toast.error("Pembayaran dibatalkan.");
+                fetchData();
+              },
+              closeEvent: function() {
+                fetchData();
+              }
+            });
+          } else if (invData.paymentUrl) {
+            window.location.href = invData.paymentUrl;
+          } else {
+            throw new Error("Gagal memuat portal pembayaran.");
+          }
+        } catch (payErr: any) {
+          toast.error("Gagal membuka gerbang pembayaran: " + payErr.message);
+        }
+      }
+
       setForm({ date: "", time: "12:00", guests: 2, notes: "", atasNama: form.atasNama, telepon: form.telepon });
       setSelectedTableIds([]);
       setSelectedMenu({});
@@ -1294,7 +1354,7 @@ export default function CustomerReservationsPage() {
                 />
                 <div className="text-left">
                   <p className="font-bold text-sm text-text-light dark:text-text-dark">Non Tunai</p>
-                  <p className="text-[10px]">Debit, QRIS, dll di kasir</p>
+                  <p className="text-[10px]">Bayar online via payment gateway Duitku</p>
                 </div>
               </label>
 
@@ -1320,10 +1380,30 @@ export default function CustomerReservationsPage() {
             </div>
 
             {/* DOMPETKU WARNINGS */}
-            {paymentMethod === "dompetku" && (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>DompetKu Anda belum aktif. Silakan pilih metode pembayaran lain.</span>
+            {((paymentMethod === "dompetku") || (paymentMethod === "dp" && dpSource === "dompetku")) && (
+              <div className="space-y-2.5 mb-4">
+                {(!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) ? (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="font-semibold">DompetKu Anda belum aktif. Silakan lakukan aktivasi terlebih dahulu sebelum menggunakannya.</span>
+                  </div>
+                ) : (walletInfo && walletInfo.balance < (paymentMethod === "dp" ? (calculateMenuTotal() * dpPercent) / 100 : calculateMenuTotal())) ? (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-250 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="font-semibold">Saldo DompetKu Anda tidak mencukupi untuk melakukan pembayaran ini.</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/customer/wallet")}
+                        className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg shadow transition-all uppercase tracking-wider flex items-center gap-1.5"
+                      >
+                        <Wallet className="w-3.5 h-3.5" /> Isi Ulang Saldo
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
 

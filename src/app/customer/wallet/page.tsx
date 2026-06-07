@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 export const runtime = 'edge';
 
@@ -8,7 +8,7 @@ import {
   Wallet, ArrowUpRight, ArrowDownLeft, HelpCircle, 
   RefreshCw, Loader2, ArrowRight, Sparkles, CheckCircle, 
   Clock, AlertTriangle, Search, Filter, Play, DollarSign, X, Check, ArrowDown, ArrowUp, Calendar, Ticket, RotateCcw,
-  ShoppingBag, Lock, ShieldAlert, FileText, Upload, Key
+  ShoppingBag, Lock, ShieldAlert, FileText, Upload, Key, CreditCard
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -57,6 +57,7 @@ export default function CustomerWalletPage() {
   const [showUnpaidModal, setShowUnpaidModal] = useState(false);
   const [unpaidTransactions, setUnpaidTransactions] = useState<any[]>([]);
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
+  const [duitkuUrl, setDuitkuUrl] = useState<string>("");
   const [topUpAmount, setTopUpAmount] = useState<string>("");
 
   // PIN Transaction states
@@ -289,37 +290,12 @@ export default function CustomerWalletPage() {
         return;
       }
       
-      if (typeof (window as any).checkout !== 'undefined') {
-        setIsDuitkuOpen(true);
-        (window as any).checkout.process(tx.payment_reference, {
-          successEvent: function(result: any) {
-            
-            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
-            setIsDuitkuOpen(false);
-            setShowUnpaidModal(false);
-            fetchWalletData();
-          },
-          pendingEvent: function(result: any) {
-            
-            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
-            setIsDuitkuOpen(false);
-            fetchWalletData();
-          },
-          errorEvent: function(result: any) {
-            console.error("Duitku Topup Error:", result);
-            toast.error("Pembayaran gagal/dibatalkan.");
-            setIsDuitkuOpen(false);
-            fetchWalletData();
-          },
-          closeEvent: function() {
-            
-            setIsDuitkuOpen(false);
-            fetchWalletData();
-          }
-        });
-      } else {
-        toast.error("Portal pembayaran tidak siap. Silakan coba lagi.");
-      }
+      const isSandbox = typeof window !== 'undefined' && Array.from(document.querySelectorAll('script')).some(s => s.src.includes('sandbox'));
+      const baseUrl = isSandbox ? "https://app-sandbox.duitku.com/redirect_checkout" : "https://app-prod.duitku.com/redirect_checkout";
+      const paymentUrl = `${baseUrl}?reference=${tx.payment_reference}`;
+      
+      setDuitkuUrl(paymentUrl);
+      setIsDuitkuOpen(true);
     } else if (tx.type === 'order') {
       const pToast = toast.loading("Menyiapkan portal pembayaran aman...");
       try {
@@ -336,60 +312,10 @@ export default function CustomerWalletPage() {
         
         if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
         
-        if (data.reference && typeof (window as any).checkout !== 'undefined') {
+        if (data.paymentUrl) {
           toast.dismiss(pToast);
+          setDuitkuUrl(data.paymentUrl);
           setIsDuitkuOpen(true);
-          (window as any).checkout.process(data.reference, {
-            successEvent: async function(result: any) {
-              
-              setIsDuitkuOpen(false);
-              setShowUnpaidModal(false);
-              toast.success("Pembayaran Pesanan Berhasil!");
-              await fetch('/api/payment/check-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  orderId: tx.id,
-                  duitkuOrderId: result?.merchantOrderId || tx.id 
-                })
-              });
-              fetchWalletData();
-            },
-            pendingEvent: async function(result: any) {
-              
-              setIsDuitkuOpen(false);
-              toast("Menunggu konfirmasi pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
-              await fetch('/api/payment/check-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  orderId: tx.id,
-                  duitkuOrderId: result?.merchantOrderId || tx.id 
-                })
-              });
-              fetchWalletData();
-            },
-            errorEvent: async function(result: any) {
-              setIsDuitkuOpen(false);
-              toast.error("Transaksi dibatalkan.");
-              await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", tx.id);
-              fetchWalletData();
-            },
-            closeEvent: async function() {
-              
-              setIsDuitkuOpen(false);
-              await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", tx.id);
-              await fetch('/api/payment/check-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: tx.id })
-              });
-              fetchWalletData();
-            }
-          });
-        } else if (data.paymentUrl) {
-          toast.dismiss(pToast);
-          window.location.href = data.paymentUrl;
         } else {
           throw new Error("Gagal memuat portal pembayaran.");
         }
@@ -434,31 +360,9 @@ export default function CustomerWalletPage() {
       setShowTopUpModal(false);
       setTopUpAmount("");
 
-      // Use Duitku Pop if available
-      if (data.reference && typeof (window as any).checkout !== 'undefined') {
-        (window as any).checkout.process(data.reference, {
-          successEvent: function(result: any) {
-            
-            toast.success("Top Up Berhasil! Saldo akan masuk dalam beberapa saat.");
-            fetchWalletData();
-          },
-          pendingEvent: function(result: any) {
-            
-            toast("Menunggu pembayaran...", { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" /> });
-            fetchWalletData();
-          },
-          errorEvent: function(result: any) {
-            console.error("Duitku Wallet Topup Error:", result);
-            toast.error("Pembayaran dibatalkan.");
-            fetchWalletData();
-          },
-          closeEvent: function() {
-            
-            fetchWalletData();
-          }
-        });
-      } else if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
+      if (data.paymentUrl) {
+        setDuitkuUrl(data.paymentUrl);
+        setIsDuitkuOpen(true);
       } else {
         throw new Error("Gagal mengunduh tautan pembayaran.");
       }
@@ -1395,6 +1299,37 @@ export default function CustomerWalletPage() {
             {pinLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Buat PIN & Aktifkan E-Wallet"}
           </button>
         </form>
+      </BaseModal>
+
+      {/* 5. Duitku Iframe Payment Modal */}
+      <BaseModal
+        isOpen={isDuitkuOpen && !!duitkuUrl}
+        onClose={() => {
+          setIsDuitkuOpen(false);
+          setDuitkuUrl("");
+          fetchWalletData();
+        }}
+        size="lg"
+        noPadding
+        showCloseButton={true}
+      >
+        <div className="flex flex-col bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-slate-900">
+          <div className="p-5 bg-gradient-to-r from-orange-500 via-primary to-orange-600 text-white flex justify-between items-center border-b border-orange-600/20">
+            <div>
+              <h3 className="font-extrabold text-sm flex items-center gap-2">
+                <CreditCard className="w-5 h-5" /> Pembayaran Online Duitku
+              </h3>
+              <p className="text-white/80 text-[10px] mt-0.5">Selesaikan transaksi pembayaran Anda dengan aman & cepat</p>
+            </div>
+          </div>
+          <div className="relative w-full h-[650px] bg-slate-950 flex flex-col items-center justify-center">
+            <iframe
+              src={duitkuUrl}
+              className="w-full h-full border-none rounded-b-2xl"
+              title="Duitku Payment Gateway"
+            />
+          </div>
+        </div>
       </BaseModal>
     </div>
   );

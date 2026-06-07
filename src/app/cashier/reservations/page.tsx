@@ -34,6 +34,9 @@ function CashierReservationsContent() {
   // Confirm Detail Modal State
   const [confirmingRes, setConfirmingRes] = useState<any | null>(null);
 
+  // Complete Reservation Modal State
+  const [completingRes, setCompletingRes] = useState<any | null>(null);
+
   // Reject Modal State
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -691,7 +694,7 @@ function CashierReservationsContent() {
                     </motion.button>
                   )}
                   {["arrived", "seated"].includes(res.status) && (
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCompletingRes(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
                   )}
                 </div>
               </div>
@@ -1052,6 +1055,56 @@ function CashierReservationsContent() {
             </button>
           </div>
         </form>
+      </BaseModal>
+
+      {/* Complete Confirmation Modal */}
+      <BaseModal
+        isOpen={!!completingRes}
+        onClose={() => setCompletingRes(null)}
+        showCloseButton={true}
+        size="sm"
+      >
+        {completingRes && (() => {
+          const parsedNotes = getParsedNotes(completingRes.notes);
+          const clientName = parsedNotes?.atas_nama || completingRes.profiles?.full_name || "Pelanggan";
+          const mejaNumbers = parsedNotes?.meja_tambahan?.length > 0 ? parsedNotes.meja_tambahan.join(", ") : completingRes.tables?.table_number || "-";
+
+          return (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2 text-primary">
+                <CheckCircle className="w-5 h-5" /> Selesaikan Reservasi
+              </h3>
+              <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
+                Apakah Anda yakin ingin menyelesaikan sesi reservasi atas nama <strong className="text-primary">{clientName}</strong> di <strong>Meja {mejaNumbers}</strong>?
+              </p>
+              <p className="text-xs text-muted leading-relaxed">
+                Tindakan ini akan mengubah status reservasi menjadi <strong>Selesai</strong> dan mengosongkan meja tersebut sehingga dapat dipesan kembali oleh pelanggan lain.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setCompletingRes(null)} 
+                  className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    const res = completingRes;
+                    setCompletingRes(null);
+                    if (res) {
+                      await handleComplete(res);
+                    }
+                  }} 
+                  className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all"
+                >
+                  Selesaikan
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </BaseModal>
 
       {/* Cashier Book on behalf modal */}

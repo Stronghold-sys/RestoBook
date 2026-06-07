@@ -402,6 +402,59 @@ export default function AdminReservationsPage() {
                   <p className="font-medium text-text-light dark:text-text-dark">{selectedRes.guest_count} Orang</p>
                 </div>
               </div>
+
+              {/* Pre-Order Menu Items */}
+              {selectedRes.menu_total && selectedRes.menu_total > 0 && selectedRes.menu_items && Array.isArray(selectedRes.menu_items) && selectedRes.menu_items.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider block">Pre-Order Menu</span>
+                  <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 border border-border-light dark:border-border-dark divide-y divide-border-light dark:divide-border-dark">
+                    {selectedRes.menu_items.map((item: any, idx: number) => (
+                      <div key={idx} className="py-2 flex justify-between text-sm text-text-light dark:text-text-dark">
+                        <div>
+                          <span className="font-bold">{item.name}</span>
+                          <span className="text-xs text-muted block">Rp {item.price.toLocaleString("id-ID")} x {item.quantity}</span>
+                          {item.notes && <span className="text-[10px] text-primary block uppercase font-bold">Note: {item.notes}</span>}
+                        </div>
+                        <span className="font-bold">Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Info */}
+              <div className="space-y-2 text-xs">
+                <span className="text-xs text-muted uppercase font-bold tracking-wider block">Status Pembayaran &amp; DP</span>
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 border border-border-light dark:border-border-dark space-y-2 text-text-light dark:text-text-dark">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Total Tagihan Menu:</span>
+                    <span className="font-bold">Rp {(selectedRes.menu_total || 0).toLocaleString("id-ID")}</span>
+                  </div>
+                  {selectedRes.payment_method === "dp" && (
+                    <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                      <span>DP Dibayar ({selectedRes.dp_percent || 0}%):</span>
+                      <span>-Rp {(selectedRes.dp_amount || 0).toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm pt-1.5 border-t border-dashed border-border-light dark:border-border-dark">
+                    <span className="font-extrabold">Sisa Pembayaran:</span>
+                    <span className="font-black text-primary text-base">Rp {(selectedRes.remaining_amount || 0).toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] pt-1">
+                    <span className="text-muted uppercase font-bold">Metode: {selectedRes.payment_method?.toUpperCase()}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                      selectedRes.payment_status === "paid"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : selectedRes.payment_status === "dp_paid"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    }`}>
+                      {selectedRes.payment_status === "paid" ? "Lunas" : selectedRes.payment_status === "dp_paid" ? "DP Dibayar" : "Belum Bayar"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {notesText && (
                 <div>
                   <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>

@@ -5,7 +5,7 @@ export const runtime = 'edge';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet, FileSpreadsheet, Eye, RotateCcw, Info } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet, FileSpreadsheet, Eye, RotateCcw, Info, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -58,7 +58,6 @@ export default function CustomerReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [profileId, setProfileId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [form, setForm] = useState({
     date: "",
     time: "12:00",
@@ -78,9 +77,11 @@ export default function CustomerReservationsPage() {
   const [selectedMenu, setSelectedMenu] = useState<Record<string, { quantity: number; notes: string; name: string; price: number; image_url: string; stock: number }>>({});
   const [paymentMethod, setPaymentMethod] = useState<"tunai" | "dompetku" | "non_cash" | "dp">("tunai");
   const [dpPercent, setDpPercent] = useState<number>(30);
-  const [dpSource, setDpSource] = useState<"tunai" | "dompetku" | "non_cash">("tunai");
+  const [dpSource, setDpSource] = useState<"dompetku" | "non_cash">("non_cash");
   const [pin, setPin] = useState<string>("");
   const [walletInfo, setWalletInfo] = useState<any>(null);
+  const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
+  const [duitkuUrl, setDuitkuUrl] = useState<string>("");
 
   // Restaurant Settings
   const [minimalDp, setMinimalDp] = useState<number>(30);
@@ -117,7 +118,6 @@ export default function CustomerReservationsPage() {
   const [rulesChecked, setRulesChecked] = useState(false);
   const [dataChecked, setDataChecked] = useState(false);
 
-  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [selectedQrRes, setSelectedQrRes] = useState<Reservation | null>(null);
 
   // States for advanced history filtering
@@ -735,67 +735,7 @@ export default function CustomerReservationsPage() {
     }
   };
 
-  const handleDeleteHistory = async (id: string) => {
-    try {
-      const { error } = await supabase.from("reservations").delete().eq("id", id);
-      if (error) throw error;
-      toast.success("Riwayat reservasi berhasil dihapus!");
-      fetchData();
-    } catch (err: any) {
-      toast.error("Gagal menghapus riwayat: " + err.message);
-    }
-  };
 
-  const handleExportExcel = () => {
-    if (filteredHistory.length === 0) return toast.error("Tidak ada data untuk diekspor");
-    
-    let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
-       <tr style="height: 40px;"><td colspan="7" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">RIWAYAT TRANSAKSI RESERVASI MEJA</td></tr>
-       <tr style="height: 25px;"><td colspan="7" align="left" style="font-size: 11px;">Tanggal Cetak: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB</td></tr>
-       <tr style="height: 30px; text-align: center;">
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">No. Reservasi</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Atas Nama</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Tanggal & Waktu</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Meja & Tamu</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Metode Pembayaran</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Status</th>
-          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Total Bayar (Rp)</th>
-       </tr>`;
-
-    filteredHistory.forEach(res => {
-       const notesParsed = getParsedNotes(res.notes);
-       const nameText = notesParsed.atas_nama || "Pelanggan";
-       const dateText = `${res.reservation_date} ${res.reservation_time.substring(0, 5)}`;
-       const guestText = `Meja ${notesParsed.meja_tambahan?.length > 0 ? notesParsed.meja_tambahan.join(", ") : res.tables?.table_number || "-"} (${res.guest_count} Tamu)`;
-       const payText = res.payment_method?.toUpperCase() || "-";
-       const statusText = getStatusText(res.status);
-       const amount = res.menu_total || res.dp_amount || 0;
-       
-       tableHtml += `<tr style="height: 25px;">
-          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px; font-family: monospace;">#${res.id.substring(0, 8).toUpperCase()}</td>
-          <td style="border: 1px solid #cbd5e1; padding: 5px;">${nameText}</td>
-          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${dateText}</td>
-          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${guestText}</td>
-          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${payText}</td>
-          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold;">${statusText}</td>
-          <td align="right" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold;">${amount.toLocaleString("id-ID")}</td>
-       </tr>`;
-    });
-
-    tableHtml += `</table>`;
-
-    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Riwayat</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
-
-    const blob = new Blob([template], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Riwayat_Reservasi_${format(new Date(), 'dd_MM_yyyy_HHmmss')}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Berhasil mengekspor riwayat!");
-  };
 
 
   const getParsedNotes = (notesStr: string) => {
@@ -938,7 +878,7 @@ export default function CustomerReservationsPage() {
     return true;
   });
 
-  const displayedReservations = activeTab === "active" ? activeReservations : filteredHistory;
+  const displayedReservations = filteredHistory;
 
   if (loading) {
     return (
@@ -972,201 +912,150 @@ export default function CustomerReservationsPage() {
         </motion.button>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex bg-gray-100 dark:bg-gray-800/60 p-1.5 rounded-2xl gap-2">
-        <button
-          onClick={() => setActiveTab("active")}
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-            activeTab === "active"
-              ? "bg-white dark:bg-gray-700 shadow-md text-primary"
-              : "text-muted hover:text-text-light dark:hover:text-text-dark"
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          Reservasi Aktif
-          {activeReservations.length > 0 && (
-            <span className={`text-xs font-black px-2 py-0.5 rounded-full ${activeTab === "active" ? "bg-primary text-white" : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"}`}>
-              {activeReservations.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-            activeTab === "history"
-              ? "bg-white dark:bg-gray-700 shadow-md text-text-light dark:text-text-dark"
-              : "text-muted hover:text-text-light dark:hover:text-text-dark"
-          }`}
-        >
-          <History className="w-4 h-4" />
-          Riwayat
-        </button>
-      </div>
+      <div className="space-y-6">
+        {/* Sub-Tabs */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-border-light dark:border-border-dark pb-1 gap-2">
+          {[
+            { key: "all", label: "Semua" },
+            { key: "active", label: "Reservasi Aktif" },
+            { key: "completed", label: "Reservasi Selesai" },
+            { key: "cancelled", label: "Reservasi Dibatalkan" },
+            { key: "refund_pending", label: "Pengajuan Refund" },
+            { key: "refund_approved", label: "Refund Disetujui" },
+            { key: "refund_rejected", label: "Refund Ditolak" },
+            { key: "refund_completed", label: "Refund Selesai" }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setHistoryTab(tab.key)}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-none outline-none ${
+                historyTab === tab.key 
+                  ? "bg-primary text-white shadow-md shadow-primary/15" 
+                  : "bg-gray-50 dark:bg-gray-800/50 text-muted hover:bg-gray-100 dark:hover:bg-gray-850"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      {activeTab === "history" && (
-        <div className="space-y-6">
-          {/* Sub-Tabs */}
-          <div className="flex overflow-x-auto scrollbar-hide border-b border-border-light dark:border-border-dark pb-1 gap-2">
-            {[
-              { key: "all", label: "Semua" },
-              { key: "active", label: "Reservasi Aktif" },
-              { key: "completed", label: "Reservasi Selesai" },
-              { key: "cancelled", label: "Reservasi Dibatalkan" },
-              { key: "refund_pending", label: "Pengajuan Refund" },
-              { key: "refund_approved", label: "Refund Disetujui" },
-              { key: "refund_rejected", label: "Refund Ditolak" },
-              { key: "refund_completed", label: "Refund Selesai" }
-            ].map(tab => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setHistoryTab(tab.key)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-none outline-none ${
-                  historyTab === tab.key 
-                    ? "bg-primary text-white shadow-md shadow-primary/15" 
-                    : "bg-gray-50 dark:bg-gray-800/50 text-muted hover:bg-gray-100 dark:hover:bg-gray-850"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        {/* Filters Box */}
+        <div className="bg-card-light dark:bg-card-dark p-5 rounded-2xl border border-border-light dark:border-border-dark shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search Input */}
+          <div className="relative col-span-1 sm:col-span-2">
+            <label htmlFor="historyQuickSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Pencarian Cepat</label>
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted absolute left-3 top-3.5" />
+              <input
+                id="historyQuickSearch"
+                type="text"
+                value={historySearchQuery}
+                onChange={e => setHistorySearchQuery(e.target.value)}
+                placeholder="Cari kata kunci status, nama, atau catatan..."
+                className="w-full pl-9 pr-4 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+              />
+            </div>
           </div>
 
-          {/* Filters Box */}
-          <div className="bg-card-light dark:bg-card-dark p-5 rounded-2xl border border-border-light dark:border-border-dark shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search Input */}
-            <div className="relative col-span-1 sm:col-span-2">
-              <label htmlFor="historyQuickSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Pencarian Cepat</label>
-              <div className="relative">
-                <Search className="w-4 h-4 text-muted absolute left-3 top-3.5" />
-                <input
-                  id="historyQuickSearch"
-                  type="text"
-                  value={historySearchQuery}
-                  onChange={e => setHistorySearchQuery(e.target.value)}
-                  placeholder="Cari kata kunci status, nama, atau catatan..."
-                  className="w-full pl-9 pr-4 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
-                />
-              </div>
-            </div>
+          {/* Date Filter */}
+          <div>
+            <label htmlFor="historyStartDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Mulai Tanggal</label>
+            <input
+              id="historyStartDateInput"
+              type="date"
+              value={historyStartDate}
+              onChange={e => setHistoryStartDate(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
+            />
+          </div>
 
-            {/* Date Filter */}
-            <div>
-              <label htmlFor="historyStartDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Mulai Tanggal</label>
-              <input
-                id="historyStartDateInput"
-                type="date"
-                value={historyStartDate}
-                onChange={e => setHistoryStartDate(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
-              />
-            </div>
+          <div>
+            <label htmlFor="historyEndDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Sampai Tanggal</label>
+            <input
+              id="historyEndDateInput"
+              type="date"
+              value={historyEndDate}
+              onChange={e => setHistoryEndDate(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
+            />
+          </div>
 
-            <div>
-              <label htmlFor="historyEndDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Sampai Tanggal</label>
-              <input
-                id="historyEndDateInput"
-                type="date"
-                value={historyEndDate}
-                onChange={e => setHistoryEndDate(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
-              />
-            </div>
+          {/* Refund Method Filter */}
+          <div>
+            <label htmlFor="historyRefMethodSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Metode Refund</label>
+            <select
+              id="historyRefMethodSelect"
+              value={historyRefundMethodFilter}
+              onChange={e => setHistoryRefundMethodFilter(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
+            >
+              <option value="all">Semua Metode</option>
+              <option value="dompetku">DompetKu</option>
+              <option value="bank">Transfer Bank</option>
+            </select>
+          </div>
 
-            {/* Refund Method Filter */}
-            <div>
-              <label htmlFor="historyRefMethodSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Metode Refund</label>
-              <select
-                id="historyRefMethodSelect"
-                value={historyRefundMethodFilter}
-                onChange={e => setHistoryRefundMethodFilter(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
-              >
-                <option value="all">Semua Metode</option>
-                <option value="dompetku">DompetKu</option>
-                <option value="bank">Transfer Bank</option>
-              </select>
-            </div>
+          {/* Refund Type Filter */}
+          <div>
+            <label htmlFor="historyRefTypeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Jenis Pengajuan</label>
+            <select
+              id="historyRefTypeSelect"
+              value={historyRefundTypeFilter}
+              onChange={e => setHistoryRefundTypeFilter(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
+            >
+              <option value="all">Semua Jenis</option>
+              <option value="reservation">Reservasi Meja Saja</option>
+              <option value="order">Reservasi + Pre-Order Menu</option>
+            </select>
+          </div>
 
-            {/* Refund Type Filter */}
-            <div>
-              <label htmlFor="historyRefTypeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Jenis Pengajuan</label>
-              <select
-                id="historyRefTypeSelect"
-                value={historyRefundTypeFilter}
-                onChange={e => setHistoryRefundTypeFilter(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
-              >
-                <option value="all">Semua Jenis</option>
-                <option value="reservation">Reservasi Meja Saja</option>
-                <option value="order">Reservasi + Pre-Order Menu</option>
-              </select>
-            </div>
+          {/* Reservation ID Specific Search */}
+          <div>
+            <label htmlFor="historyResNoSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Nomor Reservasi</label>
+            <input
+              id="historyResNoSearch"
+              type="text"
+              value={historySearchResNo}
+              onChange={e => setHistorySearchResNo(e.target.value)}
+              placeholder="No. Reservasi..."
+              className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark"
+            />
+          </div>
 
-            {/* Reservation ID Specific Search */}
-            <div>
-              <label htmlFor="historyResNoSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Nomor Reservasi</label>
-              <input
-                id="historyResNoSearch"
-                type="text"
-                value={historySearchResNo}
-                onChange={e => setHistorySearchResNo(e.target.value)}
-                placeholder="No. Reservasi..."
-                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark"
-              />
-            </div>
-
-            {/* Actions Panel */}
-            <div className="flex gap-2 items-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setHistorySearchQuery("");
-                  setHistoryStartDate("");
-                  setHistoryEndDate("");
-                  setHistoryRefundMethodFilter("all");
-                  setHistoryRefundTypeFilter("all");
-                  setHistorySearchResNo("");
-                }}
-                className="flex-1 py-2.5 border border-dashed border-red-300 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-[10px] font-bold transition-all uppercase flex items-center justify-center gap-1"
-                title="Hapus Semua Filter"
-              >
-                <X className="w-3.5 h-3.5" /> Hapus Filter
-              </button>
-              <button
-                type="button"
-                onClick={handleExportExcel}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-bold transition-all uppercase flex items-center justify-center gap-1 shadow-md shadow-emerald-600/15"
-                title="Ekspor ke Excel"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" /> Ekspor Excel
-              </button>
-            </div>
+          {/* Actions Panel */}
+          <div className="flex gap-2 items-end">
+            <button
+              type="button"
+              onClick={() => {
+                setHistorySearchQuery("");
+                setHistoryStartDate("");
+                setHistoryEndDate("");
+                setHistoryRefundMethodFilter("all");
+                setHistoryRefundTypeFilter("all");
+                setHistorySearchResNo("");
+              }}
+              className="w-full py-2.5 border border-dashed border-red-300 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-[10px] font-bold transition-all uppercase flex items-center justify-center gap-1"
+              title="Hapus Semua Filter"
+            >
+              <X className="w-3.5 h-3.5" /> Hapus Filter
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Reservation Cards */}
       <div className="space-y-4">
         <AnimatePresence mode="wait">
           {displayedReservations.length === 0 ? (
             <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20">
-              {activeTab === "active" ? (
-                <>
-                  <CalendarDays className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak Ada Reservasi Aktif</h3>
-                  <p className="text-muted mt-2">Buat reservasi baru untuk memesan meja!</p>
-                </>
-              ) : (
-                <>
-                  <History className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak Ada Transaksi Ditemukan</h3>
-                  <p className="text-muted mt-2">Belum ada riwayat transaksi atau coba sesuaikan kata kunci pencarian Anda.</p>
-                </>
-              )}
+              <History className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
+              <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak Ada Transaksi Ditemukan</h3>
+              <p className="text-muted mt-2">Belum ada riwayat transaksi atau coba sesuaikan kata kunci pencarian Anda.</p>
             </motion.div>
           ) : (
-            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="history-list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {displayedReservations.map((res, i) => {
                 const parsedNotes = getParsedNotes(res.notes);
                 const displayNotes = parsedNotes.catatan;
@@ -1230,14 +1119,15 @@ export default function CustomerReservationsPage() {
                         >
                           <Eye className="w-3.5 h-3.5" /> Detail
                         </motion.button>
-                        {res.status === "pending" && (
-                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
-                            <X className="w-5 h-5" />
-                          </motion.button>
-                        )}
-                        {isHistory && (
-                          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setDeletingHistoryId(res.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 p-2 rounded-lg transition-colors" aria-label="Hapus Riwayat" title="Hapus Riwayat">
-                            <Trash2 className="w-5 h-5" />
+                        {["pending", "confirmed"].includes(res.status) && (
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }} 
+                            onClick={() => { setCancellingId(res.id); setCancelReason(""); }} 
+                            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-xs font-bold text-rose-600 dark:text-rose-400 rounded-xl flex items-center gap-1.5 transition-all border border-rose-250 dark:border-rose-900/30"
+                            title="Batalkan Pesanan"
+                          >
+                            <Ban className="w-3.5 h-3.5" /> Batalkan Pesanan
                           </motion.button>
                         )}
                       </div>
@@ -1527,9 +1417,9 @@ export default function CustomerReservationsPage() {
             </p>
 
             {/* Category Pills & Search */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+            <div className="flex flex-col gap-3 mb-4 w-full">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted" />
                 <input
                   type="text"
                   placeholder="Cari menu makanan/minuman..."
@@ -1538,7 +1428,7 @@ export default function CustomerReservationsPage() {
                   className="w-full pl-9 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-slate-300 outline-none text-text-light dark:text-text-dark text-sm"
                 />
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 shrink-0 max-w-full sm:max-w-[300px] scrollbar-thin">
+              <div className="flex gap-2 overflow-x-auto pb-1.5 w-full scrollbar-thin">
                 <button
                   type="button"
                   onClick={() => setActiveCategory("all")}
@@ -1568,7 +1458,7 @@ export default function CustomerReservationsPage() {
             </div>
 
             {/* Menu Items Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
               {menuItems
                 .filter((item) => {
                   const matchesCategory = activeCategory === "all" || item.category_id === activeCategory;
@@ -1581,7 +1471,7 @@ export default function CustomerReservationsPage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex gap-3 p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl items-center"
+                      className="flex gap-3 p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl items-center min-w-0"
                     >
                       {item.image_url ? (
                         <img
@@ -1594,35 +1484,35 @@ export default function CustomerReservationsPage() {
                           <ShoppingBag className="w-6 h-6 text-muted" />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-sm text-text-light dark:text-text-dark truncate">
+                      <div className="flex-1 min-w-0 pr-1">
+                        <h4 className="font-bold text-sm text-text-light dark:text-text-dark line-clamp-2 break-words leading-tight" title={item.name}>
                           {item.name}
                         </h4>
-                        <p className="text-xs text-primary font-bold mt-0.5">
+                        <p className="text-xs text-primary font-bold mt-1 whitespace-nowrap">
                           Rp {item.price.toLocaleString("id-ID")}
                         </p>
-                        <p className="text-[10px] text-muted mt-0.5">
+                        <p className="text-[10px] text-muted mt-0.5 whitespace-nowrap">
                           Stok: {item.stock || 0}
                         </p>
                       </div>
                       <div className="shrink-0">
                         {qty > 0 ? (
-                          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 shrink-0">
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, qty - 1)}
-                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark border-none outline-none"
+                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark border-none outline-none shrink-0"
                             >
                               -
                             </button>
-                            <span className="text-xs font-bold w-4 text-center text-text-light dark:text-text-dark">
+                            <span className="text-xs font-bold w-4 text-center text-text-light dark:text-text-dark shrink-0">
                               {qty}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, qty + 1)}
                               disabled={qty >= (item.stock || 0)}
-                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark disabled:opacity-50 border-none outline-none"
+                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark disabled:opacity-50 border-none outline-none shrink-0"
                             >
                               +
                             </button>
@@ -1632,7 +1522,7 @@ export default function CustomerReservationsPage() {
                             type="button"
                             onClick={() => handleAddMenuItem(item)}
                             disabled={isOutOfStock}
-                            className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-md shadow-primary/15 hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:bg-gray-300"
+                            className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-md shadow-primary/15 hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:bg-gray-300 shrink-0 whitespace-nowrap"
                           >
                             {isOutOfStock ? "Habis" : "Tambah"}
                           </button>
@@ -1824,18 +1714,7 @@ export default function CustomerReservationsPage() {
                 {/* DP Source Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted uppercase block">Bayar DP Menggunakan</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setDpSource("tunai")}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${
-                        dpSource === "tunai"
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
-                      }`}
-                    >
-                      Tunai
-                    </button>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setDpSource("dompetku")}
@@ -1859,6 +1738,9 @@ export default function CustomerReservationsPage() {
                       Non Tunai
                     </button>
                   </div>
+                  <p className="text-[11px] text-muted leading-relaxed mt-2 bg-gray-100/50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-border-light dark:border-border-dark">
+                    Pembayaran Uang Muka (DP) wajib diselesaikan secara elektronik (DompetKu atau Non Tunai/Online Payment Gateway) untuk menjamin slot reservasi Anda secara instan. Pembayaran tunai tidak didukung untuk DP.
+                  </p>
                 </div>
 
                 {dpSource === "dompetku" && (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) && (
@@ -2152,24 +2034,29 @@ export default function CustomerReservationsPage() {
 
           return (
             <>
-              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl">
-                  <X className="w-6 h-6" />
+              {/* Header Modal */}
+              <div className="p-6 pb-2 flex justify-between items-start border-b border-border-light dark:border-border-dark">
+                <div className="flex gap-3.5 items-center">
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-2xl border border-red-100 dark:border-red-900/50">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-text-light dark:text-text-dark uppercase tracking-tight">Batalkan Reservasi</h3>
+                    <p className="text-muted text-[11px] mt-0.5">ID Reservasi: <span className="font-mono font-bold text-text-light dark:text-text-dark">#{cancellingRes.id.substring(0, 8).toUpperCase()}</span></p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
-                  <p className="text-white/80 text-sm">Nomor Reservasi: #{cancellingRes.id.substring(0, 8).toUpperCase()}</p>
-                </div>
+                <button type="button" onClick={() => setCancellingId(null)} className="p-2 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-xl transition-all text-muted"><X className="w-5 h-5" /></button>
               </div>
-              <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 space-y-4">
+
+              <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 pt-4 sm:pt-4 space-y-5">
                 {hasPayment && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl space-y-2.5 text-xs text-text-light dark:text-text-dark">
-                    <p className="font-bold text-red-750 dark:text-red-400 uppercase text-[10px] tracking-wider">
+                  <div className="p-4 bg-red-50/50 dark:bg-red-950/10 border border-red-200/50 dark:border-red-900/30 rounded-2xl space-y-2.5 text-xs text-text-light dark:text-text-dark">
+                    <p className="font-bold text-red-700 dark:text-red-400 uppercase text-[10px] tracking-wider">
                       Ketentuan Refund &amp; Biaya Pembatalan
                     </p>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between text-muted">
                       <span>Total Telah Dibayar:</span>
-                      <span className="font-semibold">Rp {totalPaid.toLocaleString("id-ID")}</span>
+                      <span className="font-semibold text-text-light dark:text-text-dark">Rp {totalPaid.toLocaleString("id-ID")}</span>
                     </div>
                     {isPrepared ? (
                       <>
@@ -2177,43 +2064,53 @@ export default function CustomerReservationsPage() {
                           <span>Biaya Pembatalan ({chargePercent}%):</span>
                           <span className="font-semibold">-Rp {chargeAmount.toLocaleString("id-ID")}</span>
                         </div>
-                        <p className="text-[10px] text-muted italic">
-                          * Dikenakan charge {chargePercent}% karena pembatalan dilakukan kurang dari 30 menit sebelum jam booking dimulai.
+                        <p className="text-[10px] text-muted italic leading-normal">
+                          * Dikenakan biaya pembatalan sebesar {chargePercent}% karena pembatalan dilakukan kurang dari 30 menit sebelum jam reservasi dimulai.
                         </p>
                       </>
                     ) : (
-                      <p className="text-[10px] text-green-700 dark:text-green-400 italic">
-                        * Reservasi dibatalkan sebelum pesanan diproses (aman dari denda).
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-450 italic">
+                        * Reservasi dibatalkan sebelum pesanan diproses (bebas biaya pembatalan).
                       </p>
                     )}
-                    <div className="flex justify-between font-bold text-sm border-t border-dashed border-red-200 dark:border-red-800 pt-2 mt-1">
+                    <div className="flex justify-between font-bold text-sm border-t border-dashed border-red-200 dark:border-red-900/30 pt-2.5 mt-1">
                       <span>Estimasi Pengembalian Dana:</span>
-                      <span className="text-red-700 dark:text-red-400">Rp {estimatedRefund.toLocaleString("id-ID")}</span>
+                      <span className="text-red-650 dark:text-red-400">Rp {estimatedRefund.toLocaleString("id-ID")}</span>
                     </div>
                   </div>
                 )}
 
-                <div>
-                  <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Alasan Pembatalan</label>
+                {/* DP Wording / Explanation */}
+                {cancellingRes.payment_status === "dp_paid" && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-800 dark:text-amber-400 space-y-1">
+                    <p className="font-bold uppercase text-[10px] tracking-wider">Informasi Down Payment (DP)</p>
+                    <p className="leading-relaxed">
+                      Reservasi ini menggunakan sistem Uang Muka (DP) sebesar {cancellingRes.dp_percent}%. Uang yang telah lunas terbayar adalah Rp {Number(cancellingRes.dp_amount || 0).toLocaleString("id-ID")}. Sisa pembayaran sebesar Rp {Number(cancellingRes.remaining_amount || 0).toLocaleString("id-ID")} dibatalkan otomatis dan tidak perlu dilunasi. Pengembalian dana (refund) akan dihitung dari jumlah DP yang telah lunas tersebut.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label htmlFor="cancelReason" className="text-xs font-bold text-muted uppercase tracking-wider block">Alasan Pembatalan</label>
                   <textarea
                     id="cancelReason"
                     value={cancelReason}
                     onChange={e => setCancelReason(e.target.value)}
-                    placeholder="Contoh: Ada keperluan mendadak, sakit, dll..."
-                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[80px] text-sm"
+                    placeholder="Masukkan alasan pembatalan Anda..."
+                    className="w-full px-4 py-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[90px] text-sm transition-all focus:border-red-500"
                     required
                   />
                 </div>
 
                 {hasPayment && (
                   <>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-text-light dark:text-text-dark block">Metode Refund</label>
+                    <div className="space-y-2.5">
+                      <label className="text-xs font-bold text-muted uppercase tracking-wider block">Metode Refund</label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => setCancelRefundMethod("transfer")}
-                          className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1 ${
+                          className={`px-3 py-3 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1.5 ${
                             cancelRefundMethod === "transfer"
                               ? "border-primary bg-primary/5 text-primary"
                               : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
@@ -2226,7 +2123,7 @@ export default function CustomerReservationsPage() {
                           type="button"
                           onClick={() => setCancelRefundMethod("dompetku")}
                           disabled={!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)}
-                          className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
+                          className={`px-3 py-3 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
                             cancelRefundMethod === "dompetku"
                               ? "border-primary bg-primary/5 text-primary"
                               : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
@@ -2243,41 +2140,52 @@ export default function CustomerReservationsPage() {
                       )}
                     </div>
 
-                    <div>
-                      <label htmlFor="refundAccount" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">
-                        {cancelRefundMethod === "transfer" ? "Detail Rekening Bank (Nama Bank, No Rek, Atas Nama)" : "Nomor HP DompetKu"}
-                      </label>
-                      <input
-                        id="refundAccount"
-                        type="text"
-                        placeholder={cancelRefundMethod === "transfer" ? "BCA - 123456789 - John Doe" : "081234567890"}
-                        value={cancelRefundBankAccount}
-                        onChange={e => setCancelRefundBankAccount(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark text-sm"
-                        required
-                      />
-                    </div>
+                    {cancelRefundMethod === "transfer" ? (
+                      <>
+                        <div className="space-y-1.5">
+                          <label htmlFor="refundAccount" className="text-xs font-bold text-muted uppercase tracking-wider block">
+                            Detail Rekening Bank (Nama Bank, No Rek, Atas Nama)
+                          </label>
+                          <input
+                            id="refundAccount"
+                            type="text"
+                            placeholder="BCA - 123456789 - John Doe"
+                            value={cancelRefundBankAccount}
+                            onChange={e => setCancelRefundBankAccount(e.target.value)}
+                            className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm"
+                            required={cancelRefundMethod === "transfer"}
+                          />
+                        </div>
 
-                    <div>
-                      <label htmlFor="refundProof" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">
-                        Link Bukti Pendukung / Foto KTP / Resi Pembayaran
-                      </label>
-                      <input
-                        id="refundProof"
-                        type="text"
-                        placeholder="http://example.com/bukti.jpg"
-                        value={cancelRefundProof}
-                        onChange={e => setCancelRefundProof(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark text-sm"
-                        required
-                      />
-                    </div>
+                        <div className="space-y-1.5">
+                          <label htmlFor="refundProof" className="text-xs font-bold text-muted uppercase tracking-wider block">
+                            Link Bukti Pendukung / Foto KTP / Resi Pembayaran
+                          </label>
+                          <input
+                            id="refundProof"
+                            type="text"
+                            placeholder="http://example.com/bukti.jpg"
+                            value={cancelRefundProof}
+                            onChange={e => setCancelRefundProof(e.target.value)}
+                            className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary outline-none text-text-light dark:text-text-dark text-sm"
+                            required={cancelRefundMethod === "transfer"}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-800 dark:text-blue-400">
+                        <p className="font-bold uppercase text-[10px] tracking-wider">Refund via DompetKu</p>
+                        <p className="leading-relaxed mt-0.5">
+                          Dana refund sebesar Rp {estimatedRefund.toLocaleString("id-ID")} akan langsung masuk ke saldo DompetKu Anda secara otomatis setelah pengajuan disetujui.
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
 
                 <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
-                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-150 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Batal</button>
-                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim() || (hasPayment && (!cancelRefundBankAccount.trim() || !cancelRefundProof.trim()))} className="flex-1 py-3 bg-red-650 hover:bg-red-750 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
+                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider text-text-light dark:text-text-dark hover:bg-gray-150 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Batal</button>
+                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim() || (hasPayment && cancelRefundMethod === "transfer" && (!cancelRefundBankAccount.trim() || !cancelRefundProof.trim()))} className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all">
                     {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
                   </motion.button>
                 </div>
@@ -2287,51 +2195,6 @@ export default function CustomerReservationsPage() {
         })()}
       </BaseModal>
 
-      {/* Modal Konfirmasi Hapus Riwayat */}
-      <BaseModal
-        isOpen={!!deletingHistoryId}
-        onClose={() => setDeletingHistoryId(null)}
-        showCloseButton={false}
-        size="md"
-        noPadding
-      >
-        <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4 mb-6">
-          <div className="p-3 bg-white/20 rounded-xl">
-            <Trash2 className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">Hapus Riwayat</h2>
-            <p className="text-white/80 text-sm">Konfirmasi tindakan</p>
-          </div>
-        </div>
-        <div className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
-          <p className="text-sm text-text-light dark:text-text-dark leading-relaxed">
-            Apakah Anda yakin ingin menghapus riwayat reservasi ini secara permanen dari akun Anda? Tindakan ini tidak dapat dibatalkan.
-          </p>
-          <div className="flex gap-3">
-            <button 
-              type="button" 
-              onClick={() => setDeletingHistoryId(null)} 
-              className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800"
-            >
-              Batal
-            </button>
-            <motion.button 
-              whileTap={{ scale: 0.98 }} 
-              onClick={async () => {
-                const id = deletingHistoryId;
-                setDeletingHistoryId(null);
-                if (id) {
-                  await handleDeleteHistory(id);
-                }
-              }}
-              className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
-            >
-              Hapus
-            </motion.button>
-          </div>
-        </div>
-      </BaseModal>
 
       {/* Modal QR Code Check-In */}
       <BaseModal

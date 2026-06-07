@@ -64,6 +64,7 @@ export default function OrderTrackingPage() {
   const [paymentExpiryMinutes, setPaymentExpiryMinutes] = useState<number>(60);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isDuitkuOpen, setIsDuitkuOpen] = useState(false);
+  const [duitkuUrl, setDuitkuUrl] = useState<string>("");
   const supabase = createClient();
 
   const [profileData, setProfileData] = useState<any>(null);
@@ -876,76 +877,11 @@ export default function OrderTrackingPage() {
       
       if (!res.ok) throw new Error(data.error || 'Gagal menyiapkan tagihan');
       
-      if (data.reference && typeof (window as any).checkout !== 'undefined') {
-         toast.dismiss(pToast);
-         setPaying(false);
-         setIsDuitkuOpen(true);
-         (window as any).checkout.process(data.reference, {
-            successEvent: async function(result: any) {
-                              setIsDuitkuOpen(false);
-               toast.success("Pembayaran Berhasil!");
-               await fetch('/api/payment/check-status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                     orderId: id,
-                     duitkuOrderId: result?.merchantOrderId || id 
-                  })
-               });
-               setTimeout(() => fetchOrderDetails(), 500);
-            },
-            pendingEvent: async function(result: any) {
-                              setIsDuitkuOpen(false);
-               toast("Menunggu Konfirmasi...", { icon: "" });
-               await fetch('/api/payment/check-status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                     orderId: id,
-                     duitkuOrderId: result?.merchantOrderId || id 
-                  })
-               });
-               setTimeout(() => fetchOrderDetails(), 500);
-            },
-            errorEvent: async function(result: any) {
-               setIsDuitkuOpen(false);
-               toast.error("Transaksi dibatalkan.");
-               // Reset created_at to current timestamp in DB to reset countdown
-               await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
-               // Kirim notifikasi Duitku ditutup tanpa selesai bayar
-               await fetch('/api/orders', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: id, action: 'notify_duitku_closed' })
-               });
-               setTimeout(() => fetchOrderDetails(), 500);
-            },
-            closeEvent: async function() {
-               console.log("Duitku Pop Closed. Syncing status...");
-               setIsDuitkuOpen(false);
-               // Reset created_at to current timestamp in DB to reset countdown
-               await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
-               // Proaktif cek status ke Duitku saat popup ditutup
-               const res = await fetch('/api/payment/check-status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderId: id })
-               });
-               const checkRes = await res.json();
-               if (checkRes.status !== 'paid') {
-                  // Kirim notifikasi Duitku ditutup tanpa selesai bayar
-                  await fetch('/api/orders', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ orderId: id, action: 'notify_duitku_closed' })
-                  });
-               }
-               setTimeout(() => fetchOrderDetails(), 500);
-            }
-         });
-      } else if (data.paymentUrl) {
-        toast.success("Menuju halaman pembayaran...", { id: pToast });
-        window.location.href = data.paymentUrl;
+      if (data.paymentUrl) {
+        toast.dismiss(pToast);
+        setPaying(false);
+        setDuitkuUrl(data.paymentUrl);
+        setIsDuitkuOpen(true);
       } else {
         throw new Error("Gagal mengunduh tautan pembayaran.");
       }
@@ -1954,6 +1890,56 @@ export default function OrderTrackingPage() {
               {payingViaWallet ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verifikasi & Bayar Sekarang"}
             </button>
           </form>
+        </div>
+      </BaseModal>
+
+      {/* 7. Duitku Iframe Payment Modal */}
+      <BaseModal
+        isOpen={isDuitkuOpen && !!duitkuUrl}
+        onClose={async () => {
+          setIsDuitkuOpen(false);
+          setDuitkuUrl("");
+          // Run close event logic:
+          console.log("Duitku Pop Closed. Syncing status...");
+          // Reset created_at to current timestamp in DB to reset countdown
+          await supabase.from("orders").update({ created_at: new Date().toISOString() }).eq("id", id);
+          // Proaktif cek status ke Duitku saat popup ditutup
+          const res = await fetch('/api/payment/check-status', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ orderId: id })
+          });
+          const checkRes = await res.json();
+          if (checkRes.status !== 'paid') {
+             // Kirim notifikasi Duitku ditutup tanpa selesai bayar
+             await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: id, action: 'notify_duitku_closed' })
+             });
+          }
+          setTimeout(() => fetchOrderDetails(), 500);
+        }}
+        size="lg"
+        noPadding
+        showCloseButton={true}
+      >
+        <div className="flex flex-col bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-slate-900">
+          <div className="p-5 bg-gradient-to-r from-orange-500 via-primary to-orange-600 text-white flex justify-between items-center border-b border-orange-600/20">
+            <div>
+              <h3 className="font-extrabold text-sm flex items-center gap-2">
+                <CreditCard className="w-5 h-5" /> Pembayaran Online Duitku
+              </h3>
+              <p className="text-white/80 text-[10px] mt-0.5">Selesaikan transaksi pembayaran Anda dengan aman & cepat</p>
+            </div>
+          </div>
+          <div className="relative w-full h-[650px] bg-slate-950 flex flex-col items-center justify-center">
+            <iframe
+              src={duitkuUrl}
+              className="w-full h-full border-none rounded-b-2xl"
+              title="Duitku Payment Gateway"
+            />
+          </div>
         </div>
       </BaseModal>
 

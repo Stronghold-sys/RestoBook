@@ -134,7 +134,7 @@ export default function AdminRefundsPage() {
 
       const { data: resData, error: resErr } = await supabase
         .from("reservations")
-        .select("*, profiles(full_name, phone)")
+        .select("*, profiles!reservations_customer_id_fkey(full_name, phone)")
         .not("refund_status", "is", null)
         .order("updated_at", { ascending: false });
 

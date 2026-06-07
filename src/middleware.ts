@@ -1024,12 +1024,12 @@ export async function middleware(request: NextRequest) {
   // Content Security Policy (CSP) dengan upgrade-insecure-requests dan source yang diijinkan
   const cspHeader = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://apis.google.com https://hcaptcha.com https://*.hcaptcha.com https://js.duitku.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://apis.google.com https://hcaptcha.com https://*.hcaptcha.com https://*.duitku.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src * data: blob: http: https: android-assets: cap-file:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://api.duitku.com https://sandbox.duitku.com https://hcaptcha.com https://*.hcaptcha.com",
-    "frame-src 'self' https://*.google.com https://hcaptcha.com https://*.hcaptcha.com https://sandbox.duitku.com https://api.duitku.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.duitku.com https://hcaptcha.com https://*.hcaptcha.com",
+    "frame-src 'self' https://*.google.com https://hcaptcha.com https://*.hcaptcha.com https://*.duitku.com",
     "frame-ancestors 'none'",
     "upgrade-insecure-requests"
   ].join('; ');

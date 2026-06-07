@@ -310,13 +310,12 @@ export async function POST(req: NextRequest) {
           });
         } catch (e) {}
 
-        // Update reservation with cancellation details
         const { error: cancelErr } = await supabaseAdmin
           .from('reservations')
           .update({
             status: 'cancelled',
             notes: updatedNotes,
-            cancelled_by: cancelledBy || (cancelledRole === 'cashier' ? 'Kasir' : 'Admin'),
+            cancelled_by: operatorId || null,
             cancelled_role: cancelledRole,
             cancellation_reason: reason,
             cancellation_time: new Date().toISOString(),
@@ -419,7 +418,6 @@ export async function POST(req: NextRequest) {
           });
         } catch (e) {}
 
-        // Update reservation
         await supabaseAdmin
           .from('reservations')
           .update({
@@ -431,7 +429,7 @@ export async function POST(req: NextRequest) {
             refund_bank_account: refundBankAccount || null,
             refund_reason: refundReason || null,
             refund_proof: refundProof || null,
-            cancelled_by: 'Pelanggan',
+            cancelled_by: res.customer_id,
             cancelled_role: 'customer',
             cancellation_reason: reason,
             cancellation_time: new Date().toISOString()
@@ -510,7 +508,7 @@ export async function POST(req: NextRequest) {
             refund_bank_account: refundBankAccount || null,
             refund_reason: refundReason || null,
             refund_proof: refundProof || null,
-            cancelled_by: 'Pelanggan',
+            cancelled_by: res.customer_id,
             cancelled_role: 'customer',
             cancellation_reason: reason,
             cancellation_time: new Date().toISOString()

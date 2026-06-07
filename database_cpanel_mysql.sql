@@ -468,7 +468,7 @@ CREATE TABLE `otp_codes` (
   `id`         CHAR(36)     NOT NULL DEFAULT (UUID()),
   `email`      VARCHAR(255) NOT NULL,
   `code`       VARCHAR(20)  NOT NULL,
-  `type`       ENUM('registration','forgot_password') NOT NULL,
+  `type`       ENUM('registration','forgot_password','create_pin','change_pin','profile_update','account_delete') NOT NULL,
   `expires_at` DATETIME     NOT NULL,
   `is_used`    TINYINT(1)   NOT NULL DEFAULT 0,
   `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

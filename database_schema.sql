@@ -175,7 +175,7 @@ CREATE TABLE otp_codes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
   code TEXT NOT NULL,
-  type TEXT CHECK (type IN ('registration','forgot_password')) NOT NULL,
+  type TEXT CHECK (type IN ('registration', 'forgot_password', 'create_pin', 'change_pin', 'profile_update', 'account_delete')) NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
   is_used BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()

@@ -2701,7 +2701,8 @@ export default function CustomerReservationsPage() {
         isOpen={!!selectedReceiptRes}
         onClose={() => setSelectedReceiptRes(null)}
         size="md"
-        title="Kwitansi Pembayaran Reservasi"
+        noPadding
+        showCloseButton={false}
       >
         {selectedReceiptRes && (() => {
           const parsed = getParsedNotes(selectedReceiptRes.notes);
@@ -2736,28 +2737,33 @@ export default function CustomerReservationsPage() {
           }
 
           return (
-            <div className="space-y-6">
-              <div className="flex justify-end gap-2">
-                <button 
-                  onClick={() => setSelectedReceiptRes(null)} 
-                  className="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-xs font-bold text-muted hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  Tutup
-                </button>
-                <button 
-                  onClick={handleDownloadReceiptPDF} 
-                  disabled={downloadingReceipt}
-                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {downloadingReceipt ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Printer className="w-3.5 h-3.5" />
-                  )}
-                  Cetak / Unduh PDF
-                </button>
+            <div className="bg-white text-gray-900 rounded-[2rem] overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h4 className="font-black text-xs uppercase tracking-widest text-gray-500">Kwitansi Pembayaran Reservasi</h4>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handleDownloadReceiptPDF} 
+                    disabled={downloadingReceipt}
+                    className="p-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50"
+                    title="Cetak / Unduh PDF"
+                  >
+                    {downloadingReceipt ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Printer className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setSelectedReceiptRes(null)} 
+                    aria-label="Tutup Pratinjau"
+                    title="Tutup"
+                    className="p-2 text-muted hover:bg-gray-200 rounded-xl"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-900/65 p-6 rounded-2xl border border-border-light dark:border-border-dark overflow-auto max-h-[70vh] flex justify-center">
+              <div className="p-4 bg-gray-100 flex justify-center items-start">
                 <Receipt 
                   ref={receiptRef} 
                   order={mappedOrder} 

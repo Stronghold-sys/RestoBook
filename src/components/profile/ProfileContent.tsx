@@ -1002,7 +1002,7 @@ export default function ProfileContent() {
               <div className="w-32 h-32 rounded-full overflow-hidden mx-auto border-4 border-white dark:border-gray-700 shadow-2xl bg-gray-100 relative">
                 {previewUrl ? <img src={previewUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><User className="w-16 h-16 text-muted" /></div>}
               </div>
-              <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-full shadow-lg hover:scale-110 transition-transform">
+              <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-full shadow-lg hover:scale-110 transition-transform" aria-label="Unggah Foto Profil" title="Unggah Foto Profil">
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
               </button>
             </div>
@@ -1183,21 +1183,26 @@ export default function ProfileContent() {
                   <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Preferensi Default Booking</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-muted ml-1">Jumlah Tamu Default</label>
+                      <label htmlFor="pref-booking-guests" className="text-xs font-bold text-muted ml-1">Jumlah Tamu Default</label>
                       <input 
+                        id="pref-booking-guests"
                         type="number"
                         min={1} max={30}
                         value={preferences.booking_default_guests}
                         onChange={e => setPreferences({ ...preferences, booking_default_guests: parseInt(e.target.value) || 2 })}
                         className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        placeholder="Jumlah tamu"
+                        title="Jumlah Tamu Default"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-muted ml-1">Area Favorit</label>
+                      <label htmlFor="pref-booking-area" className="text-xs font-bold text-muted ml-1">Area Favorit</label>
                       <select
+                        id="pref-booking-area"
                         value={preferences.booking_favorite_area}
                         onChange={e => setPreferences({ ...preferences, booking_favorite_area: e.target.value })}
                         className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                        title="Area Favorit"
                       >
                         <option value="">-- Pilih Area --</option>
                         <option value="indoor">Indoor (Bebas Rokok)</option>
@@ -1207,21 +1212,25 @@ export default function ProfileContent() {
                       </select>
                     </div>
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs font-bold text-muted ml-1">Catatan Reservasi Default</label>
+                      <label htmlFor="pref-booking-notes" className="text-xs font-bold text-muted ml-1">Catatan Reservasi Default</label>
                       <textarea
+                        id="pref-booking-notes"
                         value={preferences.booking_notes}
                         onChange={e => setPreferences({ ...preferences, booking_notes: e.target.value })}
                         className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
                         rows={2}
                         placeholder="Contoh: Meja dekat jendela..."
+                        title="Catatan Reservasi Default"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-muted ml-1">Cabang Favorit</label>
+                      <label htmlFor="pref-favorite-branch" className="text-xs font-bold text-muted ml-1">Cabang Favorit</label>
                       <select
+                        id="pref-favorite-branch"
                         value={preferences.favorite_branch}
                         onChange={e => setPreferences({ ...preferences, favorite_branch: e.target.value })}
                         className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                        title="Cabang Favorit"
                       >
                         <option value="">-- Pilih Cabang --</option>
                         <option value="Cabang Jakarta Pusat">Cabang Jakarta Pusat</option>
@@ -1231,11 +1240,13 @@ export default function ProfileContent() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-muted ml-1">Metode Bayar Favorit</label>
+                      <label htmlFor="pref-favorite-payment" className="text-xs font-bold text-muted ml-1">Metode Bayar Favorit</label>
                       <select
+                        id="pref-favorite-payment"
                         value={preferences.favorite_payment_method}
                         onChange={e => setPreferences({ ...preferences, favorite_payment_method: e.target.value })}
                         className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                        title="Metode Bayar Favorit"
                       >
                         <option value="">-- Pilih Metode --</option>
                         <option value="QRIS">QRIS</option>
@@ -1292,6 +1303,8 @@ export default function ProfileContent() {
                           className={`w-11 h-6 rounded-full transition-all relative ${
                             (preferences as any)[n.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
                           }`}
+                          aria-label={`Toggle ${n.label}`}
+                          title={`Toggle ${n.label}`}
                         >
                           <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
                             (preferences as any)[n.key] ? "right-1" : "left-1"
@@ -1319,6 +1332,8 @@ export default function ProfileContent() {
                           className={`w-11 h-6 rounded-full transition-all relative ${
                             (preferences as any)[e.key] ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
                           }`}
+                          aria-label={`Toggle ${e.label}`}
+                          title={`Toggle ${e.label}`}
                         >
                           <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
                             (preferences as any)[e.key] ? "right-1" : "left-1"
@@ -1335,13 +1350,15 @@ export default function ProfileContent() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center gap-4">
                       <div>
-                        <p className="text-sm font-bold">Visibilitas Profil</p>
+                        <label htmlFor="pref-profile-visibility" className="text-sm font-bold block cursor-pointer">Visibilitas Profil</label>
                         <p className="text-[10px] text-muted">Membatasi pencarian profil Anda oleh pelanggan lain</p>
                       </div>
                       <select
+                        id="pref-profile-visibility"
                         value={preferences.privacy_profile_visibility}
                         onChange={e => setPreferences({ ...preferences, privacy_profile_visibility: e.target.value })}
                         className="p-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-xs font-bold outline-none"
+                        title="Visibilitas Profil"
                       >
                         <option value="public">Publik</option>
                         <option value="private">Privat</option>
@@ -1357,6 +1374,8 @@ export default function ProfileContent() {
                         className={`w-11 h-6 rounded-full transition-all relative ${
                           preferences.privacy_data_consent ? "bg-primary" : "bg-gray-300 dark:bg-gray-750"
                         }`}
+                        aria-label="Toggle Persetujuan Penggunaan Data"
+                        title="Toggle Persetujuan Penggunaan Data"
                       >
                         <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${
                           preferences.privacy_data_consent ? "right-1" : "left-1"
@@ -1382,35 +1401,41 @@ export default function ProfileContent() {
                   <h3 className="text-sm font-black uppercase text-muted tracking-wider pb-2 border-b border-border-light dark:border-border-dark">Ubah Password Akun</h3>
                   
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted ml-1">Password Lama</label>
+                    <label htmlFor="security-old-password" className="text-xs font-bold text-muted ml-1">Password Lama</label>
                     <input 
+                      id="security-old-password"
                       type="password"
                       value={oldPassword}
                       onChange={e => setOldPassword(e.target.value)}
                       placeholder="Masukkan password saat ini..."
                       className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                      title="Password Lama"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-muted ml-1">Password Baru</label>
+                      <label htmlFor="security-new-password" className="text-xs font-bold text-muted ml-1">Password Baru</label>
                       <input 
+                        id="security-new-password"
                         type="password"
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
                         placeholder="Minimal 8 karakter..."
                         className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        title="Password Baru"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-muted ml-1">Konfirmasi Password Baru</label>
+                      <label htmlFor="security-confirm-password" className="text-xs font-bold text-muted ml-1">Konfirmasi Password Baru</label>
                       <input 
+                        id="security-confirm-password"
                         type="password"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         placeholder="Ulangi password baru..."
                         className="w-full p-3.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-2xl outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        title="Konfirmasi Password Baru"
                       />
                     </div>
                   </div>

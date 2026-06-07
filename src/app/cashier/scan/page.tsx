@@ -492,8 +492,9 @@ export default function CashierScanPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Status select */}
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-muted ml-1">Status Kedatangan</label>
+                          <label htmlFor="arrival-status-select" className="text-xs font-bold text-muted ml-1">Status Kedatangan</label>
                           <select 
+                            id="arrival-status-select"
                             value={checkInStatus}
                             onChange={e => setCheckInStatus(e.target.value)}
                             className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
@@ -507,8 +508,9 @@ export default function CashierScanPage() {
 
                         {/* Table Select */}
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-muted ml-1">Assign Nomor Meja</label>
+                          <label htmlFor="table-assign-select" className="text-xs font-bold text-muted ml-1">Assign Nomor Meja</label>
                           <select 
+                            id="table-assign-select"
                             value={selectedTableId}
                             onChange={e => setSelectedTableId(e.target.value)}
                             className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm font-bold"

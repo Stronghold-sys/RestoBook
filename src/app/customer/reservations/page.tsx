@@ -1495,47 +1495,60 @@ export default function CustomerReservationsPage() {
           </div>
           <button onClick={() => setShowRulesModal(false)} type="button" title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
         </div>
-        <div className="p-6 sm:p-8 space-y-4 text-text-light dark:text-text-dark max-h-[500px] overflow-y-auto">
-          <h3 className="font-bold text-base mb-1 text-primary">I. Ketentuan Umum &amp; Kehadiran</h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm leading-relaxed mb-4">
-            <li>Reservasi hanya berlaku sesuai tanggal, jam, dan meja yang dipilih saat pemesanan.</li>
-            <li>Pelanggan wajib hadir dan melakukan check-in pada jam booking yang telah ditentukan.</li>
-            <li>Pelanggan memiliki toleransi check-in selama <span className="font-bold text-primary">{toleranceMinutes} menit</span> setelah jam booking dimulai.</li>
-            <li>Jika pelanggan tidak check-in sampai batas toleransi habis, reservasi akan dianggap hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.</li>
-            <li>Resto tidak bertanggung jawab atas kehilangan hak reservasi jika pelanggan terlambat datang dan tidak segera check-in.</li>
-            <li>Pelanggan wajib menjaga kebersihan, ketertiban, dan kenyamanan area resto.</li>
-            <li>Pelanggan dilarang merusak, mencoret, mematahkan, membawa pulang, atau menyalahgunakan properti resto dalam bentuk apa pun.</li>
-            <li>Jika terjadi kerusakan, kehilangan, atau penyalahgunaan fasilitas akibat pelanggan atau rombongan, pelanggan wajib mengganti kerugian sesuai penilaian pihak resto.</li>
-            <li>Resto berhak memberikan denda tambahan jika kerusakan menimbulkan biaya perbaikan, kehilangan barang, atau gangguan operasional.</li>
-            <li>Resto tidak bertanggung jawab atas kejadian yang timbul akibat kelalaian pelanggan dalam mematuhi aturan, termasuk keterlambatan check-in.</li>
-            <li>Pelanggan wajib mengikuti arahan staf resto terkait penempatan meja, keamanan, dan kenyamanan bersama.</li>
-            <li>Reservasi dapat dibatalkan secara sepihak jika pelanggan melanggar aturan, membuat keributan, merusak fasilitas, atau mengganggu pengunjung lain.</li>
-            <li>Dengan menekan tombol &ldquo;Setuju &amp; Ajukan Sekarang&rdquo;, pelanggan menyatakan telah membaca, memahami, dan menyetujui seluruh aturan yang berlaku.</li>
-          </ol>
+        <div className="p-6 sm:p-8 space-y-6 text-text-light dark:text-text-dark max-h-[550px] overflow-y-auto pr-2">
+          {/* Section I: Ketentuan Umum */}
+          <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark shadow-sm space-y-4">
+            <h3 className="font-extrabold text-sm uppercase tracking-wider text-primary border-b border-border-light dark:border-border-dark pb-2">
+              I. Ketentuan Umum &amp; Kehadiran
+            </h3>
+            <ol className="list-decimal pl-6 space-y-2.5 text-xs sm:text-sm leading-relaxed">
+              <li>Reservasi hanya berlaku sesuai tanggal, jam, dan meja yang dipilih saat pemesanan.</li>
+              <li>Pelanggan wajib hadir dan melakukan check-in pada jam booking yang telah ditentukan.</li>
+              <li>Pelanggan memiliki toleransi check-in selama <span className="font-bold text-primary">{toleranceMinutes} menit</span> setelah jam booking dimulai.</li>
+              <li>Jika pelanggan tidak check-in sampai batas toleransi habis, reservasi akan dianggap hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.</li>
+              <li>Resto tidak bertanggung jawab atas kehilangan hak reservasi jika pelanggan terlambat datang dan tidak segera check-in.</li>
+              <li>Pelanggan wajib menjaga kebersihan, ketertiban, dan kenyamanan area resto.</li>
+              <li>Pelanggan dilarang merusak, mencoret, mematahkan, membawa pulang, atau menyalahgunakan properti resto dalam bentuk apa pun.</li>
+              <li>Jika terjadi kerusakan, kehilangan, atau penyalahgunaan fasilitas akibat pelanggan atau rombongan, pelanggan wajib mengganti kerugian sesuai penilaian pihak resto.</li>
+              <li>Resto berhak memberikan denda tambahan jika kerusakan menimbulkan biaya perbaikan, kehilangan barang, atau gangguan operasional.</li>
+              <li>Resto tidak bertanggung jawab atas kejadian yang timbul akibat kelalaian pelanggan dalam mematuhi aturan, termasuk keterlambatan check-in.</li>
+              <li>Pelanggan wajib mengikuti arahan staf resto terkait penempatan meja, keamanan, dan kenyamanan bersama.</li>
+              <li>Reservasi dapat dibatalkan secara sepihak jika pelanggan melanggar aturan, membuat keributan, merusak fasilitas, atau mengganggu pengunjung lain.</li>
+              <li>Dengan menekan tombol &ldquo;Setuju &amp; Ajukan Sekarang&rdquo;, pelanggan menyatakan telah membaca, memahami, dan menyetujui seluruh aturan yang berlaku.</li>
+            </ol>
+          </div>
 
-          <h3 className="font-bold text-base mb-1 text-primary">II. Ketentuan Pre-Order &amp; Pembayaran</h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm leading-relaxed">
-            <li>Pesanan menu yang dipilih akan disiapkan 30 menit sebelum waktu booking dimulai.</li>
-            <li>Pelanggan wajib memastikan pesanan yang dipilih sudah benar sebelum mengajukan reservasi.</li>
-            <li>Jika memilih pembayaran DP, pelanggan wajib membayar minimal <span className="font-bold text-primary">{minimalDp}%</span> dari total harga sesuai ketentuan resto.</li>
-            <li>Jika DP belum memenuhi batas minimal, sistem tidak boleh melanjutkan pemesanan.</li>
-            <li>Sisa pembayaran wajib dilunasi pada kasir saat check-in atau saat transaksi lanjutan sesuai aturan resto.</li>
-            <li>Jika pelanggan membatalkan sepihak setelah pesanan disiapkan, maka akan dikenakan charge pembatalan sebesar <span className="font-bold text-red-500">{chargeCancel}%</span> dari total harga pesanan yang sudah disiapkan.</li>
-            <li>Nominal refund akan dihitung setelah dipotong charge pembatalan sesuai ketentuan resto.</li>
-            <li>Jika reservasi belum dikonfirmasi oleh resto lalu pelanggan membatalkan, maka pembatalan dapat diproses otomatis dan refund dikembalikan penuh sesuai status pembayaran dan kebijakan sistem.</li>
-            <li>Jika reservasi sudah dikonfirmasi, pembatalan wajib mengikuti proses verifikasi dan pengisian data pembatalan/refund dari resto.</li>
-            <li>Resto tidak bertanggung jawab atas keterlambatan check-in atau pembatalan yang dilakukan setelah pesanan diproses sesuai jadwal.</li>
-          </ol>
-          
-          <div className="p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl text-xs space-y-1.5 mt-4">
-            <p className="font-semibold text-primary">Penegasan Ketentuan Resto:</p>
-            <p>&bull; Toleransi check-in: <span className="font-bold text-amber-600 dark:text-amber-400">{toleranceMinutes} menit</span> sejak jam booking dimulai.</p>
-            <p>&bull; Minimal DP saat ini adalah <span className="font-bold">{minimalDp}%</span> dari total pesanan.</p>
-            <p>&bull; Jika pembatalan dilakukan sepihak setelah pesanan disiapkan, akan dikenakan charge sebesar <span className="font-bold text-red-500">{chargeCancel}%</span>.</p>
-            <p>&bull; Pesanan Anda akan mulai disiapkan 30 menit sebelum jam booking dimulai.</p>
+          {/* Section II: Ketentuan Pre-Order & Pembayaran */}
+          <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-border-light dark:border-border-dark shadow-sm space-y-4">
+            <h3 className="font-extrabold text-sm uppercase tracking-wider text-primary border-b border-border-light dark:border-border-dark pb-2">
+              II. Ketentuan Pre-Order &amp; Pembayaran
+            </h3>
+            <ol className="list-decimal pl-6 space-y-2.5 text-xs sm:text-sm leading-relaxed">
+              <li>Pesanan menu yang dipilih akan disiapkan 30 menit sebelum waktu booking dimulai.</li>
+              <li>Pelanggan wajib memastikan pesanan yang dipilih sudah benar sebelum mengajukan reservasi.</li>
+              <li>Jika memilih pembayaran DP, pelanggan wajib membayar minimal <span className="font-bold text-primary">{minimalDp}%</span> dari total harga sesuai ketentuan resto.</li>
+              <li>Jika DP belum memenuhi batas minimal, sistem tidak boleh melanjutkan pemesanan.</li>
+              <li>Sisa pembayaran wajib dilunasi pada kasir saat check-in atau saat transaksi lanjutan sesuai aturan resto.</li>
+              <li>Jika pelanggan membatalkan sepihak setelah pesanan disiapkan, maka akan dikenakan charge pembatalan sebesar <span className="font-bold text-red-500">{chargeCancel}%</span> dari total harga pesanan yang sudah disiapkan.</li>
+              <li>Nominal refund akan dihitung setelah dipotong charge pembatalan sesuai ketentuan resto.</li>
+              <li>Jika reservasi belum dikonfirmasi oleh resto lalu pelanggan membatalkan, maka pembatalan dapat diproses otomatis dan refund dikembalikan penuh sesuai status pembayaran dan kebijakan sistem.</li>
+              <li>Jika reservasi sudah dikonfirmasi, pembatalan wajib mengikuti proses verifikasi dan pengisian data pembatalan/refund dari resto.</li>
+              <li>Resto tidak bertanggung jawab atas keterlambatan check-in atau pembatalan yang dilakukan setelah pesanan diproses sesuai jadwal.</li>
+            </ol>
+          </div>
+
+          {/* Penegasan Ketentuan Resto Card */}
+          <div className="p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl text-xs space-y-2">
+            <p className="font-bold text-primary uppercase tracking-wider text-[11px]">Penegasan Ketentuan Utama Resto:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-text-light dark:text-text-dark font-medium">
+              <p>&bull; Toleransi check-in: <span className="font-bold text-amber-600 dark:text-amber-400">{toleranceMinutes} menit</span></p>
+              <p>&bull; Minimal DP: <span className="font-bold text-primary">{minimalDp}%</span></p>
+              <p>&bull; Denda pembatalan: <span className="font-bold text-red-500">{chargeCancel}%</span></p>
+              <p>&bull; Persiapan dapur: <span className="font-bold text-emerald-600 dark:text-emerald-400">30 menit sebelum mulai</span></p>
+            </div>
           </div>
           
-          <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark mt-6">
+          <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
             <button type="button" onClick={() => setShowRulesModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Batal</button>
             <button type="button" onClick={handleSubmit} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary-hover transition-colors">
               Setuju &amp; Ajukan Sekarang

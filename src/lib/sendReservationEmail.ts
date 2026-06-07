@@ -229,6 +229,14 @@ export async function sendReservationEmail(
       statusDesc = `Reservasi meja Anda telah <strong>dibatalkan oleh ${entityName}</strong>.<br/><br/><strong>Alasan Pembatalan/Penolakan:</strong> <span style="color:#ef4444;">${cancelReason}</span>`;
     }
 
+    const qrData = resData.qr_token || resData.id;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+
+    const cleanCatatan = (() => {
+      const txt = (catatan || '').trim();
+      return (txt === '-' || txt === '_' || txt === '') ? '' : txt;
+    })();
+
     const emailPayload = {
       from: 'RestoBook <noreply@restobookid.my.id>',
       to: targetEmail,
@@ -247,6 +255,17 @@ export async function sendReservationEmail(
             <p style="color:#555; font-size:13.5px; line-height:1.6; margin-bottom:20px;">
               ${statusDesc}
             </p>
+
+            ${status === 'confirmed' ? `
+            <div style="text-align:center; background:#fff8e1; border:1px solid #ffe082; border-radius:12px; padding:20px; margin-bottom:20px;">
+              <p style="margin:0 0 10px 0; font-weight:bold; color:#f57c00; font-size:13px; letter-spacing:0.5px; text-transform:uppercase;">QR Code Check-In Anda</p>
+              <div style="background:#ffffff; padding:12px; border-radius:10px; display:inline-block; border:1px solid #e0e0e0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom:10px;">
+                <img src="${qrCodeUrl}" width="180" height="180" alt="Check-In QR Code" style="display:block; margin:0 auto;" />
+              </div>
+              <p style="margin:5px 0 0 0; font-size:11px; color:#757575; text-transform:uppercase; font-weight:bold; letter-spacing:0.5px;">Kode Booking</p>
+              <p style="margin:2px 0 0 0; font-family:monospace; font-size:18px; font-weight:bold; color:#d84315; letter-spacing:1px;">${qrData}</p>
+            </div>
+            ` : ''}
             
             <div style="background:#f9f9f9; padding:18px; border-radius:10px; border:1px solid #f0f0f0; margin-bottom:20px;">
               <p style="margin:0 0 10px 0; font-weight:bold; color:#ff5722; font-size:13px; letter-spacing:0.5px; text-transform:uppercase;">Rincian Reservasi</p>
@@ -279,10 +298,10 @@ export async function sendReservationEmail(
                   <td style="padding:6px 0; font-weight:bold;">Nomor Meja</td>
                   <td style="padding:6px 0; font-weight:bold; color:#ff5722;">Meja ${mejaNumbers}</td>
                 </tr>
-                ${catatan ? `
+                ${cleanCatatan ? `
                 <tr>
                   <td style="padding:6px 0; font-weight:bold; vertical-align:top;">Catatan Tambahan</td>
-                  <td style="padding:6px 0; line-height:1.4; color:#666;">${catatan}</td>
+                  <td style="padding:6px 0; line-height:1.4; color:#666;">Catatan dari pelanggan: ${cleanCatatan}</td>
                 </tr>` : ''}
               </table>
             </div>

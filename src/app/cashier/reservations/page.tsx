@@ -31,6 +31,9 @@ function CashierReservationsContent() {
   // Detail Modal State
   const [selectedRes, setSelectedRes] = useState<any>(null);
 
+  // Confirm Detail Modal State
+  const [confirmingRes, setConfirmingRes] = useState<any | null>(null);
+
   // Reject Modal State
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -170,13 +173,26 @@ function CashierReservationsContent() {
   }, [bookedTablesInfo]);
 
   const getParsedNotes = (notesStr: string) => {
+    if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
     try {
       const parsed = JSON.parse(notesStr);
-      if (parsed && typeof parsed === "object" && "atas_nama" in parsed) {
-        return parsed;
+      if (parsed && typeof parsed === "object") {
+        const note = parsed.catatan || parsed.catatan_batal || "";
+        const cleanNote = note.trim();
+        const finalNote = (cleanNote === "-" || cleanNote === "_" || cleanNote === "") ? "" : cleanNote;
+        return {
+          ...parsed,
+          atas_nama: parsed.atas_nama || "",
+          telepon: parsed.telepon || "",
+          meja_tambahan: parsed.meja_tambahan || [],
+          meja_ids: parsed.meja_ids || [],
+          catatan: finalNote
+        };
       }
     } catch (e) {}
-    return null;
+    const cleanStr = notesStr.trim();
+    const finalStr = (cleanStr === "-" || cleanStr === "_" || cleanStr === "") ? "" : cleanStr;
+    return { atas_nama: "", telepon: "", catatan: finalStr, meja_tambahan: [], meja_ids: [] };
   };
 
   const handleConfirm = async (res: any) => {
@@ -496,8 +512,10 @@ function CashierReservationsContent() {
       <div className="space-y-4">
         {filtered.map((res, i) => {
           const parsedNotes = getParsedNotes(res.notes);
-          const customerName = parsedNotes ? parsedNotes.atas_nama : (res.profiles?.full_name || "Guest");
-          const displayMejaList = parsedNotes?.meja_tambahan ? parsedNotes.meja_tambahan.join(", ") : res.tables?.table_number;
+          const customerName = parsedNotes.atas_nama || (res.profiles?.full_name || "Guest");
+          const displayMejaList = parsedNotes.meja_tambahan && parsedNotes.meja_tambahan.length > 0 
+            ? parsedNotes.meja_tambahan.join(", ") 
+            : res.tables?.table_number;
 
           return (
             <motion.div key={res.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
@@ -536,7 +554,7 @@ function CashierReservationsContent() {
 
                   {res.status === "pending" && (
                     <div className="flex gap-2">
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleConfirm(res)} className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg" aria-label="Konfirmasi" title="Konfirmasi / ACC"><Check className="w-5 h-5" /></motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setConfirmingRes(res)} className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg" aria-label="Konfirmasi" title="Konfirmasi / ACC"><Check className="w-5 h-5" /></motion.button>
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => setRejectingId(res.id)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" aria-label="Tolak" title="Tolak dengan Alasan"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
@@ -566,10 +584,10 @@ function CashierReservationsContent() {
       >
         {selectedRes && (() => {
           const parsed = getParsedNotes(selectedRes.notes);
-          const clientName = parsed ? parsed.atas_nama : (selectedRes.profiles?.full_name || "Guest");
-          const clientPhone = parsed ? parsed.telepon : (selectedRes.profiles?.phone || "-");
-          const mejaNumbers = parsed?.meja_tambahan ? parsed.meja_tambahan.join(", ") : selectedRes.tables?.table_number;
-          const notesText = parsed ? parsed.catatan : selectedRes.notes;
+          const clientName = parsed.atas_nama || (selectedRes.profiles?.full_name || "Guest");
+          const clientPhone = parsed.telepon || (selectedRes.profiles?.phone || "-");
+          const mejaNumbers = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedRes.tables?.table_number;
+          const notesText = parsed.catatan;
 
           return (
             <>
@@ -609,7 +627,7 @@ function CashierReservationsContent() {
                 {notesText && (
                   <div>
                     <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
+                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
                   </div>
                 )}
                 {parsed?.catatan_tolak && (
@@ -624,6 +642,85 @@ function CashierReservationsContent() {
                     <p className="text-sm">{parsed.catatan_batal}</p>
                   </div>
                 )}
+              </div>
+            </>
+          );
+        })()}
+      </BaseModal>
+
+      {/* Pop-up Modal Konfirmasi Detail Reservasi */}
+      <BaseModal
+        isOpen={!!confirmingRes}
+        onClose={() => setConfirmingRes(null)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        {confirmingRes && (() => {
+          const parsed = getParsedNotes(confirmingRes.notes);
+          const clientName = parsed.atas_nama || (confirmingRes.profiles?.full_name || "Guest");
+          const clientPhone = parsed.telepon || (confirmingRes.profiles?.phone || "-");
+          const mejaNumbers = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : confirmingRes.tables?.table_number;
+          const notesText = parsed.catatan;
+
+          return (
+            <>
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-green-500/10 dark:bg-green-950/20">
+                <div>
+                  <h3 className="font-bold text-lg text-green-600 dark:text-green-400">Konfirmasi Rincian Reservasi</h3>
+                  <p className="text-xs text-muted mt-1">Harap verifikasi detail reservasi sebelum mengonfirmasi</p>
+                </div>
+                <button onClick={() => setConfirmingRes(null)} title="Tutup" aria-label="Tutup" className="text-muted hover:text-text-light"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Atas Nama</span>
+                  <p className="font-black text-lg text-text-light dark:text-text-dark">{clientName}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider">Nomor Telepon</span>
+                  <p className="font-bold text-text-light dark:text-text-dark">{clientPhone}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Tanggal</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{format(new Date(confirmingRes.reservation_date), "dd MMM yyyy", { locale: localeId })}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Waktu</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{confirmingRes.reservation_time?.substring(0, 5)} WIB</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Meja</span>
+                    <p className="font-bold text-primary text-base">Meja {mejaNumbers}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Tamu</span>
+                    <p className="font-medium text-text-light dark:text-text-dark">{confirmingRes.guest_count} Orang</p>
+                  </div>
+                </div>
+                {notesText && (
+                  <div>
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
+                    <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                  <button type="button" onClick={() => setConfirmingRes(null)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium">Batal</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleConfirm(confirmingRes);
+                      setConfirmingRes(null);
+                    }}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-500/10 text-center animate-pulse"
+                  >
+                    Konfirmasi
+                  </button>
+                </div>
               </div>
             </>
           );

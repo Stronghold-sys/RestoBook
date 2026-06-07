@@ -281,17 +281,21 @@ export default function CashierScanPage() {
   };
 
   const getParsedNotes = (notesStr: string) => {
-    if (!notesStr) return { catatan: "-" };
+    if (!notesStr) return { catatan: "" };
+    let note = "";
     try {
       const parsed = JSON.parse(notesStr);
       if (parsed && typeof parsed === 'object') {
-        const note = parsed.catatan || parsed.catatan_batal || "";
-        return { catatan: note.trim() || "-" };
+        note = parsed.catatan || parsed.catatan_batal || "";
       }
     } catch (e) {
-      // not JSON
+      note = notesStr;
     }
-    return { catatan: notesStr.trim() || "-" };
+    const cleanNote = note.trim();
+    if (cleanNote === "-" || cleanNote === "_" || cleanNote === "") {
+      return { catatan: "" };
+    }
+    return { catatan: cleanNote };
   };
 
   if (authChecking) {
@@ -484,14 +488,18 @@ export default function CashierScanPage() {
                   </div>
 
                   {/* Notes */}
-                  {reservation.notes && (
-                    <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl text-xs space-y-1 border border-border-light dark:border-border-dark">
-                      <span className="font-black uppercase text-muted">Catatan Pelanggan:</span>
-                      <p className="text-muted leading-relaxed font-semibold italic">
-                        &ldquo;{getParsedNotes(reservation.notes).catatan}&rdquo;
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl text-xs space-y-1 border border-border-light dark:border-border-dark">
+                    <span className="font-black uppercase text-muted">Catatan Pelanggan:</span>
+                    {(() => {
+                      const parsed = getParsedNotes(reservation.notes);
+                      if (!parsed.catatan) return null;
+                      return (
+                        <p className="text-muted leading-relaxed font-semibold italic mt-1">
+                          Catatan dari pelanggan: &ldquo;{parsed.catatan}&rdquo;
+                        </p>
+                      );
+                    })()}
+                  </div>
 
                   {/* Check-In Controls */}
                   {['pending', 'confirmed', 'arrived', 'seated'].includes(reservation.status) && (

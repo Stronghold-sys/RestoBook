@@ -359,13 +359,26 @@ export default function CustomerReservationsPage() {
   };
 
   const getParsedNotes = (notesStr: string) => {
+    if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
     try {
       const parsed = JSON.parse(notesStr);
-      if (parsed && typeof parsed === "object" && "atas_nama" in parsed) {
-        return parsed;
+      if (parsed && typeof parsed === "object") {
+        const note = parsed.catatan || parsed.catatan_batal || "";
+        const cleanNote = note.trim();
+        const finalNote = (cleanNote === "-" || cleanNote === "_" || cleanNote === "") ? "" : cleanNote;
+        return {
+          ...parsed,
+          atas_nama: parsed.atas_nama || "",
+          telepon: parsed.telepon || "",
+          meja_tambahan: parsed.meja_tambahan || [],
+          meja_ids: parsed.meja_ids || [],
+          catatan: finalNote
+        };
       }
     } catch (e) {}
-    return null;
+    const cleanStr = notesStr.trim();
+    const finalStr = (cleanStr === "-" || cleanStr === "_" || cleanStr === "") ? "" : cleanStr;
+    return { atas_nama: "", telepon: "", catatan: finalStr, meja_tambahan: [], meja_ids: [] };
   };
 
   const getStatusBadge = (s: string) => {
@@ -503,9 +516,11 @@ export default function CustomerReservationsPage() {
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {displayedReservations.map((res, i) => {
                 const parsedNotes = getParsedNotes(res.notes);
-                const displayNotes = parsedNotes ? parsedNotes.catatan : res.notes;
-                const displayAtasNama = parsedNotes ? parsedNotes.atas_nama : null;
-                const displayMejaList = parsedNotes?.meja_tambahan ? parsedNotes.meja_tambahan.join(", ") : res.tables?.table_number;
+                const displayNotes = parsedNotes.catatan;
+                const displayAtasNama = parsedNotes.atas_nama || null;
+                const displayMejaList = parsedNotes.meja_tambahan && parsedNotes.meja_tambahan.length > 0 
+                  ? parsedNotes.meja_tambahan.join(", ") 
+                  : res.tables?.table_number;
                 const cancelledByInfo = getCancelledByLabel(parsedNotes);
                 const isHistory = HISTORY_STATUSES.includes(res.status);
 
@@ -567,7 +582,11 @@ export default function CustomerReservationsPage() {
                       </div>
                     </div>
                     
-                    {displayNotes && <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg"><span className="font-bold">Catatan:</span> {displayNotes}</p>}
+                    {displayNotes && (
+                      <p className="mt-3 text-sm text-muted bg-background-light dark:bg-background-dark p-3 rounded-lg">
+                        <span className="font-bold">Catatan:</span> Catatan dari pelanggan: {displayNotes}
+                      </p>
+                    )}
                     
                     {/* Cancelled by info */}
                     {res.status === "cancelled" && cancelledByInfo && (
@@ -828,8 +847,8 @@ export default function CustomerReservationsPage() {
       >
         {selectedQrRes && (() => {
           const parsed = getParsedNotes(selectedQrRes.notes);
-          const clientName = parsed ? parsed.atas_nama : "Pelanggan";
-          const displayMejaList = parsed?.meja_tambahan ? parsed.meja_tambahan.join(", ") : selectedQrRes.tables?.table_number;
+          const clientName = parsed.atas_nama || "Pelanggan";
+          const displayMejaList = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedQrRes.tables?.table_number;
           const qrData = selectedQrRes.qr_token || selectedQrRes.id;
 
           return (

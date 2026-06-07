@@ -62,13 +62,26 @@ export default function AdminReservationsPage() {
   };
 
   const getParsedNotes = (notesStr: string) => {
+    if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
     try {
       const parsed = JSON.parse(notesStr);
-      if (parsed && typeof parsed === "object" && "atas_nama" in parsed) {
-        return parsed;
+      if (parsed && typeof parsed === "object") {
+        const note = parsed.catatan || parsed.catatan_batal || "";
+        const cleanNote = note.trim();
+        const finalNote = (cleanNote === "-" || cleanNote === "_" || cleanNote === "") ? "" : cleanNote;
+        return {
+          ...parsed,
+          atas_nama: parsed.atas_nama || "",
+          telepon: parsed.telepon || "",
+          meja_tambahan: parsed.meja_tambahan || [],
+          meja_ids: parsed.meja_ids || [],
+          catatan: finalNote
+        };
       }
     } catch (e) {}
-    return null;
+    const cleanStr = notesStr.trim();
+    const finalStr = (cleanStr === "-" || cleanStr === "_" || cleanStr === "") ? "" : cleanStr;
+    return { atas_nama: "", telepon: "", catatan: finalStr, meja_tambahan: [], meja_ids: [] };
   };
 
   const handleConfirm = async (res: any) => {
@@ -126,6 +139,62 @@ export default function AdminReservationsPage() {
         toast.error(`Konfirmasi sukses, tetapi sinkronisasi kalender gagal: ${err.message}`, { id: toastId });
       }
 
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message, { id: toastId });
+    }
+  };
+
+  const handleComplete = async (res: any) => {
+    const toastId = toast.loading("Menyelesaikan reservasi...");
+    try {
+      const parsedNotes = getParsedNotes(res.notes);
+      const tableIds = parsedNotes?.meja_ids || [res.table_id];
+
+      // Update reservation status
+      const { error: resError } = await supabase.from("reservations").update({ status: "completed" }).eq("id", res.id);
+      if (resError) throw resError;
+
+      // Update tables back to 'available'
+      if (tableIds && tableIds.length > 0) {
+        const { error: tableError } = await supabase.from("tables").update({ status: "available" }).in("id", tableIds);
+        if (tableError) throw tableError;
+      }
+
+      // Add Notification
+      if (res.customer_id) {
+        await supabase.from("notifications").insert({
+          user_id: res.customer_id,
+          title: "Reservasi Selesai",
+          message: `Reservasi Anda pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah ditandai selesai. Terima kasih atas kunjungan Anda!`,
+          type: "reservation",
+          status_badge: "selesai"
+        });
+      }
+
+      // Trigger Email Notification (realtime, awaited)
+      try {
+        await fetch("/api/reservations/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: res.id, status: "completed" })
+        });
+      } catch (err) {
+        console.error("Gagal mengirim email reservasi:", err);
+      }
+
+      // Trigger Google Calendar sync to DELETE the event (awaited)
+      try {
+        await fetch("/api/reservations/sync-calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservationId: res.id, action: "delete" })
+        });
+      } catch (err) {
+        console.error("Gagal menghapus event kalender:", err);
+      }
+
+      toast.success("Reservasi selesai! Meja kembali READY.", { id: toastId });
       fetchData();
     } catch (e: any) {
       toast.error(e.message, { id: toastId });
@@ -239,8 +308,10 @@ export default function AdminReservationsPage() {
       <div className="space-y-4">
         {filtered.map((res, i) => {
           const parsedNotes = getParsedNotes(res.notes);
-          const customerName = parsedNotes ? parsedNotes.atas_nama : (res.profiles?.full_name || "Guest");
-          const displayMejaList = parsedNotes?.meja_tambahan ? parsedNotes.meja_tambahan.join(", ") : res.tables?.table_number;
+          const customerName = parsedNotes.atas_nama || (res.profiles?.full_name || "Guest");
+          const displayMejaList = parsedNotes.meja_tambahan && parsedNotes.meja_tambahan.length > 0 
+            ? parsedNotes.meja_tambahan.join(", ") 
+            : res.tables?.table_number;
 
           return (
             <motion.div key={res.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5">
@@ -273,6 +344,9 @@ export default function AdminReservationsPage() {
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleReject(res)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors" aria-label="Tolak" title="Tolak"><X className="w-5 h-5" /></motion.button>
                     </div>
                   )}
+                  {["confirmed", "arrived", "seated"].includes(res.status) && (
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleComplete(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesaikan Reservasi</motion.button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -287,10 +361,10 @@ export default function AdminReservationsPage() {
       <BaseModal isOpen={!!selectedRes} onClose={() => setSelectedRes(null)} size="md" title="Data Diri Pemesan (Admin View)">
         {selectedRes && (() => {
           const parsed = getParsedNotes(selectedRes.notes);
-          const clientName = parsed ? parsed.atas_nama : (selectedRes.profiles?.full_name || "Guest");
-          const clientPhone = parsed ? parsed.telepon : (selectedRes.profiles?.phone || "-");
-          const mejaNumbers = parsed?.meja_tambahan ? parsed.meja_tambahan.join(", ") : selectedRes.tables?.table_number;
-          const notesText = parsed ? parsed.catatan : selectedRes.notes;
+          const clientName = parsed.atas_nama || (selectedRes.profiles?.full_name || "Guest");
+          const clientPhone = parsed.telepon || (selectedRes.profiles?.phone || "-");
+          const mejaNumbers = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedRes.tables?.table_number;
+          const notesText = parsed.catatan;
 
           return (
             <div className="space-y-4">
@@ -325,7 +399,7 @@ export default function AdminReservationsPage() {
               {notesText && (
                 <div>
                   <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
-                  <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
+                  <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">Catatan dari pelanggan: {notesText}</p>
                 </div>
               )}
               {parsed?.catatan_tolak && (

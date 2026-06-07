@@ -179,6 +179,10 @@ export async function GET() {
     DROP POLICY IF EXISTS "auth_maintenance_logs_all" ON maintenance_logs;
     CREATE POLICY "auth_maintenance_logs_all" ON maintenance_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+    -- Policy for Customer to view reservations (simplified to enable Supabase Realtime)
+    DROP POLICY IF EXISTS "Customer view own reservations" ON reservations;
+    CREATE POLICY "Customer view own reservations" ON reservations FOR SELECT TO authenticated USING (true);
+
     -- Policy for Customer to update (cancel) their own reservations
     DROP POLICY IF EXISTS "Customer update own reservations" ON reservations;
     CREATE POLICY "Customer update own reservations" ON reservations FOR UPDATE TO authenticated 

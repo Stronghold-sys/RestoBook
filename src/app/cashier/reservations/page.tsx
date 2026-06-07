@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BaseModal from "@/components/BaseModal";
 import { useSearchParams } from "next/navigation";
+import { createAuditLog } from "@/lib/audit";
 
 interface Table {
   id: string;
@@ -36,6 +37,10 @@ function CashierReservationsContent() {
 
   // Complete Reservation Modal State
   const [completingRes, setCompletingRes] = useState<any | null>(null);
+
+  // Complete Reservation Payment Warning Modal State
+  const [showPaymentWarningModal, setShowPaymentWarningModal] = useState(false);
+  const [warningRes, setWarningRes] = useState<any | null>(null);
 
   // Reject Modal State
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -390,9 +395,22 @@ function CashierReservationsContent() {
       const parsedNotes = getParsedNotes(res.notes);
       const tableIds = parsedNotes?.meja_ids || [res.table_id];
 
-      // Update reservation status
-      const { error: resError } = await supabase.from("reservations").update({ status: "completed" }).eq("id", res.id);
+      // Update reservation status and payment status
+      const { error: resError } = await supabase.from("reservations").update({ status: "completed", payment_status: "paid" }).eq("id", res.id);
       if (resError) throw resError;
+
+      // Log cashier action
+      try {
+        await createAuditLog('complete_reservation', {
+          reservation_id: res.id,
+          customer_id: res.customer_id,
+          table_ids: tableIds,
+          cashier_id: cashierId || null,
+          cashier_name: cashierName || "Kasir"
+        });
+      } catch (logErr) {
+        console.error("Gagal mencatat audit log:", logErr);
+      }
 
       // Update tables back to 'available' automatically, NOT occupied!
       if (tableIds && tableIds.length > 0) {
@@ -694,7 +712,22 @@ function CashierReservationsContent() {
                     </motion.button>
                   )}
                   {["arrived", "seated"].includes(res.status) && (
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCompletingRes(res)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10">Selesai Observasi</motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        const hasUnfinishedPayment = res.payment_status !== "paid";
+                        const isCashOrDp = res.payment_method === "cash" || res.payment_method === "dp";
+                        if (hasUnfinishedPayment && isCashOrDp) {
+                          setWarningRes(res);
+                          setShowPaymentWarningModal(true);
+                        } else {
+                          setCompletingRes(res);
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10"
+                    >
+                      Selesai Observasi
+                    </motion.button>
                   )}
                 </div>
               </div>
@@ -1100,6 +1133,99 @@ function CashierReservationsContent() {
                   className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all"
                 >
                   Selesaikan
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </BaseModal>
+
+      {/* Payment Warning Modal */}
+      <BaseModal
+        isOpen={showPaymentWarningModal}
+        onClose={() => {
+          setShowPaymentWarningModal(false);
+          setWarningRes(null);
+        }}
+        showCloseButton={true}
+        size="md"
+      >
+        {warningRes && (() => {
+          const parsedNotes = getParsedNotes(warningRes.notes);
+          const clientName = parsedNotes?.atas_nama || warningRes.profiles?.full_name || "Pelanggan";
+          const displayMejaList = parsedNotes?.meja_tambahan?.length > 0 
+            ? parsedNotes.meja_tambahan.join(", ") 
+            : warningRes.tables?.table_number || "-";
+          
+          // Paid amount calculation
+          let paidAmount = 0;
+          if (warningRes.payment_status === "dp_paid") {
+            paidAmount = Number(warningRes.dp_amount || 0);
+          } else if (warningRes.payment_status === "paid") {
+            paidAmount = Number(warningRes.menu_total || 0);
+          }
+          
+          const remainingAmount = Number(warningRes.remaining_amount || 0);
+          const paymentMethodText = warningRes.payment_method === "dp" ? "DP" : "Tunai";
+
+          return (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                <AlertCircle className="w-5 h-5" /> Pembayaran Belum Selesai
+              </h3>
+              
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl space-y-2 text-sm text-amber-800 dark:text-amber-300">
+                <p className="font-semibold">Reservasi ini masih memiliki pembayaran yang belum selesai.</p>
+                <p className="text-xs">Silakan lanjutkan ke POS untuk menyelesaikan pembayaran terlebih dahulu.</p>
+              </div>
+
+              <div className="border border-border-light dark:border-border-dark rounded-xl p-4 space-y-2.5 text-xs bg-gray-50/50 dark:bg-gray-800/20">
+                <div className="flex justify-between">
+                  <span className="text-muted">Nomor Reservasi:</span>
+                  <span className="font-mono font-bold text-text-light dark:text-text-dark text-right">#{warningRes.id.substring(0, 8).toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Nama Pelanggan:</span>
+                  <span className="font-bold text-text-light dark:text-text-dark text-right">{clientName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Status Reservasi:</span>
+                  <span className="font-semibold text-primary capitalize text-right">{warningRes.status}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Jenis Pembayaran:</span>
+                  <span className="font-bold text-text-light dark:text-text-dark text-right">{paymentMethodText}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Nominal yang sudah dibayar:</span>
+                  <span className="font-bold text-green-600 dark:text-green-400 text-right">Rp {paidAmount.toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between pt-1.5 border-t border-dashed border-border-light dark:border-border-dark">
+                  <span className="font-extrabold text-text-light dark:text-text-dark">Sisa Pembayaran:</span>
+                  <span className="font-black text-red-600 dark:text-red-500 text-sm text-right">Rp {remainingAmount.toLocaleString("id-ID")}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPaymentWarningModal(false);
+                    setWarningRes(null);
+                  }}
+                  className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPaymentWarningModal(false);
+                    window.location.href = `/cashier/pos?reservation_id=${warningRes.id}`;
+                  }}
+                  className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Receipt className="w-4 h-4" /> Pergi ke POS
                 </button>
               </div>
             </div>

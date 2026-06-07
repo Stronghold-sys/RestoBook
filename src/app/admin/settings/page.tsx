@@ -68,7 +68,10 @@ export default function AdminSettingsPage() {
     max_shipping_distance: 15,
     additional_zone_charge: 0,
     min_order_for_free_shipping: 100000,
-    is_shipping_enabled: true
+    is_shipping_enabled: true,
+    minimal_dp: 30,
+    charge_cancel: 20,
+    refund_policy: "manual"
   });
 
   const [estimationSettings, setEstimationSettings] = useState<any>({
@@ -175,6 +178,9 @@ export default function AdminSettingsPage() {
           additional_zone_charge: data.additional_zone_charge !== null && data.additional_zone_charge !== undefined ? Number(data.additional_zone_charge) : 0,
           min_order_for_free_shipping: data.min_order_for_free_shipping !== null && data.min_order_for_free_shipping !== undefined ? Number(data.min_order_for_free_shipping) : 100000,
           is_shipping_enabled: data.is_shipping_enabled !== undefined && data.is_shipping_enabled !== null ? !!data.is_shipping_enabled : true,
+          minimal_dp: data.minimal_dp !== null && data.minimal_dp !== undefined ? Number(data.minimal_dp) : 30,
+          charge_cancel: data.charge_cancel !== null && data.charge_cancel !== undefined ? Number(data.charge_cancel) : 20,
+          refund_policy: data.refund_policy || 'manual',
         });
         const totalSec = Math.round(expiryMin * 60);
         setExpiryHoursInput(Math.floor(totalSec / 3600).toString());
@@ -188,7 +194,10 @@ export default function AdminSettingsPage() {
           const resObj = {
             duration_minutes: resSettings?.duration_minutes !== undefined ? Number(resSettings.duration_minutes) : 120,
             auto_release_enabled: resSettings?.auto_release_enabled !== undefined ? !!resSettings.auto_release_enabled : true,
-            late_tolerance_minutes: resSettings?.late_tolerance_minutes !== undefined ? Number(resSettings.late_tolerance_minutes) : 15
+            late_tolerance_minutes: resSettings?.late_tolerance_minutes !== undefined ? Number(resSettings.late_tolerance_minutes) : 15,
+            minimal_dp: data.minimal_dp !== null && data.minimal_dp !== undefined ? Number(data.minimal_dp) : 30,
+            charge_cancel: data.charge_cancel !== null && data.charge_cancel !== undefined ? Number(data.charge_cancel) : 20,
+            refund_policy: data.refund_policy || 'manual'
           };
           setReservationSettings(resObj);
           setInitialReservationSettings(resObj);
@@ -349,6 +358,9 @@ export default function AdminSettingsPage() {
         min_order_for_free_shipping: Number(settings.min_order_for_free_shipping || 0),
         is_shipping_enabled: settings.is_shipping_enabled,
         reservation_settings: reservationSettings,
+        minimal_dp: Number(settings.minimal_dp !== undefined ? settings.minimal_dp : 30),
+        charge_cancel: Number(settings.charge_cancel !== undefined ? settings.charge_cancel : 20),
+        refund_policy: settings.refund_policy || 'manual',
       }).eq("id", settings.id);
       if (error) throw error;
 
@@ -356,7 +368,42 @@ export default function AdminSettingsPage() {
       const oldTolerance = initialReservationSettings?.late_tolerance_minutes !== undefined ? initialReservationSettings.late_tolerance_minutes : 15;
       const newTolerance = reservationSettings.late_tolerance_minutes !== undefined && reservationSettings.late_tolerance_minutes !== "" ? Number(reservationSettings.late_tolerance_minutes) : 15;
       
-      if (oldTolerance !== newTolerance) {
+      const oldMinimalDp = initialReservationSettings?.minimal_dp !== undefined ? initialReservationSettings.minimal_dp : 30;
+      const newMinimalDp = Number(settings.minimal_dp !== undefined ? settings.minimal_dp : 30);
+      
+      const oldChargeCancel = initialReservationSettings?.charge_cancel !== undefined ? initialReservationSettings.charge_cancel : 20;
+      const newChargeCancel = Number(settings.charge_cancel !== undefined ? settings.charge_cancel : 20);
+
+      const oldRefundPolicy = initialReservationSettings?.refund_policy !== undefined ? initialReservationSettings.refund_policy : 'manual';
+      const newRefundPolicy = settings.refund_policy || 'manual';
+
+      const hasPaymentSettingsChanged = oldMinimalDp !== newMinimalDp || oldChargeCancel !== newChargeCancel || oldRefundPolicy !== newRefundPolicy;
+
+      if (hasPaymentSettingsChanged) {
+        const { data: { user } } = await supabase.auth.getUser();
+        let adminName = "Admin";
+        let adminProfileId = null;
+        if (user) {
+          const { data: prof } = await supabase.from('profiles').select('id, full_name').eq('user_id', user.id).single();
+          if (prof) {
+            adminName = prof.full_name;
+            adminProfileId = prof.id;
+          }
+        }
+        await supabase.from('audit_logs').insert({
+          action: 'update_reservation_payment_settings',
+          operator_id: adminProfileId,
+          operator_name: adminName,
+          target_id: settings.id,
+          target_name: 'restaurant_settings',
+          data_before: { minimal_dp: oldMinimalDp, charge_cancel: oldChargeCancel, refund_policy: oldRefundPolicy },
+          data_after: { minimal_dp: newMinimalDp, charge_cancel: newChargeCancel, refund_policy: newRefundPolicy },
+          browser: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
+          device: 'Web Client'
+        });
+      }
+
+      if (oldTolerance !== newTolerance || hasPaymentSettingsChanged) {
         const { data: { user } } = await supabase.auth.getUser();
         let adminName = "Admin";
         let adminProfileId = null;
@@ -378,7 +425,13 @@ export default function AdminSettingsPage() {
           browser: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
           device: 'Web Client'
         });
-        setInitialReservationSettings((prev: any) => ({ ...prev, late_tolerance_minutes: newTolerance }));
+        setInitialReservationSettings((prev: any) => ({ 
+          ...prev, 
+          late_tolerance_minutes: newTolerance,
+          minimal_dp: newMinimalDp,
+          charge_cancel: newChargeCancel,
+          refund_policy: newRefundPolicy
+        }));
       }
 
       const { error: estError } = await supabase
@@ -1299,11 +1352,100 @@ export default function AdminSettingsPage() {
                   Reset
                 </button>
               </div>
-              <p className="text-[10px] text-muted mt-1">Batas waktu keterlambatan pelanggan check-in setelah jam booking dimulai (maksimal 120 menit).</p>
-              
-              <div className="mt-2.5 p-3.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div>
+                  <label htmlFor="resMinimalDp" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Minimal DP (%)</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-3 text-sm text-muted font-bold">%</span>
+                      <input 
+                        id="resMinimalDp" 
+                        type="number" 
+                        min="0" 
+                        max="100"
+                        value={settings.minimal_dp === undefined ? 30 : settings.minimal_dp}
+                        onChange={e => {
+                          let val = e.target.value;
+                          if (val === "") {
+                            setSettings({ ...settings, minimal_dp: "" });
+                            return;
+                          }
+                          const clean = val.replace(/[^0-9]/g, "");
+                          let num = Number(clean);
+                          if (num > 100) num = 100;
+                          setSettings({ ...settings, minimal_dp: num });
+                        }}
+                        className="w-full pl-8 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setSettings({ ...settings, minimal_dp: 30 })} 
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-text-light dark:text-text-dark rounded-xl font-bold text-xs uppercase shadow-sm transition-all"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted mt-1">Batas persentase DP minimal yang wajib dibayarkan pelanggan saat melakukan pemesanan (0-100%).</p>
+                </div>
+
+                <div>
+                  <label htmlFor="resChargeCancel" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Charge Pembatalan Sepihak (%)</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-3 text-sm text-muted font-bold">%</span>
+                      <input 
+                        id="resChargeCancel" 
+                        type="number" 
+                        min="0" 
+                        max="100"
+                        value={settings.charge_cancel === undefined ? 20 : settings.charge_cancel}
+                        onChange={e => {
+                          let val = e.target.value;
+                          if (val === "") {
+                            setSettings({ ...settings, charge_cancel: "" });
+                            return;
+                          }
+                          const clean = val.replace(/[^0-9]/g, "");
+                          let num = Number(clean);
+                          if (num > 100) num = 100;
+                          setSettings({ ...settings, charge_cancel: num });
+                        }}
+                        className="w-full pl-8 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setSettings({ ...settings, charge_cancel: 20 })} 
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-text-light dark:text-text-dark rounded-xl font-bold text-xs uppercase shadow-sm transition-all"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted mt-1">Potongan biaya pembatalan sepihak jika pesanan sudah mulai disiapkan (0-100%).</p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="resRefundPolicy" className="text-xs font-semibold text-muted mb-1 block uppercase tracking-wider">Kebijakan Refund</label>
+                <select 
+                  id="resRefundPolicy"
+                  value={settings.refund_policy || 'manual'}
+                  onChange={e => setSettings({ ...settings, refund_policy: e.target.value })}
+                  className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-sm font-bold"
+                >
+                  <option value="manual">Refund Manual (Memerlukan Verifikasi Admin)</option>
+                  <option value="auto">Refund Otomatis (Eksekusi Instan Sesuai Aturan)</option>
+                </select>
+                <p className="text-[10px] text-muted mt-1">Menentukan apakah pengembalian dana pembatalan diproses secara otomatis oleh sistem atau membutuhkan persetujuan admin.</p>
+              </div>
+
+              <div className="mt-4 p-3.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl space-y-2">
                 <p className="text-[10.5px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed italic">
                   <strong>Pratinjau Aturan Pelanggan:</strong> &quot;Pelanggan wajib melakukan check-in maksimal {reservationSettings.late_tolerance_minutes || 15} menit setelah jam booking dimulai. Jika melebihi batas tersebut dan pelanggan tidak kunjung hadir, maka reservasi dinyatakan hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.&quot;
+                </p>
+                <p className="text-[10.5px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed italic">
+                  <strong>Aturan Pembayaran & Pembatalan:</strong> &quot;Minimal DP yang wajib dibayarkan adalah {settings.minimal_dp !== undefined ? settings.minimal_dp : 30}% dari total pesanan. Pembatalan sepihak setelah pesanan diproses/disiapkan akan dikenakan charge sebesar {settings.charge_cancel !== undefined ? settings.charge_cancel : 20}% dari total pesanan.&quot;
                 </p>
               </div>
             </div>

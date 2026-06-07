@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft, Ban, AlertCircle } from "lucide-react";
+import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft, Ban, AlertCircle, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -102,6 +102,16 @@ function CashierReservationsContent() {
       }
     }
   }, [highlightId, reservations]);
+
+  useEffect(() => {
+    if (selectedRes && reservations.length > 0) {
+      const matched = reservations.find(r => r.id === selectedRes.id);
+      if (matched) {
+        setSelectedRes(matched);
+      }
+    }
+  }, [reservations, selectedRes?.id]);
+
 
   const fetchData = async () => {
     try {
@@ -739,6 +749,79 @@ function CashierReservationsContent() {
                   <div>
                     <span className="text-xs text-muted uppercase font-bold tracking-wider">Catatan Tambahan</span>
                     <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-border-light dark:border-border-dark text-text-light dark:text-text-dark mt-1">{notesText}</p>
+                  </div>
+                )}
+
+                {/* Pre-order menu items */}
+                {selectedRes.menu_items && Array.isArray(selectedRes.menu_items) && selectedRes.menu_items.length > 0 && (
+                  <div className="border-t border-border-light dark:border-border-dark pt-4 space-y-2">
+                    <span className="text-xs text-muted uppercase font-bold tracking-wider block">Pre-Order Menu</span>
+                    <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 border border-border-light dark:border-border-dark divide-y divide-border-light dark:divide-border-dark">
+                      {selectedRes.menu_items.map((item: any, idx: number) => (
+                        <div key={idx} className="py-2 flex justify-between text-sm">
+                          <div>
+                            <span className="font-bold text-text-light dark:text-text-dark">{item.name}</span>
+                            <span className="text-xs text-muted block">Rp {item.price.toLocaleString("id-ID")} x {item.quantity}</span>
+                            {item.notes && <span className="text-[10px] text-primary block uppercase font-bold">Note: {item.notes}</span>}
+                          </div>
+                          <span className="font-bold text-text-light dark:text-text-dark">Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Kitchen Warning Banner inside Pre-order box */}
+                      <div className="pt-3 pb-1 flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
+                        <span>Menu disiapkan dapur 30 menit sebelum booking dimulai.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment summary */}
+                <div className="border-t border-border-light dark:border-border-dark pt-4 space-y-2 text-xs">
+                  <span className="text-xs text-muted uppercase font-bold tracking-wider block">Status Pembayaran &amp; DP</span>
+                  <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 border border-border-light dark:border-border-dark space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted">Total Tagihan Menu:</span>
+                      <span className="font-bold">Rp {(selectedRes.menu_total || 0).toLocaleString("id-ID")}</span>
+                    </div>
+                    {selectedRes.payment_method === "dp" && (
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                        <span>DP Dibayar ({selectedRes.dp_percent || 0}%):</span>
+                        <span>-Rp {(selectedRes.dp_amount || 0).toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm pt-1.5 border-t border-dashed border-border-light dark:border-border-dark">
+                      <span className="font-extrabold text-text-light dark:text-text-dark">Sisa Pembayaran:</span>
+                      <span className="font-black text-primary text-base">Rp {(selectedRes.remaining_amount || 0).toLocaleString("id-ID")}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] pt-1">
+                      <span className="text-muted uppercase font-bold">Metode: {selectedRes.payment_method?.toUpperCase()}</span>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                        selectedRes.payment_status === "paid"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : selectedRes.payment_status === "dp_paid"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      }`}>
+                        {selectedRes.payment_status === "paid" ? "Lunas" : selectedRes.payment_status === "dp_paid" ? "DP Dibayar" : "Belum Bayar"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bayar Sekarang Button */}
+                {selectedRes.payment_status !== "paid" && ["pending", "confirmed"].includes(selectedRes.status) && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        setSelectedRes(null);
+                        window.location.href = `/cashier/pos?reservation_id=${selectedRes.id}`;
+                      }}
+                      className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-md hover:bg-primary-hover flex items-center justify-center gap-2"
+                    >
+                      <Receipt className="w-4 h-4" /> Bayar Sekarang (Tutup Tagihan di POS)
+                    </button>
                   </div>
                 )}
                 {(parsed?.catatan_tolak || parsed?.catatan_batal) && (() => {

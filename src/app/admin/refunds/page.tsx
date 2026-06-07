@@ -28,6 +28,7 @@ export default function AdminRefundsPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [refundTypeFilter, setRefundTypeFilter] = useState<"all" | "reservation" | "order">("all");
   const [activeTab, setActiveTab] = useState<"list" | "analytics">("list");
   
   // Action Modals State
@@ -86,21 +87,44 @@ export default function AdminRefundsPage() {
 
   const fetchRefundRequests = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: ordersData, error: ordersErr } = await supabase
         .from("orders")
         .select("*, profiles!orders_customer_id_fkey(full_name, phone)")
         .eq("status", "cancelled")
         .neq("payment_method", "cash") // Menampilkan semua pesanan non-tunai (termasuk non_cash dan duitku)
         .order("updated_at", { ascending: false });
 
-      if (error) throw error;
+      if (ordersErr) throw ordersErr;
 
       // Filter and parse refund JSON
-      const parsedRefunds = (data || []).map(order => {
+      const parsedOrders = (ordersData || []).map(order => {
         try {
           const parsed = JSON.parse(order.cancel_reason);
           if (parsed && typeof parsed === "object" && "refundStatus" in parsed) {
-            return { ...order, refundDetails: parsed };
+            return {
+              id: order.id,
+              type: "order",
+              customer_id: order.customer_id,
+              customer_name: order.profiles?.full_name || "Guest",
+              phone: order.profiles?.phone || "-",
+              payment_method: order.payment_method,
+              total_amount: order.total_amount,
+              discount: order.discount || 0,
+              voucher_id: order.voucher_id,
+              refundDetails: {
+                refundStatus: parsed.refundStatus,
+                refundMethod: parsed.refundMethod,
+                bankName: parsed.bankName || (parsed.refundMethod === "wallet" ? "DompetKu" : "Transfer Bank"),
+                accountNo: parsed.accountNo || "-",
+                accountName: parsed.accountName || "-",
+                refundReason: parsed.refundReason || parsed.reason || "-",
+                adminNotes: parsed.adminNotes || "",
+                proofUrl: parsed.proofUrl || "",
+                processedAt: parsed.processedAt || null
+              },
+              created_at: order.created_at,
+              updated_at: order.updated_at
+            };
           }
         } catch {
           // ignore parsing error
@@ -108,7 +132,49 @@ export default function AdminRefundsPage() {
         return null;
       }).filter(Boolean);
 
-      setOrders(parsedRefunds);
+      const { data: resData, error: resErr } = await supabase
+        .from("reservations")
+        .select("*, profiles(full_name, phone)")
+        .not("refund_status", "is", null)
+        .order("updated_at", { ascending: false });
+
+      if (resErr) throw resErr;
+
+      const parsedReservations = (resData || []).map((res: any) => {
+        let refundStatus: "pending" | "approved" | "rejected" = "pending";
+        if (res.refund_status === "completed") refundStatus = "approved";
+        else if (res.refund_status === "rejected") refundStatus = "rejected";
+
+        return {
+          id: res.id,
+          type: "reservation",
+          customer_id: res.customer_id,
+          customer_name: res.profiles?.full_name || "Guest",
+          phone: res.profiles?.phone || "-",
+          payment_method: res.payment_method,
+          total_amount: res.refund_amount || res.dp_amount || res.menu_total || 0,
+          discount: 0,
+          voucher_id: null,
+          refundDetails: {
+            refundStatus: refundStatus,
+            refundMethod: res.refund_method === "dompetku" ? "wallet" : "bank",
+            bankName: res.refund_method === "dompetku" ? "DompetKu" : "Transfer Bank",
+            accountNo: res.refund_bank_account || "-",
+            accountName: res.profiles?.full_name || "-",
+            refundReason: res.refund_reason || "-",
+            adminNotes: "", 
+            proofUrl: res.refund_proof || "",
+            processedAt: res.updated_at
+          },
+          created_at: res.created_at,
+          updated_at: res.updated_at
+        };
+      });
+
+      const combined = [...parsedOrders, ...parsedReservations];
+      combined.sort((a: any, b: any) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+
+      setOrders(combined);
     } catch (e: any) {
       toast.error("Gagal mengambil data refund: " + e.message);
     } finally {
@@ -155,18 +221,35 @@ export default function AdminRefundsPage() {
         processedAt: new Date().toISOString()
       };
 
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: selectedRefund.id,
-          action: 'process_refund',
-          refundDetails: updatedDetails
-        }),
-      });
+      if (selectedRefund.type === "reservation") {
+        const response = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'process_refund',
+            reservationId: selectedRefund.id,
+            refundStatus: actionType === "approve" ? "completed" : "rejected",
+            proofUrl: actionType === "approve" ? proofUrl : "",
+            adminNotes: adminNotes
+          }),
+        });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Gagal memproses refund');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Gagal memproses refund reservasi');
+      } else {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: selectedRefund.id,
+            action: 'process_refund',
+            refundDetails: updatedDetails
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Gagal memproses refund pesanan');
+      }
 
       // Update local state instantly
       setOrders(prev => prev.map(o => o.id === selectedRefund.id ? { ...o, refundDetails: updatedDetails } : o));
@@ -247,6 +330,9 @@ export default function AdminRefundsPage() {
 
   const filteredOrders = orders.filter(o => {
     const statusMatch = filter === "all" || o.refundDetails.refundStatus === filter;
+    
+    // Type filter logic
+    if (refundTypeFilter !== "all" && o.type !== refundTypeFilter) return false;
     
     // Period filter logic
     if (periodFilter !== "all") {
@@ -427,6 +513,18 @@ export default function AdminRefundsPage() {
             <option value="month">Bulan Ini (30 Hari)</option>
           </select>
 
+          <select 
+            value={refundTypeFilter} 
+            onChange={e => setRefundTypeFilter(e.target.value as any)} 
+            className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-3 outline-none text-xs font-bold text-text-light dark:text-text-dark w-full md:w-auto"
+            title="Filter Tipe Refund"
+            aria-label="Filter Tipe Refund"
+          >
+            <option value="all">Tipe: Semua (Gabungan)</option>
+            <option value="reservation">Tipe: Reservasi</option>
+            <option value="order">Tipe: Pesanan Menu</option>
+          </select>
+
           <button 
             onClick={handleExportExcel} 
             className="flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-xl text-xs font-black uppercase transition-all shadow-md shadow-emerald-500/10 w-full md:w-auto whitespace-nowrap"
@@ -480,8 +578,8 @@ export default function AdminRefundsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-start border-b pb-3 border-border-light dark:border-border-dark">
                       <div>
-                        <span className="text-[10px] uppercase font-black tracking-wider text-primary">No. Pesanan {order.id.split("-")[0]}</span>
-                        <p className="text-sm font-black text-text-light dark:text-text-dark mt-0.5">{order.profiles?.full_name || "Walk-In Customer"}</p>
+                        <span className="text-[10px] uppercase font-black tracking-wider text-primary">{order.type === "reservation" ? "Reservasi" : "Pesanan"} #{order.id.split("-")[0].toUpperCase()}</span>
+                        <p className="text-sm font-black text-text-light dark:text-text-dark mt-0.5">{order.customer_name}</p>
                       </div>
                       <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase border ${
                         details.refundStatus === "pending" ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30" :
@@ -679,8 +777,8 @@ export default function AdminRefundsPage() {
         {selectedRefund && actionType && (
           <div className="space-y-4">
             <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl border border-border-light dark:border-border-dark text-xs space-y-1.5 font-bold">
-              <p><span className="text-muted">ID Pesanan:</span> #{selectedRefund.id.split("-")[0]}</p>
-              <p><span className="text-muted">Pelanggan:</span> {selectedRefund.profiles?.full_name}</p>
+              <p><span className="text-muted">{selectedRefund.type === "reservation" ? "ID Reservasi" : "ID Pesanan"}:</span> #{selectedRefund.id.split("-")[0].toUpperCase()}</p>
+              <p><span className="text-muted">Pelanggan:</span> {selectedRefund.customer_name}</p>
               <p><span className="text-muted">Dana Cash Dibayar:</span> <span className="text-primary text-sm font-black">Rp {Number(selectedRefund.total_amount).toLocaleString("id-ID")}</span></p>
               {selectedRefund.voucher_id && (
                 <p><span className="text-muted">Potongan Voucher:</span> <span className="text-rose-500 font-extrabold">Rp {Number(selectedRefund.discount).toLocaleString("id-ID")}</span></p>

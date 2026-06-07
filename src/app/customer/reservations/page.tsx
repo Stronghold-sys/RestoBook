@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -23,6 +23,20 @@ interface Reservation {
   tables: { table_number: number; capacity: number } | null;
   created_at: string;
   qr_token?: string;
+  menu_items?: any;
+  menu_total?: number;
+  payment_method?: string;
+  payment_status?: string;
+  dp_percent?: number;
+  dp_amount?: number;
+  remaining_amount?: number;
+  refund_status?: string;
+  refund_method?: string;
+  refund_amount?: number;
+  refund_proof?: string;
+  refund_bank_account?: string;
+  refund_reason?: string;
+  cancellation_charge_percent?: number;
 }
 
 interface Table {
@@ -52,9 +66,38 @@ export default function CustomerReservationsPage() {
   });
   const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  
+  // New States for Pre-order & Payment settings
+  const [categories, setCategories] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [menuSearch, setMenuSearch] = useState<string>("");
+  const [selectedMenu, setSelectedMenu] = useState<Record<string, { quantity: number; notes: string; name: string; price: number; image_url: string; stock: number }>>({});
+  const [paymentMethod, setPaymentMethod] = useState<"tunai" | "dompetku" | "non_cash" | "dp">("tunai");
+  const [dpPercent, setDpPercent] = useState<number>(30);
+  const [dpSource, setDpSource] = useState<"tunai" | "dompetku" | "non_cash">("tunai");
+  const [pin, setPin] = useState<string>("");
+  const [walletInfo, setWalletInfo] = useState<any>(null);
+
+  // Restaurant Settings
+  const [minimalDp, setMinimalDp] = useState<number>(30);
+  const [chargeCancel, setChargeCancel] = useState<number>(20);
+  const [refundPolicy, setRefundPolicy] = useState<string>("manual");
+  const [toleranceMinutes, setToleranceMinutes] = useState<number>(15);
+
+  // Rules Modal & Cancellation Form
+  const [showRulesModal, setShowRulesModal] = useState<boolean>(false);
+  const [pendingReservation, setPendingReservation] = useState<any>(null);
+
+  // Cancellation details
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [cancelRefundMethod, setCancelRefundMethod] = useState<"transfer" | "dompetku">("transfer");
+  const [cancelRefundBankAccount, setCancelRefundBankAccount] = useState<string>("");
+  const [cancelRefundProof, setCancelRefundProof] = useState<string>("");
+  const [cancelRefundNotes, setCancelRefundNotes] = useState<string>("");
+
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [selectedQrRes, setSelectedQrRes] = useState<Reservation | null>(null);
   const supabase = createClient();
@@ -110,14 +153,63 @@ export default function CustomerReservationsPage() {
       const { data: tbl } = await supabase.from("tables").select("*").order("table_number");
       setTables(tbl || []);
 
+      // Fetch categories
+      const { data: catData } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      setCategories(catData || []);
+
+      // Fetch menu items
+      const { data: menuData } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("is_deleted", false)
+        .eq("is_active", true)
+        .order("name");
+      setMenuItems(menuData || []);
+
+      // Fetch wallet info
+      try {
+        const walletRes = await fetch("/api/customer/wallet");
+        if (walletRes.ok) {
+          const walletData = await walletRes.json();
+          if (walletData.success) {
+            setWalletInfo(walletData.wallet);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat saldo DompetKu:", err);
+      }
+
       // Fetch reservation settings
-      const { data: settingsData } = await supabase.from("restaurant_settings").select("reservation_settings").single();
-      if (settingsData?.reservation_settings) {
-        const resSettings = typeof settingsData.reservation_settings === "string"
-          ? JSON.parse(settingsData.reservation_settings)
-          : settingsData.reservation_settings;
-        if (resSettings?.duration_minutes) {
-          setDurationMinutes(Number(resSettings.duration_minutes));
+      const { data: settingsData } = await supabase
+        .from("restaurant_settings")
+        .select("reservation_settings, minimal_dp, charge_cancel, refund_policy")
+        .single();
+      if (settingsData) {
+        if (settingsData.minimal_dp !== null && settingsData.minimal_dp !== undefined) {
+          const minDp = Number(settingsData.minimal_dp);
+          setMinimalDp(minDp);
+          setDpPercent(minDp);
+        }
+        if (settingsData.charge_cancel !== null && settingsData.charge_cancel !== undefined) {
+          setChargeCancel(Number(settingsData.charge_cancel));
+        }
+        if (settingsData.refund_policy) {
+          setRefundPolicy(settingsData.refund_policy);
+        }
+        if (settingsData.reservation_settings) {
+          const resSettings = typeof settingsData.reservation_settings === "string"
+            ? JSON.parse(settingsData.reservation_settings)
+            : settingsData.reservation_settings;
+          if (resSettings?.duration_minutes) {
+            setDurationMinutes(Number(resSettings.duration_minutes));
+          }
+          if (resSettings?.late_tolerance_minutes !== undefined) {
+            setToleranceMinutes(Number(resSettings.late_tolerance_minutes));
+          }
         }
       }
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
@@ -186,7 +278,70 @@ export default function CustomerReservationsPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const calculateMenuTotal = () => {
+    return Object.values(selectedMenu).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const handleAddMenuItem = (item: any) => {
+    setSelectedMenu(prev => {
+      const existing = prev[item.id];
+      if (existing) {
+        return {
+          ...prev,
+          [item.id]: {
+            ...existing,
+            quantity: Math.min(item.stock || 99, existing.quantity + 1)
+          }
+        };
+      }
+      return {
+        ...prev,
+        [item.id]: {
+          quantity: 1,
+          notes: "",
+          name: item.name,
+          price: item.price,
+          image_url: item.image_url || "",
+          stock: item.stock || 0
+        }
+      };
+    });
+  };
+
+  const handleUpdateQuantity = (itemId: string, qty: number) => {
+    setSelectedMenu(prev => {
+      const existing = prev[itemId];
+      if (!existing) return prev;
+      if (qty <= 0) {
+        const copy = { ...prev };
+        delete copy[itemId];
+        return copy;
+      }
+      return {
+        ...prev,
+        [itemId]: {
+          ...existing,
+          quantity: Math.min(existing.stock || 99, qty)
+        }
+      };
+    });
+  };
+
+  const handleUpdateNotes = (itemId: string, notes: string) => {
+    setSelectedMenu(prev => {
+      const existing = prev[itemId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [itemId]: {
+          ...existing,
+          notes
+        }
+      };
+    });
+  };
+
+  const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.date) return toast.error("Pilih tanggal reservasi");
     if (selectedTableIds.length === 0) return toast.error("Pilih setidaknya satu meja");
@@ -222,6 +377,52 @@ export default function CustomerReservationsPage() {
       return toast.error(`Kapasitas meja terpilih (${totalCapacity} orang) tidak mencukupi untuk jumlah tamu (${form.guests} orang). Silakan pilih meja tambahan.`);
     }
 
+    // Check DP percentage
+    if (paymentMethod === "dp" && dpPercent < minimalDp) {
+      return toast.error(`Minimal DP yang berlaku saat ini adalah ${minimalDp}% dari total harga.`);
+    }
+
+    // Check DompetKu activation & balance if selected as paymentMethod
+    if (paymentMethod === "dompetku") {
+      if (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) {
+        return toast.error("DompetKu belum aktif. Silakan aktifkan terlebih dahulu atau gunakan metode pembayaran lain.");
+      }
+      if (walletInfo.isBlocked) {
+        return toast.error(walletInfo.blockReason || "DompetKu Anda diblokir.");
+      }
+      const totalMenuPrice = calculateMenuTotal();
+      if (walletInfo.balance < totalMenuPrice) {
+        return toast.error(`Saldo DompetKu tidak mencukupi (Saldo: Rp ${walletInfo.balance.toLocaleString('id-ID')}, Tagihan: Rp ${totalMenuPrice.toLocaleString('id-ID')}). Silakan pilih metode lain.`);
+      }
+      if (!pin) {
+        return toast.error("Masukkan PIN DompetKu Anda terlebih dahulu.");
+      }
+    }
+
+    // Check DompetKu activation & balance if selected as DP source
+    if (paymentMethod === "dp" && dpSource === "dompetku") {
+      if (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) {
+        return toast.error("DompetKu belum aktif. Silakan aktifkan terlebih dahulu atau gunakan metode pembayaran lain.");
+      }
+      if (walletInfo.isBlocked) {
+        return toast.error(walletInfo.blockReason || "DompetKu Anda diblokir.");
+      }
+      const totalMenuPrice = calculateMenuTotal();
+      const dpAmt = (totalMenuPrice * dpPercent) / 100;
+      if (walletInfo.balance < dpAmt) {
+        return toast.error(`Saldo DompetKu tidak mencukupi untuk membayar DP (Saldo: Rp ${walletInfo.balance.toLocaleString('id-ID')}, DP: Rp ${dpAmt.toLocaleString('id-ID')}). Silakan pilih metode lain.`);
+      }
+      if (!pin) {
+        return toast.error("Masukkan PIN DompetKu Anda terlebih dahulu.");
+      }
+    }
+
+    // Show rules modal
+    setShowRulesModal(true);
+  };
+
+  const handleSubmit = async () => {
+    setShowRulesModal(false);
     setSubmitting(true);
     try {
       // Atomic double-check to avoid race condition/double-booking
@@ -257,48 +458,73 @@ export default function CustomerReservationsPage() {
         throw new Error(`Maaf, ${conflictNumbers} sudah dibooking pada tanggal dan jam tersebut. Silakan pilih meja lain yang masih tersedia.`);
       }
 
+      const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
+      const totalMenuPrice = calculateMenuTotal();
+      const dpAmt = paymentMethod === "dp" ? (totalMenuPrice * dpPercent) / 100 : 0;
+      const remainingAmt = paymentMethod === "dp" ? totalMenuPrice - dpAmt : (paymentMethod === "dompetku" ? 0 : totalMenuPrice);
+
       const structuredNotes = JSON.stringify({
         atas_nama: form.atasNama,
         telepon: form.telepon,
         meja_tambahan: selectedTables.map(t => t.table_number),
         meja_ids: selectedTableIds,
-        catatan: form.notes
+        catatan: form.notes,
+        rules_approved: true,
+        rules_approved_at: new Date().toISOString()
       });
 
-      const { data: newRes, error } = await supabase.from("reservations").insert({
-        customer_id: profileId,
-        table_id: selectedTableIds[0], // primary table
-        reservation_date: form.date,
-        reservation_time: form.time,
-        guest_count: form.guests,
-        notes: structuredNotes,
-        status: "pending",
-      }).select().single();
-      if (error) throw error;
+      // Prepare menu items list for API
+      const menuItemsList = Object.entries(selectedMenu).map(([id, item]) => ({
+        id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes,
+        image_url: item.image_url
+      }));
 
-      // Add Notification
-      await supabase.from("notifications").insert({
-        user_id: profileId,
-        title: "Reservasi Baru Diajukan",
-        message: `Reservasi atas nama ${form.atasNama} pada tanggal ${format(new Date(form.date), "dd MMM yyyy")} meja ${selectedTables.map(t => t.table_number).join(", ")} sedang menunggu konfirmasi kasir.`,
-        type: "reservation",
-        status_badge: "menunggu konfirmasi"
+      // Call reservations API
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          customerId: profileId,
+          tableIds: selectedTableIds,
+          reservationDate: form.date,
+          reservationTime: form.time,
+          guestCount: form.guests,
+          notes: structuredNotes,
+          paymentMethod,
+          dpPercent: paymentMethod === "dp" ? dpPercent : 0,
+          dpAmount: dpAmt,
+          remainingAmount: remainingAmt,
+          menuItems: menuItemsList,
+          menuTotal: totalMenuPrice,
+          pin: (paymentMethod === "dompetku" || (paymentMethod === "dp" && dpSource === "dompetku")) ? pin : undefined,
+          dpSource: paymentMethod === "dp" ? dpSource : undefined
+        })
       });
 
-      // Trigger Email Notification (realtime, async)
-      if (newRes?.id) {
-        fetch("/api/reservations/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reservationId: newRes.id, status: "pending" })
-        }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Gagal membuat reservasi");
       }
+
+      toast.success("Reservasi berhasil diajukan!");
 
       setShowModal(false);
       setForm({ date: "", time: "12:00", guests: 2, notes: "", atasNama: form.atasNama, telepon: form.telepon });
       setSelectedTableIds([]);
+      setSelectedMenu({});
+      setPaymentMethod("tunai");
+      setPin("");
       fetchData();
-    } catch (e: any) { toast.error(e.message); } finally { setSubmitting(false); }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancelSubmit = async (e: React.FormEvent) => {
@@ -311,63 +537,46 @@ export default function CustomerReservationsPage() {
       const res = reservations.find(r => r.id === cancellingId);
       if (!res) throw new Error("Reservasi tidak ditemukan");
 
-      const parsedNotes = getParsedNotes(res.notes);
-      const tableIds = parsedNotes?.meja_ids || [res.table_id];
-
-      // Update reservation status and notes with cancellation reason
-      const updatedNotes = parsedNotes
-        ? JSON.stringify({ ...parsedNotes, catatan_batal: cancelReason, dibatalkan_oleh: "pelanggan" })
-        : JSON.stringify({ catatan_batal: cancelReason, dibatalkan_oleh: "pelanggan" });
-
-      const { error: resError } = await supabase
-        .from("reservations")
-        .update({ status: "cancelled", notes: updatedNotes })
-        .eq("id", cancellingId);
-      
-      if (resError) throw resError;
-
-      // Set tables back to 'available'
-      if (tableIds && tableIds.length > 0) {
-        const { error: tableError } = await supabase
-          .from("tables")
-          .update({ status: "available" })
-          .in("id", tableIds);
-        if (tableError) console.error("Gagal mengembalikan status meja:", tableError.message);
-      }
-
-      // Add Notification
-      await supabase.from("notifications").insert({
-        user_id: profileId,
-        title: "Reservasi Dibatalkan",
-        message: `Reservasi atas nama ${parsedNotes?.atas_nama || "Pelanggan"} pada tanggal ${format(new Date(res.reservation_date), "dd MMM yyyy", { locale: localeId })} telah dibatalkan oleh pelanggan. Alasan: ${cancelReason}`,
-        type: "reservation",
-        status_badge: "dibatalkan"
+      // Call API cancel
+      const response = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cancel",
+          reservationId: cancellingId,
+          reason: cancelReason,
+          refundMethod: cancelRefundMethod,
+          refundBankAccount: cancelRefundMethod === "transfer" ? cancelRefundBankAccount : walletInfo?.id,
+          refundReason: cancelReason,
+          refundProof: cancelRefundProof || null
+        })
       });
 
-      // Trigger Email Notification (realtime, awaited)
-      try {
-        await fetch("/api/reservations/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
-        });
-      } catch (err) {
-        console.error("Gagal mengirim email reservasi:", err);
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || "Gagal membatalkan reservasi");
       }
 
-      // Trigger Google Calendar sync (awaited)
-      try {
-        await fetch("/api/reservations/sync-calendar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reservationId: cancellingId, action: "delete" })
-        });
-      } catch (err) {
-        console.error("Gagal sinkronisasi pembatalan kalender:", err);
-      }
+      toast.success(resData.message || "Reservasi berhasil dibatalkan");
+
+      // Trigger Email Notification (realtime, async)
+      fetch("/api/reservations/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: cancellingId, status: "cancelled" })
+      }).catch(err => console.error("Gagal mengirim email reservasi:", err));
+
+      // Trigger Google Calendar sync (async)
+      fetch("/api/reservations/sync-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservationId: cancellingId, action: "delete" })
+      }).catch(err => console.error("Gagal sinkronisasi pembatalan kalender:", err));
 
       setCancellingId(null);
       setCancelReason("");
+      setCancelRefundBankAccount("");
+      setCancelRefundProof("");
       fetchData();
     } catch (err: any) {
       toast.error("Gagal membatalkan: " + err.message);
@@ -616,6 +825,96 @@ export default function CustomerReservationsPage() {
                         <span className="font-bold">Catatan:</span> {displayNotes}
                       </p>
                     )}
+
+                    {/* Pre-order menu details */}
+                    {res.menu_items && Array.isArray(res.menu_items) && res.menu_items.length > 0 && (
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl space-y-2">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-muted flex items-center gap-1.5">
+                          <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Pre-Order Menu ({res.menu_items.length} Item)
+                        </h4>
+                        <div className="space-y-1.5 divide-y divide-border-light dark:divide-border-dark max-h-[150px] overflow-y-auto pr-1">
+                          {res.menu_items.map((item: any, idx: number) => (
+                            <div key={idx} className={`pt-1.5 ${idx === 0 ? "pt-0" : ""} flex justify-between text-xs text-text-light dark:text-text-dark`}>
+                              <div>
+                                <span className="font-semibold">{item.name}</span>
+                                <span className="text-muted ml-1">x{item.quantity}</span>
+                                {item.notes && (
+                                  <span className="block text-[10px] text-primary italic">Catatan: &ldquo;{item.notes}&rdquo;</span>
+                                )}
+                              </div>
+                              <span className="font-bold">Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t border-border-light dark:border-border-dark pt-2 flex justify-between font-bold text-xs text-text-light dark:text-text-dark">
+                          <span>Subtotal Menu:</span>
+                          <span>Rp {Number(res.menu_total || 0).toLocaleString("id-ID")}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Summary */}
+                    <div className="mt-3 p-3 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/10 text-xs space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-muted flex items-center gap-1">
+                          <CreditCard className="w-3.5 h-3.5 text-primary" /> Pembayaran:
+                        </span>
+                        <div className="flex gap-2">
+                          <span className="font-bold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px]">
+                            {res.payment_method}
+                          </span>
+                          <span className={`font-black uppercase px-2 py-0.5 rounded text-[10px] ${
+                            res.payment_status === "paid"
+                              ? "bg-green-100 text-green-850"
+                              : res.payment_status === "dp_paid"
+                              ? "bg-amber-100 text-amber-850"
+                              : "bg-red-100 text-red-850"
+                          }`}>
+                            {res.payment_status === "paid" ? "Lunas" : res.payment_status === "dp_paid" ? "DP Dibayar" : res.payment_status === "failed" ? "Gagal Bayar" : "Menunggu Pembayaran"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {res.payment_method === "dp" && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-dashed border-primary/20 pt-2 mt-1.5 text-muted">
+                          <div>
+                            <p className="text-[10px] font-medium uppercase">DP ({res.dp_percent}%)</p>
+                            <p className="font-semibold text-text-light dark:text-text-dark">Rp {Number(res.dp_amount || 0).toLocaleString("id-ID")}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-medium uppercase">Sisa Tagihan</p>
+                            <p className="font-bold text-primary">Rp {Number(res.remaining_amount || 0).toLocaleString("id-ID")}</p>
+                          </div>
+                          <div className="col-span-2 sm:col-span-1">
+                            <p className="text-[10px] font-medium uppercase">Total</p>
+                            <p className="font-semibold text-text-light dark:text-text-dark">Rp {Number(res.menu_total || 0).toLocaleString("id-ID")}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Refund info */}
+                    {res.refund_status && (
+                      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900 rounded-xl text-xs space-y-1.5">
+                        <p className="font-bold text-amber-800 dark:text-amber-400 uppercase text-[10px] tracking-wider">
+                          Status Refund Pembatalan
+                        </p>
+                        <div className="flex justify-between">
+                          <span>Metode Refund:</span>
+                          <span className="font-semibold uppercase">{res.refund_method}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Jumlah Refund:</span>
+                          <span className="font-bold text-amber-700 dark:text-amber-400">Rp {Number(res.refund_amount || 0).toLocaleString("id-ID")}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Status Refund:</span>
+                          <span className="font-black uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px]">
+                            {res.refund_status === "waiting_review" ? "Menunggu Review" : res.refund_status === "waiting_proof" ? "Menunggu Bukti" : res.refund_status === "approved" ? "Disetujui" : res.refund_status === "rejected" ? "Ditolak" : res.refund_status === "processed" ? "Diproses" : res.refund_status === "completed" ? "Selesai" : res.refund_status}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Cancelled by info */}
                     {res.status === "cancelled" && cancelledByInfo && (
@@ -671,7 +970,7 @@ export default function CustomerReservationsPage() {
           </div>
           <button onClick={() => setShowModal(false)} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
+        <form onSubmit={handlePreSubmit} className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="atasNama" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Atas Nama</label>
@@ -768,6 +1067,405 @@ export default function CustomerReservationsPage() {
             {tables.length === 0 && <p className="text-sm text-red-500">Tidak ada meja tersedia saat ini.</p>}
           </div>
 
+          {/* SECTION: Pilih Menu Pesanan */}
+          <div className="border-t border-border-light dark:border-border-dark pt-6 mt-6">
+            <h3 className="text-lg font-bold text-text-light dark:text-text-dark mb-1 flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" /> Pilih Menu Pesanan (Pre-Order)
+            </h3>
+            <p className="text-xs text-muted mb-4">
+              Menu yang Anda pilih akan disiapkan 30 menit sebelum jam booking dimulai. Pastikan pesanan sudah sesuai karena pesanan akan diproses bersamaan dengan reservasi.
+            </p>
+
+            {/* Category Pills & Search */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted" />
+                <input
+                  type="text"
+                  placeholder="Cari menu makanan/minuman..."
+                  value={menuSearch}
+                  onChange={(e) => setMenuSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-slate-300 outline-none text-text-light dark:text-text-dark text-sm"
+                />
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 shrink-0 max-w-full sm:max-w-[300px] scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("all")}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    activeCategory === "all"
+                      ? "bg-primary text-white"
+                      : "bg-gray-150 dark:bg-gray-800 text-muted hover:text-text-light dark:hover:text-text-dark"
+                  }`}
+                >
+                  Semua
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    type="button"
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                      activeCategory === cat.id
+                        ? "bg-primary text-white"
+                        : "bg-gray-150 dark:bg-gray-800 text-muted hover:text-text-light dark:hover:text-text-dark"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Menu Items Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
+              {menuItems
+                .filter((item) => {
+                  const matchesCategory = activeCategory === "all" || item.category_id === activeCategory;
+                  const matchesSearch = item.name.toLowerCase().includes(menuSearch.toLowerCase());
+                  return matchesCategory && matchesSearch;
+                })
+                .map((item) => {
+                  const qty = selectedMenu[item.id]?.quantity || 0;
+                  const isOutOfStock = (item.stock || 0) <= 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex gap-3 p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl items-center"
+                    >
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-16 h-16 rounded-lg object-cover shrink-0 bg-gray-100"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-6 h-6 text-muted" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm text-text-light dark:text-text-dark truncate">
+                          {item.name}
+                        </h4>
+                        <p className="text-xs text-primary font-bold mt-0.5">
+                          Rp {item.price.toLocaleString("id-ID")}
+                        </p>
+                        <p className="text-[10px] text-muted mt-0.5">
+                          Stok: {item.stock || 0}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        {qty > 0 ? (
+                          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(item.id, qty - 1)}
+                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark border-none outline-none"
+                            >
+                              -
+                            </button>
+                            <span className="text-xs font-bold w-4 text-center text-text-light dark:text-text-dark">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(item.id, qty + 1)}
+                              disabled={qty >= (item.stock || 0)}
+                              className="w-6 h-6 bg-white dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center font-bold text-sm text-text-light dark:text-text-dark disabled:opacity-50 border-none outline-none"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleAddMenuItem(item)}
+                            disabled={isOutOfStock}
+                            className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-md shadow-primary/15 hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:bg-gray-300"
+                          >
+                            {isOutOfStock ? "Habis" : "Tambah"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Selected Menu Details / Notes input */}
+            {Object.keys(selectedMenu).length > 0 && (
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl space-y-3">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-muted">
+                  Detail Menu Terpilih & Catatan Khusus
+                </h4>
+                <div className="space-y-3 divide-y divide-border-light dark:divide-border-dark max-h-[200px] overflow-y-auto pr-1">
+                  {Object.entries(selectedMenu).map(([id, item], idx) => (
+                    <div key={id} className={`pt-2 ${idx === 0 ? "pt-0" : ""}`}>
+                      <div className="flex justify-between text-sm font-semibold text-text-light dark:text-text-dark">
+                        <span>
+                          {item.name} <span className="text-xs text-muted">x{item.quantity}</span>
+                        </span>
+                        <span>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Catatan khusus (misal: pedas sedang, es sedikit)..."
+                        value={item.notes}
+                        onChange={(e) => handleUpdateNotes(id, e.target.value)}
+                        className="w-full mt-1.5 px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg outline-none text-xs text-text-light dark:text-text-dark"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-border-light dark:border-border-dark pt-3 flex justify-between font-bold text-sm text-text-light dark:text-text-dark">
+                  <span>Subtotal Menu:</span>
+                  <span>Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION: Metode Pembayaran */}
+          <div className="border-t border-border-light dark:border-border-dark pt-6">
+            <h3 className="text-lg font-bold text-text-light dark:text-text-dark mb-2 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" /> Metode Pembayaran
+            </h3>
+            <p className="text-xs text-muted mb-4">
+              Pilih bagaimana Anda ingin menyelesaikan pembayaran pesanan pre-order ini.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {/* Tunai */}
+              <label className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all ${
+                paymentMethod === "tunai"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+              }`}>
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="tunai"
+                  checked={paymentMethod === "tunai"}
+                  onChange={() => setPaymentMethod("tunai")}
+                  className="accent-primary h-4 w-4"
+                />
+                <div className="text-left">
+                  <p className="font-bold text-sm text-text-light dark:text-text-dark">Tunai</p>
+                  <p className="text-[10px]">Bayar penuh di kasir</p>
+                </div>
+              </label>
+
+              {/* DompetKu */}
+              <label className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all ${
+                paymentMethod === "dompetku"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+              }`}>
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="dompetku"
+                  checked={paymentMethod === "dompetku"}
+                  onChange={() => setPaymentMethod("dompetku")}
+                  className="accent-primary h-4 w-4"
+                />
+                <div className="text-left">
+                  <p className="font-bold text-sm text-text-light dark:text-text-dark">DompetKu</p>
+                  <p className="text-[10px]">
+                    Saldo: Rp {walletInfo ? walletInfo.balance.toLocaleString("id-ID") : "0"}
+                  </p>
+                </div>
+              </label>
+
+              {/* Non Tunai */}
+              <label className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all ${
+                paymentMethod === "non_cash"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+              }`}>
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="non_cash"
+                  checked={paymentMethod === "non_cash"}
+                  onChange={() => setPaymentMethod("non_cash")}
+                  className="accent-primary h-4 w-4"
+                />
+                <div className="text-left">
+                  <p className="font-bold text-sm text-text-light dark:text-text-dark">Non Tunai</p>
+                  <p className="text-[10px]">Debit, QRIS, dll di kasir</p>
+                </div>
+              </label>
+
+              {/* Bayar Sebagian / DP */}
+              <label className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all ${
+                paymentMethod === "dp"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+              }`}>
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="dp"
+                  checked={paymentMethod === "dp"}
+                  onChange={() => setPaymentMethod("dp")}
+                  className="accent-primary h-4 w-4"
+                />
+                <div className="text-left">
+                  <p className="font-bold text-sm text-text-light dark:text-text-dark">Bayar DP</p>
+                  <p className="text-[10px]">Bayar sebagian dahulu</p>
+                </div>
+              </label>
+            </div>
+
+            {/* DOMPETKU WARNINGS */}
+            {paymentMethod === "dompetku" && (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>DompetKu Anda belum aktif. Silakan pilih metode pembayaran lain.</span>
+              </div>
+            )}
+
+            {/* DP Configuration Panel */}
+            {paymentMethod === "dp" && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-border-light dark:border-border-dark space-y-4 mb-4">
+                <div className="flex justify-between items-center text-xs font-bold text-muted uppercase">
+                  <span>Persentase DP</span>
+                  <span className="text-primary">{dpPercent}%</span>
+                </div>
+                <input
+                  type="range"
+                  id="dp-range-slider"
+                  title="Persentase DP"
+                  aria-label="Persentase DP"
+                  min={minimalDp}
+                  max={100}
+                  step={5}
+                  value={dpPercent}
+                  onChange={(e) => setDpPercent(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted">
+                  <span>Min DP: {minimalDp}%</span>
+                  <span>Max DP: 100%</span>
+                </div>
+
+                {/* DP Source Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted uppercase block">Bayar DP Menggunakan</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDpSource("tunai")}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${
+                        dpSource === "tunai"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+                      }`}
+                    >
+                      Tunai
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDpSource("dompetku")}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${
+                        dpSource === "dompetku"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+                      }`}
+                    >
+                      DompetKu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDpSource("non_cash")}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${
+                        dpSource === "non_cash"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+                      }`}
+                    >
+                      Non Tunai
+                    </button>
+                  </div>
+                </div>
+
+                {dpSource === "dompetku" && (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>DompetKu Anda belum aktif. Silakan pilih sumber pembayaran DP yang lain.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PIN INPUT FOR DOMPETKU */}
+            {((paymentMethod === "dompetku" && walletInfo && ["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) ||
+              (paymentMethod === "dp" && dpSource === "dompetku" && walletInfo && ["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus))) && (
+              <div className="mb-4">
+                <label htmlFor="walletPin" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">
+                  PIN DompetKu
+                </label>
+                <input
+                  id="walletPin"
+                  type="password"
+                  placeholder="Masukkan PIN DompetKu"
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark font-mono text-center tracking-widest text-lg"
+                  required
+                />
+              </div>
+            )}
+
+            {/* RINGKASAN PEMBAYARAN */}
+            <div className="p-4 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 space-y-2">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-primary mb-2">
+                Ringkasan Pembayaran Reservasi & Pre-Order
+              </h4>
+              <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                <span>Total Harga Menu:</span>
+                <span className="font-semibold">Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
+              </div>
+              <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                <span>Metode Pembayaran Utama:</span>
+                <span className="font-semibold uppercase text-primary">{paymentMethod}</span>
+              </div>
+              {paymentMethod === "dp" && (
+                <>
+                  <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                    <span>DP Dibayar ({dpPercent}%):</span>
+                    <span className="font-semibold text-primary">
+                      Rp {((calculateMenuTotal() * dpPercent) / 100).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                    <span>Sumber Pembayaran DP:</span>
+                    <span className="font-semibold uppercase text-primary">{dpSource}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-text-light dark:text-text-dark border-t border-dashed border-primary/20 pt-2 mt-1">
+                    <span>Sisa Pembayaran di Kasir:</span>
+                    <span className="text-primary">
+                      Rp {(calculateMenuTotal() - (calculateMenuTotal() * dpPercent) / 100).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </>
+              )}
+              {paymentMethod !== "dp" && (
+                <div className="flex justify-between text-sm font-bold text-text-light dark:text-text-dark border-t border-dashed border-primary/20 pt-2 mt-1">
+                  <span>Total Tagihan:</span>
+                  <span className="text-primary">Rp {calculateMenuTotal().toLocaleString("id-ID")}</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-muted italic mt-3 leading-relaxed text-center">
+              Dengan melanjutkan pemesanan, Anda menyetujui seluruh aturan reservasi meja, termasuk kewajiban check-in tepat waktu, batas toleransi keterlambatan, dan tanggung jawab atas kerusakan properti.
+            </p>
+          </div>
+
           <div>
             <label htmlFor="resNotes" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Catatan Tambahan (Opsional)</label>
             <textarea id="resNotes" title="Catatan" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-slate-300 focus:border-slate-400 outline-none text-text-light dark:text-text-dark" rows={2} placeholder="Contoh: Butuh colokan listrik, AC dingin, dll" />
@@ -782,6 +1480,70 @@ export default function CustomerReservationsPage() {
         </form>
       </BaseModal>
 
+      {/* Modal Aturan Reservasi */}
+      <BaseModal
+        isOpen={showRulesModal}
+        onClose={() => setShowRulesModal(false)}
+        showCloseButton={false}
+        size="lg"
+        noPadding
+      >
+        <div className="bg-primary p-6 text-white flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">Aturan Reservasi Meja</h2>
+            <p className="text-white/80 text-sm mt-1">Mohon baca dan setujui aturan resto sebelum melanjutkan</p>
+          </div>
+          <button onClick={() => setShowRulesModal(false)} type="button" title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+        </div>
+        <div className="p-6 sm:p-8 space-y-4 text-text-light dark:text-text-dark max-h-[500px] overflow-y-auto">
+          <h3 className="font-bold text-base mb-1 text-primary">I. Ketentuan Umum &amp; Kehadiran</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm leading-relaxed mb-4">
+            <li>Reservasi hanya berlaku sesuai tanggal, jam, dan meja yang dipilih saat pemesanan.</li>
+            <li>Pelanggan wajib hadir dan melakukan check-in pada jam booking yang telah ditentukan.</li>
+            <li>Pelanggan memiliki toleransi check-in selama <span className="font-bold text-primary">{toleranceMinutes} menit</span> setelah jam booking dimulai.</li>
+            <li>Jika pelanggan tidak check-in sampai batas toleransi habis, reservasi akan dianggap hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.</li>
+            <li>Resto tidak bertanggung jawab atas kehilangan hak reservasi jika pelanggan terlambat datang dan tidak segera check-in.</li>
+            <li>Pelanggan wajib menjaga kebersihan, ketertiban, dan kenyamanan area resto.</li>
+            <li>Pelanggan dilarang merusak, mencoret, mematahkan, membawa pulang, atau menyalahgunakan properti resto dalam bentuk apa pun.</li>
+            <li>Jika terjadi kerusakan, kehilangan, atau penyalahgunaan fasilitas akibat pelanggan atau rombongan, pelanggan wajib mengganti kerugian sesuai penilaian pihak resto.</li>
+            <li>Resto berhak memberikan denda tambahan jika kerusakan menimbulkan biaya perbaikan, kehilangan barang, atau gangguan operasional.</li>
+            <li>Resto tidak bertanggung jawab atas kejadian yang timbul akibat kelalaian pelanggan dalam mematuhi aturan, termasuk keterlambatan check-in.</li>
+            <li>Pelanggan wajib mengikuti arahan staf resto terkait penempatan meja, keamanan, dan kenyamanan bersama.</li>
+            <li>Reservasi dapat dibatalkan secara sepihak jika pelanggan melanggar aturan, membuat keributan, merusak fasilitas, atau mengganggu pengunjung lain.</li>
+            <li>Dengan menekan tombol &ldquo;Setuju &amp; Ajukan Sekarang&rdquo;, pelanggan menyatakan telah membaca, memahami, dan menyetujui seluruh aturan yang berlaku.</li>
+          </ol>
+
+          <h3 className="font-bold text-base mb-1 text-primary">II. Ketentuan Pre-Order &amp; Pembayaran</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm leading-relaxed">
+            <li>Pesanan menu yang dipilih akan disiapkan 30 menit sebelum waktu booking dimulai.</li>
+            <li>Pelanggan wajib memastikan pesanan yang dipilih sudah benar sebelum mengajukan reservasi.</li>
+            <li>Jika memilih pembayaran DP, pelanggan wajib membayar minimal <span className="font-bold text-primary">{minimalDp}%</span> dari total harga sesuai ketentuan resto.</li>
+            <li>Jika DP belum memenuhi batas minimal, sistem tidak boleh melanjutkan pemesanan.</li>
+            <li>Sisa pembayaran wajib dilunasi pada kasir saat check-in atau saat transaksi lanjutan sesuai aturan resto.</li>
+            <li>Jika pelanggan membatalkan sepihak setelah pesanan disiapkan, maka akan dikenakan charge pembatalan sebesar <span className="font-bold text-red-500">{chargeCancel}%</span> dari total harga pesanan yang sudah disiapkan.</li>
+            <li>Nominal refund akan dihitung setelah dipotong charge pembatalan sesuai ketentuan resto.</li>
+            <li>Jika reservasi belum dikonfirmasi oleh resto lalu pelanggan membatalkan, maka pembatalan dapat diproses otomatis dan refund dikembalikan penuh sesuai status pembayaran dan kebijakan sistem.</li>
+            <li>Jika reservasi sudah dikonfirmasi, pembatalan wajib mengikuti proses verifikasi dan pengisian data pembatalan/refund dari resto.</li>
+            <li>Resto tidak bertanggung jawab atas keterlambatan check-in atau pembatalan yang dilakukan setelah pesanan diproses sesuai jadwal.</li>
+          </ol>
+          
+          <div className="p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl text-xs space-y-1.5 mt-4">
+            <p className="font-semibold text-primary">Penegasan Ketentuan Resto:</p>
+            <p>&bull; Toleransi check-in: <span className="font-bold text-amber-600 dark:text-amber-400">{toleranceMinutes} menit</span> sejak jam booking dimulai.</p>
+            <p>&bull; Minimal DP saat ini adalah <span className="font-bold">{minimalDp}%</span> dari total pesanan.</p>
+            <p>&bull; Jika pembatalan dilakukan sepihak setelah pesanan disiapkan, akan dikenakan charge sebesar <span className="font-bold text-red-500">{chargeCancel}%</span>.</p>
+            <p>&bull; Pesanan Anda akan mulai disiapkan 30 menit sebelum jam booking dimulai.</p>
+          </div>
+          
+          <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark mt-6">
+            <button type="button" onClick={() => setShowRulesModal(false)} className="flex-1 py-3 border border-border-light dark:border-border-dark rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Batal</button>
+            <button type="button" onClick={handleSubmit} className="flex-1 py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary-hover transition-colors">
+              Setuju &amp; Ajukan Sekarang
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
       {/* Modal Pembatalan */}
       <BaseModal
         isOpen={!!cancellingId}
@@ -790,34 +1552,173 @@ export default function CustomerReservationsPage() {
         size="md"
         noPadding
       >
-        <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4 mb-6">
-          <div className="p-3 bg-white/20 rounded-xl">
-            <X className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
-            <p className="text-white/80 text-sm">Berikan alasan pembatalan Anda</p>
-          </div>
-        </div>
-        <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 pt-0 sm:pt-0 space-y-4">
-          <div>
-            <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Alasan Pembatalan</label>
-            <textarea
-              id="cancelReason"
-              value={cancelReason}
-              onChange={e => setCancelReason(e.target.value)}
-              placeholder="Tuliskan alasan Anda..."
-              className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[100px]"
-              required
-            />
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Kembali</button>
-            <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim()} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
-              {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
-            </motion.button>
-          </div>
-        </form>
+        {(() => {
+          const cancellingRes = reservations.find(r => r.id === cancellingId);
+          if (!cancellingRes) return null;
+
+          let totalPaid = 0;
+          if (cancellingRes.payment_status === "paid") {
+            totalPaid = Number(cancellingRes.menu_total || 0);
+          } else if (cancellingRes.payment_status === "dp_paid") {
+            totalPaid = Number(cancellingRes.dp_amount || 0);
+          }
+
+          let chargePercent = 0;
+          let chargeAmount = 0;
+          let estimatedRefund = totalPaid;
+          let isPrepared = false;
+
+          if (cancellingRes.status !== "pending") {
+            // Confirmed reservation
+            const bookingDateTimeStr = `${cancellingRes.reservation_date}T${cancellingRes.reservation_time}`;
+            const bookingTime = new Date(bookingDateTimeStr).getTime();
+            const curTime = Date.now();
+            const minutesDiff = (bookingTime - curTime) / (60 * 1000);
+            if (minutesDiff <= 30) {
+              chargePercent = Number(cancellingRes.cancellation_charge_percent || chargeCancel);
+              chargeAmount = Number(cancellingRes.menu_total || 0) * chargePercent / 100;
+              estimatedRefund = Math.max(0, totalPaid - chargeAmount);
+              isPrepared = true;
+            }
+          }
+
+          const hasPayment = totalPaid > 0;
+
+          return (
+            <>
+              <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <X className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">Batalkan Reservasi</h2>
+                  <p className="text-white/80 text-sm">Nomor Reservasi: #{cancellingRes.id.substring(0, 8).toUpperCase()}</p>
+                </div>
+              </div>
+              <form onSubmit={handleCancelSubmit} className="p-6 sm:p-8 space-y-4">
+                {hasPayment && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl space-y-2.5 text-xs text-text-light dark:text-text-dark">
+                    <p className="font-bold text-red-750 dark:text-red-400 uppercase text-[10px] tracking-wider">
+                      Ketentuan Refund &amp; Biaya Pembatalan
+                    </p>
+                    <div className="flex justify-between">
+                      <span>Total Telah Dibayar:</span>
+                      <span className="font-semibold">Rp {totalPaid.toLocaleString("id-ID")}</span>
+                    </div>
+                    {isPrepared ? (
+                      <>
+                        <div className="flex justify-between text-red-500">
+                          <span>Biaya Pembatalan ({chargePercent}%):</span>
+                          <span className="font-semibold">-Rp {chargeAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                        <p className="text-[10px] text-muted italic">
+                          * Dikenakan charge {chargePercent}% karena pembatalan dilakukan kurang dari 30 menit sebelum jam booking dimulai.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-green-700 dark:text-green-400 italic">
+                        * Reservasi dibatalkan sebelum pesanan diproses (aman dari denda).
+                      </p>
+                    )}
+                    <div className="flex justify-between font-bold text-sm border-t border-dashed border-red-200 dark:border-red-800 pt-2 mt-1">
+                      <span>Estimasi Pengembalian Dana:</span>
+                      <span className="text-red-700 dark:text-red-400">Rp {estimatedRefund.toLocaleString("id-ID")}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="cancelReason" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">Alasan Pembatalan</label>
+                  <textarea
+                    id="cancelReason"
+                    value={cancelReason}
+                    onChange={e => setCancelReason(e.target.value)}
+                    placeholder="Contoh: Ada keperluan mendadak, sakit, dll..."
+                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark min-h-[80px] text-sm"
+                    required
+                  />
+                </div>
+
+                {hasPayment && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-text-light dark:text-text-dark block">Metode Refund</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCancelRefundMethod("transfer")}
+                          className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1 ${
+                            cancelRefundMethod === "transfer"
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+                          }`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Transfer Bank</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCancelRefundMethod("dompetku")}
+                          disabled={!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)}
+                          className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
+                            cancelRefundMethod === "dompetku"
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border-light dark:border-border-dark hover:border-gray-300 text-muted"
+                          }`}
+                        >
+                          <Wallet className="w-4 h-4" />
+                          <span>DompetKu</span>
+                        </button>
+                      </div>
+                      {cancelRefundMethod === "dompetku" && (!walletInfo || !["diterima", "selesai", "aktif"].includes(walletInfo.walletStatus)) && (
+                        <p className="text-[10px] text-red-500 font-semibold mt-1">
+                          DompetKu Anda belum aktif. Silakan pilih transfer bank.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="refundAccount" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">
+                        {cancelRefundMethod === "transfer" ? "Detail Rekening Bank (Nama Bank, No Rek, Atas Nama)" : "Nomor HP DompetKu"}
+                      </label>
+                      <input
+                        id="refundAccount"
+                        type="text"
+                        placeholder={cancelRefundMethod === "transfer" ? "BCA - 123456789 - John Doe" : "081234567890"}
+                        value={cancelRefundBankAccount}
+                        onChange={e => setCancelRefundBankAccount(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="refundProof" className="text-sm font-medium text-text-light dark:text-text-dark mb-1 block">
+                        Link Bukti Pendukung / Foto KTP / Resi Pembayaran
+                      </label>
+                      <input
+                        id="refundProof"
+                        type="text"
+                        placeholder="http://example.com/bukti.jpg"
+                        value={cancelRefundProof}
+                        onChange={e => setCancelRefundProof(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-text-light dark:text-text-dark text-sm"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                  <button type="button" onClick={() => setCancellingId(null)} className="flex-1 py-3 rounded-xl font-medium text-text-light dark:text-text-dark hover:bg-gray-150 dark:hover:bg-gray-800 transition-colors bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark">Batal</button>
+                  <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={cancelling || !cancelReason.trim() || (hasPayment && (!cancelRefundBankAccount.trim() || !cancelRefundProof.trim()))} className="flex-1 py-3 bg-red-650 hover:bg-red-750 text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 disabled:opacity-50">
+                    {cancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Konfirmasi Batal"}
+                  </motion.button>
+                </div>
+              </form>
+            </>
+          );
+        })()}
       </BaseModal>
 
       {/* Modal Konfirmasi Hapus Riwayat */}

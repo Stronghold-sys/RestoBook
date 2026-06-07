@@ -199,7 +199,14 @@ export async function POST(request: NextRequest) {
           table_id: reservation.table_id,
           table_number: reservation.tables?.table_number,
           checked_in_at: reservation.checked_in_at,
-          seated_at: reservation.seated_at
+          seated_at: reservation.seated_at,
+          menu_items: reservation.menu_items,
+          menu_total: reservation.menu_total,
+          payment_method: reservation.payment_method,
+          payment_status: reservation.payment_status,
+          dp_percent: reservation.dp_percent,
+          dp_amount: reservation.dp_amount,
+          remaining_amount: reservation.remaining_amount
         },
         bookingHistory: (history || []).map((h: any) => ({
           id: h.id,

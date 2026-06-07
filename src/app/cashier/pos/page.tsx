@@ -2,7 +2,8 @@
 
 export const runtime = 'edge';
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Loader, ExternalLink, Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, X, CheckCircle, Clock, Utensils, UtensilsCrossed, MonitorSmartphone, Printer, Ban, QrCode, Smartphone, Check, AlertTriangle, Globe, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -14,12 +15,68 @@ import { generateQRISString, getEWalletDeepLink } from "@/utils/qris";
 import { isRestaurantOpen as originalIsRestaurantOpen, getOperationalStatus } from "@/utils/operationalHours";
 import BaseModal from "@/components/BaseModal";
 
-export default function POSPage() {
+function POSContent() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  const searchParams = useSearchParams();
+  const reservationIdParam = searchParams.get("reservation_id");
+  const [activeReservation, setActiveReservation] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (reservationIdParam) {
+      const loadReservation = async () => {
+        try {
+          const { data: res, error } = await supabase
+            .from("reservations")
+            .select("*, profiles:customer_id(*), tables(*)")
+            .eq("id", reservationIdParam)
+            .single();
+          
+          if (error) throw error;
+          if (res) {
+            setActiveReservation(res);
+            
+            // Set customer name
+            let name = res.profiles?.full_name || "Guest";
+            try {
+              const parsedNotes = JSON.parse(res.notes);
+              if (parsedNotes && parsedNotes.atas_nama) {
+                name = parsedNotes.atas_nama;
+              }
+            } catch (e) {}
+            setCustomerName(name);
+
+            // Set cart items
+            if (res.menu_items && Array.isArray(res.menu_items)) {
+              const newCart = res.menu_items.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                qty: item.quantity,
+                cart_notes: item.notes || ""
+              }));
+              setCart(newCart);
+            }
+
+            // Set session states
+            setOrderType("dine_in");
+            setSelectedTableId(res.table_id || null);
+            setIsOrderSessionActive(true);
+
+            toast.success("Data reservasi berhasil dimuat ke POS!");
+          }
+        } catch (err: any) {
+          console.error("Gagal memuat reservasi ke POS:", err.message);
+          toast.error("Gagal memuat data reservasi: " + err.message);
+        }
+      };
+      loadReservation();
+    }
+  }, [reservationIdParam]);
 
   // Modern Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -472,6 +529,27 @@ export default function POSPage() {
     : 0;
   const cartTotal = Math.max(0, cartSubtotal - discountAmount);
 
+  const getParsedNotes = (notesStr: string) => {
+    if (!notesStr) return { catatan: "", meja_ids: [], meja_tambahan: [], atas_nama: "" };
+    try {
+      const parsed = JSON.parse(notesStr);
+      if (parsed && typeof parsed === "object") {
+        return {
+          catatan: parsed.catatan || parsed.catatan_batal || "",
+          meja_ids: parsed.meja_ids || [],
+          meja_tambahan: parsed.meja_tambahan || [],
+          atas_nama: parsed.atas_nama || ""
+        };
+      }
+    } catch (e) {}
+    return { catatan: notesStr.trim(), meja_ids: [], meja_tambahan: [], atas_nama: "" };
+  };
+
+  const dpAmountPaid = activeReservation && activeReservation.payment_status === "dp_paid"
+    ? Number(activeReservation.dp_amount || 0)
+    : 0;
+  const totalToCollect = Math.max(0, cartTotal - dpAmountPaid);
+
   // --- ONLINE ORDER SEARCH LOGIC ---
   const handleSearchOrder = async () => {
     if (!searchOrderNo) return toast.error("Masukkan No. Pesanan");
@@ -647,6 +725,8 @@ export default function POSPage() {
     setProcessing(true);
     const loadingToast = toast.loading("Menyiapkan pembayaran online...");
     try {
+
+
       let orderId = foundOrder?.id;
       let notesStr = `[METODE: Pembayaran Online] Kasir: ${cashierName}`;
       
@@ -659,9 +739,11 @@ export default function POSPage() {
           status: "pending",
           payment_status: "unpaid",
           payment_method: "non_cash",
-          total_amount: cartTotal,
+          total_amount: totalToCollect,
           cashier_id: cashierId,
-          notes: walkinNotes,
+          notes: activeReservation 
+            ? `[RESERVASI] ${activeReservation.id} [METODE: Pembayaran Online] Kasir: ${cashierName}`
+            : walkinNotes,
           voucher_id: discount?.id || null,
           discount: discountAmount
         };
@@ -724,6 +806,37 @@ export default function POSPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId, duitkuOrderId: data.merchantOrderId })
           });
+
+          if (activeReservation) {
+            // Update reservation status to paid and seated
+            const parsedNotes = getParsedNotes(activeReservation.notes);
+            await supabase
+              .from("reservations")
+              .update({
+                payment_status: "paid",
+                status: "seated",
+                remaining_amount: 0,
+                notes: JSON.stringify({
+                  ...parsedNotes,
+                  check_in_at: new Date().toISOString(),
+                  pos_processed: true,
+                  pos_payment_method: "non_cash",
+                  pos_cashier_id: cashierId
+                })
+              })
+              .eq("id", activeReservation.id);
+
+            // Update table status
+            const tableIds = parsedNotes.meja_ids && parsedNotes.meja_ids.length > 0
+              ? parsedNotes.meja_ids
+              : [activeReservation.table_id].filter(Boolean);
+            if (tableIds.length > 0) {
+              await supabase
+                .from("tables")
+                .update({ status: "occupied", occupied_at: new Date().toISOString() })
+                .in("id", tableIds);
+            }
+          }
           
           // Core state cleanup (clear cart + order confirm)
           processPayment(true, methodName);
@@ -808,10 +921,12 @@ export default function POSPage() {
     }
     setProcessing(true);
     try {
+
+
       if (paymentMethod === "cash") {
-        if (Number(cashAmount) < cartTotal) {
+        if (Number(cashAmount) < totalToCollect) {
           setProcessing(false);
-          return toast.error("Uang tunai kurang dari total tagihan!");
+          return toast.error("Uang tunai kurang dari sisa tagihan!");
         }
       }
 
@@ -824,7 +939,64 @@ export default function POSPage() {
         finalNotes += ` [DISKON: ${discountAmount}]`;
       }
 
-      if (foundOrder) {
+      if (activeReservation) {
+        // Reservasi POS checkout
+        const parsedNotes = getParsedNotes(activeReservation.notes);
+        const { error: resUpdateErr } = await supabase
+          .from("reservations")
+          .update({
+            payment_status: "paid",
+            status: "seated",
+            remaining_amount: 0,
+            notes: JSON.stringify({
+              ...parsedNotes,
+              check_in_at: new Date().toISOString(),
+              pos_processed: true,
+              pos_payment_method: paymentMethod,
+              pos_cashier_id: cashierId
+            })
+          })
+          .eq("id", activeReservation.id);
+
+        if (resUpdateErr) throw resUpdateErr;
+
+        // Update table status to occupied
+        const tableIds = parsedNotes.meja_ids && parsedNotes.meja_ids.length > 0
+          ? parsedNotes.meja_ids
+          : [activeReservation.table_id].filter(Boolean);
+        
+        if (tableIds.length > 0) {
+          await supabase
+            .from("tables")
+            .update({ status: "occupied", occupied_at: new Date().toISOString() })
+            .in("id", tableIds);
+        }
+
+        toast.success("Reservasi Berhasil Check-In & Lunas!");
+
+        const completed = {
+          id: activeReservation.id,
+          order_type: "dine_in",
+          payment_status: "paid",
+          payment_method: paymentMethod,
+          total_amount: cartTotal,
+          discount: discountAmount,
+          notes: `[RESERVASI] ${activeReservation.id.substring(0,8).toUpperCase()} - Kasir: ${cashierName}`,
+          profiles: { full_name: customerName },
+          order_items: cart.map(i => ({ menu_items: i, quantity: i.qty, subtotal: i.price * i.qty })),
+          cashier: { full_name: cashierName },
+          cash_received: paymentMethod === 'cash' ? Number(cashAmount) : totalToCollect,
+          change_amount: paymentMethod === 'cash' ? Math.max(0, Number(cashAmount) - totalToCollect) : 0
+        };
+
+        setCompletedOrder(completed);
+        setShowPaymentModal(false);
+        setVerificationStep("select_method");
+        setShowReceipts(true);
+        setActiveReservation(null);
+        clearCart();
+
+      } else if (foundOrder) {
         const oStatus = isPaid ? (foundOrder.status === "pending" ? "processing" : foundOrder.status) : foundOrder.status;
         
         // Use API to bypass RLS silently failing
@@ -1345,6 +1517,24 @@ export default function POSPage() {
                 <span className="text-xs sm:text-sm font-bold text-muted uppercase tracking-widest whitespace-nowrap">Total Tagihan</span>
                 <span className="text-xl sm:text-2xl font-black text-text-light dark:text-text-dark whitespace-nowrap">Rp {cartTotal.toLocaleString("id-ID")}</span>
               </div>
+              
+              {activeReservation && (
+                <div className="mt-3 p-3 bg-primary/5 dark:bg-primary/10 border border-primary/25 rounded-xl text-xs space-y-2 text-text-light dark:text-text-dark">
+                  <p className="font-extrabold text-primary uppercase text-[10px] tracking-wider">Info Reservasi &amp; DP</p>
+                  <div className="flex justify-between">
+                    <span>DP Dibayar ({activeReservation.dp_percent || 0}%):</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">Rp {Number(activeReservation.dp_amount || 0).toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status Pembayaran Terakhir:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 uppercase">{activeReservation.payment_status}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-dashed border-primary/25 font-bold text-sm">
+                    <span className="text-primary">Sisa Tagihan (Tunai/Non):</span>
+                    <span className="text-primary font-black">Rp {Math.max(0, cartTotal - Number(activeReservation.dp_amount || 0)).toLocaleString("id-ID")}</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             <button 
@@ -1506,8 +1696,27 @@ export default function POSPage() {
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 text-center border border-border-light dark:border-border-dark">
-                  <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
-                  <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                  {dpAmountPaid > 0 ? (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-muted">
+                        <span>Total Pesanan:</span>
+                        <span>Rp {cartTotal.toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
+                        <span>DP Dibayar ({activeReservation.dp_percent}%):</span>
+                        <span>-Rp {dpAmountPaid.toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="border-t border-dashed border-border-light dark:border-border-dark pt-1.5 flex justify-between font-black text-sm">
+                        <span className="text-primary">Sisa Tagihan (Wajib Bayar):</span>
+                        <span className="text-primary text-xl">Rp {totalToCollect.toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold uppercase text-muted tracking-widest mb-1">Total Tagihan</p>
+                      <p className="text-3xl font-black text-primary">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                    </>
+                  )}
                 </div>
 
                 {paymentMethod === "cash" ? (
@@ -1518,10 +1727,10 @@ export default function POSPage() {
                       <div className="flex gap-2 mt-2">
                         <button 
                           type="button" 
-                          onClick={() => setCashAmount(cartTotal)} 
+                          onClick={() => setCashAmount(totalToCollect)} 
                           className="px-4 py-2 text-xs font-bold rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
                         >
-                          Uang Pas (Rp {cartTotal.toLocaleString("id-ID")})
+                          Uang Pas (Rp {totalToCollect.toLocaleString("id-ID")})
                         </button>
                       </div>
                     </div>
@@ -1529,13 +1738,13 @@ export default function POSPage() {
                     {Number(cashAmount) > 0 && (
                       <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                         <span className="font-bold text-green-700 dark:text-green-400">Kembalian</span>
-                        <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - cartTotal).toLocaleString("id-ID")}</span>
+                        <span className="font-black text-xl text-green-700 dark:text-green-400">Rp {Math.max(0, Number(cashAmount) - totalToCollect).toLocaleString("id-ID")}</span>
                       </div>
                     )}
                     
                     <button 
                       onClick={() => processPayment(true)} 
-                      disabled={processing || Number(cashAmount) < cartTotal} 
+                      disabled={processing || Number(cashAmount) < totalToCollect} 
                       className="w-full py-4 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all shadow-xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none uppercase tracking-wider flex justify-center items-center gap-2"
                     >
                       {processing ? <Loader2 className="w-6 h-6 animate-spin" /> : "Konfirmasi Pembayaran"}
@@ -1708,5 +1917,13 @@ export default function POSPage() {
         </div>
       </BaseModal>
     </div>
+  );
+}
+
+export default function POSPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>}>
+      <POSContent />
+    </Suspense>
   );
 }

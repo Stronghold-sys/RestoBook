@@ -124,7 +124,14 @@ export default function CashierScanPage() {
                 table_id: updatedRes.table_id,
                 table_number: updatedRes.tables?.table_number,
                 checked_in_at: updatedRes.checked_in_at,
-                seated_at: updatedRes.seated_at
+                seated_at: updatedRes.seated_at,
+                menu_items: updatedRes.menu_items,
+                menu_total: updatedRes.menu_total,
+                payment_method: updatedRes.payment_method,
+                payment_status: updatedRes.payment_status,
+                dp_percent: updatedRes.dp_percent,
+                dp_amount: updatedRes.dp_amount,
+                remaining_amount: updatedRes.remaining_amount
               });
             }
           }
@@ -516,6 +523,76 @@ export default function CashierScanPage() {
                       );
                     })()}
                   </div>
+
+                {/* Pre-order menu details */}
+                {reservation.menu_items && Array.isArray(reservation.menu_items) && reservation.menu_items.length > 0 && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-light dark:border-border-dark space-y-3">
+                    <h4 className="font-black text-xs uppercase tracking-wider text-muted flex items-center gap-1.5">
+                      <Receipt className="w-3.5 h-3.5 text-primary" /> Pre-Order Menu ({reservation.menu_items.length} Item)
+                    </h4>
+                    <div className="space-y-1.5 divide-y divide-border-light dark:divide-border-dark max-h-[150px] overflow-y-auto pr-1 text-xs">
+                      {reservation.menu_items.map((item: any, idx: number) => (
+                        <div key={idx} className={`pt-1.5 ${idx === 0 ? "pt-0" : ""} flex justify-between text-text-light dark:text-text-dark`}>
+                          <div>
+                            <span className="font-semibold">{item.name}</span>
+                            <span className="text-muted ml-1">x{item.quantity}</span>
+                            {item.notes && (
+                              <span className="block text-[10px] text-primary italic font-semibold">Note: &ldquo;{item.notes}&rdquo;</span>
+                            )}
+                          </div>
+                          <span className="font-bold">Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Kitchen Preparation Warning Banner */}
+                    <div className="pt-2 text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Menu disiapkan dapur 30 menit sebelum booking dimulai.</span>
+                    </div>
+
+                    {/* Payment summary */}
+                    <div className="border-t border-dashed border-border-light dark:border-border-dark pt-3 space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted">Total Pembelian Menu:</span>
+                        <span className="font-bold">Rp {(reservation.menu_total || 0).toLocaleString("id-ID")}</span>
+                      </div>
+                      {reservation.payment_method === "dp" && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>DP Dibayar ({reservation.dp_percent || 0}%):</span>
+                          <span>-Rp {(reservation.dp_amount || 0).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-sm pt-1 border-t border-dashed border-border-light dark:border-border-dark text-text-light dark:text-text-dark">
+                        <span>Sisa Tagihan (POS):</span>
+                        <span className="text-primary font-black">Rp {(reservation.remaining_amount || 0).toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] pt-1">
+                        <span className="text-muted uppercase font-bold">Metode: {reservation.payment_method?.toUpperCase()}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                          reservation.payment_status === "paid"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                            : reservation.payment_status === "dp_paid"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                        }`}>
+                          {reservation.payment_status === "paid" ? "Lunas" : reservation.payment_status === "dp_paid" ? "DP Dibayar" : "Belum Bayar"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Redirect POS button */}
+                    {reservation.payment_status !== "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/cashier/pos?reservation_id=${reservation.id}`)}
+                        className="w-full mt-2 py-2.5 bg-primary text-white rounded-xl font-bold text-xs shadow-md hover:bg-primary-hover flex items-center justify-center gap-2"
+                      >
+                        <Receipt className="w-3.5 h-3.5" /> Buka POS Kasir untuk Sisa Pembayaran
+                      </button>
+                    )}
+                  </div>
+                )}
 
                   {/* Check-In Controls */}
                   {(['pending', 'confirmed', 'arrived', 'seated'].includes(reservation.status) || (reservation.status === 'cancelled' && canOverride)) && (

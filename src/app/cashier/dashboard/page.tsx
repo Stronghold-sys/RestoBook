@@ -155,6 +155,18 @@ export default function CashierDashboard() {
   const [subDetails, setSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
   // isHolidayToday: true jika tidak ada jadwal shift untuk hari ini (tapi mungkin ada hari berikutnya)
   const [isHolidayToday, setIsHolidayToday] = useState(false);
+
+  const nowJKT = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+  const todayDateStr = nowJKT.getFullYear() + '-' + String(nowJKT.getMonth() + 1).padStart(2, '0') + '-' + String(nowJKT.getDate()).padStart(2, '0');
+  
+  const tomorrowDateStr = (() => {
+    const tomorrow = new Date(nowJKT);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.getFullYear() + '-' + String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + String(tomorrow.getDate()).padStart(2, '0');
+  })();
+
+  const isShiftToday = todayShift ? todayShift.shiftDate === todayDateStr : false;
+  const isShiftTomorrow = todayShift ? todayShift.shiftDate === tomorrowDateStr : false;
   
   const supabase = createClient();
 
@@ -439,11 +451,6 @@ export default function CashierDashboard() {
          todayCheckOut = outData;
       }
 
-      //  SET STATUS AKHIR: SELESAI jika ADA checkout hari ini DAN TIDAK ADA shift aktif berikutnya
-      const { data: globalTodayCheckOut } = await supabase.from('attendance').select('id').eq('user_id', user.id).eq('type', 'check_out').gte('created_at', today.toISOString()).limit(1).maybeSingle();
-      
-      setIsCompletedToday(!!globalTodayCheckOut && !shiftData?.todayShift);
-
       // Cek apakah ada shift closed hari ini
       const todayStr = today.toISOString().split('T')[0];
       const { data: closedShift } = await supabase
@@ -456,6 +463,10 @@ export default function CashierDashboard() {
         .maybeSingle();
 
       setClosedShiftId(closedShift?.id || null);
+
+      //  SET STATUS AKHIR: SELESAI jika ADA checkout hari ini ATAU ada shift closed hari ini
+      const { data: globalTodayCheckOut } = await supabase.from('attendance').select('id').eq('user_id', user.id).eq('type', 'check_out').gte('created_at', today.toISOString()).limit(1).maybeSingle();
+      setIsCompletedToday(!!globalTodayCheckOut || !!closedShift);
 
       //  BUKA AKSES JIKA: SEDANG ADA SHIFT TERBUKA, ATAU SUDAH ABSEN MASUK SHIFT INI TAPI BELUM KELUAR (DAN BELUM ADA SHIFT CLOSED HARI INI)!
       if (shift || (todayCheckIn && !todayCheckOut && !closedShift)) {
@@ -492,9 +503,9 @@ export default function CashierDashboard() {
       return;
     }
     
-    // KUNCI UTAMA: Jika hari ini LIBUR (tidak ada shift hari ini), tampilkan 'none' bukan countdown
-    // todayShift di sini adalah shift hari berikutnya yang ditampilkan sebagai info saja
-    if (isHolidayToday) {
+    // KUNCI UTAMA: Jika hari ini LIBUR (tidak ada shift hari ini), tapi kita ingin menampilkan countdown ke shift berikutnya (misal jika shift sudah ditutup atau hari libur)
+    // Kita biarkan perhitungan countdown berjalan jika hari ini sudah selesai bertugas atau jika shift berikutnya ada di hari berikutnya.
+    if (isHolidayToday && !isCompletedToday) {
       setShiftStatus('none');
       return;
     }
@@ -1222,9 +1233,19 @@ export default function CashierDashboard() {
                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative">
                         <div>
                            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-primary mb-1 flex items-center gap-2">
-                              <Flame className="w-3.5 h-3.5 animate-pulse" /> INFORMASI SHIFT HARI INI
+                              <Flame className="w-3.5 h-3.5 animate-pulse" /> 
+                              {isShiftToday 
+                                ? "INFORMASI SHIFT HARI INI" 
+                                : isShiftTomorrow 
+                                  ? "INFORMASI JADWAL SHIFT BESOK" 
+                                  : "INFORMASI SHIFT BERIKUTNYA"}
                            </p>
                            <h3 className="text-2xl font-black text-text-light dark:text-text-dark tracking-tight">{todayShift?.name}</h3>
+                           {!isShiftToday && todayShift?.shiftDate && (
+                              <p className="text-xs font-bold text-muted mt-1">
+                                 Tanggal Kerja: {new Date(todayShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                              </p>
+                           )}
                         </div>
                         <div className="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center gap-3 border border-border-light dark:border-border-dark shadow-inner">
                            <Clock className="w-5 h-5 text-muted" />
@@ -1271,23 +1292,25 @@ export default function CashierDashboard() {
 
                      {/* DYNAMIC STATUS BANNER */}
                      <div className="mt-6 border-t border-border-light dark:border-border-dark pt-6">
-                        {!isCompletedToday && (
-                          <>
-                            {subDetails?.isSubstitute && (
-                               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mb-6 flex items-center gap-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-[2rem] p-7 shadow-xl shadow-violet-500/30 border border-violet-400/30 relative overflow-hidden">
-                                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" />
-                                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-white/30 animate-bounce-slow"><Sparkles className="w-8 h-8 text-white" /></div>
-                                  <div className="relative z-10">
-                                     <h4 className="font-black text-lg leading-tight uppercase tracking-wider mb-1">MISI PENGGANTI AKTIF</h4>
-                                     <p className="text-white/90 text-xs font-medium leading-relaxed max-w-lg">
-                                        Terima kasih atas kerelaan Anda! Hari ini Anda bertugas sebagai <strong>Karyawan Pengganti</strong> {subDetails.substituteFor ? `menggantikan ${subDetails.substituteFor}` : ""}. Seluruh jam kerja sesi ini akan dihitung full sebagai <strong>Jam Lembur</strong>. Tetap semangat memberikan pelayanan terbaik!
-                                     </p>
-                                  </div>
-                               </motion.div>
-                             )}
-                            {shiftStatus === 'future' && (
+                        {(!isCompletedToday || !isShiftToday) && (
+                           <>
+                             {!isCompletedToday && subDetails?.isSubstitute && (
+                                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mb-6 flex items-center gap-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-[2rem] p-7 shadow-xl shadow-violet-500/30 border border-violet-400/30 relative overflow-hidden">
+                                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" />
+                                   <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-white/30 animate-bounce-slow"><Sparkles className="w-8 h-8 text-white" /></div>
+                                   <div className="relative z-10">
+                                      <h4 className="font-black text-lg leading-tight uppercase tracking-wider mb-1">MISI PENGGANTI AKTIF</h4>
+                                      <p className="text-white/90 text-xs font-medium leading-relaxed max-w-lg">
+                                         Terima kasih atas kerelaan Anda! Hari ini Anda bertugas sebagai <strong>Karyawan Pengganti</strong> {subDetails.substituteFor ? `menggantikan ${subDetails.substituteFor}` : ""}. Seluruh jam kerja sesi ini akan dihitung full sebagai <strong>Jam Lembur</strong>. Tetap semangat memberikan pelayanan terbaik!
+                                      </p>
+                                   </div>
+                                </motion.div>
+                              )}
+                             {shiftStatus === 'future' && (
                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-3xl p-8 text-center">
-                              <p className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-widest uppercase mb-4">Shift Belum Dimulai</p>
+                              <p className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-widest uppercase mb-4">
+                                 {isShiftToday ? "Shift Belum Dimulai" : "Hitung Mundur Shift Berikutnya"}
+                              </p>
                               <div className="flex gap-4 items-center">
                                  <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.h).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Jam</span></div>
                                  <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
@@ -1295,11 +1318,13 @@ export default function CashierDashboard() {
                                  <span className="text-3xl font-black text-blue-300 animate-pulse">:</span>
                                  <div className="flex flex-col"><span className="text-5xl font-black font-mono text-blue-700 dark:text-blue-300 leading-none">{String(shiftCountdown.s).padStart(2,'0')}</span><span className="text-[9px] font-black uppercase text-blue-500 mt-2">Detik</span></div>
                               </div>
-                              <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-5 font-medium italic">Harap bersiap, tombol absensi akan aktif tepat saat jam masuk tiba.</p>
+                              <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-5 font-medium italic">
+                                 {isShiftToday ? "Harap bersiap, tombol absensi akan aktif tepat saat jam masuk tiba." : "Persiapkan diri Anda untuk shift berikutnya."}
+                              </p>
                            </motion.div>
                         )}
 
-                        {shiftStatus === 'now' && (
+                        {!isCompletedToday && shiftStatus === 'now' && (
                            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="flex items-center gap-6 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-3xl p-6 shadow-lg shadow-emerald-500/20">
                               <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0"><ShieldCheck className="w-7 h-7 animate-bounce" /></div>
                               <div>
@@ -1309,7 +1334,7 @@ export default function CashierDashboard() {
                            </motion.div>
                         )}
 
-                        {shiftStatus === 'late' && (
+                        {!isCompletedToday && shiftStatus === 'late' && (
                            <motion.div 
                              animate={{ boxShadow: ["0 0 0 rgba(239,68,68,0)", "0 0 20px rgba(239,68,68,0.3)", "0 0 0 rgba(239,68,68,0)"] }}
                              transition={{ repeat: Infinity, duration: 2 }}
@@ -1348,9 +1373,31 @@ export default function CashierDashboard() {
                            <p className="text-emerald-50 font-medium max-w-md mx-auto text-sm leading-relaxed mb-6">
                               Laporan kerja dan data keuangan Anda telah berhasil tersimpan secara aman di sistem. Terima kasih atas kontribusi luar biasa Anda hari ini!
                            </p>
+
+                           {/* INFORMASI JADWAL BESOK */}
+                           <div className="mb-8 p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 max-w-md mx-auto text-center">
+                              {isShiftTomorrow ? (
+                                 <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100"> JADWAL SHIFT BESOK</p>
+                                    <p className="font-black text-lg mt-1">{todayShift?.name}</p>
+                                    <p className="text-xs text-emerald-100/80 mt-1">🕐 {todayShift?.start_time.slice(0,5)} - {todayShift?.end_time.slice(0,5)} WIB</p>
+                                 </div>
+                              ) : (
+                                 <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100"> JADWAL SHIFT BESOK</p>
+                                    <p className="font-black text-lg mt-1">Libur / Tidak Ada Shift</p>
+                                    {todayShift && (
+                                       <p className="text-xs text-emerald-100/80 mt-2 font-medium">
+                                          Shift terdekat berikutnya: <strong className="text-white">{todayShift.name}</strong> pada {new Date(todayShift.shiftDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                       </p>
+                                    )}
+                                 </div>
+                              )}
+                           </div>
+
                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                               <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700/30 backdrop-blur-sm rounded-2xl border border-emerald-400/30 font-black text-xs uppercase tracking-widest">
-                                 Sampai Jumpa Besok 
+                                 {isShiftTomorrow ? "Sampai Jumpa Besok" : "Sampai Jumpa"}
                               </div>
                               {closedShiftId && (
                                 <button

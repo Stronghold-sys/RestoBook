@@ -253,6 +253,17 @@ export async function consumeNonce(nonce: string, durationMinutes = 5): Promise<
   }
 }
 
+function normalizeCountry(country: string): string {
+  if (!country) return 'unknown';
+  const val = country.trim().toLowerCase();
+  if (val === 'indonesia' || val === 'id') return 'id';
+  if (val === 'singapore' || val === 'sg') return 'sg';
+  if (val === 'malaysia' || val === 'my') return 'my';
+  if (val === 'united states' || val === 'us' || val === 'united states of america') return 'us';
+  if (val === 'japan' || val === 'jp') return 'jp';
+  return val;
+}
+
 // ── 8. Deteksi Session Hijacking ──────────────────────────────────────
 export async function detectSessionHijack(
   sessionId: string,
@@ -293,7 +304,7 @@ export async function detectSessionHijack(
 
     // Verifikasi anomali fingerprint:
     // A. Perubahan Negara (Country Hop ekstrem)
-    if (session.country !== 'Unknown' && cfCountry !== 'Unknown' && session.country !== cfCountry) {
+    if (session.country !== 'Unknown' && cfCountry !== 'Unknown' && normalizeCountry(session.country) !== normalizeCountry(cfCountry)) {
       return { hijacked: true, reason: `Negara berubah drastis: ${session.country} -> ${cfCountry}` };
     }
 
@@ -735,7 +746,7 @@ export async function trackAndDetectRotatingIP(
       if (diffMs <= 30 * 60 * 1000) {
         ips30m.add(rec.ip_address);
         if (rec.country && rec.country !== 'Unknown') {
-          countries30m.add(rec.country);
+          countries30m.add(normalizeCountry(rec.country));
         }
       }
     }
@@ -802,7 +813,7 @@ export async function checkImpossibleTravel(
       return { impossibleTravel: false };
     }
 
-    if (lastSession.country !== currentCountry) {
+    if (normalizeCountry(lastSession.country) !== normalizeCountry(currentCountry)) {
       const lastActiveTime = new Date(lastSession.last_active_at).getTime();
       const timeDiffMins = (Date.now() - lastActiveTime) / 60000;
 

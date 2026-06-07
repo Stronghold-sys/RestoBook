@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Cari profil pengguna (bisa via email atau employee_id)
     let profileQuery = supabaseAdmin.from('profiles').select('*');
-    if (identifier.startsWith('RB-')) {
+    if (identifier.startsWith('KRY-') || identifier.startsWith('RB-')) {
       profileQuery = profileQuery.eq('employee_id', identifier);
     } else {
       profileQuery = profileQuery.eq('email', identifier.trim().toLowerCase());

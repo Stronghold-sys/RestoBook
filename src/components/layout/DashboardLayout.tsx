@@ -1064,48 +1064,21 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
                   <p className="text-muted text-sm">
                     Apakah Anda yakin ingin keluar dari akun Anda?
                   </p>
-                </div>
-
-                {/* WARNING ZONE */}
+                </div>                {/* WARNING ZONE */}
                 {(() => {
-                  let hasCartItems = false;
-                  if (typeof window !== 'undefined') {
-                    const cartStorage = localStorage.getItem("restobook-cart");
-                    if (cartStorage) {
-                      try {
-                        const parsed = JSON.parse(cartStorage);
-                        if (parsed?.state?.items && parsed.state.items.length > 0) {
-                          hasCartItems = true;
-                        }
-                      } catch (e) {}
-                    }
-                    const posCartStr = localStorage.getItem("pos_cart");
-                    if (posCartStr) {
-                      try {
-                        const parsed = JSON.parse(posCartStr);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                          hasCartItems = true;
-                        }
-                      } catch (e) {}
-                    }
-                  }
-
                   const isCashierActiveShift = role === 'cashier' && shiftState === 'open';
 
-                  if (!hasCartItems && !isCashierActiveShift) return null;
+                  if (!isCashierActiveShift) return null;
 
                   return (
                     <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl text-left">
                       <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-500 flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5" /> Perhatian Penting
                       </span>
-                      <ul className="text-xs text-amber-800 dark:text-amber-400 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
-                        {hasCartItems && (
-                          <li>Terdapat item aktif di keranjang belanja. Keluar dari akun akan mereset keranjang belanja Anda!</li>
-                        )}
-                        {isCashierActiveShift && (
-                          <li className="font-extrabold text-red-600 dark:text-red-400">Shift Kasir Anda masih AKTIF! Keluar akun tidak akan menutup shift kerja Anda secara otomatis. Pastikan Anda telah melakukan penutupan shift terlebih dahulu.</li>
-                        )}
+                      <ul className="text-xs text-amber-850 dark:text-amber-400 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                        <li className="font-bold text-red-600 dark:text-red-400">
+                          Shift Kerja Kasir Anda masih aktif! Keluar dari akun tidak akan menutup shift kerja Anda secara otomatis. Pastikan Anda telah melakukan penutupan shift terlebih dahulu.
+                        </li>
                       </ul>
                     </div>
                   );

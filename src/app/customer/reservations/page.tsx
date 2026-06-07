@@ -5,7 +5,7 @@ export const runtime = 'edge';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet } from "lucide-react";
+import { CalendarDays, Clock, Users, Plus, Loader2, X, MapPin, CheckCircle, Phone, User, History, Sparkles, AlertCircle, Ban, Trash2, QrCode, Search, ShoppingBag, CreditCard, ChevronRight, FileText, Check, DollarSign, Wallet, FileSpreadsheet, Eye, RotateCcw, Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -23,6 +23,7 @@ interface Reservation {
   notes: string;
   tables: { table_number: number; capacity: number } | null;
   created_at: string;
+  updated_at?: string;
   qr_token?: string;
   menu_items?: any;
   menu_total?: number;
@@ -118,6 +119,17 @@ export default function CustomerReservationsPage() {
 
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [selectedQrRes, setSelectedQrRes] = useState<Reservation | null>(null);
+
+  // States for advanced history filtering
+  const [historyTab, setHistoryTab] = useState<string>("all");
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
+  const [historyStartDate, setHistoryStartDate] = useState("");
+  const [historyEndDate, setHistoryEndDate] = useState("");
+  const [historyRefundMethodFilter, setHistoryRefundMethodFilter] = useState<string>("all");
+  const [historyRefundTypeFilter, setHistoryRefundTypeFilter] = useState<string>("all");
+  const [historySearchResNo, setHistorySearchResNo] = useState("");
+  const [selectedDetailRes, setSelectedDetailRes] = useState<Reservation | null>(null);
+
   const supabase = createClient();
 
   const getTodayStr = () => {
@@ -734,6 +746,58 @@ export default function CustomerReservationsPage() {
     }
   };
 
+  const handleExportExcel = () => {
+    if (filteredHistory.length === 0) return toast.error("Tidak ada data untuk diekspor");
+    
+    let tableHtml = `<table border="1" style="border-collapse: collapse; font-family: Arial;">
+       <tr style="height: 40px;"><td colspan="7" align="center" style="font-size: 16px; font-weight: bold; background-color: #fcfcfc;">RIWAYAT TRANSAKSI RESERVASI MEJA</td></tr>
+       <tr style="height: 25px;"><td colspan="7" align="left" style="font-size: 11px;">Tanggal Cetak: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })} WIB</td></tr>
+       <tr style="height: 30px; text-align: center;">
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">No. Reservasi</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Atas Nama</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Tanggal & Waktu</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Meja & Tamu</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Metode Pembayaran</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Status</th>
+          <th style="border: 1px solid #cbd5e1; padding: 5px; background-color: #e85d04; color: white;">Total Bayar (Rp)</th>
+       </tr>`;
+
+    filteredHistory.forEach(res => {
+       const notesParsed = getParsedNotes(res.notes);
+       const nameText = notesParsed.atas_nama || "Pelanggan";
+       const dateText = `${res.reservation_date} ${res.reservation_time.substring(0, 5)}`;
+       const guestText = `Meja ${notesParsed.meja_tambahan?.length > 0 ? notesParsed.meja_tambahan.join(", ") : res.tables?.table_number || "-"} (${res.guest_count} Tamu)`;
+       const payText = res.payment_method?.toUpperCase() || "-";
+       const statusText = getStatusText(res.status);
+       const amount = res.menu_total || res.dp_amount || 0;
+       
+       tableHtml += `<tr style="height: 25px;">
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px; font-family: monospace;">#${res.id.substring(0, 8).toUpperCase()}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 5px;">${nameText}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${dateText}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${guestText}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px;">${payText}</td>
+          <td align="center" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold;">${statusText}</td>
+          <td align="right" style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold;">${amount.toLocaleString("id-ID")}</td>
+       </tr>`;
+    });
+
+    tableHtml += `</table>`;
+
+    const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Riwayat</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>${tableHtml}</body></html>`;
+
+    const blob = new Blob([template], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Riwayat_Reservasi_${format(new Date(), 'dd_MM_yyyy_HHmmss')}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Berhasil mengekspor riwayat!");
+  };
+
+
   const getParsedNotes = (notesStr: string) => {
     if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
     try {
@@ -803,8 +867,78 @@ export default function CustomerReservationsPage() {
   };
 
   const activeReservations = reservations.filter(r => ACTIVE_STATUSES.includes(r.status));
-  const historyReservations = reservations.filter(r => HISTORY_STATUSES.includes(r.status));
-  const displayedReservations = activeTab === "active" ? activeReservations : historyReservations;
+  
+  const getRefundStatusText = (status: string | null | undefined) => {
+    switch (status) {
+      case "pengajuan_refund":
+      case "waiting_review":
+      case "menunggu_peninjauan":
+        return "Pengajuan Refund";
+      case "menunggu_verifikasi":
+        return "Menunggu Verifikasi";
+      case "disetujui":
+        return "Disetujui";
+      case "ditolak":
+      case "rejected":
+        return "Ditolak";
+      case "dana_dikirim":
+        return "Dana Dikirim";
+      case "refund_selesai":
+      case "completed":
+        return "Refund Selesai";
+      default:
+        return status || "Tidak Ada Refund";
+    }
+  };
+
+  const filteredHistory = reservations.filter(res => {
+    // 1. Tab Filter
+    if (historyTab === "active" && !ACTIVE_STATUSES.includes(res.status)) return false;
+    if (historyTab === "completed" && res.status !== "completed") return false;
+    if (historyTab === "cancelled" && res.status !== "cancelled") return false;
+    
+    if (historyTab === "refund_pending" && !["pengajuan_refund", "waiting_review", "menunggu_peninjauan", "menunggu_verifikasi"].includes(res.refund_status || "")) return false;
+    if (historyTab === "refund_approved" && res.refund_status !== "disetujui") return false;
+    if (historyTab === "refund_rejected" && !["ditolak", "rejected"].includes(res.refund_status || "")) return false;
+    if (historyTab === "refund_completed" && !["refund_selesai", "completed", "dana_dikirim"].includes(res.refund_status || "")) return false;
+
+    // 2. Search Query (Nomor Reservasi / Catatan / Status)
+    const notesParsed = getParsedNotes(res.notes);
+    const searchLower = historySearchQuery.toLowerCase();
+    const matchesSearch = 
+      res.id.toLowerCase().includes(searchLower) ||
+      notesParsed.catatan.toLowerCase().includes(searchLower) ||
+      notesParsed.atas_nama.toLowerCase().includes(searchLower) ||
+      getStatusText(res.status).toLowerCase().includes(searchLower) ||
+      (res.refund_status && getRefundStatusText(res.refund_status).toLowerCase().includes(searchLower));
+    
+    if (!matchesSearch) return false;
+
+    // 3. Date Range Filter
+    if (historyStartDate && res.reservation_date < historyStartDate) return false;
+    if (historyEndDate && res.reservation_date > historyEndDate) return false;
+
+    // 4. Refund Method Filter
+    if (historyRefundMethodFilter !== "all") {
+      if (historyRefundMethodFilter === "dompetku" && res.refund_method !== "dompetku") return false;
+      if (historyRefundMethodFilter === "bank" && res.refund_method !== "transfer") return false;
+    }
+
+    // 5. Jenis Refund Filter (Reservasi vs Pesanan vs Gabungan)
+    if (historyRefundTypeFilter !== "all") {
+      const hasMenu = Number(res.menu_total || 0) > 0;
+      if (historyRefundTypeFilter === "reservation" && hasMenu) return false;
+      if (historyRefundTypeFilter === "order" && !hasMenu) return false;
+      if (historyRefundTypeFilter === "combined" && !hasMenu) return false;
+    }
+
+    // 6. Reservation Number Specific Filter
+    if (historySearchResNo && !res.id.toLowerCase().includes(historySearchResNo.toLowerCase())) return false;
+
+    return true;
+  });
+
+  const displayedReservations = activeTab === "active" ? activeReservations : filteredHistory;
 
   if (loading) {
     return (
@@ -869,6 +1003,149 @@ export default function CustomerReservationsPage() {
         </button>
       </div>
 
+      {activeTab === "history" && (
+        <div className="space-y-6">
+          {/* Sub-Tabs */}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-border-light dark:border-border-dark pb-1 gap-2">
+            {[
+              { key: "all", label: "Semua" },
+              { key: "active", label: "Reservasi Aktif" },
+              { key: "completed", label: "Reservasi Selesai" },
+              { key: "cancelled", label: "Reservasi Dibatalkan" },
+              { key: "refund_pending", label: "Pengajuan Refund" },
+              { key: "refund_approved", label: "Refund Disetujui" },
+              { key: "refund_rejected", label: "Refund Ditolak" },
+              { key: "refund_completed", label: "Refund Selesai" }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setHistoryTab(tab.key)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-none outline-none ${
+                  historyTab === tab.key 
+                    ? "bg-primary text-white shadow-md shadow-primary/15" 
+                    : "bg-gray-50 dark:bg-gray-800/50 text-muted hover:bg-gray-100 dark:hover:bg-gray-850"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filters Box */}
+          <div className="bg-card-light dark:bg-card-dark p-5 rounded-2xl border border-border-light dark:border-border-dark shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search Input */}
+            <div className="relative col-span-1 sm:col-span-2">
+              <label htmlFor="historyQuickSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Pencarian Cepat</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-muted absolute left-3 top-3.5" />
+                <input
+                  id="historyQuickSearch"
+                  type="text"
+                  value={historySearchQuery}
+                  onChange={e => setHistorySearchQuery(e.target.value)}
+                  placeholder="Cari kata kunci status, nama, atau catatan..."
+                  className="w-full pl-9 pr-4 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                />
+              </div>
+            </div>
+
+            {/* Date Filter */}
+            <div>
+              <label htmlFor="historyStartDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Mulai Tanggal</label>
+              <input
+                id="historyStartDateInput"
+                type="date"
+                value={historyStartDate}
+                onChange={e => setHistoryStartDate(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="historyEndDateInput" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Sampai Tanggal</label>
+              <input
+                id="historyEndDateInput"
+                type="date"
+                value={historyEndDate}
+                onChange={e => setHistoryEndDate(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-medium"
+              />
+            </div>
+
+            {/* Refund Method Filter */}
+            <div>
+              <label htmlFor="historyRefMethodSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Metode Refund</label>
+              <select
+                id="historyRefMethodSelect"
+                value={historyRefundMethodFilter}
+                onChange={e => setHistoryRefundMethodFilter(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
+              >
+                <option value="all">Semua Metode</option>
+                <option value="dompetku">DompetKu</option>
+                <option value="bank">Transfer Bank</option>
+              </select>
+            </div>
+
+            {/* Refund Type Filter */}
+            <div>
+              <label htmlFor="historyRefTypeSelect" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Jenis Pengajuan</label>
+              <select
+                id="historyRefTypeSelect"
+                value={historyRefundTypeFilter}
+                onChange={e => setHistoryRefundTypeFilter(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark font-bold"
+              >
+                <option value="all">Semua Jenis</option>
+                <option value="reservation">Reservasi Meja Saja</option>
+                <option value="order">Reservasi + Pre-Order Menu</option>
+              </select>
+            </div>
+
+            {/* Reservation ID Specific Search */}
+            <div>
+              <label htmlFor="historyResNoSearch" className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5 ml-1">Nomor Reservasi</label>
+              <input
+                id="historyResNoSearch"
+                type="text"
+                value={historySearchResNo}
+                onChange={e => setHistorySearchResNo(e.target.value)}
+                placeholder="No. Reservasi..."
+                className="w-full px-3 py-2.5 text-xs bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none text-text-light dark:text-text-dark"
+              />
+            </div>
+
+            {/* Actions Panel */}
+            <div className="flex gap-2 items-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setHistorySearchQuery("");
+                  setHistoryStartDate("");
+                  setHistoryEndDate("");
+                  setHistoryRefundMethodFilter("all");
+                  setHistoryRefundTypeFilter("all");
+                  setHistorySearchResNo("");
+                }}
+                className="flex-1 py-2.5 border border-dashed border-red-300 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-[10px] font-bold transition-all uppercase flex items-center justify-center gap-1"
+                title="Hapus Semua Filter"
+              >
+                <X className="w-3.5 h-3.5" /> Hapus Filter
+              </button>
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-bold transition-all uppercase flex items-center justify-center gap-1 shadow-md shadow-emerald-600/15"
+                title="Ekspor ke Excel"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" /> Ekspor Excel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reservation Cards */}
       <div className="space-y-4">
         <AnimatePresence mode="wait">
@@ -883,8 +1160,8 @@ export default function CustomerReservationsPage() {
               ) : (
                 <>
                   <History className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Belum Ada Riwayat</h3>
-                  <p className="text-muted mt-2">Riwayat reservasi Anda akan tampil di sini.</p>
+                  <h3 className="text-xl font-medium text-text-light dark:text-text-dark">Tidak Ada Transaksi Ditemukan</h3>
+                  <p className="text-muted mt-2">Belum ada riwayat transaksi atau coba sesuaikan kata kunci pencarian Anda.</p>
                 </>
               )}
             </motion.div>
@@ -945,6 +1222,14 @@ export default function CustomerReservationsPage() {
                           </motion.button>
                         )}
                         <span className={`text-xs uppercase font-bold px-3 py-1.5 rounded-lg ${getStatusBadge(res.status)}`}>{getStatusText(res.status)}</span>
+                        <motion.button 
+                          whileTap={{ scale: 0.9 }} 
+                          onClick={() => setSelectedDetailRes(res)} 
+                          className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-xs font-bold text-primary rounded-xl flex items-center gap-1 transition-all border border-border-light dark:border-border-dark"
+                          title="Detail Transaksi"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Detail
+                        </motion.button>
                         {res.status === "pending" && (
                           <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCancellingId(res.id); setCancelReason(""); }} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors" aria-label="Batalkan Reservasi" title="Batalkan Reservasi">
                             <X className="w-5 h-5" />
@@ -2384,6 +2669,219 @@ export default function CustomerReservationsPage() {
                   </motion.button>
                 </div>
               </form>
+            </>
+          );
+        })()}
+      </BaseModal>
+
+      {/* Modal Detail Transaksi */}
+      <BaseModal
+        isOpen={!!selectedDetailRes}
+        onClose={() => setSelectedDetailRes(null)}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        {selectedDetailRes && (() => {
+          const parsed = getParsedNotes(selectedDetailRes.notes);
+          const mejaNumbers = parsed.meja_tambahan && parsed.meja_tambahan.length > 0 ? parsed.meja_tambahan.join(", ") : selectedDetailRes.tables?.table_number;
+          const notesText = parsed.catatan;
+          const hasPreOrder = selectedDetailRes.menu_total && selectedDetailRes.menu_total > 0;
+
+          return (
+            <>
+              <div className="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-850">
+                <div>
+                  <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Detail Transaksi Reservasi</h3>
+                  <p className="text-xs text-muted mt-0.5">#{selectedDetailRes.id}</p>
+                </div>
+                <button onClick={() => setSelectedDetailRes(null)} title="Tutup" aria-label="Tutup" className="text-muted hover:text-text-light"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 space-y-5 max-h-[600px] overflow-y-auto pr-1">
+                {/* Status Badges Info */}
+                <div className="flex flex-wrap gap-2 items-center p-4 bg-primary/5 dark:bg-primary/10 border border-primary/15 rounded-2xl">
+                  <div className="w-full flex justify-between items-center text-xs font-bold text-text-light dark:text-text-dark border-b border-dashed border-primary/20 pb-2 mb-2">
+                    <span>Status Reservasi:</span>
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase border ${getStatusBadge(selectedDetailRes.status)}`}>
+                      {getStatusText(selectedDetailRes.status)}
+                    </span>
+                  </div>
+                  {selectedDetailRes.refund_status && (
+                    <div className="w-full flex justify-between items-center text-xs font-bold text-text-light dark:text-text-dark">
+                      <span>Status Pengembalian Dana (Refund):</span>
+                      <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase border ${
+                        selectedDetailRes.refund_status === "waiting_review" || selectedDetailRes.refund_status === "pengajuan_refund" || selectedDetailRes.refund_status === "menunggu_peninjauan"
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200"
+                          : selectedDetailRes.refund_status === "menunggu_verifikasi"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-250"
+                          : selectedDetailRes.refund_status === "disetujui" || selectedDetailRes.refund_status === "approved"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200"
+                          : selectedDetailRes.refund_status === "ditolak" || selectedDetailRes.refund_status === "rejected"
+                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200"
+                          : selectedDetailRes.refund_status === "dana_dikirim"
+                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200"
+                          : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200"
+                      }`}>
+                        {getRefundStatusText(selectedDetailRes.refund_status)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Main details */}
+                <div className="grid grid-cols-2 gap-4 text-xs font-bold text-text-light dark:text-text-dark bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-2xl border border-border-light dark:border-border-dark">
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Atas Nama Pemesan</span>
+                    <p className="font-black text-sm text-text-light dark:text-text-dark mt-0.5">{parsed.atas_nama || "Pelanggan"}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Nomor HP Kontak</span>
+                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{parsed.telepon || "-"}</p>
+                  </div>
+                  <div className="col-span-2 border-t border-border-light dark:border-border-dark pt-3 mt-1"></div>
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Tanggal Booking</span>
+                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{format(new Date(selectedDetailRes.reservation_date), "dd MMMM yyyy", { locale: localeId })}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Jam Booking</span>
+                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedDetailRes.reservation_time.substring(0, 5)} WIB</p>
+                  </div>
+                  <div className="col-span-2 border-t border-border-light dark:border-border-dark pt-3 mt-1"></div>
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Nomor Meja</span>
+                    <p className="font-black text-sm text-primary mt-0.5">Meja {mejaNumbers}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Jumlah Tamu</span>
+                    <p className="font-bold text-text-light dark:text-text-dark mt-0.5">{selectedDetailRes.guest_count} Orang</p>
+                  </div>
+                </div>
+
+                {/* Pre-Order Menu Items */}
+                {hasPreOrder && (
+                  <div className="space-y-2.5">
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block">Daftar Pre-Order Menu</span>
+                    <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl p-4 border border-border-light dark:border-border-dark space-y-2">
+                      {selectedDetailRes.menu_items && Array.isArray(selectedDetailRes.menu_items) && selectedDetailRes.menu_items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-xs text-text-light dark:text-text-dark">
+                          <span>{item.name} <span className="text-xs text-muted">x{item.quantity}</span></span>
+                          <span className="font-semibold">Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-dashed border-border-light dark:border-border-dark pt-2 mt-2 flex justify-between text-xs font-bold text-text-light dark:text-text-dark">
+                        <span>Total Harga Menu:</span>
+                        <span>Rp {selectedDetailRes.menu_total?.toLocaleString("id-ID")}</span>
+                      </div>
+                      {selectedDetailRes.payment_method === "dp" && (
+                        <div className="flex justify-between text-xs text-primary font-bold">
+                          <span>DP Dibayar ({selectedDetailRes.dp_percent || 0}%):</span>
+                          <span>Rp {selectedDetailRes.dp_amount?.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs text-muted font-bold">
+                        <span>Sisa Pembayaran di Kasir:</span>
+                        <span>Rp {selectedDetailRes.remaining_amount?.toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancellation Details */}
+                {selectedDetailRes.status === "cancelled" && (
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-900 rounded-2xl text-xs space-y-2 text-text-light dark:text-text-dark">
+                    <p className="font-black text-red-700 dark:text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Ban className="w-4 h-4 shrink-0" /> Informasi Pembatalan
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 font-semibold mt-1">
+                      <div>
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Pembatal Oleh</span>
+                        <p className="mt-0.5 uppercase font-bold">
+                          {parsed.dibatalkan_oleh === "kasir" ? "Kasir" : parsed.dibatalkan_oleh === "admin" ? "Resto/Admin" : "Pelanggan"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Waktu Pembatalan</span>
+                        <p className="mt-0.5">
+                          {selectedDetailRes.updated_at 
+                            ? format(new Date(selectedDetailRes.updated_at), "dd MMM yyyy HH:mm", { locale: localeId }) + " WIB"
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                    {(parsed.catatan_batal || parsed.catatan_tolak) && (
+                      <div className="pt-2 border-t border-red-200/50 dark:border-red-900/30">
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Alasan Pembatalan / Penolakan</span>
+                        <p className="mt-0.5 font-medium text-red-800 dark:text-red-400 leading-relaxed bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-red-200/50 dark:border-red-900/40">
+                          {parsed.catatan_batal || parsed.catatan_tolak}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Refund Details */}
+                {selectedDetailRes.refund_status && (
+                  <div className="p-4 bg-blue-50/50 dark:bg-blue-950/10 border-2 border-blue-200 dark:border-blue-900 rounded-2xl text-xs space-y-3 text-text-light dark:text-text-dark">
+                    <p className="font-black text-blue-800 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <RotateCcw className="w-4 h-4 shrink-0" /> Detail Pengembalian Dana
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 font-semibold">
+                      <div>
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Metode Pencairan</span>
+                        <p className="mt-0.5 uppercase font-bold text-primary flex items-center gap-1">
+                          {selectedDetailRes.refund_method === "dompetku" ? <Wallet className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
+                          {selectedDetailRes.refund_method === "dompetku" ? "DompetKu" : "Transfer Bank"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Nominal Refund</span>
+                        <p className="mt-0.5 font-black text-sm text-primary">
+                          Rp {Number(selectedDetailRes.refund_amount || selectedDetailRes.dp_amount || selectedDetailRes.menu_total).toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                      {selectedDetailRes.refund_method !== "dompetku" && selectedDetailRes.refund_bank_account && (
+                        <div className="col-span-2 pt-2 border-t border-dashed border-blue-200/50 dark:border-blue-900/30">
+                          <span className="text-[10px] text-muted uppercase tracking-wider block">Detail Rekening Tujuan</span>
+                          <p className="mt-0.5 font-bold p-2 bg-white dark:bg-gray-900 rounded-lg border border-blue-200/50 dark:border-blue-900/40 font-mono tracking-tight leading-relaxed">
+                            {selectedDetailRes.refund_bank_account}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedDetailRes.refund_reason && (
+                      <div className="pt-2 border-t border-dashed border-blue-200/50 dark:border-blue-900/30">
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Alasan Pengajuan Refund</span>
+                        <p className="mt-0.5 font-medium leading-relaxed">{selectedDetailRes.refund_reason}</p>
+                      </div>
+                    )}
+
+                    {selectedDetailRes.refund_proof && (
+                      <div className="pt-2 border-t border-dashed border-blue-200/50 dark:border-blue-900/30 space-y-1.5">
+                        <span className="text-[10px] text-muted uppercase tracking-wider block">Bukti Transfer Refund</span>
+                        <a href={selectedDetailRes.refund_proof} target="_blank" rel="noreferrer" className="block relative rounded-lg overflow-hidden border border-border-light dark:border-border-dark group">
+                          <img src={selectedDetailRes.refund_proof} alt="Bukti Transfer" className="object-cover w-full h-32 rounded-lg" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                            <span className="text-white text-[10px] font-black uppercase tracking-wider">Perbesar Bukti</span>
+                          </div>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer close button */}
+                <div className="pt-2 border-t border-border-light dark:border-border-dark">
+                  <button 
+                    type="button" 
+                    onClick={() => setSelectedDetailRes(null)}
+                    className="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-muted hover:bg-gray-200 dark:hover:bg-gray-750 font-bold rounded-xl text-center text-xs uppercase tracking-wider transition-all"
+                  >
+                    Tutup Detail
+                  </button>
+                </div>
+              </div>
             </>
           );
         })()}

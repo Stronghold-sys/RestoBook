@@ -792,7 +792,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           { name: "Pesanan Saya", href: "/customer/orders", icon: Clock },
           { name: "Favorit", href: "/customer/favorites", icon: Heart },
           { name: "Reservasi", href: "/customer/reservations", icon: CalendarDays },
-          { name: "Riwayat", href: "/customer/riwayat", icon: History },
           { name: "Pengaduan & Bantuan", href: "/customer/support", icon: LifeBuoy },
           { name: "Profil", href: "/customer/profile", icon: UserIcon },
         ];

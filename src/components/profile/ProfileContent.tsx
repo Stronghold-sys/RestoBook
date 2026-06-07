@@ -166,7 +166,7 @@ export default function ProfileContent() {
 
   // Preferences State
   const [preferences, setPreferences] = useState({
-    theme: "system",
+    theme: "light",
     notif_booking: true,
     notif_payment: true,
     notif_promo: true,
@@ -445,7 +445,7 @@ export default function ProfileContent() {
 
         // Set preferences values
         setPreferences({
-          theme: data.theme || "system",
+          theme: data.theme || "light",
           notif_booking: data.notif_booking !== false,
           notif_payment: data.notif_payment !== false,
           notif_promo: data.notif_promo !== false,

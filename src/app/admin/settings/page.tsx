@@ -1303,7 +1303,7 @@ export default function AdminSettingsPage() {
               
               <div className="mt-2.5 p-3.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl">
                 <p className="text-[10.5px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed italic">
-                  <strong>Pratinjau Aturan Pelanggan:</strong> "Pelanggan wajib melakukan check-in maksimal {reservationSettings.late_tolerance_minutes || 15} menit setelah jam booking dimulai. Jika melebihi batas tersebut dan pelanggan tidak kunjung hadir, maka reservasi dinyatakan hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain."
+                  <strong>Pratinjau Aturan Pelanggan:</strong> &quot;Pelanggan wajib melakukan check-in maksimal {reservationSettings.late_tolerance_minutes || 15} menit setelah jam booking dimulai. Jika melebihi batas tersebut dan pelanggan tidak kunjung hadir, maka reservasi dinyatakan hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.&quot;
                 </p>
               </div>
             </div>

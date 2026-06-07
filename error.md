@@ -1,119 +1,82 @@
 ========================
-15. PENYEMPURNAAN FITUR PEMBATALAN DAN REFUND
+16. RESERVASI DIBATALKAN OLEH KASIR DAN OPSI REFUND DI MENU RESERVASI DIBATALKAN
 ========================
 
-A. DATA REFUND HARUS MUNCUL LENGKAP DI HALAMAN REFUND ADMIN
+Tambahkan fitur agar jika reservasi dibatalkan oleh kasir, maka pada halaman pelanggan di menu “Reservasi Dibatalkan” harus tampil informasi yang jelas bahwa pembatalan dilakukan oleh kasir beserta detailnya.
 
-Pastikan semua pengajuan refund dari pelanggan masuk ke halaman Refund Admin dan menampilkan data lengkap yang sama seperti yang diisi pelanggan saat form pengajuan refund.
+A. STATUS PEMBATALAN OLEH KASIR
 
-Data yang wajib tampil di halaman Refund Admin:
+Jika reservasi dibatalkan oleh kasir, tampilkan status:
 
-- Nomor Refund
-- Nomor Reservasi
-- Nama Pelanggan
-- Nomor Telepon
-- Email
-- Tanggal Reservasi
-- Jam Reservasi
-- Jenis Refund
-- Alasan Refund
-- Nominal Refund
-- Metode Refund
-- Nama Bank
-- Nama Pemilik Rekening
-- Nomor Rekening
-- Akun DompetKu
-- Bukti Pendukung
-- Catatan Tambahan
-- Status Reservasi
-- Status Pembayaran
-- Status Refund
-- Dibuat Oleh
-- Dikonfirmasi Oleh
-- Waktu Pengajuan
-- Waktu Dikonfirmasi
-- Waktu Dana Dikirim
-- Alasan Penolakan jika ada
+- Dibatalkan
+- Dibatalkan oleh Kasir
+- Nama kasir yang membatalkan
+- Alasan pembatalan
+- Tanggal dan waktu pembatalan
 
-Tambahkan fitur filter di Refund Admin:
+Sistem harus menyimpan:
 
-- berdasarkan status refund
-- berdasarkan status reservasi
-- berdasarkan metode refund
-- berdasarkan jenis refund
-- berdasarkan tanggal pengajuan
-- berdasarkan nomor reservasi
-- berdasarkan nama pelanggan
+- cancelled_by
+- cancelled_role = kasir
+- cancellation_reason
+- cancellation_time
+- cancellation_source
 
-B. LOGIKA PEMBATALAN RESERVASI
+Tampilan pada pelanggan harus menegaskan:
 
-1. Jika reservasi belum dikonfirmasi:
+- “Reservasi ini dibatalkan oleh kasir.”
+- “Alasan pembatalan: {{reason}}”
+- “Waktu pembatalan: {{time}}”
 
-- tombol “Batalkan Pesanan” / “Batalkan Reservasi” tetap muncul
-- saat diklik, tampilkan formulir pembatalan
-- jika pembayaran belum ada, pembatalan diproses tanpa refund
-- jika pembayaran sudah ada, tampilkan form refund sesuai metode pembayaran yang dipakai
+B. OPSI REFUND PADA MENU RESERVASI DIBATALKAN
 
-1. Jika reservasi sudah dikonfirmasi oleh kasir/resto:
+Di halaman pelanggan pada menu “Reservasi Dibatalkan”, jika reservasi dibatalkan oleh kasir dan terdapat pembayaran yang sudah masuk, maka tampilkan tombol:
 
-- saat pelanggan klik “Batalkan Pesanan”, tampilkan formulir pembatalan/refund
-- jika pembayaran menggunakan DP, DompetKu, atau non tunai, tampilkan opsi refund
-- jika pembayaran tunai penuh dan reservasi sudah dikonfirmasi, maka opsi batalkan tidak boleh tersedia
-- tampilkan pesan:
-  “Reservasi ini sudah dikonfirmasi dan dibayar tunai, sehingga pembatalan tidak dapat dilakukan melalui sistem.”
+- Ajukan Refund
 
-1. Jika reservasi sudah dikonfirmasi tetapi belum dibayar tunai penuh:
+Tombol refund harus muncul jika:
 
-- tombol batalkan tetap bisa muncul hanya jika sistem mengizinkan
-- jika dibatalkan, form refund wajib ditampilkan
-- jika belum ada pembayaran, form refund tidak perlu menampilkan metode pengembalian dana
+- pembayaran sudah lunas, atau
+- pembayaran DP sudah dibayar sebagian, atau
+- terdapat nominal yang sudah masuk dan dapat dikembalikan
 
-C. LOGIKA MUNCULNYA FORMULIR PEMBATALAN / REFUND
+Tombol refund tidak muncul jika:
 
-Saat pelanggan menekan tombol batalkan, tampilkan form sesuai kondisi berikut:
+- belum ada pembayaran sama sekali
+- refund sudah pernah diajukan
+- refund sedang diproses
+- refund sudah selesai
 
-1. Jika reservasi belum dikonfirmasi:
+C. LOGIKA TAMPILAN REFUND
 
-- tampilkan formulir pembatalan
-- tampilkan data reservasi
-- jika ada pembayaran, tampilkan bagian refund
-- jika tidak ada pembayaran, bagian refund disembunyikan
+Jika pembayaran sudah lunas atau DP sudah dibayar, maka pada detail reservasi yang dibatalkan tampilkan informasi:
 
-1. Jika reservasi sudah dikonfirmasi:
+- Total pembayaran
+- Nominal yang sudah dibayar
+- Nominal yang dapat direfund
+- Status refund saat ini
+- Metode refund yang tersedia
 
-- tampilkan formulir pembatalan lengkap
-- tampilkan alasan pembatalan
-- tampilkan data refund jika ada pembayaran yang harus dikembalikan
-- tampilkan bukti pendukung bila diminta
-- tampilkan peringatan untuk memeriksa kembali data sebelum submit
+Jika metode pembayaran adalah:
 
-D. ATURAN REFUND BERDASARKAN METODE PEMBAYARAN
+1. Tunai
+   - jika ada pembayaran yang sudah diterima, tampilkan opsi refund sesuai nominal yang dibayarkan
+   - refund hanya muncul jika memang ada uang yang harus dikembalikan
 
-1. Jika pembayaran tunai:
+2. DP
+   - refund dapat diajukan sesuai nominal DP yang sudah dibayar
+   - nominal refund dihitung berdasarkan aturan charge pembatalan yang berlaku jika pembatalan terjadi setelah pesanan diproses
 
-- jika reservasi belum dikonfirmasi, pembatalan dapat diproses tanpa opsi refund
-- jika reservasi sudah dikonfirmasi, tombol batalkan tidak boleh digunakan
-- opsi refund tidak boleh muncul
+3. DompetKu
+   - refund dapat dikembalikan ke saldo DompetKu pelanggan
+   - jika DompetKu belum aktif, tampilkan peringatan dan arahkan ke Transfer Bank
 
-1. Jika pembayaran DP:
+4. Non Tunai / Transfer
+   - refund dapat diproses melalui metode yang diverifikasi oleh resto
 
-- jika dibatalkan, tampilkan form refund
-- nominal refund dihitung berdasarkan pembayaran yang sudah masuk setelah dikurangi charge bila berlaku
-- jika pembatalan sebelum pesanan disiapkan, refund mengikuti kebijakan resto
-- jika pembatalan setelah pesanan disiapkan, charge pembatalan diterapkan sesuai persentase yang diatur resto
+D. FORM PENGAJUAN REFUND
 
-1. Jika pembayaran DompetKu:
-
-- refund dapat dikembalikan ke saldo DompetKu pelanggan
-- jika DompetKu belum aktif, tampilkan peringatan dan arahkan ke transfer bank
-
-1. Jika pembayaran transfer/non tunai:
-
-- refund dikembalikan melalui metode yang sesuai dan diverifikasi oleh resto
-
-E. FORMULIR PEMBATALAN YANG HARUS MUNCUL
-
-Saat pelanggan membatalkan reservasi, tampilkan formulir dengan data berikut:
+Saat pelanggan menekan tombol “Ajukan Refund”, tampilkan modal form refund yang berisi:
 
 - Nomor Reservasi
 - Nama Pelanggan
@@ -124,10 +87,6 @@ Saat pelanggan membatalkan reservasi, tampilkan formulir dengan data berikut:
 - Status Reservasi
 - Status Pembayaran
 - Alasan Pembatalan
-- Jenis Pembatalan
-  - Pembatalan Reservasi
-  - Pembatalan Pesanan
-  - Pembatalan Gabungan
 - Nominal Refund
 - Metode Pengembalian Dana
   - DompetKu
@@ -136,62 +95,100 @@ Saat pelanggan membatalkan reservasi, tampilkan formulir dengan data berikut:
 - Upload bukti pendukung
 - Catatan tambahan
 
-Tambahkan kalimat sebelum tombol ajukan:
+Tambahkan kalimat peringatan sebelum submit:
 
-- “Pastikan seluruh data yang Anda isi sudah benar sebelum mengajukan pembatalan/refund.”
-- “Periksa kembali nomor rekening, akun DompetKu, dan nominal refund agar tidak terjadi kesalahan pencairan dana.”
-- “Dengan menekan tombol ajukan, Anda menyatakan bahwa data yang diisi sudah benar.”
+- “Pastikan seluruh data yang Anda isi sudah benar sebelum mengajukan refund.”
+- “Periksa kembali nominal refund, rekening tujuan, atau akun DompetKu agar tidak terjadi kesalahan pencairan dana.”
+- “Dengan menekan tombol ajukan, Anda menyatakan bahwa data yang diisi sudah benar dan dapat dipertanggungjawabkan.”
 
-F. LOGIKA STATUS SETELAH PENGAJUAN
+E. VALIDASI TOMBOL REFUND
 
-Setelah pelanggan menekan tombol ajukan:
+Tombol “Ajukan Refund” hanya aktif jika:
 
-- status pembatalan menjadi “Pengajuan Pembatalan”
-- status refund menjadi “Pengajuan Refund” atau “Menunggu Peninjauan”
-- data masuk ke menu Refund Admin
-- data tampil di riwayat pelanggan
-- notifikasi realtime dikirim ke pelanggan, kasir, dan resto
+- reservasi dibatalkan oleh kasir
+- ada nominal pembayaran yang sudah masuk
+- data refund wajib telah diisi
+- metode refund valid
+- jika DompetKu dipilih, akun DompetKu pelanggan aktif
 
-Status yang harus tersedia:
+Jika metode Transfer dipilih:
 
-- Pengajuan Pembatalan
+- nama bank wajib diisi
+- nama pemilik rekening wajib diisi
+- nomor rekening wajib diisi
+- nomor rekening harus valid
+
+F. STATUS SETELAH PENGAJUAN REFUND
+
+Setelah pelanggan mengajukan refund, status harus berubah menjadi:
+
 - Pengajuan Refund
 - Menunggu Peninjauan
+
+Dan tetap tampil di:
+
+- menu “Reservasi Dibatalkan”
+- menu “Riwayat”
+- menu “Pengajuan Refund”
+
+Status lanjutan:
+
 - Menunggu Verifikasi
 - Disetujui
 - Ditolak
 - Dana Dikirim
 - Refund Selesai
 
-G. PESAN STATUS UNTUK PELANGGAN
+G. REFUND DI ADMIN / RESTO
 
-Jika pembatalan berhasil diajukan:
+Semua pengajuan refund dari reservasi yang dibatalkan oleh kasir harus masuk ke menu Refund Admin dengan data lengkap, termasuk:
 
-- “Pengajuan pembatalan Anda telah diterima.”
-- “Pengajuan refund Anda sedang ditinjau oleh resto.”
+- status dibatalkan oleh kasir
+- identitas kasir yang membatalkan
+- alasan pembatalan
+- nominal refund
+- metode refund
+- bukti pendukung
+- status pembayaran sebelumnya
+- status refund terakhir
 
-Jika refund disetujui:
+Saat resto menyetujui refund:
 
-- “Refund Anda telah disetujui.”
-- “Dana telah dikreditkan ke DompetKu Anda.” jika DompetKu
-- “Dana telah ditransfer ke rekening Anda.” jika transfer
+- status menjadi Disetujui
+- jika DompetKu, saldo dikreditkan ke akun DompetKu pelanggan
+- jika Transfer, dana ditransfer ke rekening pelanggan
+- pelanggan menerima notifikasi realtime
 
-Jika refund ditolak:
+H. RIWAYAT DAN REALTIME
 
-- “Pengajuan refund ditolak.”
-- tampilkan alasan penolakan dari resto
+Tambahkan riwayat khusus untuk:
 
-H. REALTIME DAN LOG
+- reservasi dibatalkan oleh kasir
+- pengajuan refund dari pembatalan kasir
+- refund disetujui
+- refund ditolak
+- refund selesai
 
-Pastikan setiap perubahan status tampil realtime di semua role:
+Semua perubahan status harus realtime untuk:
 
 - pelanggan
 - kasir
 - resto/admin
 
-Semua perubahan wajib tercatat dalam log:
+I. LOGIKA UTAMA
 
-- pembatalan dibuat
+- Jika kasir membatalkan reservasi dan ada pembayaran yang sudah masuk, maka sistem wajib menampilkan opsi refund.
+- Jika tidak ada pembayaran, tombol refund tidak boleh muncul.
+- Jika pembatalan berasal dari kasir, pelanggan harus bisa melihat siapa yang membatalkan.
+- Jika refund diajukan, data harus masuk ke menu refund admin dan riwayat pelanggan.
+- Jika refund disetujui, dana dikreditkan atau ditransfer sesuai metode yang dipilih.
+- Semua aksi harus tercatat dalam audit log.
+
+J. AUDIT LOG
+
+Simpan log lengkap untuk:
+
+- reservasi dibatalkan oleh kasir
 - refund diajukan
 - refund disetujui
 - refund ditolak
@@ -206,16 +203,3 @@ Data log:
 - old_value
 - new_value
 - timestamp
-
-I. VALIDASI PENTING
-
-Pastikan:
-
-- data refund dari pelanggan tampil lengkap di halaman refund admin
-- form refund hanya muncul jika memang ada pembayaran yang harus dikembalikan
-- jika pembayaran tunai dan reservasi sudah dikonfirmasi, tombol batalkan tidak boleh aktif
-- jika pembayaran tunai dan reservasi belum dikonfirmasi, pembatalan boleh dilakukan tanpa opsi refund
-- jika pembayaran DP atau DompetKu, refund harus mengikuti alur pengajuan yang benar
-- semua perubahan status harus sinkron ke seluruh role
-- riwayat refund harus bisa difilter dan ditelusuri
-- data pembatalan dan refund harus aman, lengkap, dan konsisten di database

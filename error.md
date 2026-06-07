@@ -1,566 +1,575 @@
-TAMBAHAN FITUR: PEMBATALAN OLEH KASIR, REFUND, RIWAYAT, DAN REALTIME UPDATE
+Tambahkan fitur lengkap pada halaman Reservasi Meja dan halaman Admin > Pengaturan agar sistem reservasi meja memiliki aturan yang jelas, dinamis, dan otomatis.
 
-Tambahkan juga alur ketika reservasi dibatalkan oleh kasir, sehingga sistem menampilkan informasi yang jelas kepada pelanggan mengenai siapa yang membatalkan reservasi.
+TUJUAN FITUR:
 
-1. PEMBATALAN RESERVASI OLEH KASIR
-Jika reservasi dibatalkan oleh kasir, maka di halaman pelanggan status reservasi harus menampilkan:
+1. Menampilkan aturan reservasi meja yang wajib dipatuhi pelanggan.
+2. Menampilkan modal pop-up aturan saat pelanggan menekan tombol “Ajukan Sekarang”.
+3. Mengatur batas toleransi keterlambatan check-in dari halaman admin.
+4. Menghitung otomatis status reservasi berdasarkan jam booking dan toleransi yang diatur admin.
+5. Jika pelanggan melewati batas toleransi dan tidak check-in, reservasi otomatis menjadi “Hangus” / “Dibatalkan” dan meja dibuka kembali.
+6. Menyimpan log persetujuan, status check-in, pembatalan, dan perubahan pengaturan.
 
-- “Dibatalkan”
-- “Dibatalkan oleh kasir”
-- atau “Dibatalkan oleh resto” sesuai role yang melakukan pembatalan
+FITUR DI HALAMAN ADMIN > PENGATURAN:
+Tambahkan pengaturan baru bernama:
 
-Sistem harus menyimpan:
+- “Batas Toleransi Check-in”
 
-- siapa yang membatalkan
-- role yang membatalkan
-- alasan pembatalan
-- waktu pembatalan
-- status reservasi sebelum dan sesudah dibatalkan
+Keterangan fitur:
 
-Jika pembayarannya sudah lunas, maka tombol “Refund” harus muncul di halaman pelanggan.
+- Admin dapat menentukan berapa menit toleransi keterlambatan pelanggan setelah jam booking dimulai.
+- Nilai ini akan digunakan untuk menentukan batas waktu check-in pelanggan.
+- Jika pelanggan belum check-in sampai batas toleransi habis, reservasi otomatis hangus/dibatalkan dan meja dibuka kembali.
 
-1. FITUR REFUND JIKA PEMBATALAN OLEH KASIR
-Jika reservasi dibatalkan dan pembayaran sudah lunas atau DP sudah dibayar sebagian, maka pelanggan dapat mengajukan refund.
+Komponen pengaturan admin:
 
-Tombol refund harus menampilkan modal form pengajuan refund yang berisi:
+- Input angka untuk menit toleransi
+- Contoh default: 15 menit
+- Tombol simpan
+- Tombol reset ke default
+- Validasi input hanya angka bulat
+- Minimal 0 menit
+- Maksimal misalnya 120 menit atau sesuai kebijakan sistem
+- Jika kosong, gunakan nilai default
 
-- nama pelanggan
-- nomor reservasi
-- alasan refund
-- jumlah nominal yang diajukan
-- metode pencairan dana:
-  - DompetKu
-  - Transfer
+Tampilkan juga preview aturan pelanggan secara langsung di bawah input admin, misalnya:
+“Pelanggan wajib melakukan check-in maksimal {{tolerance_minutes}} menit setelah jam booking dimulai. Jika melebihi batas tersebut dan pelanggan tidak kunjung hadir, maka reservasi dinyatakan hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.”
 
-Jika pelanggan memilih DompetKu:
+Simpan pengaturan toleransi ke database dan catat riwayat perubahan:
 
-- refund akan dikreditkan langsung ke akun DompetKu pelanggan
+- siapa admin yang mengubah
+- kapan diubah
+- nilai lama dan nilai baru
 
-Jika pelanggan memilih Transfer:
+FITUR DI HALAMAN RESERVASI PELANGGAN:
+Saat pelanggan menekan tombol “Ajukan Sekarang”, jangan langsung submit reservasi. Tampilkan modal pop-up “Aturan Reservasi Meja” terlebih dahulu.
 
-- pelanggan wajib mengisi detail rekening tujuan secara lengkap:
-  - nama bank
-  - nama pemilik rekening
-  - nomor rekening
-  - cabang bank jika diperlukan
+Modal harus:
 
-Jika pelanggan memilih metode yang belum aktif atau tidak valid, tampilkan peringatan:
+- muncul di tengah layar
+- responsif di desktop dan mobile
+- memiliki tombol tutup
+- memiliki checkbox persetujuan
+- tombol “Lanjut Ajukan” hanya aktif jika checkbox dicentang
+- menampilkan aturan dengan jelas, sopan, dan profesional
 
-- “Metode pencairan yang dipilih belum aktif.”
+Judul modal:
 
-1. KALIMAT ATURAN SEBELUM PENGAJUAN REFUND
-Saat pelanggan menekan tombol “Ajukan Refund”, tampilkan modal pop-up berisi aturan berikut:
+- “Aturan Reservasi Meja”
 
-- Pastikan seluruh data yang Anda input sudah benar sebelum mengajukan refund.
-- Periksa kembali nomor rekening atau akun DompetKu tujuan agar tidak terjadi kesalahan pencairan dana.
-- Refund hanya dapat diproses sesuai metode pencairan yang dipilih dan data yang telah diverifikasi.
-- Jika data tidak sesuai, resto berhak menolak pengajuan refund.
-- Dengan menekan tombol “Ajukan Refund”, pelanggan menyatakan bahwa seluruh data yang diisi sudah benar dan dapat dipertanggungjawabkan.
+Isi aturan yang wajib ditampilkan:
 
-1. STATUS SETELAH PENGAJUAN REFUND
-Setelah pelanggan mengajukan refund, status reservasi dan refund harus berubah menjadi:
+1. Reservasi hanya berlaku sesuai tanggal, jam, dan meja yang dipilih saat pemesanan.
+2. Pelanggan wajib hadir dan melakukan check-in pada jam booking yang telah ditentukan.
+3. Pelanggan memiliki toleransi check-in selama {{tolerance_minutes}} menit setelah jam booking dimulai.
+4. Jika pelanggan tidak check-in sampai batas toleransi habis, reservasi akan dianggap hangus, dibatalkan, dan meja akan dibuka kembali untuk pelanggan lain.
+5. Resto tidak bertanggung jawab atas kehilangan hak reservasi jika pelanggan terlambat datang dan tidak segera check-in.
+6. Pelanggan wajib menjaga kebersihan, ketertiban, dan kenyamanan area resto.
+7. Pelanggan dilarang merusak, mencoret, mematahkan, membawa pulang, atau menyalahgunakan properti resto dalam bentuk apa pun.
+8. Jika terjadi kerusakan, kehilangan, atau penyalahgunaan fasilitas akibat pelanggan atau rombongan, pelanggan wajib mengganti kerugian sesuai penilaian pihak resto.
+9. Resto berhak memberikan denda tambahan jika kerusakan menimbulkan biaya perbaikan, kehilangan barang, atau gangguan operasional.
+10. Resto tidak bertanggung jawab atas kejadian yang timbul akibat kelalaian pelanggan dalam mematuhi aturan, termasuk keterlambatan check-in.
+11. Pelanggan wajib mengikuti arahan staf resto terkait penempatan meja, keamanan, dan kenyamanan bersama.
+12. Reservasi dapat dibatalkan secara sepihak jika pelanggan melanggar aturan, membuat keributan, merusak fasilitas, atau mengganggu pengunjung lain.
+13. Dengan menekan tombol “Ajukan Sekarang”, pelanggan menyatakan telah membaca, memahami, dan menyetujui seluruh aturan yang berlaku.
 
-- “Pengajuan Refund”
-- “Menunggu Peninjauan”
-- “Menunggu Verifikasi”
-- “Disetujui”
-- “Ditolak”
-- “Dana Dikirim”
-- “Refund Selesai”
+Tambahkan teks penegasan di modal:
+“Toleransi check-in: {{tolerance_minutes}} menit sejak jam booking dimulai.”
 
-Saat pengajuan masuk, pelanggan harus melihat status:
+Tambahkan juga kalimat singkat di halaman reservasi:
+“Dengan melanjutkan pemesanan, Anda menyetujui seluruh aturan reservasi meja, termasuk kewajiban check-in tepat waktu, batas toleransi keterlambatan, dan tanggung jawab atas kerusakan properti.”
 
-- “Pengajuan refund sedang diproses”
+LOGIKA SISTEM YANG HARUS DITERAPKAN:
 
-1. PROSES DI MENU REFUND ADMIN
-Pada menu refund di admin/resto, tampilkan data refund yang masuk dengan detail:
+1. Saat tombol “Ajukan Sekarang” diklik, tampilkan modal aturan.
+2. Ambil nilai toleransi check-in terbaru dari database/pengaturan admin.
+3. Tampilkan nilai toleransi tersebut secara dinamis di modal aturan pelanggan.
+4. Pelanggan hanya bisa melanjutkan reservasi jika checkbox persetujuan dicentang.
+5. Setelah pelanggan setuju, simpan status persetujuan sebagai true.
+6. Saat reservasi dibuat, sistem menyimpan:
+   - waktu booking
+   - toleransi check-in
+   - deadline check-in
+   - status reservasi
+   - status meja
 
-- jenis pengajuan: reservasi / pesanan / gabungan
-- nama pelanggan
-- nomor reservasi
-- status pembayaran sebelumnya
-- nominal refund
-- metode pengembalian dana
-- bukti pendukung
-- alasan pembatalan
-- status terakhir
+RUMUS LOGIKA WAKTU:
 
-Saat resto menekan tombol setujui:
+- checkInDeadline = jam_booking + tolerance_minutes
 
-- status berubah menjadi “Disetujui”
-- jika metode DompetKu, dana dikreditkan ke DompetKu pelanggan
-- jika metode Transfer, dana ditransfer ke rekening pelanggan
-- pelanggan mendapat notifikasi bahwa dana telah dikirim
+STATUS PELANGGAN:
 
-Saat resto menekan tombol tolak:
+- Jika pelanggan check-in sebelum atau tepat pada checkInDeadline, status menjadi “Checked In” atau “Aktif”.
+- Jika pelanggan belum check-in setelah checkInDeadline lewat, status berubah menjadi:
+  - “Hangus”
+  - atau “Dibatalkan”
+  sesuai kebijakan sistem.
+- Setelah status hangus/dibatalkan, meja otomatis berubah menjadi “Tersedia”.
+- Meja yang sebelumnya dibooking harus dibuka kembali untuk reservasi lain.
+- Jika pelanggan datang setelah reservasi hangus, sistem tidak boleh mengaktifkan reservasi lama kecuali ada override manual dari admin.
 
-- status berubah menjadi “Ditolak”
-- tampilkan alasan penolakan
+NOTIFIKASI DAN STATUS:
 
-1. PESAN STATUS UNTUK PELANGGAN
-Jika refund disetujui, tampilkan pesan:
+- Saat jam booking sudah dimulai, tampilkan status “Waktu check-in dimulai”.
+- Jika pelanggan belum datang hingga batas toleransi habis, tampilkan pesan:
+  “Reservasi hangus karena melebihi batas toleransi check-in.”
+  “Meja telah dibuka kembali untuk pelanggan lain.”
+- Jika pelanggan check-in tepat waktu, tampilkan status sukses:
+  “Pelanggan berhasil check-in.”
 
-- “Refund Anda telah disetujui.”
-- “Dana telah dikreditkan ke DompetKu Anda.” jika metode DompetKu
-- “Dana telah ditransfer ke rekening Anda.” jika metode Transfer
-- “Silakan periksa saldo DompetKu atau rekening bank Anda.”
+VALIDASI DAN KEAMANAN:
 
-Jika refund masih diproses, tampilkan pesan:
+- Simpan log semua perubahan status reservasi.
+- Simpan log waktu pelanggan klik setuju aturan.
+- Simpan log waktu check-in.
+- Simpan log pembatalan otomatis karena lewat toleransi.
+- Simpan log perubahan pengaturan toleransi oleh admin.
+- Jika admin mengubah toleransi, sistem harus tetap konsisten dan mengikuti kebijakan yang ditentukan:
+  - apakah mengikuti nilai saat reservasi dibuat
+  - atau mengikuti nilai terbaru
+  sesuai aturan sistem yang dipilih.
 
-- “Refund sedang diproses oleh resto.”
+TAMPILAN YANG DIINGINKAN:
 
-1. RIWAYAT REFUND DAN FILTER
-Tambahkan halaman riwayat yang menampilkan semua:
+- Desain bersih, modern, profesional, dan mudah dipahami.
+- Gunakan card pengaturan yang rapi di admin.
+- Gunakan modal pop-up yang elegan di pelanggan.
+- Gunakan teks yang tegas namun sopan.
+- Gunakan daftar aturan yang jelas dan mudah dibaca.
+- Gunakan status warna yang berbeda untuk aktif, menunggu check-in, hangus, dan dibatalkan.
 
-- reservasi aktif
-- reservasi dibatalkan
-- pengajuan refund
-- refund disetujui
-- refund ditolak
-- refund selesai
+NAMA VARIABEL YANG DISARANKAN:
 
-Tambahkan filter riwayat:
+- toleranceMinutes
+- checkInDeadline
+- reservationStatus
+- tableStatus
+- isApproved
+- isCheckedIn
+- adminToleranceSetting
 
-- berdasarkan status
-- berdasarkan tanggal
-- berdasarkan metode pengembalian dana
-- berdasarkan jenis pengajuan
-- berdasarkan nomor reservasi
-- berdasarkan nama pelanggan
+PASTIKAN FITUR INI:
 
-Tambahkan juga pencarian cepat:
-
-- nama pelanggan
-- nomor reservasi
-- status refund
-
-1. REALTIME UPDATE
-Pastikan setiap perubahan status tampil secara realtime di semua role:
-
-- pelanggan
-- kasir
-- resto/admin
-
-Perubahan yang harus realtime:
-
-- status reservasi
-- status pembatalan
-- status refund
-- status persetujuan
-- status pembayaran
-- status pengiriman dana
-
-Gunakan mekanisme realtime seperti websocket, SSE, polling otomatis, atau sistem notifikasi internal agar data selalu sinkron tanpa refresh manual.
-
-1. LOGIKA UTAMA YANG HARUS DITERAPKAN
-
-- Jika reservasi dibatalkan oleh kasir, status pelanggan harus langsung berubah dan menampilkan siapa yang membatalkan.
-- Jika pembayaran sudah lunas, tombol refund harus aktif.
-- Jika pelanggan mengajukan refund, data harus masuk ke antrian refund resto.
-- Jika refund disetujui, sistem mengubah status menjadi selesai dan mengirim notifikasi ke pelanggan.
-- Jika refund menggunakan DompetKu, saldo harus masuk ke akun DompetKu pelanggan.
-- Jika refund menggunakan Transfer, sistem mencatat bahwa dana telah diproses ke rekening tujuan.
-- Semua perubahan status harus tersimpan dalam log riwayat dan tampil realtime di seluruh role.
-
-1. VALIDASI PENTING
-Pastikan:
-
-- data rekening wajib lengkap jika metode transfer dipilih
-- metode DompetKu hanya bisa dipilih jika akun aktif
-- pengajuan refund tidak bisa dikirim jika data belum lengkap
-- pelanggan menerima peringatan untuk memeriksa kembali data sebelum submit
-- restoran/kasir/resto dapat melihat siapa yang membatalkan reservasi
-- seluruh riwayat refund dapat difilter dan ditelusuri kembali
-- setiap perubahan status tersimpan aman di database dan log audit
-
-1. TAMPILAN YANG DIINGINKAN
-
-- modal refund yang jelas dan profesional
-- status pembatalan yang transparan
-- riwayat refund dengan filter lengkap
-- notifikasi realtime
-- badge status yang mudah dibaca
-- desain responsif di mobile dan desktop
-
-Buat seluruh fitur ini terintegrasi penuh dengan halaman pelanggan, kasir, resto/admin, refund, dan riwayat, serta pastikan semua perubahan data dan status berjalan realtime.
+- fleksibel diatur admin
+- dinamis di tampilan pelanggan
+- otomatis membatalkan reservasi yang lewat waktu
+- otomatis membuka kembali meja
+- menyimpan riwayat/log
+- aman, jelas, dan mudah dikelola
+- siap digunakan pada sistem reservasi resto modern
 
 ========================
-13. PEMBATALAN OLEH KASIR, REFUND, RIWAYAT, DAN REALTIME UPDATE
+TAMBAHAN FITUR: PRE-ORDER MENU, PEMBAYARAN, DP, KASIR, DAN REFUND
 ========================
 
-A. PEMBATALAN RESERVASI OLEH KASIR
+Tambahkan pengembangan fitur lengkap pada halaman “Ajukan Reservasi Meja” sesuai tampilan yang sudah ada, dengan fokus pada reservasi meja, pre-order menu, pembayaran tunai/dompetku/non-tunai/DP, pengaturan DP dan charge pembatalan oleh admin, integrasi ke kasir/POS, serta alur refund yang terpisah antara pesanan menu dan reservasi meja.
 
-Tambahkan fitur agar kasir dapat membatalkan reservasi apabila diperlukan sesuai kewenangan yang diberikan.
+1. FITUR DI HALAMAN AJUKAN RESERVASI MEJA
+Pada halaman “Ajukan Reservasi Meja”, tambahkan fitur agar pelanggan tidak hanya memilih meja, tanggal, waktu, dan jumlah tamu, tetapi juga dapat memilih produk/menu yang ingin dipesan lebih dulu.
 
-Saat reservasi dibatalkan oleh kasir:
+Tambahkan section baru dengan judul:
 
-- Status reservasi pelanggan harus langsung berubah realtime.
-- Tampilkan informasi:
-  - Dibatalkan
-  - Dibatalkan oleh Kasir
-  - Nama kasir yang membatalkan
-  - Alasan pembatalan
-  - Tanggal dan waktu pembatalan
+- “Pilih Menu Pesanan”
+- “Menu yang Akan Disiapkan”
 
-Simpan data:
+Fitur menu harus memiliki:
 
-- cancelled_by
-- cancelled_role
-- cancellation_reason
-- cancellation_time
+- daftar kategori menu
+- pencarian menu
+- gambar menu
+- nama menu
+- harga menu
+- stok tersedia
+- input jumlah/qty
+- catatan khusus per item
+- tombol tambah/hapus item
+- subtotal otomatis
+- total keseluruhan
 
-Tampilkan di halaman pelanggan:
+Pesanan menu yang dipilih pelanggan harus menjadi pre-order yang akan:
 
-“Reservasi ini dibatalkan oleh kasir.”
-“Alasan pembatalan: {{reason}}”
+- disiapkan 30 menit sebelum waktu booking dimulai
+- tampil sebagai pesanan terkait reservasi
+- masuk ke kasir/POS setelah reservasi dibuat
+- tersimpan sebagai detail order reservasi
 
-Jika pembatalan dilakukan oleh resto/admin:
+Tampilkan info di halaman pelanggan:
 
-“Reservasi ini dibatalkan oleh pihak resto.”
+- “Menu yang Anda pilih akan disiapkan 30 menit sebelum jam booking dimulai.”
+- “Pastikan pesanan sudah sesuai karena pesanan akan diproses bersamaan dengan reservasi.”
 
-==================================================
-B. TOMBOL REFUND OTOMATIS SETELAH PEMBATALAN
-==================================================
+1. OPSI PEMBAYARAN PADA RESERVASI
+Setelah pelanggan memilih meja dan menu, tambahkan pilihan metode pembayaran:
 
-Jika reservasi dibatalkan dan:
+- Tunai
+- DompetKu
+- Non Tunai
+- Bayar Sebagian / DP
 
-- pembayaran lunas
-ATAU
-- pembayaran DP sudah diterima
+Jika pelanggan memilih DP:
 
-Maka otomatis tampil tombol:
+- tampilkan field persentase DP
+- pelanggan hanya boleh memilih DP minimal sesuai ketentuan resto
+- tampilkan nominal DP otomatis berdasarkan total pesanan
+- tampilkan sisa pembayaran yang masih harus dilunasi
+- tampilkan ringkasan:
+  - total harga
+  - DP dibayar
+  - sisa pembayaran
+  - metode pembayaran akhir
 
-- Ajukan Refund
+Jika metode yang dipilih adalah:
 
-Jika belum ada pembayaran:
+- Tunai: seluruh tagihan dibayar penuh
+- DompetKu: pembayaran mengikuti saldo/metode DompetKu
+- Non Tunai: pembayaran via metode cashless yang didukung sistem
+- DP: bayar sebagian dulu, sisa dibayar saat di kasir
 
-- tombol refund tidak muncul
+Tambahkan label status pembayaran:
 
-==================================================
-C. MODAL PENGAJUAN REFUND
-==================================================
+- Menunggu Pembayaran
+- DP Dibayar
+- Lunas
+- Gagal Bayar
+- Menunggu Konfirmasi
 
-Saat pelanggan klik “Ajukan Refund” tampilkan modal.
+1. FITUR ADMIN > MANAJEMEN MEJA / PENGATURAN
+Tambahkan pengaturan baru di halaman admin, minimal pada:
 
-Sebelum form tampil, munculkan peringatan:
+- Manajemen Meja
+- Pengaturan Reservasi
+- Pengaturan Pembayaran
+- Pengaturan Refund
 
-“Pastikan seluruh data yang Anda masukkan sudah benar.”
-“Periksa kembali rekening atau akun DompetKu tujuan.”
-“Kesalahan pengisian data dapat menyebabkan keterlambatan proses refund.”
-“Dengan melanjutkan, Anda menyatakan data yang diberikan sudah benar.”
+A. Pengaturan Minimal DP
+Tambahkan field:
 
-Field wajib:
+- “Minimal DP (%)”
 
-- Nama Pelanggan
-- Nomor Reservasi
-- Alasan Refund
-- Nominal Refund
-- Metode Pengembalian Dana
+Fungsi:
 
-Pilihan metode:
+- Resto bisa menentukan besaran minimal DP dalam persen
+- Contoh default: 30%
+- Nilai ini wajib ditampilkan di halaman reservasi pelanggan
+- Pelanggan tidak boleh memilih DP di bawah batas minimal
+- Jika pelanggan memilih DP di bawah minimal, tampilkan peringatan:
+  “Minimal DP yang berlaku saat ini adalah {{minimal_dp}}% dari total harga.”
 
-1. DompetKu
-2. Transfer Bank
+B. Pengaturan Charge Pembatalan Sepihak
+Tambahkan field:
 
-==================================================
-D. REFUND KE DOMPETKU
-==================================================
+- “Charge Pembatalan Sepihak (%)”
 
-Jika pelanggan memilih DompetKu:
+Fungsi:
 
-- pastikan akun DompetKu aktif
-- tampilkan nomor akun DompetKu
-- dana dikreditkan ke saldo DompetKu pelanggan
+- Resto dapat mengatur persentase potongan/biaya pembatalan jika pelanggan membatalkan sepihak
+- Contoh default: 20%
+- Nilai ini harus ikut muncul di aturan reservasi pelanggan
+- Charge dihitung dari total pesanan yang sudah disiapkan
 
-Jika DompetKu belum aktif:
+C. Pengaturan Toleransi Reservasi
+Tetap pertahankan pengaturan toleransi check-in yang sudah ada, dan tampilkan di aturan.
 
-Tampilkan:
+D. Pengaturan Status Refund
+Tambahkan opsi kebijakan:
 
-“Fitur DompetKu belum aktif pada akun Anda.”
-“Silakan gunakan metode Transfer Bank.”
+- Refund otomatis
+- Refund manual menunggu resto
+- Refund otomatis untuk reservasi menunggu
+- Refund sesuai verifikasi resto
 
-Tombol submit tidak boleh aktif.
+1. ATURAN YANG WAJIB DITAMPILKAN KE PELANGGAN
+Di halaman reservasi dan modal aturan sebelum ajukan, tampilkan aturan lengkap berikut dengan nilai yang dinamis mengikuti pengaturan resto:
 
-==================================================
-E. REFUND KE TRANSFER BANK
-==================================================
+Judul:
 
-Jika pelanggan memilih Transfer:
+- “Aturan Reservasi, Pesanan Menu, Pembayaran, dan Pembatalan”
 
-Wajib isi:
+Isi aturan:
 
-- Nama Bank
-- Nama Pemilik Rekening
-- Nomor Rekening
-- Cabang Bank (opsional)
-- Catatan Tambahan (opsional)
+1. Reservasi meja hanya berlaku sesuai tanggal, jam, dan meja yang dipilih.
+2. Pelanggan wajib melakukan check-in sesuai jam booking dan batas toleransi yang ditetapkan oleh resto.
+3. Pesanan menu yang dipilih akan disiapkan 30 menit sebelum waktu booking dimulai.
+4. Pelanggan wajib memastikan pesanan yang dipilih sudah benar sebelum mengajukan reservasi.
+5. Jika memilih pembayaran DP, pelanggan wajib membayar minimal {{minimal_dp}}% dari total harga sesuai ketentuan resto.
+6. Jika DP belum memenuhi batas minimal, sistem tidak boleh melanjutkan pemesanan.
+7. Sisa pembayaran wajib dilunasi pada kasir saat check-in atau saat transaksi lanjutan sesuai aturan resto.
+8. Jika pelanggan membatalkan sepihak setelah pesanan disiapkan, maka akan dikenakan charge pembatalan sebesar {{charge_cancel}}% dari total harga pesanan yang sudah disiapkan.
+9. Nominal refund akan dihitung setelah dipotong charge pembatalan sesuai ketentuan resto.
+10. Jika reservasi belum dikonfirmasi oleh resto lalu pelanggan membatalkan, maka pembatalan dapat diproses otomatis dan refund dikembalikan penuh sesuai status pembayaran dan kebijakan sistem.
+11. Jika reservasi sudah dikonfirmasi, pembatalan wajib mengikuti proses verifikasi dan pengisian data pembatalan/refund dari resto.
+12. Resto tidak bertanggung jawab atas keterlambatan check-in atau pembatalan yang dilakukan setelah pesanan diproses sesuai jadwal.
+13. Pelanggan wajib menjaga properti resto. Kerusakan akan dikenakan ganti rugi sesuai nilai kerusakan.
+14. Dengan menekan “Ajukan Sekarang”, pelanggan dianggap telah membaca, memahami, dan menyetujui seluruh aturan.
 
-Validasi:
+Tambahkan kalimat penegasan:
 
-- semua field wajib terisi
-- nomor rekening hanya angka
-- panjang rekening valid
+- “Minimal DP saat ini adalah {{minimal_dp}}% dari total pesanan.”
+- “Jika pembatalan dilakukan sepihak setelah pesanan disiapkan, akan dikenakan charge sebesar {{charge_cancel}}%.”
+- “Pesanan Anda akan mulai disiapkan 30 menit sebelum jam booking dimulai.”
 
-==================================================
-F. STATUS REFUND
-==================================================
+1. LOGIKA RESERVASI DAN PEMBAYARAN
+Saat pelanggan klik “Ajukan Sekarang”:
+1. Tampilkan modal aturan.
+1. Jika pelanggan menyetujui aturan, lanjutkan proses.
+1. Validasi:
+   - meja dipilih
+   - tanggal valid
+   - jam valid
+   - jumlah tamu valid
+   - menu pesanan ada atau boleh kosong jika sistem mengizinkan
+   - metode pembayaran valid
+   - DP memenuhi minimal persentase resto
+1. Simpan data reservasi, item menu, metode pembayaran, nominal DP, sisa pembayaran, status persetujuan aturan, dan waktu pengajuan.
+1. Pesanan menu disimpan sebagai order terkait reservasi.
 
-Setelah pelanggan mengirim pengajuan:
+Hitung otomatis:
 
-Status menjadi:
+- total_pesanan = total menu + biaya tambahan jika ada
+- dp_amount = total_pesanan x minimal_dp / 100 atau persen DP pilihan pelanggan yang tidak boleh di bawah batas minimal resto
+- remaining_amount = total_pesanan - dp_amount
 
-- Pengajuan Refund
-- Menunggu Peninjauan
+Status yang harus tersedia:
 
-Tampilkan:
-
-“Pengajuan refund Anda telah dikirim dan sedang menunggu peninjauan pihak resto.”
-
-Status yang tersedia:
-
-- Pengajuan Refund
-- Menunggu Peninjauan
-- Menunggu Verifikasi
-- Disetujui
-- Ditolak
-- Dana Dikirim
+- Menunggu Konfirmasi
+- Dikonfirmasi
+- Menunggu Pembayaran
+- DP Dibayar
+- Lunas
+- Menunggu Check-in
+- Check-in Berhasil
+- Hangus
+- Dibatalkan
+- Refund Diproses
 - Refund Selesai
+- Refund Ditolak
 
-==================================================
-G. MENU REFUND DI ADMIN
-==================================================
+1. FITUR KASIR / POS
+Di halaman kasir, tampilkan reservasi pelanggan beserta:
 
-Tambahkan halaman:
+- nama pelanggan
+- nomor telepon
+- tanggal reservasi
+- jam booking
+- meja yang dipilih
+- daftar menu pesanan
+- total tagihan
+- status pembayaran
+- status reservasi
+- status DP
+- sisa pembayaran
+- status konfirmasi reservasi
 
-Refund Management
+Kasir harus bisa melihat:
 
-Pisahkan kategori:
+- menu apa saja yang dipesan pelanggan
+- apakah pesanan sudah disiapkan atau belum
+- apakah pembayaran tunai, DP, non tunai, atau DompetKu
+- berapa DP yang sudah dibayar
+- berapa sisa yang masih harus dibayar
+
+Tambahkan tombol:
+
+- “Bayar Sekarang”
+
+Logika tombol “Bayar Sekarang”:
+
+1. Saat diklik, sistem membuka transaksi di POS kasir yang terhubung ke reservasi tersebut.
+2. Data pesanan menu otomatis masuk ke kasir.
+3. Jika metode pembayaran tunai, kasir memproses pembayaran penuh.
+4. Jika metode pembayaran DP, kasir hanya menagih sisa pembayaran.
+5. Kasir melihat keterangan:
+   - total harga
+   - DP sudah dibayar berapa persen
+   - sisa pembayaran berapa
+   - status pembayaran terakhir
+
+Tambahkan notifikasi di kasir:
+
+- “Pesanan ini merupakan bagian dari reservasi.”
+- “Menu akan disiapkan 30 menit sebelum waktu booking dimulai.”
+- “Pembayaran DP sudah diterima sebesar {{dp_percent}}%.”
+- “Sisa pembayaran: Rp{{remaining_amount}}”
+
+1. FITUR PEMBATALAN RESERVASI DAN REFUND
+Buat fitur pembatalan reservasi yang lengkap.
+
+A. Jika reservasi belum dikonfirmasi
+
+- Pembatalan dapat diproses otomatis
+- Refund dikembalikan full jika pembayaran sudah masuk
+- Sistem langsung membuat status:
+  - Dibatalkan
+  - Refund Diproses
+  - Refund Selesai
+
+B. Jika reservasi sudah dikonfirmasi
+
+- Saat pelanggan klik batal, tampilkan modal pop up pembatalan
+- Modal harus menampilkan aturan pembatalan:
+  - jika pesanan sudah disiapkan, charge pembatalan dikenakan {{charge_cancel}}%
+  - nominal refund setelah dipotong charge
+  - pelanggan harus mengisi data pembatalan
+  - pelanggan harus memilih metode refund
+  - wajib unggah bukti jika diminta
+  - refund bisa melalui transfer bank atau DompetKu
+  - jika DompetKu belum aktif, tampilkan peringatan dan nonaktifkan metode tersebut
+- Pelanggan diminta menunggu konfirmasi resto jika pembatalan tidak otomatis
+
+C. Pengajuan refund
+Saat pelanggan mengajukan pembatalan, tampilkan form isi data:
+
+- nama pelanggan
+- nomor reservasi
+- alasan pembatalan
+- rekening bank / nomor dompet tujuan
+- metode pengembalian dana:
+  - Transfer
+  - DompetKu
+- unggah gambar bukti
+- catatan tambahan
+
+D. Pisahkan jenis refund di admin menjadi:
 
 - Refund Reservasi
 - Refund Pesanan Menu
 - Refund Gabungan
 
-Data yang tampil:
+E. Hitung refund:
 
-- Nama Pelanggan
-- Nomor Reservasi
-- Nominal Refund
-- Metode Refund
-- Status Refund
-- Status Pembayaran
-- Alasan Refund
-- Bukti Pendukung
-- Tanggal Pengajuan
+- jika belum dikonfirmasi dan belum diproses: refund full
+- jika sudah disiapkan: refund = total dibayar - charge pembatalan
+- jika sudah DP: refund dihitung dari nominal yang sudah dibayar setelah dipotong charge jika kebijakan mengharuskan
+- jika pembatalan dilakukan sebelum batas proses pesanan dan belum disiapkan, refund penuh dapat diberikan
 
-==================================================
-H. PERSETUJUAN REFUND
-==================================================
+F. Status refund admin:
 
-Saat resto menyetujui refund:
-
-Status:
-
+- Menunggu Review
+- Menunggu Bukti
 - Disetujui
-
-Jika metode:
-
-DompetKu:
-
-- saldo otomatis masuk ke DompetKu pelanggan
-
-Status:
-
-- Dana Dikirim
-- Refund Selesai
-
-Notifikasi pelanggan:
-
-“Refund Anda telah disetujui.”
-“Dana telah dikreditkan ke akun DompetKu Anda.”
-“Silakan periksa saldo DompetKu Anda.”
-
-Jika metode:
-
-Transfer:
-
-Status:
-
-- Dana Dikirim
-
-Notifikasi:
-
-“Refund Anda telah disetujui.”
-“Dana telah ditransfer ke rekening yang Anda daftarkan.”
-“Silakan periksa rekening Anda.”
-
-==================================================
-I. PENOLAKAN REFUND
-==================================================
-
-Jika ditolak:
-
-Status:
-
 - Ditolak
+- Diproses
+- Selesai
+- Gagal Transfer
+- Gagal DompetKu
 
-Wajib isi:
+1. ALUR OTOMATIS DAN LOGIKA STATUS
+Sistem harus memiliki logika otomatis berikut:
 
-- alasan penolakan
+A. Saat pelanggan mengajukan reservasi
 
-Pelanggan melihat:
+- simpan order menu
+- simpan status pembayaran
+- simpan status reservasi
+- simpan aturan yang disetujui
+- simpan persen DP yang dipilih
+- simpan minimal DP dari resto
+- simpan charge pembatalan dari resto
 
-“Pengajuan refund ditolak.”
-“Alasan: {{reason}}”
+B. Saat reservasi mendekati waktu booking
 
-==================================================
-J. RIWAYAT PELANGGAN
-==================================================
+- sistem menghitung 30 menit sebelum booking
+- pesanan menu masuk status “Siap Disiapkan”
+- staf dapur/kasir dapat melihat daftar pesanan yang harus mulai diproses
 
-Tambahkan halaman:
+C. Saat pelanggan check-in
 
-Riwayat
+- jika tepat waktu, status menjadi aktif
+- jika melewati toleransi, status hangus dan meja dibuka kembali
 
-Kategori:
+D. Jika pelanggan membatalkan
 
-- Reservasi Aktif
-- Reservasi Selesai
-- Reservasi Dibatalkan
-- Pengajuan Refund
-- Refund Disetujui
-- Refund Ditolak
-- Refund Selesai
+- jika belum dikonfirmasi: proses auto refund full
+- jika sudah dikonfirmasi: tampilkan modal pembatalan dan hitung charge
+- refund dikirim ke metode yang dipilih setelah disetujui resto
+- jika DompetKu belum aktif, beri peringatan
 
-Tambahkan filter:
+E. Saat resto menyetujui refund
 
-- Status
-- Rentang Tanggal
-- Metode Refund
-- Jenis Refund
-- Nomor Reservasi
+- dana diproses ke metode pengembalian yang dipilih pelanggan
+- jika refund otomatis, sistem langsung mengeksekusi nominal sesuai status
+- jika refund manual, resto wajib verifikasi bukti dan nominal
 
-Tambahkan pencarian:
+1. DATABASE / DATA YANG PERLU DISIMPAN
+Simpan minimal data berikut:
 
-- Nama
-- Nomor Reservasi
-- Status
+- reservation_id
+- customer_name
+- phone
+- date
+- time
+- table_ids
+- guest_count
+- menu_items
+- menu_total
+- payment_method
+- payment_status
+- dp_percent
+- dp_amount
+- remaining_amount
+- tolerance_minutes
+- check_in_deadline
+- cancellation_charge_percent
+- reservation_status
+- approval_status
+- refund_status
+- refund_method
+- refund_amount
+- refund_proof
+- admin_notes
+- created_at
+- updated_at
 
-==================================================
-K. REALTIME UPDATE
-==================================================
+Buat relasi yang jelas antara:
 
-Semua perubahan wajib realtime.
+- reservasi
+- menu order
+- pembayaran
+- refund
+- konfirmasi resto
+- kasir/POS
 
-Role yang menerima update:
+1. TAMPILAN UI / UX
+Gunakan tampilan:
 
-- Pelanggan
-- Kasir
-- Dapur
-- Admin/Resto
+- modern
+- rapi
+- mudah dipahami
+- responsif di mobile dan desktop
+- warna status jelas
+- modal aturan tegas namun sopan
+- tombol aksi yang jelas
 
-Realtime untuk:
+Tambahkan komponen:
 
-- Status Reservasi
-- Status Check-in
-- Status Pembayaran
-- Status DP
-- Status Refund
-- Status Pembatalan
-- Status Persetujuan
-- Status Meja
+- badge status pembayaran
+- badge status reservasi
+- ringkasan total harga
+- ringkasan DP dan sisa pembayaran
+- ringkasan menu pesanan
+- ringkasan refund
+- notifikasi peringatan jika DP kurang
+- notifikasi peringatan jika DompetKu belum aktif
+- modal pembatalan yang wajib diisi data lengkap
 
-Gunakan:
-
-- WebSocket
-ATAU
-- Server Sent Events (SSE)
-ATAU
-- Realtime Listener
-
-Tanpa perlu refresh halaman.
-
-==================================================
-L. LOG AKTIVITAS
-==================================================
-
-Simpan audit log lengkap:
-
-- Reservasi dibuat
-- Reservasi dikonfirmasi
-- Reservasi dibatalkan
-- Siapa yang membatalkan
-- Check-in
-- Refund diajukan
-- Refund disetujui
-- Refund ditolak
-- Dana dikirim
-- Perubahan status meja
-- Perubahan status pembayaran
-- Perubahan konfigurasi
-
-Data log:
-
-- user_id
-- role
-- action
-- old_value
-- new_value
-- timestamp
-
-==================================================
-M. VALIDASI PENTING
-==================================================
-
+1. VALIDASI PENTING
 Pastikan:
 
-- Refund tidak dapat diajukan dua kali.
-- Refund hanya muncul jika ada pembayaran.
-- DompetKu harus aktif sebelum digunakan.
-- Data rekening wajib lengkap.
-- Semua perubahan status tersimpan.
-- Semua perubahan tampil realtime.
-- Semua role melihat data yang sesuai hak aksesnya.
-- Riwayat tidak boleh hilang meskipun reservasi sudah selesai.
-- Semua transaksi refund dan pembayaran tercatat dalam audit log.
+- pelanggan tidak bisa lanjut jika DP kurang dari batas minimal resto
+- pelanggan tidak bisa membatalkan tanpa mengisi data yang diwajibkan
+- pembatalan yang memerlukan verifikasi harus masuk ke resto terlebih dahulu
+- refund tidak bisa diproses jika metode refund tidak valid
+- jika DompetKu belum aktif, tampilkan peringatan dan arahkan ke transfer
+- pesanan menu yang dibatalkan mengikuti status reservasi
+- kasir selalu dapat melihat keterkaitan reservasi, menu, dan pembayaran
+- semua aksi penting tercatat dalam log
 
-==================================================
-N. PENYEMPURNAAN MODAL "AJUKAN SEKARANG"
-==================================================
+1. KALIMAT PENEGASAN DI HALAMAN
+Tambahkan kalimat yang sopan dan jelas:
+“Dengan melanjutkan pemesanan, Anda menyetujui aturan reservasi, pembayaran, DP minimal, charge pembatalan, dan tanggung jawab atas pesanan yang telah disiapkan.”
 
-Sebelum pelanggan menekan tombol:
+Tambahkan juga:
+“Jika Anda memilih DP, maka minimal DP yang wajib dibayarkan adalah {{minimal_dp}}% dari total pesanan.”
+“Pesanan akan disiapkan 30 menit sebelum jadwal booking dimulai.”
+“Pembatalan sepihak dapat dikenakan charge sebesar {{charge_cancel}}% dari total pesanan yang sudah diproses.”
 
-"Lanjut Ajukan"
-
-Tambahkan peringatan:
-
-“Mohon periksa kembali seluruh data reservasi Anda sebelum melanjutkan.”
-
-Pastikan pelanggan memeriksa:
-
-- Tanggal Reservasi
-- Jam Booking
-- Jumlah Tamu
-- Meja yang Dipilih
-- Pesanan Menu
-- Metode Pembayaran
-- Nominal DP
-- Data Kontak
-
-Tambahkan checkbox:
-
-☐ Saya telah memeriksa kembali seluruh data reservasi dan pesanan saya.
-
-Tombol lanjut hanya aktif jika:
-
-- Checkbox aturan dicentang
-- Checkbox pemeriksaan data dicentang
-
-Setelah berhasil diajukan:
-
-Status awal:
-
-- Menunggu Konfirmasi
-- Menunggu Pembayaran (jika belum bayar)
-- DP Dibayar (jika DP berhasil)
-- Lunas (jika lunas)
-
-Simpan waktu persetujuan aturan dan waktu persetujuan pemeriksaan data ke database.
+Buat seluruh fitur ini lengkap, terstruktur, aman, dan terintegrasi antara halaman Reservasi, Admin, Kasir/POS, dan Refund.

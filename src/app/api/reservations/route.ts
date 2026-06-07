@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       // Fetch settings
       const { data: settings, error: settingsErr } = await supabaseAdmin
         .from('restaurant_settings')
-        .select('minimal_dp, charge_cancel')
+        .select('minimal_dp, charge_cancel, late_tolerance_minutes, reservation_settings')
         .single();
       
       if (settingsErr) {
@@ -50,6 +50,24 @@ export async function POST(req: NextRequest) {
 
       const minimalDp = Number(settings?.minimal_dp || 30);
       const chargeCancel = Number(settings?.charge_cancel || 20);
+
+      let lateTolerance = 15; // default
+      if (settings) {
+        if (settings.late_tolerance_minutes !== null && settings.late_tolerance_minutes !== undefined) {
+          lateTolerance = Number(settings.late_tolerance_minutes);
+        } else if (settings.reservation_settings) {
+          const resSet = typeof settings.reservation_settings === 'string'
+            ? JSON.parse(settings.reservation_settings)
+            : settings.reservation_settings;
+          if (resSet?.late_tolerance_minutes !== undefined) {
+            lateTolerance = Number(resSet.late_tolerance_minutes);
+          }
+        }
+      }
+
+      const bookingDateTime = new Date(`${reservationDate}T${reservationTime}${reservationTime.length === 5 ? ':00' : ''}+07:00`);
+      const deadlineTime = new Date(bookingDateTime.getTime() + lateTolerance * 60000);
+      const checkInDeadline = deadlineTime.toISOString();
 
       // Validate DP
       if (paymentMethod === 'dp' && Number(dpPercent) < minimalDp) {
@@ -181,7 +199,9 @@ export async function POST(req: NextRequest) {
           rules_approved: true,
           rules_approved_at: rules_approved_at || new Date().toISOString(),
           data_checked: data_checked || false,
-          data_checked_at: data_checked_at || null
+          data_checked_at: data_checked_at || null,
+          tolerance_minutes: lateTolerance,
+          check_in_deadline: checkInDeadline
         })
         .select()
         .single();

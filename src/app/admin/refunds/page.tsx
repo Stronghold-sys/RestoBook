@@ -145,9 +145,10 @@ export default function AdminRefundsPage() {
         if (["completed", "refund_selesai", "dana_dikirim"].includes(res.refund_status)) refundStatus = "approved";
         else if (["rejected", "ditolak"].includes(res.refund_status)) refundStatus = "rejected";
 
+        const hasMenu = Number(res.menu_total || 0) > 0;
         return {
           id: res.id,
-          type: "reservation",
+          type: hasMenu ? "combined" : "reservation",
           customer_id: res.customer_id,
           customer_name: res.profiles?.full_name || "Guest",
           phone: res.profiles?.phone || "-",
@@ -520,9 +521,10 @@ export default function AdminRefundsPage() {
             title="Filter Tipe Refund"
             aria-label="Filter Tipe Refund"
           >
-            <option value="all">Tipe: Semua (Gabungan)</option>
-            <option value="reservation">Tipe: Reservasi</option>
-            <option value="order">Tipe: Pesanan Menu</option>
+            <option value="all">Semua Tipe</option>
+            <option value="reservation">Refund Reservasi</option>
+            <option value="order">Refund Pesanan Menu</option>
+            <option value="combined">Refund Gabungan</option>
           </select>
 
           <button 

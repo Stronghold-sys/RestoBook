@@ -1647,7 +1647,10 @@ export default function CustomerReservationsPage() {
             </div>
 
             <p className="text-[11px] text-muted italic mt-3 leading-relaxed text-center">
-              Dengan melanjutkan pemesanan, Anda menyetujui seluruh aturan reservasi meja, termasuk kewajiban check-in tepat waktu, batas toleransi keterlambatan, dan tanggung jawab atas kerusakan properti.
+              Dengan melanjutkan pemesanan, Anda menyetujui aturan reservasi, pembayaran, DP minimal, charge pembatalan, dan tanggung jawab atas pesanan yang telah disiapkan.
+              {paymentMethod === "dp" && ` Jika Anda memilih DP, maka minimal DP yang wajib dibayarkan adalah ${minimalDp}% dari total pesanan.`}
+              {" Pesanan akan disiapkan 30 menit sebelum jadwal booking dimulai."}
+              {` Pembatalan sepihak dapat dikenakan charge sebesar ${chargeCancel}% dari total pesanan yang sudah diproses.`}
             </p>
           </div>
 

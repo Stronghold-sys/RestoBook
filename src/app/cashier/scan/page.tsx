@@ -9,6 +9,7 @@ import {
   Users, MapPin, Receipt, AlertCircle, Ban, ArrowRight, Printer, CheckSquare, XCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import BaseModal from "@/components/BaseModal";
 
 export default function CashierScanPage() {
   const supabase = createClient();
@@ -118,6 +119,7 @@ export default function CashierScanPage() {
                 reservation_time: updatedRes.reservation_time,
                 status: updatedRes.status,
                 notes: updatedRes.notes,
+                qr_token: updatedRes.qr_token,
                 table_id: updatedRes.table_id,
                 table_number: updatedRes.tables?.table_number,
                 checked_in_at: updatedRes.checked_in_at,
@@ -279,11 +281,17 @@ export default function CashierScanPage() {
   };
 
   const getParsedNotes = (notesStr: string) => {
+    if (!notesStr) return { catatan: "-" };
     try {
-      return JSON.parse(notesStr);
+      const parsed = JSON.parse(notesStr);
+      if (parsed && typeof parsed === 'object') {
+        const note = parsed.catatan || parsed.catatan_batal || "";
+        return { catatan: note.trim() || "-" };
+      }
     } catch (e) {
-      return { catatan: notesStr };
+      // not JSON
     }
+    return { catatan: notesStr.trim() || "-" };
   };
 
   if (authChecking) {
@@ -363,7 +371,7 @@ export default function CashierScanPage() {
 
             {/* Manual input */}
             <div className="space-y-2">
-              <label htmlFor="manualToken" className="text-xs font-black uppercase text-muted ml-1">Input Token / Kode Booking Manual</label>
+              <label htmlFor="manualToken" className="text-xs font-black uppercase text-muted ml-1">Input Kode Booking Manual</label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Receipt className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
@@ -480,7 +488,7 @@ export default function CashierScanPage() {
                     <div className="p-4 bg-background-light dark:bg-background-dark rounded-2xl text-xs space-y-1 border border-border-light dark:border-border-dark">
                       <span className="font-black uppercase text-muted">Catatan Pelanggan:</span>
                       <p className="text-muted leading-relaxed font-semibold italic">
-                        &ldquo;{getParsedNotes(reservation.notes).catatan || getParsedNotes(reservation.notes).catatan_batal || reservation.notes}&rdquo;
+                        &ldquo;{getParsedNotes(reservation.notes).catatan}&rdquo;
                       </p>
                     </div>
                   )}
@@ -606,7 +614,7 @@ export default function CashierScanPage() {
                 </div>
                 <h3 className="font-bold text-lg">Belum Ada Tiket Booking yang Dimuat</h3>
                 <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
-                  Silakan scan QR Code tiket pelanggan menggunakan kamera di sebelah kiri, atau masukkan token booking secara manual.
+                  Silakan scan QR Code tiket pelanggan menggunakan kamera di sebelah kiri, atau masukkan kode booking secara manual.
                 </p>
               </motion.div>
             )}
@@ -616,70 +624,66 @@ export default function CashierScanPage() {
       </div>
 
       {/* Print Confirmation Slip Modal */}
-      <AnimatePresence>
-        {showPrintModal && reservation && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white text-black rounded-[2rem] p-6 w-full max-w-sm shadow-2xl space-y-6 flex flex-col"
-            >
-              {/* Slip Content to print */}
-              <div id="print-slip-area" className="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs space-y-3 font-mono">
-                <div className="text-center border-b border-dashed border-gray-300 pb-3">
-                  <h4 className="font-bold text-sm">RESTOBOOK</h4>
-                  <p className="text-[10px] text-gray-500">Bukti Kedatangan Reservasi Meja</p>
-                  <p className="text-[9px] text-gray-400 mt-1">{new Date().toLocaleString('id-ID')}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <p><strong>Booking ID:</strong> #{reservation.id.substring(0, 8).toUpperCase()}</p>
-                  <p><strong>Pelanggan:</strong> {reservation.customer_name}</p>
-                  <p><strong>Jml Tamu:</strong> {reservation.guest_count} Orang</p>
-                  <p><strong>Waktu Booking:</strong> {reservation.reservation_date} | {reservation.reservation_time.substring(0, 5)}</p>
-                  <p><strong>Assigned Meja:</strong> Meja {reservation.table_number || selectedTableId ? tables.find(t => t.id === selectedTableId)?.table_number : '-'}</p>
-                  <p><strong>Status Baru:</strong> {checkInStatus.toUpperCase()}</p>
-                </div>
-                <div className="border-t border-dashed border-gray-300 pt-3 text-center text-[10px]">
-                  <p>Kasir: {cashierProfile?.full_name || 'Kasir'}</p>
-                  <p className="text-[8px] text-gray-400 mt-1">Harap tunjukkan slip ini ke staff pelayan.</p>
-                </div>
+      <BaseModal
+        isOpen={showPrintModal && !!reservation}
+        onClose={() => setShowPrintModal(false)}
+        title="Bukti Reservasi Meja"
+        size="sm"
+      >
+        {reservation && (
+          <div className="space-y-6 flex flex-col text-text-light dark:text-text-dark">
+            {/* Slip Content to print */}
+            <div id="print-slip-area" className="p-4 bg-gray-50 dark:bg-gray-900 border border-border-light dark:border-border-dark rounded-2xl text-xs space-y-3 font-mono text-black dark:text-white">
+              <div className="text-center border-b border-dashed border-gray-300 dark:border-gray-700 pb-3">
+                <h4 className="font-bold text-sm">RESTOBOOK</h4>
+                <p className="text-[10px] text-muted">Bukti Kedatangan Reservasi Meja</p>
+                <p className="text-[9px] text-muted mt-1">{new Date().toLocaleString('id-ID')}</p>
               </div>
-
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setShowPrintModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold text-xs uppercase"
-                >
-                  Tutup
-                </button>
-                <button 
-                  onClick={() => {
-                    const printContent = document.getElementById("print-slip-area")?.innerHTML;
-                    const originalContent = document.body.innerHTML;
-                    if (printContent) {
-                      const printWindow = window.open('', '_blank');
-                      printWindow?.document.write(`
-                        <html>
-                          <head><title>Cetak Slip Booking</title></head>
-                          <body style="font-family: monospace; padding: 20px;" onload="window.print();window.close();">
-                            ${printContent}
-                          </body>
-                        </html>
-                      `);
-                      printWindow?.document.close();
-                    }
-                  }}
-                  className="flex-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5"
-                >
-                  <Printer className="w-4 h-4" /> Cetak Slip
-                </button>
+              <div className="space-y-1.5">
+                <p><strong>Booking ID:</strong> #{reservation.id.substring(0, 8).toUpperCase()}</p>
+                <p><strong>Pelanggan:</strong> {reservation.customer_name}</p>
+                <p><strong>Jml Tamu:</strong> {reservation.guest_count} Orang</p>
+                <p><strong>Waktu Booking:</strong> {reservation.reservation_date} | {reservation.reservation_time.substring(0, 5)}</p>
+                <p><strong>Assigned Meja:</strong> Meja {reservation.table_number || (selectedTableId ? tables.find(t => t.id === selectedTableId)?.table_number : '-')}</p>
+                <p><strong>Status Baru:</strong> {checkInStatus.toUpperCase()}</p>
               </div>
+              <div className="border-t border-dashed border-gray-300 dark:border-gray-700 pt-3 text-center text-[10px]">
+                <p>Kasir: {cashierProfile?.full_name || 'Kasir'}</p>
+                <p className="text-[8px] text-muted mt-1">Harap tunjukkan slip ini ke staff pelayan.</p>
+              </div>
+            </div>
 
-            </motion.div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowPrintModal(false)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-text-light dark:text-text-dark rounded-xl font-bold text-xs uppercase"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={() => {
+                  const printContent = document.getElementById("print-slip-area")?.innerHTML;
+                  if (printContent) {
+                    const printWindow = window.open('', '_blank');
+                    printWindow?.document.write(`
+                      <html>
+                        <head><title>Cetak Slip Booking</title></head>
+                        <body style="font-family: monospace; padding: 20px;" onload="window.print();window.close();">
+                          ${printContent}
+                        </body>
+                      </html>
+                    `);
+                    printWindow?.document.close();
+                  }
+                }}
+                className="flex-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" /> Cetak Slip
+              </button>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </BaseModal>
 
     </div>
   );

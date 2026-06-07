@@ -855,7 +855,7 @@ export default function CustomerReservationsPage() {
                 
                 {/* Token Label */}
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Token Booking</p>
+                  <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Kode Booking</p>
                   <p className="font-mono font-black text-primary text-base select-all">{qrData}</p>
                 </div>
 

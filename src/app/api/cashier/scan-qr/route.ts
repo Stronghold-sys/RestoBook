@@ -51,12 +51,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'QR Token wajib diisi' }, { status: 400 });
     }
 
-    // 3. Find reservation
-    const { data: reservation, error: resError } = await supabaseAdmin
+    // 3. Find reservation (either by qr_token or fallback to id if UUID is provided)
+    let query = supabaseAdmin
       .from('reservations')
-      .select('*, profiles:customer_id(*), tables(*)')
-      .eq('qr_token', qrToken)
-      .maybeSingle();
+      .select('*, profiles:customer_id(*), tables(*)');
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(qrToken)) {
+      query = query.eq('id', qrToken);
+    } else {
+      query = query.eq('qr_token', qrToken);
+    }
+
+    const { data: reservation, error: resError } = await query.maybeSingle();
 
     if (resError) {
       console.error('Scan QR DB error:', resError);
@@ -149,6 +156,7 @@ export async function POST(request: NextRequest) {
           reservation_time: reservation.reservation_time,
           status: reservation.status,
           notes: reservation.notes,
+          qr_token: reservation.qr_token,
           table_id: reservation.table_id,
           table_number: reservation.tables?.table_number,
           checked_in_at: reservation.checked_in_at,

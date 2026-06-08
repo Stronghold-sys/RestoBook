@@ -676,7 +676,13 @@ export default function CashierVerifyPage() {
                 <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl border border-emerald-250/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Bukti terunggah</span>
-                  <button type="button" onClick={() => setAttachmentUrl("")} className="p-0.5 hover:bg-emerald-100 rounded-full shrink-0">
+                  <button 
+                    type="button" 
+                    onClick={() => setAttachmentUrl("")} 
+                    className="p-0.5 hover:bg-emerald-100 rounded-full shrink-0"
+                    title="Hapus bukti"
+                    aria-label="Hapus bukti"
+                  >
                     <X className="w-3 h-3 text-emerald-600" />
                   </button>
                 </div>

@@ -822,6 +822,45 @@ function WorkShiftsManager() {
      setSubmittingSub(true);
      try {
        const todayISOStr = new Date().toLocaleDateString('sv-SE'); // Format YYYY-MM-DD aman
+
+       // Validasi 3: Cek apakah karyawan memiliki jadwal shift lain yang overlap secara waktu hari ini
+       const { data: activeAssigns, error: checkError } = await supabase
+         .from('work_shift_assignments')
+         .select('*, work_shifts(*)')
+         .eq('profile_id', subSelectedEmployee);
+
+       if (checkError) throw checkError;
+
+       const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+       const todayIndoName = dayNames[new Date().getDay()];
+
+       const hasOverlap = (activeAssigns || []).some((a: any) => {
+         // Cek apakah assignment ini berjalan hari ini
+         const isScheduledToday = a.substitute_date === todayISOStr || 
+           (!a.substitute_date && a.work_shifts?.days?.some((d: string) => d.includes(todayIndoName) || todayIndoName.includes(d)));
+
+         if (!isScheduledToday) return false;
+
+         // Lewati jika berstatus ditolak atau dibatalkan
+         if (a.is_substitute && (a.status === 'rejected' || a.status === 'cancelled')) return false;
+
+         const startA = a.work_shifts?.start_time;
+         const endA = a.work_shifts?.end_time;
+         const startB = subSelectedShift.start_time;
+         const endB = subSelectedShift.end_time;
+
+         if (!startA || !endA || !startB || !endB) return false;
+
+         // Overlap formula: startA < endB && startB < endA
+         return startA < endB && startB < endA;
+       });
+
+       if (hasOverlap) {
+         toast.error("Karyawan tersebut memiliki jadwal shift lain hari ini yang bentrok jam kerjanya!");
+         setSubmittingSub(false);
+         return;
+       }
+
        const { error } = await supabase.from('work_shift_assignments').insert([{
           work_shift_id: subSelectedShift.id,
           profile_id: subSelectedEmployee,
@@ -839,6 +878,22 @@ function WorkShiftsManager() {
        toast.error("Gagal menugaskan pengganti: " + e.message);
      } finally {
        setSubmittingSub(false);
+     }
+  };
+
+  const handleCancelSubstitute = async (assignmentId: string) => {
+     if (!confirm("Apakah Anda yakin ingin membatalkan penugasan pengganti ini?")) return;
+     try {
+       const { error } = await supabase
+         .from('work_shift_assignments')
+         .delete()
+         .eq('id', assignmentId);
+
+       if (error) throw error;
+       toast.success("Penugasan pengganti berhasil dibatalkan.");
+       fetchData();
+     } catch (e: any) {
+       toast.error("Gagal membatalkan penugasan: " + e.message);
      }
   };
   
@@ -868,7 +923,7 @@ function WorkShiftsManager() {
         // Fallback jika API gagal (safety net) dengan Relasi Ambigu yang Terpecahkan
         const { data: fbShifts } = await supabase
           .from('work_shifts')
-          .select('*, work_shift_assignments(*, profiles:profiles!work_shift_assignments_profile_id_fkey(*))')
+          .select('*, work_shift_assignments(*, substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(full_name), profiles:profiles!work_shift_assignments_profile_id_fkey(*))')
           .order('created_at', {ascending:false});
         setWorkShifts(fbShifts || []);
       }
@@ -1107,19 +1162,82 @@ function WorkShiftsManager() {
                  </div>
 
                  <div>
-                    <p className="text-[10px] font-black text-muted uppercase mb-1.5 tracking-widest">Karyawan Ditugaskan ({shift.work_shift_assignments?.length || 0})</p>
-                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2">
-                       {shift.work_shift_assignments?.map((assign: any) => (
+                    <p className="text-[10px] font-black text-muted uppercase mb-1.5 tracking-widest">Karyawan Reguler ({shift.work_shift_assignments?.filter((a: any) => !a.is_substitute).length || 0})</p>
+                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 no-scrollbar">
+                       {shift.work_shift_assignments?.filter((a: any) => !a.is_substitute).map((assign: any) => (
                          <div key={assign.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg border border-border-light dark:border-border-dark">
                             <div className="w-4 h-4 bg-primary/20 rounded-full flex items-center justify-center"><User className="w-2 h-2 text-primary" /></div>
                             <span className="text-[10px] font-bold truncate max-w-[80px]">{assign.profiles?.full_name}</span>
                          </div>
                        ))}
-                       {(!shift.work_shift_assignments || shift.work_shift_assignments.length === 0) && (
-                         <p className="text-[10px] italic text-red-400 font-medium">Belum ada penugasan</p>
+                       {(!shift.work_shift_assignments || shift.work_shift_assignments.filter((a: any) => !a.is_substitute).length === 0) && (
+                         <p className="text-[10px] italic text-red-400 font-medium">Belum ada karyawan reguler</p>
                        )}
                     </div>
                  </div>
+
+                 {shift.work_shift_assignments?.some((a: any) => a.is_substitute) && (
+                   <div className="pt-3 border-t border-dashed border-border-light dark:border-border-dark">
+                      <p className="text-[10px] font-black text-indigo-650 dark:text-indigo-400 uppercase mb-2 tracking-widest flex items-center gap-1">
+                         <Shuffle className="w-3 h-3 text-indigo-500" /> Pengganti Hari Ini
+                      </p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto pr-1 no-scrollbar">
+                         {shift.work_shift_assignments?.filter((a: any) => a.is_substitute).map((assign: any) => {
+                            let statusColor = "bg-amber-105 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/50";
+                            let statusText = "Menunggu";
+                            if (assign.status === 'accepted') {
+                              statusColor = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200/50";
+                              statusText = "Diterima";
+                            } else if (assign.status === 'rejected') {
+                              statusColor = "bg-red-105 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200/50";
+                              statusText = "Ditolak";
+                            } else if (assign.status === 'completed') {
+                              statusColor = "bg-blue-105 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200/50";
+                              statusText = "Selesai";
+                            } else if (assign.status === 'cancelled') {
+                              statusColor = "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-200/50";
+                              statusText = "Batal";
+                            }
+
+                            return (
+                              <div key={assign.id} className="p-2.5 bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/70 dark:border-indigo-900/20 rounded-xl space-y-1">
+                                 <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1 min-w-0">
+                                       <span className="text-[10px] font-black text-gray-950 dark:text-white truncate" title={assign.profiles?.full_name}>
+                                          {assign.profiles?.full_name}
+                                       </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${statusColor}`}>
+                                          {statusText}
+                                       </span>
+                                       {['pending', 'accepted'].includes(assign.status) && (
+                                          <button
+                                            onClick={() => handleCancelSubstitute(assign.id)}
+                                            className="p-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded transition-all active:scale-95 shrink-0"
+                                            title="Batalkan penugasan pengganti"
+                                          >
+                                             <X className="w-3 h-3" />
+                                          </button>
+                                       )}
+                                    </div>
+                                 </div>
+                                 {assign.substitute_for?.full_name && (
+                                    <p className="text-[9px] text-muted font-bold">
+                                       Menggantikan: <span className="text-gray-700 dark:text-gray-300">{assign.substitute_for.full_name}</span>
+                                    </p>
+                                 )}
+                                 {assign.status === 'rejected' && assign.rejection_reason && (
+                                    <div className="p-1.5 bg-red-50 dark:bg-red-950/30 rounded border border-red-100/70 dark:border-red-900/30 text-[9px] text-red-650 dark:text-red-400 font-bold leading-normal">
+                                       Alasan: {assign.rejection_reason}
+                                    </div>
+                                 )}
+                              </div>
+                            );
+                         })}
+                      </div>
+                   </div>
+                 )}
               </div>
             </motion.div>
           ))}

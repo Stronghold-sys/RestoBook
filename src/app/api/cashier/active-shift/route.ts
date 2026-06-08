@@ -77,7 +77,8 @@ export async function GET(request: Request) {
     const activeCandidates = (assignments || []).filter((a: any) => {
        // Kasus A: Ini adalah jadwal pengganti yang dikunci pada tanggal hari ini
        if (a.substitute_date === todayISOStr) {
-          return true;
+          // Hanya masukkan jika statusnya 'accepted' atau 'pending' (untuk dideteksi modal pending)
+          return ['accepted', 'pending'].includes(a.status || 'accepted');
        }
        // Kasus B: Jadwal reguler (tidak punya substitute_date, atau substitute_date kosong)
        if (!a.substitute_date && a.work_shifts?.days) {
@@ -86,9 +87,10 @@ export async function GET(request: Request) {
        return false;
     });
 
-    // ELIMINASI: Dari kandidat hari ini, buang shift yang SUDAH SELESAI!
+    // ELIMINASI: Dari kandidat hari ini, buang shift yang SUDAH SELESAI atau PENDING pengganti!
     let nextActiveCandidate = activeCandidates.find((a: any) => 
-       !completedShiftIds.includes(a.work_shift_id)
+       !completedShiftIds.includes(a.work_shift_id) && 
+       !(a.is_substitute && a.status === 'pending')
     );
 
     // REAL-TIME AUTO-ALPHA DETECTOR:
@@ -174,13 +176,22 @@ export async function GET(request: Request) {
       return timeA.localeCompare(timeB);
     });
 
-    // Find the first today candidate that is NOT completed
-    let todayCandidate = sortedTodayCandidates.find((a: any) => !completedShiftIds.includes(a.work_shift_id));
+    // Find the first today candidate that is NOT completed and NOT pending substitute
+    let todayCandidate = sortedTodayCandidates.find((a: any) => 
+      !completedShiftIds.includes(a.work_shift_id) && 
+      !(a.is_substitute && a.status === 'pending')
+    );
     
-    // If all are completed, fallback to the first today candidate
+    // If all are completed, fallback to the first today candidate (bukan pending)
     if (!todayCandidate && sortedTodayCandidates.length > 0) {
-      todayCandidate = sortedTodayCandidates[0];
+      todayCandidate = sortedTodayCandidates.find((a: any) => !(a.is_substitute && a.status === 'pending')) || sortedTodayCandidates[0];
     }
+
+    const pendingSubstitution = (assignments || []).find((a: any) => 
+      a.substitute_date === todayISOStr && 
+      a.is_substitute && 
+      a.status === 'pending'
+    );
 
     const isHolidayToday = !todayCandidate;
 
@@ -241,12 +252,23 @@ export async function GET(request: Request) {
         shiftDate: nextShiftDate
       } : null,
       assignmentDetails: todayCandidate ? {
+         id: todayCandidate.id,
+         status: todayCandidate.status,
          isSubstitute: !!todayCandidate.is_substitute,
          substituteFor: todayCandidate.substitute_for?.full_name || null
       } : null,
       nextAssignmentDetails: nextShiftCandidate ? {
+         id: nextShiftCandidate.id,
+         status: nextShiftCandidate.status,
          isSubstitute: !!nextShiftCandidate.is_substitute,
          substituteFor: nextShiftCandidate.substitute_for?.full_name || null
+      } : null,
+      pendingSubstitution: pendingSubstitution ? {
+         id: pendingSubstitution.id,
+         status: pendingSubstitution.status,
+         substituteDate: pendingSubstitution.substitute_date,
+         substituteFor: pendingSubstitution.substitute_for?.full_name || null,
+         workShift: pendingSubstitution.work_shifts
       } : null,
       today: todayIndoName,
       assignedEmployees: assignedEmployees.map((c: any) => c.profiles).filter(Boolean)

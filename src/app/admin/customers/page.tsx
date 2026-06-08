@@ -1949,7 +1949,7 @@ export default function AdminCustomersPage() {
 
                     <span className="text-muted font-medium">Alasan Hukuman:</span>
                     <span className="text-text-light dark:text-text-dark text-right italic font-medium">
-                      &quot;{reviewAppeal.profiles?.suspend_reason || '-'}&quot;
+                      &quot;{reviewAppeal.profiles?.suspend_reason && reviewAppeal.profiles.suspend_reason !== '-' ? reviewAppeal.profiles.suspend_reason : 'Pelanggaran syarat ketentuan penggunaan layanan.'}&quot;
                     </span>
                   </>
                 )}

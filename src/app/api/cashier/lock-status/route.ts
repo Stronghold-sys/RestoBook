@@ -44,20 +44,38 @@ export async function GET(req: NextRequest) {
     }
 
     // --- JIKA TIDAK ADA SHIFT OPEN, CEK JADWAL YANG MENANTI (TERMASUK PENGGANTI) ---
-
-    // 2. Tarik SEMUA penugasan hari ini
-    const { data: profileRaw } = await supabaseAdmin.from('profiles').select('id').eq('user_id', userId).single();
+    const { data: profileRaw } = await supabaseAdmin.from('profiles').select('id, full_name').eq('user_id', userId).single();
     if (!profileRaw) {
       return NextResponse.json({ hasOpenShift: false, error: 'Profile not found' });
     }
+
+    const jakartaTime = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+    const todayISOStr = jakartaTime.toLocaleDateString('sv-SE'); // Format YYYY-MM-DD
+
+    // 1.5 Cek apakah user sedang digantikan hari ini dengan status 'accepted'
+    const { data: replacementAssign } = await supabaseAdmin
+      .from('work_shift_assignments')
+      .select('*, profiles:profile_id(full_name)')
+      .eq('substitute_for_profile_id', profileRaw.id)
+      .eq('substitute_date', todayISOStr)
+      .eq('is_substitute', true)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (replacementAssign) {
+      return NextResponse.json({
+        success: true,
+        hasOpenShift: false,
+        isReplaced: true,
+        substituteName: replacementAssign.profiles?.full_name || 'Karyawan Pengganti'
+      });
+    }
+
+    // 2. Tarik SEMUA penugasan hari ini
     const { data: assignments } = await supabaseAdmin
       .from('work_shift_assignments')
       .select('*, work_shifts(*)')
       .eq('profile_id', profileRaw.id);
-
-    // 3. Hitung kandidat shift aktif hari ini (PENTING: Gunakan Waktu Jakarta)
-    const jakartaTime = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
-    const todayISOStr = jakartaTime.toLocaleDateString('sv-SE'); // Format YYYY-MM-DD
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const todayIndoName = dayNames[jakartaTime.getDay()];
 

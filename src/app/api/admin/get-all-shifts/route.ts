@@ -19,6 +19,12 @@ export async function GET() {
         work_shift_assignments(
           id, 
           profile_id, 
+          is_substitute,
+          substitute_date,
+          status,
+          rejection_reason,
+          substitute_for_profile_id,
+          substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(full_name),
           profiles:profiles!work_shift_assignments_profile_id_fkey(full_name, employee_id, avatar_url)
         )
       `)

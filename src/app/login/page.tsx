@@ -848,7 +848,7 @@ export default function LoginPage() {
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
                     <span className="text-[9px] font-black uppercase text-muted tracking-wider block">Alasan Pembatasan</span>
                     <span className="text-xs font-semibold text-text-light dark:text-text-dark block leading-relaxed">
-                      {suspendData.suspend_reason || 'Pelanggaran syarat ketentuan penggunaan layanan.'}
+                      {suspendData.suspend_reason && suspendData.suspend_reason !== '-' ? suspendData.suspend_reason : 'Pelanggaran syarat ketentuan penggunaan layanan.'}
                     </span>
                   </div>
 

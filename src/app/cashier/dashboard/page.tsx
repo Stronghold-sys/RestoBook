@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Loader2, DollarSign, Clock, CheckCircle2, TrendingUp, AlertCircle, LogOut, ShieldX, ShieldAlert, ShieldCheck, Users, Hand, Heart, Sparkles, Flame, Star, Upload } from "lucide-react";
+import { ShoppingBag, Loader2, DollarSign, Clock, CheckCircle2, TrendingUp, AlertCircle, LogOut, ShieldX, ShieldAlert, ShieldCheck, Users, Hand, Heart, Sparkles, Flame, Star, Upload, Shuffle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -155,6 +155,10 @@ export default function CashierDashboard() {
   const [isCompletedToday, setIsCompletedToday] = useState(false);
   const [subDetails, setSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
   const [nextSubDetails, setNextSubDetails] = useState<{isSubstitute: boolean, substituteFor: string | null} | null>(null);
+  const [pendingSub, setPendingSub] = useState<any>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectionInput, setShowRejectionInput] = useState(false);
+  const [respondingSub, setRespondingSub] = useState(false);
   // isHolidayToday: true jika tidak ada jadwal shift untuk hari ini
   const [isHolidayToday, setIsHolidayToday] = useState(false);
 
@@ -408,12 +412,14 @@ export default function CashierDashboard() {
         });
         setSubDetails(shiftData.assignmentDetails || null);
         setNextSubDetails(shiftData.nextAssignmentDetails || null);
+        setPendingSub(shiftData.pendingSubstitution || null);
         setIsHolidayToday(!!shiftData.isHolidayToday);
       } else {
         setTodayShift(null);
         setNextShift(null);
         setSubDetails(null);
         setNextSubDetails(null);
+        setPendingSub(null);
         setIsHolidayToday(false);
       }
 
@@ -607,6 +613,34 @@ export default function CashierDashboard() {
 
       if (error) throw error;
 
+      // Jika shift yang ditutup adalah shift pengganti, perbarui status penugasan menjadi 'completed'
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      if (openShiftData.work_shift_id) {
+         try {
+            const { data: subAssign } = await supabase
+              .from('work_shift_assignments')
+              .select('id')
+              .eq('profile_id', openShiftData.profile_id)
+              .eq('work_shift_id', openShiftData.work_shift_id)
+              .eq('substitute_date', todayDateStr)
+              .eq('is_substitute', true)
+              .eq('status', 'accepted')
+              .maybeSingle();
+
+            if (subAssign) {
+              await supabase
+                .from('work_shift_assignments')
+                .update({
+                  status: 'completed',
+                  completed_at: new Date().toISOString()
+                })
+                .eq('id', subAssign.id);
+            }
+         } catch (subErr) {
+            console.error("Gagal memperbarui status penugasan pengganti:", subErr);
+         }
+      }
+
       // CATAT LOG AUDIT PENUTUPAN SHIFT
       await createAuditLog('close_shift', {
         shiftId: openShiftData.id,
@@ -624,6 +658,7 @@ export default function CashierDashboard() {
          await supabase.from('attendance').insert({
            user_id: user.id,
            profile_id: openShiftData.profile_id,
+           work_shift_id: openShiftData.work_shift_id || null,
            type: 'check_out',
            status: 'completed',
            notes: `OVERTIME_LOG:${JSON.stringify({ seconds: finalOtSecs, date: new Date().toISOString() })}`
@@ -1073,6 +1108,136 @@ export default function CashierDashboard() {
 
   if (loading || hasOpenShift === null) return <div className="flex justify-center items-center h-screen bg-background-light dark:bg-background-dark"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   
+  const renderSubstitutionModal = () => {
+    if (!pendingSub) return null;
+
+    const handleRespond = async (action: 'accept' | 'reject') => {
+      if (action === 'reject' && !showRejectionInput) {
+        setShowRejectionInput(true);
+        return;
+      }
+      if (action === 'reject' && !rejectionReason.trim()) {
+        toast.error("Mohon berikan alasan penolakan!");
+        return;
+      }
+
+      setRespondingSub(true);
+      try {
+        const res = await fetch('/api/cashier/substitution/respond', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assignmentId: pendingSub.id,
+            action,
+            rejectionReason: action === 'reject' ? rejectionReason : undefined
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal memproses persetujuan shift.");
+
+        toast.success(action === 'accept' 
+          ? "Shift pengganti berhasil disetujui! Absensi telah dibuka."
+          : "Shift pengganti berhasil ditolak."
+        );
+        
+        setPendingSub(null);
+        setRejectionReason("");
+        setShowRejectionInput(false);
+        
+        // Reload data shift & dashboard
+        await checkShift();
+        await fetchDashboardData();
+      } catch (err: any) {
+        toast.error(err.message);
+      } finally {
+        setRespondingSub(false);
+      }
+    };
+
+    return (
+      <BaseModal 
+        isOpen={true} 
+        onClose={() => {}} 
+        size="md" 
+        noPadding={true} 
+        showCloseButton={false}
+      >
+        <div className="bg-indigo-600 p-8 text-white text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+            <Shuffle className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="font-black text-2xl uppercase tracking-tight text-white">Tugas Pergantian Shift</h3>
+          <p className="text-white/70 text-xs mt-1">Konfirmasi Penugasan Darurat Hari Ini</p>
+        </div>
+
+        <div className="p-8 space-y-6">
+          <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 text-sm space-y-3">
+            <p className="text-gray-600 dark:text-gray-400">
+              Kamu telah ditugaskan untuk menggantikan shift milik <span className="font-bold text-gray-900 dark:text-white">{pendingSub.substituteFor || 'Karyawan'}</span>.
+            </p>
+            <div className="pt-2 border-t border-indigo-100/50 dark:border-indigo-900/10 space-y-1.5 font-bold text-gray-800 dark:text-gray-200">
+              <p>Shift: {pendingSub.workShift?.name}</p>
+              <p>Jadwal: {pendingSub.workShift?.start_time.slice(0,5)} - {pendingSub.workShift?.end_time.slice(0,5)}</p>
+              <p>Tanggal: {pendingSub.substituteDate ? format(new Date(pendingSub.substituteDate), "dd MMMM yyyy", { locale: id }) : ''}</p>
+            </div>
+            <p className="text-xs text-muted leading-relaxed italic pt-1">
+              Jika kamu setuju, sistem akan membuka absensi dan menghitung lembur sesuai ketentuan.
+            </p>
+          </div>
+
+          {showRejectionInput && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }} 
+              animate={{ opacity: 1, height: 'auto' }} 
+              className="space-y-2"
+            >
+              <label htmlFor="rejectionReasonInput" className="text-[10px] font-black uppercase text-muted ml-2">Alasan Penolakan</label>
+              <textarea
+                id="rejectionReasonInput"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Berikan alasan yang jelas kepada admin..."
+                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-red-500/20 focus:border-red-500 rounded-2xl outline-none transition-all text-sm min-h-[80px] text-text-light dark:text-text-dark font-bold"
+                required
+              />
+            </motion.div>
+          )}
+
+          <div className="flex gap-4">
+            <button 
+              type="button" 
+              disabled={respondingSub}
+              onClick={() => {
+                if (showRejectionInput) {
+                  setShowRejectionInput(false);
+                } else {
+                  handleRespond('reject');
+                }
+              }} 
+              className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-muted rounded-2xl font-black text-xs uppercase transition-all"
+            >
+              {showRejectionInput ? "Batal" : "Tolak"}
+            </button>
+            <button 
+              type="button"
+              disabled={respondingSub}
+              onClick={() => showRejectionInput ? handleRespond('reject') : handleRespond('accept')}
+              className={`flex-[2] py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 uppercase transition-all ${showRejectionInput ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20'}`}
+            >
+              {respondingSub ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                showRejectionInput ? "Konfirmasi Tolak" : "Setuju"
+              )}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+    );
+  };
+
   // Fungsi untuk merender Modal Izin agar bisa dipakai di 2 tempat
   const renderLeaveModal = () => {
     return (
@@ -1497,6 +1662,7 @@ export default function CashierDashboard() {
           )}
         </AnimatePresence>
         {renderLeaveModal()}
+        {renderSubstitutionModal()}
       </div>
     );
   }
@@ -1507,6 +1673,7 @@ export default function CashierDashboard() {
       <AnimatePresence>
         {renderLeaveModal()}
       </AnimatePresence>
+      {renderSubstitutionModal()}
 
       {renderResignWidget()}
 

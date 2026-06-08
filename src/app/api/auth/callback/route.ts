@@ -52,6 +52,67 @@ function parseUserAgent(ua: string | null): string {
   return `${browser} di ${os}`;
 }
 
+async function handleProfileAuthStatus(
+  supabaseAdmin: any, 
+  userId: string, 
+  userEmail: string, 
+  fullName: string, 
+  avatarUrl: string
+) {
+  // Check if profile exists
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id, role, full_name, auth_status, google_account_linked, login_method_history')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const now = new Date().toISOString();
+  const newHistoryItem = {
+    method: 'google_oauth',
+    timestamp: now,
+  };
+
+  if (!profile) {
+    // New Signup via Google OAuth
+    const history = [ { ...newHistoryItem, action: 'signup' } ];
+    await supabaseAdmin.from('profiles').insert({
+      user_id: userId,
+      full_name: fullName,
+      email: userEmail,
+      avatar_url: avatarUrl,
+      role: 'customer',
+      auth_status: 'google_only',
+      google_account_linked: true,
+      login_method_history: history
+    });
+    return { isNew: true, role: 'customer', fullName };
+  } else {
+    // Existing User logging in via Google
+    let updatedStatus = profile.auth_status || 'email_password';
+    let googleLinked = profile.google_account_linked || false;
+
+    if (!googleLinked) {
+      googleLinked = true;
+      if (updatedStatus === 'email_password') {
+        updatedStatus = 'google_linked';
+      }
+    }
+
+    const currentHistory = Array.isArray(profile.login_method_history) 
+      ? profile.login_method_history 
+      : [];
+    const updatedHistory = [ ...currentHistory, { ...newHistoryItem, action: 'login' } ];
+
+    await supabaseAdmin.from('profiles').update({
+      google_account_linked: googleLinked,
+      auth_status: updatedStatus,
+      login_method_history: updatedHistory
+    }).eq('id', profile.id);
+
+    return { isNew: false, role: profile.role || 'customer', fullName: profile.full_name || fullName };
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
@@ -87,36 +148,27 @@ export async function GET(request: Request) {
       const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User Google';
       const resendKey = process.env.RESEND_API_KEY;
 
-      // Check if profile exists
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('role, full_name')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Use helper to check and update profile auth status
+      const { isNew, role, fullName: activeName } = await handleProfileAuthStatus(
+        supabaseAdmin,
+        user.id,
+        userEmail,
+        fullName,
+        user.user_metadata?.avatar_url || ''
+      );
 
-      if (!profile) {
-        // Auto-provision customer profile for new OAuth signup
-        await supabaseAdmin.from('profiles').insert({
-          user_id: user.id,
-          full_name: fullName,
-          email: userEmail,
-          avatar_url: user.user_metadata?.avatar_url || '',
-          role: 'customer',
-        });
-
+      if (isNew) {
         // Send Welcome Email
         if (resendKey && userEmail) {
-          await sendWelcomeEmail(resendKey, userEmail, fullName, ipAddress, deviceInfo);
+          await sendWelcomeEmail(resendKey, userEmail, activeName, ipAddress, deviceInfo);
         }
-
         return NextResponse.json({ success: true, action: 'registered', role: 'customer' });
       } else {
-        // Existing user — send login notification with IP
+        // Send login notification with IP
         if (resendKey && userEmail) {
-          await sendLoginNotificationEmail(resendKey, userEmail, profile.full_name || fullName, ipAddress, deviceInfo, 'Google OAuth');
+          await sendLoginNotificationEmail(resendKey, userEmail, activeName, ipAddress, deviceInfo, 'Google OAuth');
         }
-
-        return NextResponse.json({ success: true, action: 'login', role: profile.role || 'customer' });
+        return NextResponse.json({ success: true, action: 'login', role });
       }
     } catch (e) {
       console.error('ID Token callback error:', e);
@@ -156,27 +208,22 @@ export async function GET(request: Request) {
         if (user) {
           const supabaseAdmin = getSupabaseAdmin();
           
-          const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('role, full_name')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
           const userEmail = user.email || '';
-          const fullName = user.user_metadata?.full_name || profile?.full_name || user.email?.split('@')[0] || 'User Google';
+          const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User Google';
           const resendKey = process.env.RESEND_API_KEY;
 
-          if (!profile) {
-            await supabaseAdmin.from('profiles').insert({
-              user_id: user.id,
-              full_name: fullName,
-              email: userEmail,
-              avatar_url: user.user_metadata?.avatar_url || '',
-              role: 'customer',
-            });
+          // Use helper to check and update profile auth status
+          const { isNew, role, fullName: activeName } = await handleProfileAuthStatus(
+            supabaseAdmin,
+            user.id,
+            userEmail,
+            fullName,
+            user.user_metadata?.avatar_url || ''
+          );
 
+          if (isNew) {
             if (resendKey && userEmail) {
-              await sendWelcomeEmail(resendKey, userEmail, fullName, ipAddress, deviceInfo);
+              await sendWelcomeEmail(resendKey, userEmail, activeName, ipAddress, deviceInfo);
             }
             
             const response = NextResponse.redirect(`${originUrl}/customer/dashboard`);
@@ -185,10 +232,8 @@ export async function GET(request: Request) {
             });
             return response;
           } else {
-            const role = profile.role || 'customer';
-
             if (resendKey && userEmail) {
-              await sendLoginNotificationEmail(resendKey, userEmail, profile.full_name || fullName, ipAddress, deviceInfo, 'Google OAuth');
+              await sendLoginNotificationEmail(resendKey, userEmail, activeName, ipAddress, deviceInfo, 'Google OAuth');
             }
 
             const response = NextResponse.redirect(`${originUrl}/${role}/dashboard`);

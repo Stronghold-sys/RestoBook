@@ -2,9 +2,9 @@
 
 export const runtime = 'edge';
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft, Ban, AlertCircle, Receipt } from "lucide-react";
+import { CalendarDays, Check, X, Loader2, Clock, Users, MapPin, Phone, Eye, MessageSquare, Plus, User, CheckCircle, ArrowLeft, Ban, AlertCircle, Receipt, QrCode, Camera, Search, RefreshCw, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -52,6 +52,20 @@ function CashierReservationsContent() {
   const [cancellingSubmit, setCancellingSubmit] = useState(false);
   const [cashierName, setCashierName] = useState("");
   const [cashierId, setCashierId] = useState("");
+
+  // QR Scanner Modal State
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrScanning, setQrScanning] = useState(false);
+  const [qrScanError, setQrScanError] = useState<string | null>(null);
+  const [qrManualToken, setQrManualToken] = useState("");
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrReservation, setQrReservation] = useState<any>(null);
+  const [qrCheckInStatus, setQrCheckInStatus] = useState("arrived");
+  const [qrSelectedTableId, setQrSelectedTableId] = useState("");
+  const [qrUpdatingStatus, setQrUpdatingStatus] = useState(false);
+  const [qrCanOverride, setQrCanOverride] = useState(false);
+  const [cashierRole, setCashierRole] = useState("");
+  const html5QrCodeRef = useRef<any>(null);
 
   // Cashier booking Modal State
   const [showBookModal, setShowBookModal] = useState(false);
@@ -128,15 +142,110 @@ function CashierReservationsContent() {
   }, [reservations, selectedRes?.id]);
 
 
+  // QR Scanner functions
+  const startQrScanner = async () => {
+    setQrScanError(null);
+    setQrScanning(true);
+    setQrReservation(null);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const html5QrCode = new Html5Qrcode("qr-reader-modal");
+      html5QrCodeRef.current = html5QrCode;
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        async (decodedText: string) => {
+          stopQrScanner();
+          handleQrVerifyToken(decodedText);
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.error("QR scanner error:", err);
+      setQrScanError("Kamera tidak dapat diakses. Pastikan izin kamera diberikan.");
+      setQrScanning(false);
+    }
+  };
+
+  const stopQrScanner = async () => {
+    if (html5QrCodeRef.current?.isScanning) {
+      try { await html5QrCodeRef.current.stop(); html5QrCodeRef.current = null; } catch (e) {}
+    }
+    setQrScanning(false);
+  };
+
+  const handleQrVerifyToken = async (token: string) => {
+    if (!token.trim()) return;
+    setQrLoading(true);
+    setQrReservation(null);
+    setQrCanOverride(false);
+    try {
+      const res = await fetch("/api/cashier/scan-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrToken: token, action: "verify" })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.canOverride && cashierRole === 'admin') {
+          setQrReservation(data.reservation);
+          setQrCanOverride(true);
+          setQrSelectedTableId(data.reservation.table_id || "");
+          toast.error(data.error || "Reservasi hangus/dibatalkan.");
+          return;
+        }
+        throw new Error(data.error || "Gagal memverifikasi QR Code");
+      }
+      setQrReservation(data.reservation);
+      setQrSelectedTableId(data.reservation.table_id || "");
+      toast.success("Verifikasi Booking Berhasil!");
+    } catch (err: any) {
+      toast.error(err.message || "QR Code tidak valid");
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handleQrCheckIn = async (useOverride = false) => {
+    if (!qrReservation) return;
+    setQrUpdatingStatus(true);
+    try {
+      const res = await fetch("/api/cashier/scan-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrToken: qrReservation.qr_token || qrManualToken || qrReservation.id,
+          action: "check_in",
+          tableId: qrSelectedTableId || null,
+          status: qrCheckInStatus,
+          override: useOverride
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memperbarui status check-in");
+      toast.success(useOverride ? "Override Check-In berhasil!" : "Check-In Berhasil!");
+      setShowQrModal(false);
+      stopQrScanner();
+      setQrReservation(null);
+      setQrManualToken("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal proses check-in");
+    } finally {
+      setQrUpdatingStatus(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
       // Get Cashier Info
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase.from("profiles").select("id, full_name").eq("user_id", session.user.id).single();
+        const { data: profile } = await supabase.from("profiles").select("id, full_name, role").eq("user_id", session.user.id).single();
         if (profile) {
           setCashierName(profile.full_name);
           setCashierId(profile.id);
+          setCashierRole(profile.role || "");
         }
       }
 
@@ -623,9 +732,14 @@ function CashierReservationsContent() {
           <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Manajemen Reservasi</h1>
           <p className="text-muted mt-1">Kelola dan verifikasi pengajuan observasi meja pelanggan secara realtime</p>
         </div>
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowBookModal(true)} className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/20">
-          <Plus className="w-5 h-5" /> Reservasi Baru
-        </motion.button>
+        <div className="flex gap-3">
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => { setShowQrModal(true); setQrReservation(null); setQrManualToken(""); }} className="flex items-center gap-2 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium shadow-lg shadow-purple-500/20">
+            <QrCode className="w-5 h-5" /> Scan QR
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowBookModal(true)} className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/20">
+            <Plus className="w-5 h-5" /> Reservasi Baru
+          </motion.button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
@@ -912,6 +1026,166 @@ function CashierReservationsContent() {
             </>
           );
         })()}
+      </BaseModal>
+
+      {/* QR Scanner Modal */}
+      <BaseModal
+        isOpen={showQrModal}
+        onClose={() => { setShowQrModal(false); stopQrScanner(); setQrReservation(null); setQrManualToken(""); }}
+        showCloseButton={false}
+        noPadding
+        size="md"
+      >
+        <div className="bg-purple-600 p-5 text-white flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2"><QrCode className="w-5 h-5" /> Pindai QR Booking</h2>
+            <p className="text-white/80 text-xs mt-0.5">Scan QR tiket pelanggan untuk check-in reservasi</p>
+          </div>
+          <button onClick={() => { setShowQrModal(false); stopQrScanner(); setQrReservation(null); setQrManualToken(""); }} title="Tutup" aria-label="Tutup" className="p-1 hover:bg-white/10 rounded-full text-white"><X className="w-6 h-6" /></button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Camera scanner area */}
+          {!qrReservation && (
+            <div className="space-y-3">
+              <div className="relative aspect-square w-full max-w-[280px] mx-auto overflow-hidden rounded-2xl border-2 border-dashed border-border-light dark:border-border-dark bg-black flex flex-col items-center justify-center">
+                <div id="qr-reader-modal" className="absolute inset-0 w-full h-full" />
+                {!qrScanning && (
+                  <div className="z-10 space-y-2 text-center">
+                    <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto text-purple-400">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <p className="text-xs text-muted font-bold">Kamera mati</p>
+                  </div>
+                )}
+                {qrScanError && (
+                  <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4 text-center space-y-2 z-20">
+                    <AlertCircle className="w-7 h-7 text-rose-500" />
+                    <p className="text-xs text-rose-400 font-bold leading-relaxed">{qrScanError}</p>
+                    <button onClick={startQrScanner} className="px-3 py-1.5 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase">Coba Lagi</button>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-center">
+                {qrScanning ? (
+                  <button onClick={stopQrScanner} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-xs uppercase tracking-wider">
+                    Hentikan Scan
+                  </button>
+                ) : (
+                  <button onClick={startQrScanner} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2">
+                    <Camera className="w-4 h-4" /> Mulai Scan Kamera
+                  </button>
+                )}
+              </div>
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-border-light dark:border-border-dark" />
+                <span className="flex-shrink mx-3 text-muted text-xs font-black uppercase">atau</span>
+                <div className="flex-grow border-t border-border-light dark:border-border-dark" />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={qrManualToken}
+                  onChange={e => setQrManualToken(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleQrVerifyToken(qrManualToken.trim())}
+                  placeholder="Masukkan kode booking... (RTB-...)"
+                  className="flex-1 px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-purple-400 font-mono text-sm"
+                />
+                <button
+                  onClick={() => handleQrVerifyToken(qrManualToken.trim())}
+                  disabled={qrLoading || !qrManualToken.trim()}
+                  className="px-4 py-3 bg-purple-600 text-white rounded-xl font-black hover:bg-purple-700 text-xs uppercase flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Cari
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading */}
+          {qrLoading && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-3">
+              <RefreshCw className="w-10 h-10 animate-spin text-purple-500" />
+              <p className="text-sm font-bold text-muted">Memverifikasi booking...</p>
+            </div>
+          )}
+
+          {/* Scan Result */}
+          {qrReservation && !qrLoading && (() => {
+            const r = qrReservation;
+            const parsedN = (() => { try { return JSON.parse(r.notes || '{}'); } catch(e){ return {}; } })();
+            const clientName = r.customer_name || parsedN.atas_nama || "Pelanggan";
+            const tableNum = r.table_number || (qrSelectedTableId ? tables.find((t: any) => t.id === qrSelectedTableId)?.table_number : null);
+            const statusColorMap: Record<string, string> = {
+              pending: "bg-yellow-100 text-yellow-800",
+              confirmed: "bg-green-100 text-green-800",
+              arrived: "bg-blue-100 text-blue-800",
+              cancelled: "bg-red-100 text-red-800",
+              completed: "bg-emerald-100 text-emerald-800"
+            };
+            const statusTextMap: Record<string, string> = {
+              pending: "Menunggu", confirmed: "Aktif", arrived: "Check-In", cancelled: "Batal", completed: "Selesai"
+            };
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="font-bold text-sm text-green-600 dark:text-green-400">Booking Ditemukan</span>
+                  </div>
+                  <button onClick={() => { setQrReservation(null); setQrManualToken(""); }} className="text-muted hover:text-red-500 text-xs flex items-center gap-1"><XCircle className="w-4 h-4" /> Scan Ulang</button>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl p-4 border border-border-light dark:border-border-dark space-y-3 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono font-black text-primary text-base">#{r.id?.substring(0,8).toUpperCase()}</span>
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${statusColorMap[r.status] || 'bg-gray-100 text-gray-800'}`}>{statusTextMap[r.status] || r.status}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Nama</span><p className="font-bold">{clientName}</p></div>
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Tamu</span><p className="font-bold">{r.guest_count} Orang</p></div>
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Tanggal</span><p className="font-bold">{r.reservation_date}</p></div>
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Waktu</span><p className="font-bold">{r.reservation_time?.substring(0,5)} WIB</p></div>
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Meja</span><p className="font-bold">{tableNum ? `Meja ${tableNum}` : 'Belum ditentukan'}</p></div>
+                    <div><span className="text-muted block uppercase font-bold text-[10px]">Pembayaran</span><p className={`font-bold text-xs ${r.payment_status === 'paid' ? 'text-green-600' : 'text-red-500'}`}>{r.payment_status === 'paid' ? 'Lunas' : r.payment_status === 'dp_paid' ? 'DP Dibayar' : 'Belum Bayar'}</p></div>
+                  </div>
+                </div>
+
+                {(['pending', 'confirmed', 'arrived', 'seated'].includes(r.status) || (r.status === 'cancelled' && qrCanOverride)) && (
+                  <div className="space-y-3 pt-2 border-t border-border-light dark:border-border-dark">
+                    <p className="text-xs font-black uppercase text-muted">Assign Meja & Check-In</p>
+                    <select
+                      value={qrSelectedTableId}
+                      onChange={e => setQrSelectedTableId(e.target.value)}
+                      title="Pilih meja"
+                      className="w-full p-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl outline-none focus:ring-2 focus:ring-purple-400 text-sm font-bold"
+                    >
+                      <option value="">-- Pilih Meja (Opsional) --</option>
+                      {tables.map((t: any) => (
+                        <option key={t.id} value={t.id}>Meja {t.table_number} (Kap: {t.capacity})</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-3">
+                      {r.status === 'cancelled' && qrCanOverride ? (
+                        <button onClick={() => handleQrCheckIn(true)} disabled={qrUpdatingStatus} className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 disabled:opacity-50">
+                          {qrUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Override & Check-In
+                        </button>
+                      ) : (
+                        <button onClick={() => handleQrCheckIn(false)} disabled={qrUpdatingStatus} className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 disabled:opacity-50">
+                          {qrUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Check-In Sekarang
+                        </button>
+                      )}
+                      {r.payment_status !== 'paid' && (
+                        <button onClick={() => { setShowQrModal(false); stopQrScanner(); window.location.href = `/cashier/pos?reservation_id=${r.id}`; }} className="px-4 py-3 bg-primary text-white rounded-xl font-bold text-xs uppercase flex items-center gap-1.5">
+                          <Receipt className="w-4 h-4" /> POS
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </BaseModal>
 
       {/* Pop-up Modal Konfirmasi Detail Reservasi */}

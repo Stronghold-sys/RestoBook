@@ -157,7 +157,9 @@ export default function ProfileContent() {
     employee_id: "", 
     email_unlocked: false,
     address: "",
-    birthdate: ""
+    birthdate: "",
+    auth_status: "",
+    google_account_linked: false
   });
   const [originalProfile, setOriginalProfile] = useState<any>(null);
 
@@ -437,7 +439,9 @@ export default function ProfileContent() {
           employee_id: data.employee_id || "",
           email_unlocked: !!data.email_unlocked,
           address: data.address || "",
-          birthdate: data.birthdate || ""
+          birthdate: data.birthdate || "",
+          auth_status: data.auth_status || "",
+          google_account_linked: !!data.google_account_linked
         };
         setProfile(profileObj);
         setOriginalProfile(profileObj);

@@ -44,8 +44,21 @@ export async function POST(request: NextRequest) {
     const { browser, device } = parseUserAgent(userAgent);
 
     if (action === 'change_password') {
-      if (!oldPassword || !newPassword) {
-        return NextResponse.json({ error: 'Password lama dan baru wajib diisi' }, { status: 400 });
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('auth_status')
+        .eq('user_id', user.id)
+        .single();
+      const isGoogleOnly = profile?.auth_status === 'google_only';
+
+      if (isGoogleOnly) {
+        if (!newPassword) {
+          return NextResponse.json({ error: 'Password baru wajib diisi' }, { status: 400 });
+        }
+      } else {
+        if (!oldPassword || !newPassword) {
+          return NextResponse.json({ error: 'Password lama dan baru wajib diisi' }, { status: 400 });
+        }
       }
 
       // Validasi password baru
@@ -53,24 +66,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Password baru minimal harus 8 karakter' }, { status: 400 });
       }
 
-      // Verifikasi password lama dengan sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email!,
-        password: oldPassword
-      });
-
-      if (signInError) {
-        await supabaseAdmin.from('security_logs').insert({
-          user_id: user.id,
-          ip_address: clientIP,
-          browser,
-          device,
-          user_agent: userAgent,
-          activity: 'CHANGE_PASSWORD_FAILED_INVALID_OLD',
-          endpoint: '/api/profile/security',
-          status: 'failed'
+      if (!isGoogleOnly) {
+        // Verifikasi password lama dengan sign in
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email!,
+          password: oldPassword
         });
-        return NextResponse.json({ error: 'Password lama tidak sesuai' }, { status: 400 });
+
+        if (signInError) {
+          await supabaseAdmin.from('security_logs').insert({
+            user_id: user.id,
+            ip_address: clientIP,
+            browser,
+            device,
+            user_agent: userAgent,
+            activity: 'CHANGE_PASSWORD_FAILED_INVALID_OLD',
+            endpoint: '/api/profile/security',
+            status: 'failed'
+          });
+          return NextResponse.json({ error: 'Password lama tidak sesuai' }, { status: 400 });
+        }
       }
 
       // Update password
@@ -80,6 +95,30 @@ export async function POST(request: NextRequest) {
       );
 
       if (updateError) throw updateError;
+
+      // Update status di database profiles
+      const nowStr = new Date().toISOString();
+      if (isGoogleOnly) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            auth_status: 'password_created',
+            password_created_at: nowStr,
+            last_password_change_at: nowStr
+          })
+          .eq('user_id', user.id);
+      } else {
+        const nextStatus = profile?.auth_status === 'password_created' || profile?.auth_status === 'password_updated'
+          ? 'password_updated'
+          : 'password_login_enabled';
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            auth_status: nextStatus,
+            last_password_change_at: nowStr
+          })
+          .eq('user_id', user.id);
+      }
 
       // Log audit
       await supabaseAdmin.from('security_logs').insert({

@@ -10,15 +10,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (isAdminBypass) {
+    // Dapatkan status auth_status dari database profiles
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .select('role, auth_status')
+      .eq('user_id', userId)
+      .single();
+
+    const isGoogleOnly = profile?.auth_status === 'google_only';
+
+    if (isGoogleOnly) {
+      // Pengecualian: bypass OTP & bypass password lama karena ini password pertama kali
+      // Tidak ada pengecekan OTP di sini.
+    } else if (isAdminBypass) {
       // Security Check: Verify that the user actually has the admin role in database
-      const { data: prof, error: profErr } = await supabaseAdmin
-        .from('profiles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-        
-      if (profErr || prof?.role !== 'admin') {
+      if (profileErr || profile?.role !== 'admin') {
         return NextResponse.json({ error: 'Akses ditolak. Hanya admin yang dapat melewati verifikasi OTP.' }, { status: 403 });
       }
     } else {
@@ -51,6 +57,31 @@ export async function POST(req: Request) {
     });
 
     if (authError) throw authError;
+
+    // 2. Perbarui status akun dan timestamp pembuatan/perubahan password di profiles
+    const nowStr = new Date().toISOString();
+    if (isGoogleOnly) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({
+          auth_status: 'password_created',
+          password_created_at: nowStr,
+          last_password_change_at: nowStr
+        })
+        .eq('user_id', userId);
+    } else {
+      const nextStatus = profile?.auth_status === 'password_created' || profile?.auth_status === 'password_updated'
+        ? 'password_updated'
+        : 'password_login_enabled'; // Jika sebelumnya default / status lain
+
+      await supabaseAdmin
+        .from('profiles')
+        .update({
+          auth_status: nextStatus,
+          last_password_change_at: nowStr
+        })
+        .eq('user_id', userId);
+    }
 
     // 3. Kirim Notifikasi Sukses
     try {

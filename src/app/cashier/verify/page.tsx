@@ -194,13 +194,13 @@ export default function CashierVerifyPage() {
       const filePath = `verification-proofs/${fileName}`;
 
       const { data, error: uploadErr } = await supabase.storage
-        .from('documents')
+        .from('profiles')
         .upload(filePath, file);
 
       if (uploadErr) throw uploadErr;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('documents')
+        .from('profiles')
         .getPublicUrl(filePath);
 
       setAttachmentUrl(publicUrl);

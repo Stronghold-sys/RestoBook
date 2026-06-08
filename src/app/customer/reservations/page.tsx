@@ -937,25 +937,26 @@ export default function CustomerReservationsPage() {
 
 
 
-  const getParsedNotes = (notesStr: string) => {
+  const getParsedNotes = (notesStr: any) => {
     if (!notesStr) return { atas_nama: "", telepon: "", catatan: "", meja_tambahan: [], meja_ids: [] };
+    const strVal = typeof notesStr === "string" ? notesStr : String(notesStr);
     try {
-      const parsed = JSON.parse(notesStr);
+      const parsed = JSON.parse(strVal);
       if (parsed && typeof parsed === "object") {
         const note = parsed.catatan || parsed.catatan_batal || "";
-        const cleanNote = note.trim();
+        const cleanNote = typeof note === "string" ? note.trim() : String(note).trim();
         const finalNote = (cleanNote === "-" || cleanNote === "_" || cleanNote === "") ? "" : cleanNote;
         return {
-          ...parsed,
-          atas_nama: parsed.atas_nama || "",
-          telepon: parsed.telepon || "",
-          meja_tambahan: parsed.meja_tambahan || [],
-          meja_ids: parsed.meja_ids || [],
-          catatan: finalNote
+          atas_nama: String(parsed.atas_nama || ""),
+          telepon: String(parsed.telepon || ""),
+          meja_tambahan: Array.isArray(parsed.meja_tambahan) ? parsed.meja_tambahan : [],
+          meja_ids: Array.isArray(parsed.meja_ids) ? parsed.meja_ids : [],
+          catatan: finalNote,
+          ...parsed
         };
       }
     } catch (e) {}
-    const cleanStr = notesStr.trim();
+    const cleanStr = strVal.trim();
     const finalStr = (cleanStr === "-" || cleanStr === "_" || cleanStr === "") ? "" : cleanStr;
     return { atas_nama: "", telepon: "", catatan: finalStr, meja_tambahan: [], meja_ids: [] };
   };
@@ -1031,36 +1032,50 @@ export default function CustomerReservationsPage() {
   };
 
   const filteredHistory = reservations.filter(res => {
-    // 1. Tab Filter
-    if (historyTab === "active" && !ACTIVE_STATUSES.includes(res.status)) return false;
-    if (historyTab === "completed" && res.status !== "completed") return false;
-    if (historyTab === "cancelled" && res.status !== "cancelled") return false;
+    if (!res) return false;
     
-    if (historyTab === "refund_pending" && !["pengajuan_refund", "waiting_review", "menunggu_peninjauan", "menunggu_verifikasi"].includes(res.refund_status || "")) return false;
-    if (historyTab === "refund_approved" && res.refund_status !== "disetujui") return false;
-    if (historyTab === "refund_rejected" && !["ditolak", "rejected"].includes(res.refund_status || "")) return false;
-    if (historyTab === "refund_completed" && !["refund_selesai", "completed", "dana_dikirim"].includes(res.refund_status || "")) return false;
+    // 1. Tab Filter
+    const statusVal = res.status || "";
+    if (historyTab === "active" && !ACTIVE_STATUSES.includes(statusVal)) return false;
+    if (historyTab === "completed" && statusVal !== "completed") return false;
+    if (historyTab === "cancelled" && statusVal !== "cancelled") return false;
+    
+    const refundStatusVal = res.refund_status || "";
+    if (historyTab === "refund_pending" && !["pengajuan_refund", "waiting_review", "menunggu_peninjauan", "menunggu_verifikasi"].includes(refundStatusVal)) return false;
+    if (historyTab === "refund_approved" && refundStatusVal !== "disetujui") return false;
+    if (historyTab === "refund_rejected" && !["ditolak", "rejected"].includes(refundStatusVal)) return false;
+    if (historyTab === "refund_completed" && !["refund_selesai", "completed", "dana_dikirim"].includes(refundStatusVal)) return false;
 
     // 2. Search Query (Nomor Reservasi / Catatan / Status)
     const notesParsed = getParsedNotes(res.notes);
-    const searchLower = historySearchQuery.toLowerCase();
+    const searchLower = (historySearchQuery || "").toLowerCase();
+    
+    const idLower = String(res.id || "").toLowerCase();
+    const catatanLower = String(notesParsed.catatan || "").toLowerCase();
+    const atasNamaLower = String(notesParsed.atas_nama || "").toLowerCase();
+    
+    const statusTextLower = String(getStatusText(statusVal) || "").toLowerCase();
+    const refundStatusTextLower = String(getRefundStatusText(refundStatusVal) || "").toLowerCase();
+    
     const matchesSearch = 
-      res.id.toLowerCase().includes(searchLower) ||
-      notesParsed.catatan.toLowerCase().includes(searchLower) ||
-      notesParsed.atas_nama.toLowerCase().includes(searchLower) ||
-      getStatusText(res.status).toLowerCase().includes(searchLower) ||
-      (res.refund_status && getRefundStatusText(res.refund_status).toLowerCase().includes(searchLower));
+      idLower.includes(searchLower) ||
+      catatanLower.includes(searchLower) ||
+      atasNamaLower.includes(searchLower) ||
+      statusTextLower.includes(searchLower) ||
+      (refundStatusVal && refundStatusTextLower.includes(searchLower));
     
     if (!matchesSearch) return false;
 
     // 3. Date Range Filter
-    if (historyStartDate && res.reservation_date < historyStartDate) return false;
-    if (historyEndDate && res.reservation_date > historyEndDate) return false;
+    const resDate = res.reservation_date || "";
+    if (historyStartDate && resDate < historyStartDate) return false;
+    if (historyEndDate && resDate > historyEndDate) return false;
 
     // 4. Refund Method Filter
+    const refundMethodVal = res.refund_method || "";
     if (historyRefundMethodFilter !== "all") {
-      if (historyRefundMethodFilter === "dompetku" && res.refund_method !== "dompetku") return false;
-      if (historyRefundMethodFilter === "bank" && res.refund_method !== "transfer") return false;
+      if (historyRefundMethodFilter === "dompetku" && refundMethodVal !== "dompetku") return false;
+      if (historyRefundMethodFilter === "bank" && refundMethodVal !== "transfer") return false;
     }
 
     // 5. Jenis Refund Filter (Reservasi vs Pesanan vs Gabungan)
@@ -1072,7 +1087,7 @@ export default function CustomerReservationsPage() {
     }
 
     // 6. Reservation Number Specific Filter
-    if (historySearchResNo && !res.id.toLowerCase().includes(historySearchResNo.toLowerCase())) return false;
+    if (historySearchResNo && !idLower.includes(historySearchResNo.toLowerCase())) return false;
 
     return true;
   });
@@ -1706,7 +1721,7 @@ export default function CustomerReservationsPage() {
               {menuItems
                 .filter((item) => {
                   const matchesCategory = activeCategory === "all" || item.category_id === activeCategory;
-                  const matchesSearch = item.name.toLowerCase().includes(menuSearch.toLowerCase());
+                  const matchesSearch = String(item.name || "").toLowerCase().includes((menuSearch || "").toLowerCase());
                   return matchesCategory && matchesSearch;
                 })
                 .map((item) => {

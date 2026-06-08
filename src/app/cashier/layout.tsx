@@ -21,8 +21,17 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return setLoading(false);
 
-        // 1. Cek Profil (Blokir)
+        // 1. Cek Profil (Blokir & Verifikasi Data)
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
+        
+        if (profile && !profile.data_verified) {
+          if (pathname !== "/cashier/verify") {
+            router.push("/cashier/verify");
+          }
+          setLoading(false);
+          return;
+        }
+
         if (profile?.is_blocked) {
           setLockdown({ active: true, type: 'blocked' });
           return;

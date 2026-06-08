@@ -133,6 +133,24 @@ function CashierReservationsContent() {
   }, [highlightId, reservations]);
 
   useEffect(() => {
+    const scanParam = searchParams?.get("scan");
+    if (scanParam === "true") {
+      setShowQrModal(true);
+      setQrReservation(null);
+      setQrManualToken("");
+      
+      // Clean up the URL query parameter
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("scan");
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {
+        console.error("Failed to clean scan param from URL", e);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (selectedRes && reservations.length > 0) {
       const matched = reservations.find(r => r.id === selectedRes.id);
       if (matched) {

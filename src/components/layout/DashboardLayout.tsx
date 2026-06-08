@@ -775,7 +775,6 @@ export default function DashboardLayout({ children, role: initialRole }: Dashboa
           },
           { name: "Antrian Dapur", href: "/cashier/queue", icon: ListOrdered },
           { name: "Reservasi", href: "/cashier/reservations", icon: CalendarDays },
-          { name: "Pindai QR Booking", href: "/cashier/scan", icon: QrCode },
           { name: "Live Chat", href: "/cashier/chat", icon: MessageSquare, badge: unreadLiveChatCount },
           { name: "Transaksi", href: "/cashier/transactions", icon: Receipt },
           { name: "Absensi", href: "/cashier/attendance", icon: ClipboardList },

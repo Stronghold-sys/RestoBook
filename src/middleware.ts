@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
 import { getSupabaseAdmin } from './lib/supabase/admin'
 import { parseUserAgent, generateCSRFToken } from './lib/security'
+import { handleCors } from './lib/cors'
+import { hasMinimumRole, getDashboardRedirect, UserRole } from './lib/rbac'
 import { 
   getSecureClientIP, 
   detectProxyOrVPN, 
@@ -487,6 +489,12 @@ function createBlockResponse(request: NextRequest, message: string, status: numb
 // MIDDLEWARE UTAMA
 // ═══════════════════════════════════════════════════════════════════
 export async function middleware(request: NextRequest) {
+  // CORS Security Handling (intercepts options preflight and blocked origins)
+  const corsResponse = handleCors(request);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   const path = request.nextUrl.pathname;
 
   // 0. Force HTTPS redirect (except for localhost)
@@ -955,7 +963,7 @@ export async function middleware(request: NextRequest) {
   
   if (isAuthPath && user) {
     const role = await getUserRole(user.id);
-    return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(getDashboardRedirect(role as UserRole), request.url));
   }
 
   const isProtectedRoute = path.startsWith('/customer') || path.startsWith('/cashier') || path.startsWith('/admin');
@@ -965,7 +973,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Ambil profile status untuk pemblokiran manual
     const supabase = getSupabaseAdmin();
     const { data: profile } = await supabase
       .from('profiles')
@@ -973,7 +980,7 @@ export async function middleware(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    const role = profile?.role;
+    const role = profile?.role as UserRole;
     const statusKaryawan = profile?.status_karyawan;
     const status = profile?.status;
 
@@ -1001,13 +1008,14 @@ export async function middleware(request: NextRequest) {
       return res;
     }
 
-    if (path.startsWith('/customer') && role !== 'customer') {
+    // Gunakan verifikasi hierarki RBAC
+    if (path.startsWith('/admin') && !hasMinimumRole(role, 'admin')) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
-    if (path.startsWith('/cashier') && role !== 'cashier') {
+    if (path.startsWith('/cashier') && !hasMinimumRole(role, 'cashier')) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
-    if (path.startsWith('/admin') && role !== 'admin') {
+    if (path.startsWith('/customer') && !hasMinimumRole(role, 'customer')) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
   }
@@ -1034,6 +1042,9 @@ export async function middleware(request: NextRequest) {
     "upgrade-insecure-requests"
   ].join('; ');
   finalResponse.headers.set('Content-Security-Policy', cspHeader);
+
+  // CORS Headers Integration on successful responses
+  handleCors(request, finalResponse);
 
   return finalResponse;
 }

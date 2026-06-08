@@ -1067,7 +1067,7 @@ function CashierReservationsContent() {
           {!qrReservation && (
             <div className="space-y-3">
               <div className="relative aspect-square w-full max-w-[280px] mx-auto overflow-hidden rounded-2xl border-2 border-dashed border-border-light dark:border-border-dark bg-black flex flex-col items-center justify-center">
-                <div id="qr-reader-modal" className="absolute inset-0 w-full h-full" />
+                <div id="qr-reader-modal" className="absolute inset-0 w-full h-full [&_video]:!object-cover [&_video]:!w-full [&_video]:!h-full [&_video]:!absolute [&_video]:!inset-0 [&_div]:!w-full [&_div]:!h-full [&_div]:!relative" />
                 {!qrScanning && (
                   <div className="z-10 space-y-2 text-center">
                     <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto text-purple-400">

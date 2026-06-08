@@ -568,10 +568,12 @@ export default function CashierVerifyPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold">
                 {selectedFields.includes('full_name') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">Nama Lengkap yang Benar</label>
+                    <label htmlFor="new_full_name" className="text-[10px] text-muted uppercase block mb-1">Nama Lengkap yang Benar</label>
                     <input
+                      id="new_full_name"
                       type="text"
                       required
+                      placeholder="Masukkan nama lengkap baru"
                       value={proposedValues.full_name}
                       onChange={(e) => setProposedValues({ ...proposedValues, full_name: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none"
@@ -580,10 +582,12 @@ export default function CashierVerifyPage() {
                 )}
                 {selectedFields.includes('email') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">Email yang Benar</label>
+                    <label htmlFor="new_email" className="text-[10px] text-muted uppercase block mb-1">Email yang Benar</label>
                     <input
+                      id="new_email"
                       type="email"
                       required
+                      placeholder="Masukkan email baru"
                       value={proposedValues.email}
                       onChange={(e) => setProposedValues({ ...proposedValues, email: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none"
@@ -592,10 +596,12 @@ export default function CashierVerifyPage() {
                 )}
                 {selectedFields.includes('phone') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">No. Telepon yang Benar</label>
+                    <label htmlFor="new_phone" className="text-[10px] text-muted uppercase block mb-1">No. Telepon yang Benar</label>
                     <input
+                      id="new_phone"
                       type="text"
                       required
+                      placeholder="Masukkan no. telepon baru"
                       value={proposedValues.phone}
                       onChange={(e) => setProposedValues({ ...proposedValues, phone: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none"
@@ -604,10 +610,12 @@ export default function CashierVerifyPage() {
                 )}
                 {selectedFields.includes('employee_id') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">ID Karyawan yang Benar</label>
+                    <label htmlFor="new_employee_id" className="text-[10px] text-muted uppercase block mb-1">ID Karyawan yang Benar</label>
                     <input
+                      id="new_employee_id"
                       type="text"
                       required
+                      placeholder="Masukkan ID karyawan baru"
                       value={proposedValues.employee_id}
                       onChange={(e) => setProposedValues({ ...proposedValues, employee_id: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none"
@@ -616,8 +624,9 @@ export default function CashierVerifyPage() {
                 )}
                 {selectedFields.includes('role') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">Role yang Benar</label>
+                    <label htmlFor="new_role" className="text-[10px] text-muted uppercase block mb-1">Role yang Benar</label>
                     <select
+                      id="new_role"
                       value={proposedValues.role}
                       onChange={(e) => setProposedValues({ ...proposedValues, role: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none font-bold text-xs"
@@ -629,10 +638,12 @@ export default function CashierVerifyPage() {
                 )}
                 {selectedFields.includes('jabatan') && (
                   <div>
-                    <label className="text-[10px] text-muted uppercase block mb-1">Jabatan yang Benar</label>
+                    <label htmlFor="new_jabatan" className="text-[10px] text-muted uppercase block mb-1">Jabatan yang Benar</label>
                     <input
+                      id="new_jabatan"
                       type="text"
                       required
+                      placeholder="Masukkan jabatan baru"
                       value={proposedValues.jabatan}
                       onChange={(e) => setProposedValues({ ...proposedValues, jabatan: e.target.value })}
                       className="w-full p-2.5 bg-white dark:bg-gray-950 border border-border-light dark:border-border-dark rounded-lg focus:border-primary outline-none"

@@ -112,7 +112,85 @@ Next.js Middleware menggunakan cache memori in-memory dan database Supabase untu
 
 ---
 
-## 6. Pengaturan Produksi Cloudflare CDN/Edge (Rekomendasi)
+## 6. Implementasi Web Application Firewall (WAF)
+
+Aplikasi RestoBook dilengkapi dengan **Virtual WAF (Web Application Firewall)** di tingkat aplikasi ([waf.ts](file:///c:/Users/rakba/Documents/Restoran/restobook/src/lib/waf.ts) & [middleware.ts](file:///c:/Users/rakba/Documents/Restoran/restobook/src/middleware.ts)) serta konfigurasi rekomendasi **WAF di Layer Edge (Cloudflare)**.
+
+### A. Alur Kerja WAF (Request Flow)
+1. **Request Masuk:** Request HTTP/S diterima oleh CDN (Cloudflare) / Server Next.js.
+2. **Edge Inspection:** Cloudflare WAF memeriksa signature IP, User-Agent, dan payload sesuai aturan yang disetel.
+3. **Application Middleware Inspection:**
+   - Middleware memeriksa cookie `waf_challenge_verified`. Jika ada dan valid (usia < 30 menit), verifikasi tantangan dilewati.
+   - Panggilan [inspectRequest](file:///c:/Users/rakba/Documents/Restoran/restobook/src/lib/waf.ts) menganalisis parameter URL, headers, dan cookies terhadap pola serangan (regex).
+4. **WAF Action Resolution:**
+   - **`block`:** Request langsung diputus, insiden dicatat di tabel `security_incidents`, dan response halaman error 403 Forbidden / JSON dikembalikan.
+   - **`challenge`:** Request diintersepsi dengan halaman verifikasi "Saya Bukan Bot" (Turnstile Simulator). Setelah lolos verifikasi, cookie `waf_challenge_verified` disetel selama 30 menit dan halaman dimuat ulang.
+   - **`log_only`:** Aktivitas mencurigakan dicatat di database, namun request tetap diteruskan.
+   - **`rate_limit`:** Menurunkan batas ambang batas (rate limit threshold) sebesar 5x lipat untuk request berikutnya dari IP/sidik jari bersangkutan.
+5. **Diteruskan ke Backend:** Request yang lolos inspeksi diteruskan ke Route Handler atau API Controller Next.js.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    Actor User/Attacker as Pengguna / Penyerang
+    participant Edge as Cloudflare Edge WAF
+    participant Mid as Next.js Middleware WAF
+    participant DB as Supabase DB (Logs)
+    participant Backend as Backend Controller
+
+    User/Attacker->>Edge: Request HTTP/S
+    alt Terdeteksi Aturan Cloudflare WAF
+        Edge-->>User/Attacker: Block / Challenge Turnstile (403)
+    else Lolos Edge WAF
+        Edge->>Mid: Forward Request ke Next.js Origin
+        Mid->>Mid: Cek Cookie 'waf_challenge_verified'
+        alt Cookie Valid & Rule Action == challenge
+            Mid->>Backend: Forward (Bypass Challenge)
+        else
+            Mid->>Mid: inspectRequest(request)
+            alt Action == block
+                Mid->>DB: Catat security_incidents
+                Mid-->>User/Attacker: Return Halaman Error 403 (Block)
+            else Action == challenge
+                Mid->>DB: Catat security_incidents
+                Mid-->>User/Attacker: Return Turnstile Simulator Page
+            else Action == rate_limit
+                Mid->>Mid: Perkecil Limit (5x lebih ketat)
+                Mid->>Backend: Forward Request
+            else Action == log_only
+                Mid->>DB: Catat security_incidents
+                Mid->>Backend: Forward Request
+            else Action == allow
+                Mid->>Backend: Forward Request
+            end
+        end
+    end
+```
+
+### B. Aturan Deteksi (Signature Rules)
+Virtual WAF RestoBook memindai input terhadap ancaman keamanan utama:
+- **SQL Injection (SQLi):** Mendeteksi pola query SQL seperti `UNION SELECT`, `INSERT INTO`, `OR 1=1`, dll.
+- **Cross-Site Scripting (XSS):** Memblokir tag `<script>`, `javascript:`, inline event handlers (`onerror`, `onload`), dan manipulasi cookie/window.
+- **Path Traversal & LFI/RFI:** Memindai rute direktori seperti `../`, `..\`, `/etc/passwd`, file konfigurasi sistem, dan IP metadata loopback `169.254.169.254`.
+- **Command Injection:** Memblokir karakter pemisah perintah shell seperti `; cat`, `| bash`, `&& sh`, dan system commands.
+- **SSRF (Server-Side Request Forgery):** Memblokir parameter URL yang mengarah ke internal host seperti `localhost`, `127.0.0.1`, IP range privat `192.168.x.x`, `10.x.x.x`, dll.
+- **Probing & Path Enumeration:** Memblokir request ke path/berkas sensitif yang sering dipindai bot (`wp-admin`, `.env`, `.git`, `xmlrpc.php`, `phpinfo`, database dumps).
+- **User-Agent Malicious:** Memblokir program pemindai kerentanan otomatis (`sqlmap`, `nikto`, `nmap`, `dirbuster`, dll.).
+
+### C. Proteksi Manipulasi Parameter (Parameter Tampering Protection)
+WAF memantau parameter sensitif secara ketat melalui fungsi [detectParameterManipulation](file:///c:/Users/rakba/Documents/Restoran/restobook/src/lib/waf.ts):
+1. **Financial Parameters (`price`, `discount`, `total`, `dp_amount`, `grand_total`):** Wajib berupa nilai angka non-negatif (`/^[0-9]+(\.[0-9]+)?$/`). Karakter non-numerik atau nilai negatif akan langsung diblokir.
+2. **Access Control Parameters (`role`, `privilege`):** Hanya mengizinkan nilai yang terdaftar dalam whitelist peran resmi (`customer`, `cashier`, `admin`, `superadmin`).
+3. **Identity Parameters (`id`, `user_id`):** Wajib mengikuti format UUID v4 standar atau integer ID numerik. String pendek alfanumerik maks 24 karakter diizinkan jika bersih dari SQLi/XSS.
+
+### D. Prinsip Defense in Depth
+WAF bekerja sebagai **lapisan keamanan terluar** (first line of defense), namun **bukan pengganti validasi backend**. 
+- WAF bertugas memotong request berbahaya dengan overhead minimal sebelum menyentuh logika komputasi berat.
+- Validasi data tingkat lanjut (seperti pemeriksaan kecocokan harga menu dengan database asli pada *Price Tampering Protection* layer) dan kontrol akses berbasis *Row-Level Security (RLS)* di database tetap berjalan secara independen untuk memastikan keamanan maksimal meskipun WAF mengalami bypass.
+
+---
+
+## 7. Pengaturan Produksi Cloudflare CDN/Edge (Rekomendasi)
 
 Untuk mengamankan aplikasi secara optimal, konfigurasi berikut wajib disetel pada dashboard Cloudflare:
 
@@ -142,7 +220,7 @@ Buat aturan kustom berikut di menu **Security > WAF > Custom Rules**:
 
 ---
 
-## 7. Logging, Monitoring, & Incident Response (IR)
+## 8. Logging, Monitoring, & Incident Response (IR)
 
 ### A. Logging Struktur Keamanan
 Tabel `security_logs` mencatat seluruh peristiwa keamanan di aplikasi. Parameter log terstruktur meliputi:

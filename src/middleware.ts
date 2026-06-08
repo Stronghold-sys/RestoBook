@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from './lib/supabase/admin'
 import { parseUserAgent, generateCSRFToken } from './lib/security'
 import { handleCors } from './lib/cors'
 import { hasMinimumRole, getDashboardRedirect, UserRole } from './lib/rbac'
+import { inspectRequest } from './lib/waf'
 import { 
   getSecureClientIP, 
   detectProxyOrVPN, 
@@ -485,6 +486,200 @@ function createBlockResponse(request: NextRequest, message: string, status: numb
   });
 }
 
+function createChallengeResponse(request: NextRequest, message: string): NextResponse {
+  const path = request.nextUrl.pathname;
+  
+  if (path.startsWith('/api')) {
+    return new NextResponse(
+      JSON.stringify({ error: "Verification required (Challenge)", challenge: true }),
+      { status: 403, headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' } }
+    );
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Keamanan - RestoBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+      top: 10%;
+      left: 10%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 480px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon {
+      width: 36px;
+      height: 36px;
+      color: #6366f1;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 16px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .highlight {
+      background: linear-gradient(to right, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #9ca3af;
+      margin-bottom: 32px;
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 16px;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #4b5563;
+      font-weight: 500;
+    }
+    .spinner {
+      display: none;
+      width: 24px;
+      height: 24px;
+      border: 3px dashed #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <script>
+    function verifyHuman() {
+      const btn = document.getElementById('verify-btn');
+      const spinner = document.getElementById('verify-spinner');
+      const text = document.getElementById('verify-text');
+      
+      btn.style.pointerEvents = 'none';
+      text.style.display = 'none';
+      spinner.style.display = 'block';
+      
+      setTimeout(() => {
+        // Set cookie to whitelist this device for 30 minutes
+        const now = Date.now();
+        document.cookie = 'waf_challenge_verified=' + now + '; path=/; max-age=1800; secure; samesite=strict';
+        
+        // Reload current page to bypass WAF
+        window.location.reload();
+      }, 1500);
+    }
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Keamanan Edge</div>
+    <div class="icon-container">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+    </div>
+    <h1>Verifikasi <span class="highlight">Kemanusiaan</span></h1>
+    <p>\${message}</p>
+    <button id="verify-btn" onclick="verifyHuman()" class="btn">
+      <span id="verify-text">Saya Bukan Bot (Verifikasi)</span>
+      <div id="verify-spinner" class="spinner"></div>
+    </button>
+    <div class="footer">RestoBook WAF Shield Protection</div>
+  </div>
+</body>
+</html>`;
+
+  return new NextResponse(html, {
+    status: 403,
+    headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff' }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MIDDLEWARE UTAMA
 // ═══════════════════════════════════════════════════════════════════
@@ -520,6 +715,42 @@ export async function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
 
   cleanupMemStore();
+
+  // ── WAF (Web Application Firewall) Layer ──
+  const hasChallengeVerified = request.cookies.get('waf_challenge_verified')?.value;
+  const wafResult = await inspectRequest(request);
+  let wafRateLimitFactor = 1;
+
+  if (wafResult.action !== 'allow') {
+    if (wafResult.action === 'rate_limit') {
+      wafRateLimitFactor = 5;
+    } else if (wafResult.action === 'challenge' && hasChallengeVerified) {
+      // Challenge passed, bypass
+    } else {
+      // Log security incident to db if block, challenge, or log_only
+      if (['block', 'challenge', 'log_only'].includes(wafResult.action)) {
+        await logSecurityIncident({
+          ipAddress: ip,
+          endpoint: path,
+          attackType: wafResult.attackType || 'WAF_GENERIC',
+          severity: wafResult.severity || 'high',
+          payload: { 
+            reason: wafResult.reason, 
+            method: request.method,
+            userAgent
+          }
+        });
+      }
+
+      if (wafResult.action === 'block') {
+        return createBlockResponse(request, wafResult.reason || 'Akses ditangguhkan oleh kebijakan keamanan WAF.', 403);
+      }
+
+      if (wafResult.action === 'challenge') {
+        return createChallengeResponse(request, wafResult.reason || 'Sistem kami mendeteksi aktivitas mencurigakan. Selesaikan verifikasi di bawah.');
+      }
+    }
+  }
 
   // A. Deteksi Path Traversal
   if (hasPathTraversal(path)) {
@@ -909,8 +1140,13 @@ export async function middleware(request: NextRequest) {
 
     if (emergency.tightened_rate_limits) {
       limit = Math.max(2, Math.floor(limit / 10)); // Emergency Level 1: perketat 10x
-    } else if (isProxyOrVpn) {
-      limit = Math.max(10, Math.floor(limit / 3));
+    } else {
+      if (isProxyOrVpn) {
+        limit = Math.max(10, Math.floor(limit / 3));
+      }
+      if (wafRateLimitFactor > 1) {
+        limit = Math.max(2, Math.floor(limit / wafRateLimitFactor));
+      }
     }
 
     // Multi-layer rate checks

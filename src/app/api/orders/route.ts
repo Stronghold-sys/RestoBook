@@ -5,6 +5,7 @@ import { checkMaintenanceActive } from '@/utils/maintenanceHelper';
 import { getPaidNotification } from '@/utils/notificationHelper';
 import { updateOrderEstimation } from '@/lib/order-estimation';
 import { consumeNonce, logSecurityIncident } from '../../../lib/securityHardening';
+import { validateAndCalculatePrice } from '../../../lib/priceProtection';
 
 function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // km
@@ -140,139 +141,38 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Data pesanan, item, dan metode pembayaran wajib diisi' }, { status: 400 });
       }
 
-      // 1. Ambil pengaturan restoran
-      const { data: settings, error: settingsErr } = await supabaseAdmin
-        .from('restaurant_settings')
-        .select('*')
-        .single();
-      if (settingsErr || !settings) {
-        return NextResponse.json({ error: 'Pengaturan restoran tidak ditemukan' }, { status: 500 });
-      }
-
-      // 2. Validasi parameter pengiriman jika tipe pesanan delivery
-      let calculatedShippingFee = 0;
-      let calculatedShippingDiscount = 0;
-      let shippingDistance = null;
-
-      if (orderData.order_type === 'delivery') {
-        if (!settings.is_shipping_enabled) {
-          return NextResponse.json({ error: 'Layanan pengiriman saat ini sedang dinonaktifkan' }, { status: 400 });
-        }
-
-        const clientDistance = Number(orderData.distance_km || 0);
-        const lat = Number(customerLat || 0);
-        const lng = Number(customerLng || 0);
-
-        // Hitung jarak lurus sebagai batas bawah
-        const restoLat = Number(settings.resto_latitude || -7.7829);
-        const restoLng = Number(settings.resto_longitude || 110.3323);
-        const straightLineDistance = calculateHaversineDistance(restoLat, restoLng, lat, lng);
-
-        // Jika jarak yang dikirim client lebih kecil dari 90% jarak lurus (margin error floating point), ada indikasi manipulasi
-        if (clientDistance < straightLineDistance * 0.9) {
-          return NextResponse.json({ error: 'Jarak pengiriman tidak valid' }, { status: 400 });
-        }
-
-        // Cek jarak maksimum pengiriman
-        if (straightLineDistance > Number(settings.max_shipping_distance || 15)) {
-          return NextResponse.json({ error: 'Alamat pengiriman di luar batas jangkauan layanan kami' }, { status: 400 });
-        }
-
-        shippingDistance = clientDistance;
-
-        // Hitung ongkir
-        const effectiveDistance = Math.max(clientDistance, Number(settings.min_shipping_distance || 1));
-        calculatedShippingFee = Math.round(effectiveDistance * Number(settings.shipping_rate_per_km || 2500));
-        calculatedShippingFee += Number(settings.additional_zone_charge || 0);
-
-        // Bandingkan dengan ongkir dari client
-        if (Math.abs(calculatedShippingFee - Number(orderData.shipping_fee || 0)) > 100) {
-          return NextResponse.json({ error: 'Biaya pengiriman tidak cocok dengan perhitungan server' }, { status: 400 });
-        }
-      }
-
-      // 3. Hitung subtotal dan periksa ketersediaan menu dari database
-      let serverSubtotal = 0;
-      const menuItemIds = itemsData.map((item: any) => item.menu_item_id);
+      // Price Tampering Protection Validation
+      const clientIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '127.0.0.1';
+      const userAgent = req.headers.get('user-agent') || 'Unknown';
       
-      const { data: menuItems, error: menuItemsErr } = await supabaseAdmin
-        .from('menu_items')
-        .select('*')
-        .in('id', menuItemIds);
-        
-      if (menuItemsErr || !menuItems) {
-        return NextResponse.json({ error: 'Gagal mengambil data menu' }, { status: 500 });
+      const validationResult = await validateAndCalculatePrice({
+        customerId: orderData.customer_id,
+        itemsData,
+        orderData,
+        customerLat,
+        customerLng,
+        clientIp,
+        userAgent,
+        endpoint: '/api/orders'
+      });
+
+      if (!validationResult.isValid) {
+        return NextResponse.json({ 
+          error: validationResult.error, 
+          code: validationResult.errorCode 
+        }, { status: 400 });
       }
 
-      for (const item of itemsData) {
-        const menuItem = menuItems.find((m: any) => m.id === item.menu_item_id);
-        if (!menuItem || menuItem.is_deleted) {
-          return NextResponse.json({ error: 'Menu tidak ditemukan' }, { status: 404 });
-        }
-        if (!menuItem.is_active) {
-          return NextResponse.json({ error: `Menu ${menuItem.name} sedang tidak aktif` }, { status: 400 });
-        }
-        serverSubtotal += Number(menuItem.price) * Number(item.quantity);
-      }
+      const { 
+        subtotal: serverSubtotal, 
+        discount: serverDiscount, 
+        shippingFee: calculatedShippingFee, 
+        shippingDiscount: calculatedShippingDiscount, 
+        totalAmount: serverTotalAmount,
+        menuItems
+      } = validationResult.calculatedValues;
 
-      // 4. Validasi voucher dan hitung diskon
-      let serverDiscount = 0;
-      if (orderData.voucher_id) {
-        const { data: voucher, error: voucherErr } = await supabaseAdmin
-          .from('vouchers')
-          .select('*')
-          .eq('id', orderData.voucher_id)
-          .single();
-          
-        if (voucherErr || !voucher) {
-          return NextResponse.json({ error: 'Voucher tidak valid' }, { status: 400 });
-        }
-        
-        if (!voucher.is_active) {
-          return NextResponse.json({ error: 'Voucher tidak aktif' }, { status: 400 });
-        }
-        if (new Date(voucher.expires_at) <= new Date()) {
-          return NextResponse.json({ error: 'Voucher sudah kedaluwarsa' }, { status: 400 });
-        }
-        if (voucher.used_count >= voucher.usage_limit) {
-          return NextResponse.json({ error: 'Kuota voucher sudah habis' }, { status: 400 });
-        }
-        if (voucher.min_transaction && serverSubtotal < Number(voucher.min_transaction)) {
-          return NextResponse.json({ error: 'Minimal transaksi voucher tidak terpenuhi' }, { status: 400 });
-        }
-
-        const discountVal = voucher.discount_type === 'percent'
-          ? Number(voucher.discount_percent || 0)
-          : Number(voucher.discount_value || 0);
-
-        if (voucher.voucher_type === 'shipping') {
-          if (orderData.order_type !== 'delivery') {
-            return NextResponse.json({ error: 'Voucher pengiriman hanya dapat digunakan untuk tipe pesanan Delivery!' }, { status: 400 });
-          }
-          if (voucher.discount_type === 'percent') {
-            calculatedShippingDiscount = Math.round(calculatedShippingFee * discountVal / 100);
-          } else {
-            calculatedShippingDiscount = Math.min(calculatedShippingFee, discountVal);
-          }
-        } else {
-          // General
-          if (orderData.order_type && !['dine_in', 'takeaway', 'delivery'].includes(orderData.order_type)) {
-            return NextResponse.json({ error: 'Voucher umum hanya dapat digunakan untuk tipe pesanan Dine In, Takeaway, dan Delivery!' }, { status: 400 });
-          }
-          if (voucher.discount_type === 'percent') {
-            serverDiscount = Math.round(serverSubtotal * discountVal / 100);
-          } else {
-            serverDiscount = Math.min(serverSubtotal, discountVal);
-          }
-        }
-      }
-
-      // 5. Hitung total akhir
-      const serverTotalAmount = Math.max(0, serverSubtotal - serverDiscount + calculatedShippingFee - calculatedShippingDiscount);
-
-      if (Math.abs(serverTotalAmount - Number(orderData.total_amount)) > 100) {
-        return NextResponse.json({ error: 'Total nominal transaksi tidak cocok dengan perhitungan server' }, { status: 400 });
-      }
+      const shippingDistance = orderData.order_type === 'delivery' ? orderData.distance_km : null;
 
       // Get customer profile
       const { data: profile, error: profileErr } = await supabaseAdmin
@@ -465,6 +365,42 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Order data and items data are required' }, { status: 400 });
       }
 
+      // Price Tampering Protection Validation
+      const clientIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '127.0.0.1';
+      const userAgent = req.headers.get('user-agent') || 'Unknown';
+      
+      const validationResult = await validateAndCalculatePrice({
+        customerId: orderData.customer_id,
+        itemsData,
+        orderData: {
+          ...orderData,
+          voucher_id: orderData.voucher_id || null,
+          distance_km: orderData.distance_km || null,
+          shipping_fee: orderData.shipping_fee || null,
+          shipping_discount: orderData.shipping_discount || null,
+          discount: orderData.discount || null
+        },
+        clientIp,
+        userAgent,
+        endpoint: '/api/orders'
+      });
+
+      if (!validationResult.isValid) {
+        return NextResponse.json({ 
+          error: validationResult.error, 
+          code: validationResult.errorCode 
+        }, { status: 400 });
+      }
+
+      const { 
+        subtotal: serverSubtotal, 
+        discount: serverDiscount, 
+        shippingFee: calculatedShippingFee, 
+        shippingDiscount: calculatedShippingDiscount, 
+        totalAmount: serverTotalAmount,
+        menuItems
+      } = validationResult.calculatedValues;
+
       // Get customer profile
       const { data: profile, error: profileErr } = await supabaseAdmin
         .from('profiles')
@@ -532,28 +468,36 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('profiles').update({ wrong_pin_count: 0 }).eq('id', profile.id);
 
       const balance = Number(profile.wallet_balance || 0);
-      const total = Number(orderData.total_amount);
 
-      if (balance < total) {
+      if (balance < serverTotalAmount) {
         return NextResponse.json({ error: 'Saldo dompet tidak mencukupi untuk melakukan pembayaran' }, { status: 400 });
       }
 
       // Deduct balance
       const { error: deductErr } = await supabaseAdmin
         .from('profiles')
-        .update({ wallet_balance: balance - total })
+        .update({ wallet_balance: balance - serverTotalAmount })
         .eq('id', profile.id);
 
       if (deductErr) throw deductErr;
 
-      // Create order
+      // Create order with server-calculated amounts
       const { data: newOrder, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
-          ...orderData,
+          customer_id: orderData.customer_id,
+          table_id: orderData.table_id || null,
+          order_type: orderData.order_type,
+          total_amount: serverTotalAmount,
+          notes: orderData.notes || null,
           payment_method: 'wallet',
           payment_status: 'paid',
-          status: 'pending'
+          status: 'pending',
+          voucher_id: orderData.voucher_id || null,
+          discount: serverDiscount,
+          distance_km: orderData.distance_km || null,
+          shipping_fee: calculatedShippingFee,
+          shipping_discount: calculatedShippingDiscount
         })
         .select()
         .single();
@@ -564,11 +508,18 @@ export async function POST(req: NextRequest) {
         throw orderError;
       }
 
-      // Insert items
-      const itemsToInsert = itemsData.map((item: any) => ({
-        ...item,
-        order_id: newOrder.id
-      }));
+      // Insert items using database price
+      const itemsToInsert = itemsData.map((item: any) => {
+        const menuItem = menuItems.find((m: any) => m.id === item.menu_item_id)!;
+        return {
+          order_id: newOrder.id,
+          menu_item_id: item.menu_item_id,
+          quantity: item.quantity,
+          price: menuItem.price,
+          subtotal: Number(menuItem.price) * Number(item.quantity),
+          notes: item.notes || null
+        };
+      });
 
       const { error: itemsError } = await supabaseAdmin
         .from('order_items')
@@ -584,7 +535,7 @@ export async function POST(req: NextRequest) {
       // Log wallet transaction
       await supabaseAdmin.from('wallet_transactions').insert({
         customer_id: profile.id,
-        amount: total,
+        amount: serverTotalAmount,
         type: 'payment',
         status: 'success',
         description: `Pembayaran pesanan #${newOrder.id.substring(0, 8).toUpperCase()}`

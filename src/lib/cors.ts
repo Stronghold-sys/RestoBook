@@ -34,8 +34,13 @@ const ALLOWED_HEADERS = [
 /**
  * Mengecek apakah origin request diperbolehkan
  */
-export function isAllowedOrigin(origin: string | null): boolean {
+export function isAllowedOrigin(origin: string | null, requestOrigin?: string): boolean {
   if (!origin) return false;
+
+  // Izinkan jika same-origin (request berasal dari domain/host yang sama)
+  if (requestOrigin && origin === requestOrigin) {
+    return true;
+  }
 
   const isDev = process.env.NODE_ENV === 'development';
   const allowedList = isDev 
@@ -58,8 +63,9 @@ export function handleCors(request: NextRequest, response?: NextResponse): NextR
     return null;
   }
 
-  // Validasi Origin
-  const allowed = isAllowedOrigin(origin);
+  // Validasi Origin (serta verifikasi apakah ini same-origin request)
+  const requestOrigin = request.nextUrl.origin;
+  const allowed = isAllowedOrigin(origin, requestOrigin);
   if (!allowed) {
     // Blokir wildcard atau origin tidak dikenal
     return new NextResponse(

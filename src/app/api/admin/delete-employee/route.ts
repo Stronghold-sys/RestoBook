@@ -36,18 +36,75 @@ export async function POST(req: Request) {
       operatorProfile = opData;
     }
 
-    // 2. TANGANI FOREIGN KEY (Orders & Attendance)
+    // 2. TANGANI FOREIGN KEY & DEPENDENCIES KARYAWAN
     // Kosongkan link di orders agar transaksi tidak hilang tapi karyawan bisa dihapus
     await supabaseAdmin
       .from('orders')
       .update({ cashier_id: null })
       .eq('cashier_id', userId);
 
-    // Hapus data absensi lama agar akun benar-benar "fresh" jika daftar lagi
+    // Hapus data absensi lama (dengan kolom profile_id yang benar)
     await supabaseAdmin
       .from('attendance')
       .delete()
-      .eq('employee_id', userId);
+      .eq('profile_id', userId);
+
+    // Hapus shift kerja kasir/karyawan
+    await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .eq('profile_id', userId);
+
+    // Bersihkan penugasan shift kerja (baik utama maupun pengganti)
+    await supabaseAdmin
+      .from('work_shift_assignments')
+      .update({ substitute_for_profile_id: null })
+      .eq('substitute_for_profile_id', userId);
+
+    await supabaseAdmin
+      .from('work_shift_assignments')
+      .delete()
+      .eq('profile_id', userId);
+
+    // Hapus pengajuan resign
+    await supabaseAdmin
+      .from('resign_requests')
+      .delete()
+      .eq('profile_id', userId);
+
+    // Hapus data penggajian
+    await supabaseAdmin
+      .from('salary_records')
+      .delete()
+      .eq('profile_id', userId);
+
+    // Hapus denda & kasbon
+    await supabaseAdmin
+      .from('employee_fines')
+      .delete()
+      .eq('profile_id', userId);
+
+    await supabaseAdmin
+      .from('employee_fines')
+      .update({ created_by: null })
+      .eq('created_by', userId);
+
+    await supabaseAdmin
+      .from('employee_kasbon')
+      .delete()
+      .eq('profile_id', userId);
+
+    // Hapus notifikasi
+    await supabaseAdmin
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId);
+
+    // Hapus wallet (jika ada)
+    await supabaseAdmin
+      .from('wallets')
+      .delete()
+      .eq('customer_id', userId);
 
     // 3. Save Audit Log BEFORE deletion
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';

@@ -360,16 +360,61 @@ export async function POST(req: Request) {
       const phone = profile.phone;
       const type = notes?.type || 'resign';
 
-      // Tangani foreign keys
+      // Tangani foreign keys & dependencies karyawan
       await supabaseAdmin
         .from('orders')
         .update({ cashier_id: null })
-        .eq('cashier_id', profile.id);
+        .eq('cashier_id', profileId);
 
       await supabaseAdmin
         .from('attendance')
         .delete()
-        .eq('profile_id', profile.id);
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('shifts')
+        .delete()
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('work_shift_assignments')
+        .update({ substitute_for_profile_id: null })
+        .eq('substitute_for_profile_id', profileId);
+
+      await supabaseAdmin
+        .from('work_shift_assignments')
+        .delete()
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('salary_records')
+        .delete()
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('employee_fines')
+        .delete()
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('employee_fines')
+        .update({ created_by: null })
+        .eq('created_by', profileId);
+
+      await supabaseAdmin
+        .from('employee_kasbon')
+        .delete()
+        .eq('profile_id', profileId);
+
+      await supabaseAdmin
+        .from('notifications')
+        .delete()
+        .eq('user_id', profileId);
+
+      await supabaseAdmin
+        .from('wallets')
+        .delete()
+        .eq('customer_id', profileId);
 
       if (profile.user_id) {
         await supabaseAdmin.auth.admin.deleteUser(profile.user_id);

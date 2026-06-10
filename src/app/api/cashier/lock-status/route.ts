@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     // 1.5 Cek apakah user sedang digantikan hari ini dengan status 'accepted'
     const { data: replacementAssign } = await supabaseAdmin
       .from('work_shift_assignments')
-      .select('*, profiles:profile_id(full_name)')
+      .select('*, profiles:profiles!work_shift_assignments_profile_id_fkey(full_name)')
       .eq('substitute_for_profile_id', profileRaw.id)
       .eq('substitute_date', todayISOStr)
       .eq('is_substitute', true)

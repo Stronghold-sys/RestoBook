@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     // Sertakan field substitute dan relation user yang digantikan
     const { data: assignments, error: fetchError } = await supabase
       .from('work_shift_assignments')
-      .select('*, work_shifts(*), substitute_for:substitute_for_profile_id(full_name)')
+      .select('*, work_shifts(*), substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(full_name)')
       .eq('profile_id', profile.id);
 
     if (fetchError) throw fetchError;

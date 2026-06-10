@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         // 1. Tarik Toleransi & Jadwal Kerja Terkait
         const [setRes, assignsRes] = await Promise.all([
           supabaseAdmin.from('restaurant_settings').select('late_tolerance_minutes').single(),
-          supabaseAdmin.from('work_shift_assignments').select('*, work_shifts(*), substitute_for:substitute_for_profile_id(full_name)').eq('profile_id', profileId)
+          supabaseAdmin.from('work_shift_assignments').select('*, work_shifts(*), substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(full_name)').eq('profile_id', profileId)
         ]);
 
         const tolerance = setRes.data?.late_tolerance_minutes || 15;
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     if (targetWorkShiftId && profileId) {
        const { data: finalMatch } = await supabaseAdmin
          .from('work_shift_assignments')
-         .select('*, substitute_for:substitute_for_profile_id(full_name)')
+         .select('*, substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(full_name)')
          .eq('profile_id', profileId)
          .eq('work_shift_id', targetWorkShiftId)
          .maybeSingle();

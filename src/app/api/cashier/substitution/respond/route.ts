@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     // 2. Fetch assignment terkait menggunakan admin client (bypass RLS)
     const { data: assignment, error: assignError } = await supabaseAdmin
       .from('work_shift_assignments')
-      .select('*, work_shifts(*), substitute_for:substitute_for_profile_id(*)')
+      .select('*, work_shifts(*), substitute_for:profiles!work_shift_assignments_substitute_for_profile_id_fkey(*)')
       .eq('id', assignmentId)
       .maybeSingle();
 

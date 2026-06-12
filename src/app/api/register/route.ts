@@ -185,6 +185,7 @@ export async function POST(req: NextRequest) {
       .upsert({
         user_id: userId,
         full_name: fullName,
+        email: email.trim().toLowerCase(),
         phone: phone || null,
         role: 'customer',
       }, {

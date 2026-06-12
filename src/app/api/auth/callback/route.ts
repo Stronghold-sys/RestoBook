@@ -104,6 +104,7 @@ async function handleProfileAuthStatus(
     const updatedHistory = [ ...currentHistory, { ...newHistoryItem, action: 'login' } ];
 
     await supabaseAdmin.from('profiles').update({
+      email: userEmail.trim().toLowerCase(),
       google_account_linked: googleLinked,
       auth_status: updatedStatus,
       login_method_history: updatedHistory

@@ -26,8 +26,23 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<any>(null);
   const [appealData, setAppealData] = useState<any>(null);
   const [loadingAppeal, setLoadingAppeal] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   
   const supabase = createClient();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).onTurnstileSuccess = (token: string) => {
+        setTurnstileToken(token);
+      };
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        delete (window as any).onTurnstileSuccess;
+      }
+    };
+  }, []);
+
 
 
   useEffect(() => {
@@ -399,6 +414,7 @@ export default function LoginPage() {
     
     if (!identifier) return toast.error("Email tidak boleh kosong");
     if (!password) return toast.error("Password tidak boleh kosong");
+    if (!turnstileToken) return toast.error("Silakan selesaikan verifikasi keamanan terlebih dahulu.");
 
     setLoading(true);
     try {
@@ -418,7 +434,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
           "X-CSRF-Token": getCsrfToken()
         },
-        body: JSON.stringify({ identifier, password })
+        body: JSON.stringify({ identifier, password, turnstileToken })
       });
 
       const resData = await res.json();
@@ -587,6 +603,7 @@ export default function LoginPage() {
   return (
     <>
       <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
       <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -732,6 +749,17 @@ export default function LoginPage() {
             </svg>
             Masuk dengan Google
           </motion.button>
+
+          {/* Cloudflare Turnstile Widget */}
+          <div className="flex justify-center my-2">
+            <div
+              className="cf-turnstile"
+              data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x0000000000000000000000"}
+              data-callback="onTurnstileSuccess"
+              data-theme="light"
+            ></div>
+          </div>
+
 
           <p className="text-center text-sm text-muted">
             Belum punya akun?{" "}

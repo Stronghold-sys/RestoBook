@@ -26,46 +26,7 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<any>(null);
   const [appealData, setAppealData] = useState<any>(null);
   const [loadingAppeal, setLoadingAppeal] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [siteKey, setSiteKey] = useState("1x0000000000000000000000");
-  
   const supabase = createClient();
-
-  useEffect(() => {
-    setMounted(true);
-    if (typeof window !== "undefined") {
-      const isProductionDomain = window.location.hostname === "restobookid.my.id";
-      if (isProductionDomain && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
-        setSiteKey(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
-      } else {
-        setSiteKey("1x0000000000000000000000");
-      }
-      (window as any).onTurnstileSuccess = (token: string) => {
-        setTurnstileToken(token);
-      };
-    }
-    return () => {
-      if (typeof window !== "undefined") {
-        delete (window as any).onTurnstileSuccess;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mounted && typeof window !== "undefined") {
-      const timer = setTimeout(() => {
-        if ((window as any).turnstile) {
-          try {
-            (window as any).turnstile.implicitRender();
-          } catch (e) {
-            console.error("Failed to implicitly render Turnstile:", e);
-          }
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [mounted, siteKey]);
 
 
 
@@ -438,7 +399,6 @@ export default function LoginPage() {
     
     if (!identifier) return toast.error("Email tidak boleh kosong");
     if (!password) return toast.error("Password tidak boleh kosong");
-    if (!turnstileToken) return toast.error("Silakan selesaikan verifikasi keamanan terlebih dahulu.");
 
     setLoading(true);
     try {
@@ -458,7 +418,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
           "X-CSRF-Token": getCsrfToken()
         },
-        body: JSON.stringify({ identifier, password, turnstileToken })
+        body: JSON.stringify({ identifier, password })
       });
 
       const resData = await res.json();
@@ -627,7 +587,6 @@ export default function LoginPage() {
   return (
     <>
       <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
       <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -773,19 +732,6 @@ export default function LoginPage() {
             </svg>
             Masuk dengan Google
           </motion.button>
-
-          {/* Cloudflare Turnstile Widget */}
-          {mounted && (
-            <div className="flex justify-center my-2">
-              <div
-                key={siteKey}
-                className="cf-turnstile"
-                data-sitekey={siteKey}
-                data-callback="onTurnstileSuccess"
-                data-theme="light"
-              ></div>
-            </div>
-          )}
 
 
           <p className="text-center text-sm text-muted">

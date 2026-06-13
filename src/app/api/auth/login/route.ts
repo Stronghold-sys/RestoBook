@@ -97,38 +97,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { identifier, password, turnstileToken } = body;
+    const { identifier, password } = body;
 
     if (!identifier || !password) {
       return NextResponse.json({ error: 'Email/ID Karyawan dan password wajib diisi' }, { status: 400 });
     }
 
-    // 1.8. Verifikasi Turnstile Token
-    if (turnstileToken) {
-      try {
-        const hostHeader = request.headers.get('host') || '';
-        const isProduction = hostHeader.includes('restobookid.my.id');
-        const secretKey = isProduction 
-          ? (process.env.TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000")
-          : "1x000000000000000000000000000000AA";
 
-        const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            secret: secretKey,
-            response: turnstileToken,
-            remoteip: ipAddress
-          })
-        });
-        const verifyData = await verifyRes.json();
-        if (!verifyData.success) {
-          return NextResponse.json({ error: "Verifikasi keamanan Turnstile gagal. Silakan coba kembali." }, { status: 400 });
-        }
-      } catch (err) {
-        console.error("Gagal memverifikasi Turnstile:", err);
-      }
-    }
 
 
     let emailToLogin = identifier;

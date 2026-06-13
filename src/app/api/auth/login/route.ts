@@ -106,11 +106,17 @@ export async function POST(request: NextRequest) {
     // 1.8. Verifikasi Turnstile Token
     if (turnstileToken) {
       try {
+        const hostHeader = request.headers.get('host') || '';
+        const isLocalHost = hostHeader.includes('localhost') || hostHeader.includes('127.0.0.1');
+        const secretKey = isLocalHost 
+          ? "1x000000000000000000000000000000AA" 
+          : (process.env.TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000");
+
         const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            secret: process.env.TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000",
+            secret: secretKey,
             response: turnstileToken,
             remoteip: ipAddress
           })

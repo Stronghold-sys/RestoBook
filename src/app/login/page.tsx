@@ -27,11 +27,18 @@ export default function LoginPage() {
   const [appealData, setAppealData] = useState<any>(null);
   const [loadingAppeal, setLoadingAppeal] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [siteKey, setSiteKey] = useState("1x0000000000000000000000");
   
   const supabase = createClient();
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (!isLocal && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+        setSiteKey(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+      }
       (window as any).onTurnstileSuccess = (token: string) => {
         setTurnstileToken(token);
       };
@@ -42,6 +49,21 @@ export default function LoginPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (mounted && typeof window !== "undefined") {
+      const timer = setTimeout(() => {
+        if ((window as any).turnstile) {
+          try {
+            (window as any).turnstile.implicitRender();
+          } catch (e) {
+            console.error("Failed to implicitly render Turnstile:", e);
+          }
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, siteKey]);
 
 
 
@@ -751,14 +773,17 @@ export default function LoginPage() {
           </motion.button>
 
           {/* Cloudflare Turnstile Widget */}
-          <div className="flex justify-center my-2">
-            <div
-              className="cf-turnstile"
-              data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x0000000000000000000000"}
-              data-callback="onTurnstileSuccess"
-              data-theme="light"
-            ></div>
-          </div>
+          {mounted && (
+            <div className="flex justify-center my-2">
+              <div
+                key={siteKey}
+                className="cf-turnstile"
+                data-sitekey={siteKey}
+                data-callback="onTurnstileSuccess"
+                data-theme="light"
+              ></div>
+            </div>
+          )}
 
 
           <p className="text-center text-sm text-muted">

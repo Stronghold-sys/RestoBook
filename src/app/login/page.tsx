@@ -35,9 +35,11 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
-      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      if (!isLocal && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+      const isProductionDomain = window.location.hostname === "restobookid.my.id";
+      if (isProductionDomain && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
         setSiteKey(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+      } else {
+        setSiteKey("1x0000000000000000000000");
       }
       (window as any).onTurnstileSuccess = (token: string) => {
         setTurnstileToken(token);
@@ -625,7 +627,7 @@ export default function LoginPage() {
   return (
     <>
       <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
       <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 safe-auth-container">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
